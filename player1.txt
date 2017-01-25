@@ -1,0 +1,9 @@
+joystick_id    0
+button_attack  0
+button_jump    4
+button_left    -1
+button_right   -1
+button_down    -1
+button_up      -1
+axis_move_x    0
+axis_move_y    1

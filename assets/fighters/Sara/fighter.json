@@ -1,0 +1,12 @@
+{
+
+"walk_speed":     1.0,
+"dash_speed":     1.0,
+"air_speed":      1.0,
+"land_traction":  1.0,
+"air_traction":   1.0,
+"hop_height":     1.0,
+"jump_height":    1.0,
+"fall_speed":     1.0
+
+}
