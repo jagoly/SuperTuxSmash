@@ -3,14 +3,11 @@
 #include <sqee/builtins.hpp>
 #include <sqee/maths/Vectors.hpp>
 
-#include <game/Attacks.hpp>
+#include <game/Actions.hpp>
 #include <game/Controller.hpp>
+#include <game/Renderer.hpp>
 
 namespace sts {
-
-//============================================================================//
-
-class Stage; // Forward Declaration
 
 //============================================================================//
 
@@ -21,24 +18,33 @@ public:
     //========================================================//
 
     struct State {
-        enum class Attack { None, Neutral, Tilt, Air, Dash } attack;
+
+        enum class Action { None, Neutral, Tilt, Air, Dash } action;
         enum class Move { None, Walking, Dashing, Jumping, Falling } move;
         enum class Direction { Left, Right } direction;
+
     } state;
 
     //========================================================//
 
-    unique_ptr<Attacks> attacks;
+    Fighter(string name);
+
+    virtual ~Fighter() = default;
 
     //========================================================//
 
-    Fighter(string name, Stage& stage);
-
-    virtual ~Fighter();
-
-    //========================================================//
+    virtual void setup() = 0;
 
     virtual void tick() = 0;
+
+    virtual void render() = 0;
+
+    //========================================================//
+
+    const string mName;
+
+    Controller* mController = nullptr;
+    Renderer* mRenderer = nullptr;
 
     //========================================================//
 
@@ -52,9 +58,27 @@ public:
 
     //========================================================//
 
-    Controller mController;
+    struct {
 
-protected:
+        unique_ptr<Action> neutral_first;
+        unique_ptr<Action> neutral_second;
+        unique_ptr<Action> neutral_third;
+
+        unique_ptr<Action> tilt_down;
+        unique_ptr<Action> tilt_forward;
+        unique_ptr<Action> tilt_up;
+
+        //unique_ptr<Action> air_neutral;
+        //unique_ptr<Action> air_back;
+        //unique_ptr<Action> air_forward;
+        //unique_ptr<Action> air_down;
+        //unique_ptr<Action> air_up;
+
+        //unique_ptr<Action> dashing;
+
+        Action* active = nullptr;
+
+    } actions;
 
     //========================================================//
 
@@ -71,19 +95,13 @@ protected:
 
     } stats;
 
-    //========================================================//
-
-    struct {
-
-        uint sinceAttackStart = 0u;
-
-    } timers;
+protected:
 
     //========================================================//
 
     void impl_update_before();
 
-    void impl_input_attacks(Controller::Input input);
+    void impl_input_actions(Controller::Input input);
     void impl_input_movement(Controller::Input input);
 
     void impl_update_after();
@@ -99,11 +117,6 @@ protected:
     Vec2F mVelocity = { 0.f, 0.f };
 
     bool mJumpHeld = false;
-
-    const string mName;
-
-    Stage& mStage;
-
 };
 
 //============================================================================//

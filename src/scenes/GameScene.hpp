@@ -13,6 +13,7 @@ class SmashApp;
 class Renderer;
 
 class Stage;
+class Controller;
 class Fighter;
 
 //============================================================================//
@@ -40,6 +41,9 @@ private:
     unique_ptr<Renderer> mRenderer;
 
     unique_ptr<Stage> mStage;
+
+    vector<unique_ptr<Controller>> mControllers;
+
     vector<unique_ptr<Fighter>> mFighters;
 };
 

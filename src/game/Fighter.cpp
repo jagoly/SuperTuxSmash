@@ -1,9 +1,5 @@
-#include <iostream>
-
 #include <sqee/assert.hpp>
 #include <sqee/misc/Json.hpp>
-
-#include <game/Attacks.hpp>
 
 #include "Fighter.hpp"
 
@@ -12,8 +8,7 @@ using namespace sts;
 
 //============================================================================//
 
-Fighter::Fighter(string name, Stage& stage)
-    : mName(name), mStage(stage)
+Fighter::Fighter(string name) : mName(name)
 {
     const auto json = sq::parse_json("assets/fighters/" + name + "/fighter.json");
 
@@ -26,14 +21,9 @@ Fighter::Fighter(string name, Stage& stage)
     stats.jump_height   = json.at("jump_height");
     stats.fall_speed    = json.at("fall_speed");
 
+    state.action = State::Action::None;
     state.move = State::Move::None;
-    state.attack = State::Attack::None;
     state.direction = State::Direction::Left;
-}
-
-Fighter::~Fighter()
-{
-
 }
 
 //============================================================================//
@@ -80,29 +70,29 @@ void Fighter::impl_update_before()
 
     //========================================================//
 
-    // update active attacks
+    // update active actions
 
-    if (attacks->active != nullptr)
+    if (actions.active != nullptr)
     {
-        if (attacks->active->on_tick() == true)
+        if (actions.active->on_tick() == true)
         {
-            attacks->active->on_finish();
-            attacks->active = nullptr;
+            actions.active->on_finish();
+            actions.active = nullptr;
 
-            state.attack = State::Attack::None;
+            state.action = State::Action::None;
         }
     }
 }
 
 //============================================================================//
 
-void Fighter::impl_input_attacks(Controller::Input input)
+void Fighter::impl_input_actions(Controller::Input input)
 {
     //========================================================//
-    switch (state.attack) {
+    switch (state.action) {
     //========================================================//
 
-    case State::Attack::None:
+    case State::Action::None:
     {
         if (input.press_attack == true)
         {
@@ -110,26 +100,26 @@ void Fighter::impl_input_attacks(Controller::Input input)
             {
                 if (maths::length(input.axis_move) <= 0.2f)
                 {
-                    state.attack = State::Attack::Neutral;
-                    attacks->active = attacks->neutral_first.get();
-                    attacks->active->on_start();
+                    state.action = State::Action::Neutral;
+                    actions.active = actions.neutral_first.get();
+                    actions.active->on_start();
                 }
                 else
                 {
-                    state.attack = State::Attack::Tilt;
+                    state.action = State::Action::Tilt;
 
                     if (std::abs(input.axis_move.x) > std::abs(input.axis_move.y))
-                        attacks->active = attacks->tilt_forward.get();
+                        actions.active = actions.tilt_forward.get();
 
                     else if (input.axis_move.y < -0.f)
-                        attacks->active = attacks->tilt_down.get();
+                        actions.active = actions.tilt_down.get();
 
                     else if (input.axis_move.y > +0.f)
-                        attacks->active = attacks->tilt_up.get();
+                        actions.active = actions.tilt_up.get();
 
                     else SQASSERT(false, "");
 
-                    attacks->active->on_start();
+                    actions.active->on_start();
                 }
             }
         }
@@ -137,7 +127,7 @@ void Fighter::impl_input_attacks(Controller::Input input)
         break;
     }
 
-    case State::Attack::Neutral:
+    case State::Action::Neutral:
     {
         break;
     }
@@ -342,8 +332,6 @@ void Fighter::impl_update_after()
 
     previous = current; // flip interpolation frame
 
-    //std::cout << "velocity: " << mVelocity.x << ' ' << mVelocity.y << std::endl;
-
     current.position = current.position + (mVelocity / 48.f);
 
     //========================================================//
@@ -403,13 +391,13 @@ void Fighter::impl_update_after()
 
 void Fighter::impl_tick_base()
 {
-    const auto input = mController.get_input();
+    const auto input = mController->get_input();
 
     this->impl_validate_stats();
 
     this->impl_update_before();
 
-    this->impl_input_attacks(input);
+    this->impl_input_actions(input);
     this->impl_input_movement(input);
 
     this->impl_update_after();

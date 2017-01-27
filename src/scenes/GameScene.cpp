@@ -4,15 +4,11 @@
 #include <sqee/gl/Context.hpp>
 
 #include <main/SmashApp.hpp>
-#include <render/Renderer.hpp>
+#include <game/Renderer.hpp>
 
 #include <game/stages/TestZone/Stage.hpp>
 #include <game/fighters/Cheese/Fighter.hpp>
 #include <game/fighters/Sara/Fighter.hpp>
-
-#include <render/stages/TestZone.hpp>
-#include <render/fighters/Cheese.hpp>
-#include <render/fighters/Sara.hpp>
 
 #include "GameScene.hpp"
 
@@ -28,17 +24,25 @@ GameScene::GameScene(SmashApp& smashApp)
 
     mStage = std::make_unique<stages::TestZone>();
 
-    mFighters.push_back(std::make_unique<fighters::Cheese_Fighter>(*mStage));
-    mFighters.push_back(std::make_unique<fighters::Sara_Fighter>(*mStage));
+    mControllers.push_back(std::make_unique<Controller>());
+    mControllers.push_back(std::make_unique<Controller>());
 
-    auto& fighterA = static_cast<fighters::Cheese_Fighter&>(*mFighters[0]);
-    auto& fighterB = static_cast<fighters::Sara_Fighter&>(*mFighters[1]);
+    mFighters.push_back(std::make_unique<fighters::Cheese_Fighter>());
+    mFighters.push_back(std::make_unique<fighters::Sara_Fighter>());
 
-    mRenderer->add_fighter(std::make_unique<fighters::Cheese_Render>(*mRenderer, fighterA));
-    mRenderer->add_fighter(std::make_unique<fighters::Sara_Render>(*mRenderer, fighterB));
+    mFighters[0]->mController = mControllers[0].get();
+    mFighters[0]->mRenderer = mRenderer.get();
+    mFighters[0]->setup();
 
-    fighterA.mController.load_config("player1.txt");
-    fighterB.mController.load_config("player2.txt");
+    mFighters[1]->mController = mControllers[1].get();
+    mFighters[1]->mRenderer = mRenderer.get();
+    mFighters[1]->setup();
+
+    mControllers[0]->load_config("player1.txt");
+    mControllers[1]->load_config("player2.txt");
+
+    mRenderer->functions.draw_FighterA = [&]() { mFighters[0]->render(); };
+    mRenderer->functions.draw_FighterB = [&]() { mFighters[1]->render(); };
 }
 
 //============================================================================//
@@ -52,54 +56,8 @@ void GameScene::update_options()
 
 bool GameScene::handle(sf::Event event)
 {
-    const auto& fighterA = mFighters[0];
-    const auto& fighterB = mFighters[1];
-
-    //========================================================//
-
-    if (fighterA->mController.handle_event(event)) return true;
-    if (fighterB->mController.handle_event(event)) return true;
-
-//    if (event.type == sf::Event::KeyPressed)
-//    {
-//        if (event.key.code == sf::Keyboard::Space)
-//        {
-//            fighterA->input_press(Fighter::InputPress::Jump);
-//            return true;
-//        }
-
-//        if (event.key.code == sf::Keyboard::Z)
-//        {
-//            fighterA->input_press(Fighter::InputPress::Attack);
-//            return true;
-//        }
-
-//        if (event.key.code == sf::Keyboard::Left)
-//        {
-//            fighterA->input_press(Fighter::InputPress::Left);
-//            return true;
-//        }
-
-//        if (event.key.code == sf::Keyboard::Right)
-//        {
-//            fighterA->input_press(Fighter::InputPress::Right);
-//            return true;
-//        }
-
-//        if (event.key.code == sf::Keyboard::Down)
-//        {
-//            fighterA->input_press(Fighter::InputPress::Down);
-//            return true;
-//        }
-
-//        if (event.key.code == sf::Keyboard::Up)
-//        {
-//            fighterA->input_press(Fighter::InputPress::Up);
-//            return true;
-//        }
-//    }
-
-    //========================================================//
+    if (mControllers[0]->handle_event(event)) return true;
+    if (mControllers[1]->handle_event(event)) return true;
 
     return false;
 }
@@ -108,8 +66,6 @@ bool GameScene::handle(sf::Event event)
 
 void GameScene::tick()
 {
-    const auto& fighterA = mFighters[0];
-
     //========================================================//
 
 //    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
@@ -146,5 +102,7 @@ void GameScene::render()
 {
     const float progress = float(accumulation) * 48.f;
 
-    mRenderer->render(progress);
+    mRenderer->progress = progress;
+
+    mRenderer->render();
 }

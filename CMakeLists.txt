@@ -71,8 +71,8 @@ set(SOURCES
 
   ############################################################
 
-  "src/game/Attacks.hpp"
-  "src/game/Attacks.cpp"
+  "src/game/Actions.hpp"
+  "src/game/Actions.cpp"
 
   "src/game/Controller.hpp"
   "src/game/Controller.cpp"
@@ -80,51 +80,27 @@ set(SOURCES
   "src/game/Fighter.hpp"
   "src/game/Fighter.cpp"
 
-  ############################################################
+  "src/game/Misc.hpp"
+  "src/game/Misc.cpp"
+
+  "src/game/Renderer.hpp"
+  "src/game/Renderer.cpp"
 
   "src/game/Stage.hpp"
   "src/game/Stage.cpp"
 
   ############################################################
 
-  "src/render/Renderer.hpp"
-  "src/render/Renderer.cpp"
-
-  "src/render/Fighter.hpp"
-  "src/render/Fighter.cpp"
-
-  "src/render/Stage.hpp"
-  "src/render/Stage.cpp"
-
-  ############################################################
-
-  "src/game/fighters/Cheese/Attacks.hpp"
-  "src/game/fighters/Cheese/Attacks.cpp"
-
   "src/game/fighters/Cheese/Fighter.hpp"
   "src/game/fighters/Cheese/Fighter.cpp"
 
-  "src/render/fighters/Cheese.hpp"
-  "src/render/fighters/Cheese.cpp"
-
-  ############################################################
-
-  "src/game/fighters/Sara/Attacks.hpp"
-  "src/game/fighters/Sara/Attacks.cpp"
-
   "src/game/fighters/Sara/Fighter.hpp"
   "src/game/fighters/Sara/Fighter.cpp"
-
-  "src/render/fighters/Sara.hpp"
-  "src/render/fighters/Sara.cpp"
 
   ############################################################
 
   "src/game/stages/TestZone/Stage.hpp"
   "src/game/stages/TestZone/Stage.cpp"
-
-  "src/render/stages/TestZone.hpp"
-  "src/render/stages/TestZone.cpp"
 
 )
 
@@ -165,7 +141,6 @@ target_link_libraries(sts-game ${SQEE_LIB} ${SFML_AUDIO_LIB} ${SFML_WINDOW_LIB} 
 file(COPY "assets" DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 file(COPY "shaders" DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 
-file(COPY "config.txt" DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 file(COPY "player1.txt" DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 file(COPY "player2.txt" DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 
