@@ -28,8 +28,10 @@ Renderer::Renderer()
 
     shaders.preprocs.import_header("headers/blocks/Camera");
     shaders.preprocs.import_header("headers/blocks/Light");
+    shaders.preprocs.import_header("headers/blocks/Skeleton");
 
-    shaders.preprocs.import_header("headers/super/Model_vs");
+    shaders.preprocs.import_header("headers/super/Simple_vs");
+    shaders.preprocs.import_header("headers/super/Skelly_vs");
     shaders.preprocs.import_header("headers/super/Model_fs");
 
     // Create Uniform Buffers /////
@@ -137,14 +139,14 @@ void Renderer::render()
 
     //========================================================//
 
-    static Vec3F cameraPosition = { 0.f, -10.f, +5.f };
+    static Vec3F cameraPosition = { 0.f, -6.f, +3.f };
     cameraPosition = maths::rotate_z(cameraPosition, 0.0005f);
 
     const Vec3F cameraDirection = maths::normalize(-cameraPosition);
 
     const Vec2F size = Vec2F(options.Window_Size);
 
-    camera.viewMatrix = maths::look_at(cameraPosition, Vec3F(), Vec3F(0.f, 0.f, 1.f));
+    camera.viewMatrix = maths::look_at(cameraPosition, Vec3F(0.f, 0.f, 1.f), Vec3F(0.f, 0.f, 1.f));
     camera.projMatrix = maths::perspective(1.f, size.x / size.y, 0.2f, 200.f);
 
     const Mat4F inverseViewMat = maths::inverse(camera.viewMatrix);

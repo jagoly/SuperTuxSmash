@@ -1,7 +1,5 @@
 // GLSL Vertex Super Shader
 
-// #define OPT_SKELETON
-
 //============================================================================//
 
 #include headers/blocks/Camera

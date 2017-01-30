@@ -1,4 +1,8 @@
+#include <sqee/debug/Logging.hpp>
+#include <sqee/misc/StringCast.hpp>
+
 #include <sqee/gl/Context.hpp>
+#include <sqee/maths/Functions.hpp>
 
 #include <game/Misc.hpp>
 
@@ -27,6 +31,31 @@ void Sara_Fighter::setup()
 
     //========================================================//
 
+    ARMA_Sara.load_bones_from_file("fighters/Sara/armature.txt");
+    ARMA_Sara.mRestPose = ARMA_Sara.load_pose_from_file("fighters/Sara/poses/Rest.txt");
+
+    POSE_Rest = ARMA_Sara.load_pose_from_file("fighters/Sara/poses/Rest.txt");
+    POSE_Stand = ARMA_Sara.load_pose_from_file("fighters/Sara/poses/Stand.txt");
+    POSE_Jump = ARMA_Sara.load_pose_from_file("fighters/Sara/poses/Jump.txt");
+
+    ANIM_Walk[0] = ARMA_Sara.load_pose_from_file("fighters/Sara/poses/walk/WalkA.txt");
+    ANIM_Walk[1] = ARMA_Sara.load_pose_from_file("fighters/Sara/poses/walk/WalkB.txt");
+    ANIM_Walk[2] = ARMA_Sara.load_pose_from_file("fighters/Sara/poses/walk/WalkC.txt");
+    ANIM_Walk[3] = ARMA_Sara.load_pose_from_file("fighters/Sara/poses/walk/WalkD.txt");
+    ANIM_Walk[4] = ARMA_Sara.load_pose_from_file("fighters/Sara/poses/walk/WalkE.txt");
+    ANIM_Walk[5] = ARMA_Sara.load_pose_from_file("fighters/Sara/poses/walk/WalkF.txt");
+    ANIM_Walk[6] = ARMA_Sara.load_pose_from_file("fighters/Sara/poses/walk/WalkG.txt");
+    ANIM_Walk[7] = ARMA_Sara.load_pose_from_file("fighters/Sara/poses/walk/WalkH.txt");
+
+    mPosePrevious = mPoseCurrent = POSE_Rest;
+
+    ARMA_Sara.refresh_matrices();
+
+    UBO_Sara.reserve("bones", 960u);
+    UBO_Sara.create_and_allocate();
+
+    //========================================================//
+
     MESH_Sara.load_from_file("fighters/Sara/mesh");
 
     //========================================================//
@@ -52,11 +81,11 @@ void Sara_Fighter::setup()
 
     //========================================================//
 
-    VS_Simple.add_uniform("u_model_mat"); // Mat4F
-    VS_Simple.add_uniform("u_normal_mat"); // Mat3F
+    VS_Sara.add_uniform("u_model_mat"); // Mat4F
+    VS_Sara.add_uniform("u_normal_mat"); // Mat3F
     FS_Hair.add_uniform("u_specular"); // Vec3F
 
-    mRenderer->shaders.preprocs(VS_Simple, "fighters/Sara/Simple_vs");
+    mRenderer->shaders.preprocs(VS_Sara, "fighters/Sara/Sara_vs");
     mRenderer->shaders.preprocs(FS_Main, "fighters/Sara/Main_fs");
     mRenderer->shaders.preprocs(FS_Hair, "fighters/Sara/Hair_fs");
 }
@@ -66,6 +95,81 @@ void Sara_Fighter::setup()
 void Sara_Fighter::tick()
 {
     this->impl_tick_base();
+
+    mPosePrevious = mPoseCurrent;
+
+    switch (state.move) {
+
+    case State::Move::None:
+    {
+        if (mAnimationSwitch == true)
+        {
+            mPoseCurrent = ARMA_Sara.blend_poses(mPoseCurrent, POSE_Stand, 0.5f);
+            mAnimationSwitch = false;
+        }
+        else mPoseCurrent = POSE_Stand;
+
+        mAnimationProgress = 0.f;
+        mAnimationIndex = 0u;
+
+        break;
+    }
+
+    case State::Move::Walking:
+    {
+        // todo: work out exact walk animation speed
+        const float velocity = std::abs(mVelocity.x) / 10.f;
+
+        if ((mAnimationProgress += velocity) >= 1.f)
+        {
+            mAnimationProgress = 0.f;
+            if (++mAnimationIndex == 8u)
+                mAnimationIndex = 0u;
+        }
+
+        const auto& current = ANIM_Walk[mAnimationIndex];
+        const auto& next = ANIM_Walk[mAnimationIndex < 7u ? mAnimationIndex + 1u : 0u];
+        mPoseCurrent = ARMA_Sara.blend_poses(current, next, mAnimationProgress);
+
+        mAnimationSwitch = true;
+
+        break;
+    }
+
+    case State::Move::Dashing:
+    {
+        // todo: work out exact dash animation speed
+        const float velocity = std::abs(mVelocity.x) / 10.f;
+
+        if ((mAnimationProgress += velocity) >= 1.f)
+        {
+            mAnimationProgress = 0.f;
+            if (++mAnimationIndex == 8u)
+                mAnimationIndex = 0u;
+        }
+
+        const auto& current = ANIM_Walk[mAnimationIndex];
+        const auto& next = ANIM_Walk[mAnimationIndex < 7u ? mAnimationIndex + 1u : 0u];
+        mPoseCurrent = ARMA_Sara.blend_poses(current, next, mAnimationProgress);
+
+        mAnimationSwitch = true;
+
+        break;
+    }
+
+    case State::Move::Jumping:
+    {
+        mPoseCurrent = POSE_Jump;
+
+        mAnimationSwitch = true;
+
+        mAnimationProgress = 0.f;
+        mAnimationIndex = 0u;
+
+        break;
+    }
+
+    } // switch (state.move)
 }
 
 //============================================================================//
@@ -76,6 +180,13 @@ void Sara_Fighter::render()
 
     const auto& progress = mRenderer->progress;
     const auto& camera = mRenderer->camera;
+
+    //========================================================//
+
+    const auto blendPose = ARMA_Sara.blend_poses(mPosePrevious, mPoseCurrent, progress);
+
+    const auto data = ARMA_Sara.pose_to_ubo_data(blendPose);
+    UBO_Sara.update(0u, data.size() * 12u, data.data());
 
     //========================================================//
 
@@ -138,20 +249,18 @@ void Sara_Fighter::render()
     //========================================================//
 
     Vec2F position = maths::mix(previous.position, current.position, progress);
-    Mat4F modelMatrix = maths::translate(Mat4F(), Vec3F(position.x, 0.f, position.y));
-    modelMatrix = maths::rotate(modelMatrix, Vec3F(0.f, 0.f, 1.f), rotation);
-    modelMatrix = maths::scale(modelMatrix, scale);
-
-    Mat3F normalMatrix = maths::normal_matrix(camera.viewMatrix * modelMatrix);
+    const Mat4F modelMatrix = maths::transform(Vec3F(position.x, 0.f, position.y), QuatF(0.f, 0.f, rotation), scale);
+    const Mat3F normalMatrix = maths::normal_matrix(camera.viewMatrix * modelMatrix);
 
     //========================================================//
 
-    context.use_Shader_Vert(VS_Simple);
+    context.use_Shader_Vert(VS_Sara);
 
-    VS_Simple.update("u_model_mat", modelMatrix);
-    VS_Simple.update("u_normal_mat", normalMatrix);
+    VS_Sara.update("u_model_mat", modelMatrix);
+    VS_Sara.update("u_normal_mat", normalMatrix);
 
     context.bind_VertexArray(MESH_Sara.get_vao());
+    context.bind_UniformBuffer(UBO_Sara, 2u);
 
     //========================================================//
 

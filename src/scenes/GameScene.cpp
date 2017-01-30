@@ -100,7 +100,7 @@ void GameScene::tick()
 
 void GameScene::render()
 {
-    const float progress = float(accumulation) * 48.f;
+    const float progress = float(accumulation / tickTime);
 
     mRenderer->progress = progress;
 

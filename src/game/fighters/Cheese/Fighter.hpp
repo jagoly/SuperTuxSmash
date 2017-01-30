@@ -29,7 +29,7 @@ private:
     sq::Texture2D TX_Cheese_norm { sq::Texture::Format::RGB8_SN };
     sq::Texture2D TX_Cheese_spec { sq::Texture::Format::RGB8_UN };
 
-    sq::Shader VS_Simple { sq::Shader::Stage::Vertex };
+    sq::Shader VS_Cheese { sq::Shader::Stage::Vertex };
     sq::Shader FS_Cheese { sq::Shader::Stage::Fragment };
 };
 

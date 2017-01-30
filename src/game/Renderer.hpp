@@ -13,6 +13,7 @@
 #include <sqee/gl/Textures.hpp>
 #include <sqee/gl/UniformBuffer.hpp>
 
+#include <sqee/render/Armature.hpp>
 #include <sqee/render/Mesh.hpp>
 
 namespace sts {

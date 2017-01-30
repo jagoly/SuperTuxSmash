@@ -1,6 +1,7 @@
 #include <map>
 
 #include <sqee/gl/Context.hpp>
+#include <sqee/maths/Functions.hpp>
 
 #include <game/Misc.hpp>
 
@@ -48,14 +49,13 @@ void Cheese_Fighter::setup()
 
     //========================================================//
 
-    VS_Simple.add_uniform("u_model_mat"); // Mat4F
-    VS_Simple.add_uniform("u_normal_mat"); // Mat3F
-
+    VS_Cheese.add_uniform("u_model_mat"); // Mat4F
+    VS_Cheese.add_uniform("u_normal_mat"); // Mat3F
     FS_Cheese.add_uniform("u_colour"); // Vec3F
 
     //========================================================//
 
-    mRenderer->shaders.preprocs(VS_Simple, "fighters/Cheese/Simple_vs");
+    mRenderer->shaders.preprocs(VS_Cheese, "fighters/Cheese/Cheese_vs");
     mRenderer->shaders.preprocs(FS_Cheese, "fighters/Cheese/Cheese_fs");
 }
 
@@ -144,19 +144,16 @@ void Cheese_Fighter::render()
 
     //========================================================//
 
-    Vec2F position = maths::mix(previous.position, current.position, progress);
-    Mat4F modelMatrix = maths::translate(Mat4F(), Vec3F(position.x, 0.f, position.y));
-    modelMatrix = maths::rotate(modelMatrix, Vec3F(0.f, 1.f, 0.f), rotation);
-    modelMatrix = maths::scale(modelMatrix, scale);
-
-    Mat3F normalMatrix = maths::normal_matrix(camera.viewMatrix * modelMatrix);
+    const Vec2F position = maths::mix(previous.position, current.position, progress);
+    const Mat4F modelMatrix = maths::transform(Vec3F(position.x, 0.f, position.y), QuatF(0.f, rotation, 0.f), scale);
+    const Mat3F normalMatrix = maths::normal_matrix(camera.viewMatrix * modelMatrix);
 
     //========================================================//
 
-    context.use_Shader_Vert(VS_Simple);
+    context.use_Shader_Vert(VS_Cheese);
 
-    VS_Simple.update("u_model_mat", modelMatrix);
-    VS_Simple.update("u_normal_mat", normalMatrix);
+    VS_Cheese.update("u_model_mat", modelMatrix);
+    VS_Cheese.update("u_normal_mat", normalMatrix);
 
     context.bind_VertexArray(MESH_Cheese.get_vao());
 
