@@ -1,5 +1,7 @@
 #include <sqee/misc/StringCast.hpp>
 
+#include <sqee/maths/Functions.hpp>
+
 #include <sqee/gl/Context.hpp>
 #include <sqee/gl/Drawing.hpp>
 
@@ -139,7 +141,7 @@ void Renderer::render()
 
     //========================================================//
 
-    static Vec3F cameraPosition = { 0.f, -6.f, +3.f };
+    static Vec3F cameraPosition = { 0.f, -3.f, +1.5f };
     cameraPosition = maths::rotate_z(cameraPosition, 0.0005f);
 
     const Vec3F cameraDirection = maths::normalize(-cameraPosition);
@@ -163,7 +165,6 @@ void Renderer::render()
 
     Vec3F ambiColour = { 0.4f, 0.4f, 0.4f };
     Vec3F skyColour = { 0.9f, 0.9f, 0.9f };
-    //Vec3F skyDirection = { -0.35396f, +0.46348f, -0.81234f };
     Vec3F skyDirection = { 0.f, 0.5f, -1.f };
     Mat4F skyMatrix = Mat4F();
 

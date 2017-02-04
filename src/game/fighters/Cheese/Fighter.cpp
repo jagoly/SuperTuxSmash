@@ -1,5 +1,3 @@
-#include <map>
-
 #include <sqee/gl/Context.hpp>
 #include <sqee/maths/Functions.hpp>
 
@@ -30,7 +28,7 @@ void Cheese_Fighter::setup()
 
     //========================================================//
 
-    MESH_Cheese.load_from_file("fighters/Cheese/mesh");
+    MESH_Cheese.load_from_file("fighters/Cheese/Mesh");
 
     //========================================================//
 
@@ -77,75 +75,50 @@ void Cheese_Fighter::render()
 
     //========================================================//
 
-//    const std::map<State::Move, Vec3F> colours
-//    {
-//        { State::Move::None,    { 1.0f, 0.0f, 0.0f } },
-//        { State::Move::Walking, { 0.0f, 1.0f, 0.0f } },
-//        { State::Move::Dashing, { 0.3f, 0.3f, 0.6f } },
-//        { State::Move::Jumping, { 0.0f, 0.0f, 1.0f } },
-//        { State::Move::Falling, { 0.1f, 0.1f, 2.0f } }
-//    };
-
     context.set_state(Context::Cull_Face::Back);
     context.set_state(Context::Depth_Test::Replace);
 
-    Vec3F scale; Vec3F colour; float rotation = 0.f;
+    QuatF rotation { 0.f, 0.f, 0.f, 1.f };
+    Vec3F scale { 1.f, 1.f, 1.f };
+    Vec3F colour { 0.f, 0.f, 0.f };
 
     //========================================================//
 
     if (state.action == State::Action::None)
-    {
         scale = Vec3F(1.f, 1.f, 1.f);
-    }
 
     if (state.action == State::Action::Neutral)
-    {
         scale = Vec3F(1.f, 1.f, 1.5f);
-    }
 
     //========================================================//
 
     if (state.move == State::Move::None)
-    {
         colour = Vec3F(1.f, 0.f, 0.f);
-    }
 
     if (state.move == State::Move::Walking)
-    {
         colour = Vec3F(0.f, 1.f, 0.f);
-    }
 
     if (state.move == State::Move::Dashing)
-    {
         colour = Vec3F(0.3f, 0.3f, 0.6f);
-    }
 
     if (state.move == State::Move::Jumping)
-    {
         colour = Vec3F(0.f, 0.f, 1.f);
-    }
 
     if (state.move == State::Move::Falling)
-    {
         colour = Vec3F(0.1f, 0.1f, 2.f);
-    }
 
     //========================================================//
 
     if (state.direction == State::Direction::Left)
-    {
-        rotation = -0.1f;
-    }
+        rotation = QuatF(0.f, -0.1f, 0.f);
 
     if (state.direction == State::Direction::Right)
-    {
-        rotation = +0.1f;
-    }
+        rotation = QuatF(0.f, +0.1f, 0.f);
 
     //========================================================//
 
     const Vec2F position = maths::mix(previous.position, current.position, progress);
-    const Mat4F modelMatrix = maths::transform(Vec3F(position.x, 0.f, position.y), QuatF(0.f, rotation, 0.f), scale);
+    const Mat4F modelMatrix = maths::transform(Vec3F(position.x, 0.f, position.y), rotation, scale);
     const Mat3F normalMatrix = maths::normal_matrix(camera.viewMatrix * modelMatrix);
 
     //========================================================//

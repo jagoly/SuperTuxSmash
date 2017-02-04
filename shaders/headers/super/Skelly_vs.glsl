@@ -30,24 +30,27 @@ out gl_PerVertex { vec4 gl_Position; };
 
 void main() 
 {
+    // ensure that bone weights are normalized
+    const vec4 weights = V_weights / dot(V_weights, vec4(1.f));
+
     vec3 a_pos = vec3(0.f, 0.f, 0.f);
     vec3 a_norm = vec3(0.f, 0.f, 0.f);
     vec3 a_tan = vec3(0.f, 0.f, 0.f);
 
-    if (V_bones.r >= 0) a_pos += vec4(V_pos, 1.f) * SB.bones[V_bones.r] * V_weights.r;
-    if (V_bones.g >= 0) a_pos += vec4(V_pos, 1.f) * SB.bones[V_bones.g] * V_weights.g;
-    if (V_bones.b >= 0) a_pos += vec4(V_pos, 1.f) * SB.bones[V_bones.b] * V_weights.b;
-    if (V_bones.a >= 0) a_pos += vec4(V_pos, 1.f) * SB.bones[V_bones.a] * V_weights.a;
+    if (V_bones.r >= 0) a_pos += vec4(V_pos, 1.f) * SB.bones[V_bones.r] * weights.r;
+    if (V_bones.g >= 0) a_pos += vec4(V_pos, 1.f) * SB.bones[V_bones.g] * weights.g;
+    if (V_bones.b >= 0) a_pos += vec4(V_pos, 1.f) * SB.bones[V_bones.b] * weights.b;
+    if (V_bones.a >= 0) a_pos += vec4(V_pos, 1.f) * SB.bones[V_bones.a] * weights.a;
 
-    if (V_bones.r >= 0) a_norm += V_norm * mat3(SB.bones[V_bones.r]) * V_weights.r;
-    if (V_bones.g >= 0) a_norm += V_norm * mat3(SB.bones[V_bones.g]) * V_weights.g;
-    if (V_bones.b >= 0) a_norm += V_norm * mat3(SB.bones[V_bones.b]) * V_weights.b;
-    if (V_bones.a >= 0) a_norm += V_norm * mat3(SB.bones[V_bones.a]) * V_weights.a;
+    if (V_bones.r >= 0) a_norm += V_norm * mat3(SB.bones[V_bones.r]) * weights.r;
+    if (V_bones.g >= 0) a_norm += V_norm * mat3(SB.bones[V_bones.g]) * weights.g;
+    if (V_bones.b >= 0) a_norm += V_norm * mat3(SB.bones[V_bones.b]) * weights.b;
+    if (V_bones.a >= 0) a_norm += V_norm * mat3(SB.bones[V_bones.a]) * weights.a;
 
-    if (V_bones.r >= 0) a_tan += V_tan.xyz * mat3(SB.bones[V_bones.r]) * V_weights.r;
-    if (V_bones.g >= 0) a_tan += V_tan.xyz * mat3(SB.bones[V_bones.g]) * V_weights.g;
-    if (V_bones.b >= 0) a_tan += V_tan.xyz * mat3(SB.bones[V_bones.b]) * V_weights.b;
-    if (V_bones.a >= 0) a_tan += V_tan.xyz * mat3(SB.bones[V_bones.a]) * V_weights.a;
+    if (V_bones.r >= 0) a_tan += V_tan.xyz * mat3(SB.bones[V_bones.r]) * weights.r;
+    if (V_bones.g >= 0) a_tan += V_tan.xyz * mat3(SB.bones[V_bones.g]) * weights.g;
+    if (V_bones.b >= 0) a_tan += V_tan.xyz * mat3(SB.bones[V_bones.b]) * weights.b;
+    if (V_bones.a >= 0) a_tan += V_tan.xyz * mat3(SB.bones[V_bones.a]) * weights.a;
 
     texcrd = V_tcrd;
 

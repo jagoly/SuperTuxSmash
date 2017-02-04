@@ -1,6 +1,3 @@
-#include <sqee/debug/Logging.hpp>
-#include <sqee/misc/StringCast.hpp>
-
 #include <sqee/gl/Context.hpp>
 #include <sqee/maths/Functions.hpp>
 
@@ -31,32 +28,25 @@ void Sara_Fighter::setup()
 
     //========================================================//
 
-    ARMA_Sara.load_bones_from_file("fighters/Sara/armature.txt");
-    ARMA_Sara.mRestPose = ARMA_Sara.load_pose_from_file("fighters/Sara/poses/Rest.txt");
+    ARMA_Sara.load_bones("fighters/Sara/Armature.txt");
+    ARMA_Sara.load_rest_pose("fighters/Sara/poses/Rest.txt");
 
-    POSE_Rest = ARMA_Sara.load_pose_from_file("fighters/Sara/poses/Rest.txt");
-    POSE_Stand = ARMA_Sara.load_pose_from_file("fighters/Sara/poses/Stand.txt");
-    POSE_Jump = ARMA_Sara.load_pose_from_file("fighters/Sara/poses/Jump.txt");
+    //========================================================//
 
-    ANIM_Walk[0] = ARMA_Sara.load_pose_from_file("fighters/Sara/poses/walk/WalkA.txt");
-    ANIM_Walk[1] = ARMA_Sara.load_pose_from_file("fighters/Sara/poses/walk/WalkB.txt");
-    ANIM_Walk[2] = ARMA_Sara.load_pose_from_file("fighters/Sara/poses/walk/WalkC.txt");
-    ANIM_Walk[3] = ARMA_Sara.load_pose_from_file("fighters/Sara/poses/walk/WalkD.txt");
-    ANIM_Walk[4] = ARMA_Sara.load_pose_from_file("fighters/Sara/poses/walk/WalkE.txt");
-    ANIM_Walk[5] = ARMA_Sara.load_pose_from_file("fighters/Sara/poses/walk/WalkF.txt");
-    ANIM_Walk[6] = ARMA_Sara.load_pose_from_file("fighters/Sara/poses/walk/WalkG.txt");
-    ANIM_Walk[7] = ARMA_Sara.load_pose_from_file("fighters/Sara/poses/walk/WalkH.txt");
+    POSE_Rest = ARMA_Sara.make_pose("fighters/Sara/poses/Rest.txt");
+    POSE_Stand = ARMA_Sara.make_pose("fighters/Sara/poses/Stand.txt");
+    POSE_Jump = ARMA_Sara.make_pose("fighters/Sara/poses/Jump.txt");
+
+    ANIM_Walk = ARMA_Sara.make_animation("fighters/Sara/anims/Walk.txt");
 
     mPosePrevious = mPoseCurrent = POSE_Rest;
-
-    ARMA_Sara.refresh_matrices();
 
     UBO_Sara.reserve("bones", 960u);
     UBO_Sara.create_and_allocate();
 
     //========================================================//
 
-    MESH_Sara.load_from_file("fighters/Sara/mesh");
+    MESH_Sara.load_from_file("fighters/Sara/Mesh");
 
     //========================================================//
 
@@ -67,6 +57,9 @@ void Sara_Fighter::setup()
         texture.allocate_storage(Vec2U(size));
         texture.load_file(path);
         texture.generate_auto_mipmaps();
+
+        //gl::TextureParameteri(texture.get_handle(), gl::TEXTURE_BASE_LEVEL, 0);
+        //gl::TextureParameteri(texture.get_handle(), gl::TEXTURE_MAX_LEVEL, 3);
     };
 
     setup_texture(TX_Main_diff, 2048u, "fighters/Sara/textures/Main_diff");
@@ -98,78 +91,33 @@ void Sara_Fighter::tick()
 
     mPosePrevious = mPoseCurrent;
 
-    switch (state.move) {
+    //========================================================//
 
-    case State::Move::None:
+    if (state.move == State::Move::None)
     {
-        if (mAnimationSwitch == true)
-        {
-            mPoseCurrent = ARMA_Sara.blend_poses(mPoseCurrent, POSE_Stand, 0.5f);
-            mAnimationSwitch = false;
-        }
-        else mPoseCurrent = POSE_Stand;
-
         mAnimationProgress = 0.f;
-        mAnimationIndex = 0u;
-
-        break;
+        mPoseCurrent = POSE_Stand;
     }
 
-    case State::Move::Walking:
+    if (state.move == State::Move::Walking)
     {
         // todo: work out exact walk animation speed
-        const float velocity = std::abs(mVelocity.x) / 10.f;
-
-        if ((mAnimationProgress += velocity) >= 1.f)
-        {
-            mAnimationProgress = 0.f;
-            if (++mAnimationIndex == 8u)
-                mAnimationIndex = 0u;
-        }
-
-        const auto& current = ANIM_Walk[mAnimationIndex];
-        const auto& next = ANIM_Walk[mAnimationIndex < 7u ? mAnimationIndex + 1u : 0u];
-        mPoseCurrent = ARMA_Sara.blend_poses(current, next, mAnimationProgress);
-
-        mAnimationSwitch = true;
-
-        break;
+        mAnimationProgress += std::abs(mVelocity.x) / 2.f;
+        mPoseCurrent = ARMA_Sara.compute_pose(ANIM_Walk, mAnimationProgress);
     }
 
-    case State::Move::Dashing:
+    if (state.move == State::Move::Dashing)
     {
         // todo: work out exact dash animation speed
-        const float velocity = std::abs(mVelocity.x) / 10.f;
-
-        if ((mAnimationProgress += velocity) >= 1.f)
-        {
-            mAnimationProgress = 0.f;
-            if (++mAnimationIndex == 8u)
-                mAnimationIndex = 0u;
-        }
-
-        const auto& current = ANIM_Walk[mAnimationIndex];
-        const auto& next = ANIM_Walk[mAnimationIndex < 7u ? mAnimationIndex + 1u : 0u];
-        mPoseCurrent = ARMA_Sara.blend_poses(current, next, mAnimationProgress);
-
-        mAnimationSwitch = true;
-
-        break;
+        mAnimationProgress += std::abs(mVelocity.x) / 2.f;
+        mPoseCurrent = ARMA_Sara.compute_pose(ANIM_Walk, mAnimationProgress);
     }
 
-    case State::Move::Jumping:
+    if (state.move == State::Move::Jumping)
     {
-        mPoseCurrent = POSE_Jump;
-
-        mAnimationSwitch = true;
-
         mAnimationProgress = 0.f;
-        mAnimationIndex = 0u;
-
-        break;
+        mPoseCurrent = POSE_Jump;
     }
-
-    } // switch (state.move)
 }
 
 //============================================================================//
@@ -185,7 +133,7 @@ void Sara_Fighter::render()
 
     const auto blendPose = ARMA_Sara.blend_poses(mPosePrevious, mPoseCurrent, progress);
 
-    const auto data = ARMA_Sara.pose_to_ubo_data(blendPose);
+    const auto data = ARMA_Sara.compute_ubo_data(blendPose);
     UBO_Sara.update(0u, data.size() * 12u, data.data());
 
     //========================================================//
@@ -193,63 +141,21 @@ void Sara_Fighter::render()
     context.set_state(Context::Cull_Face::Back);
     context.set_state(Context::Depth_Test::Replace);
 
-    Vec3F scale; Vec3F tint; float rotation = 0.f;
-
-    //========================================================//
-
-    if (state.action == State::Action::None)
-    {
-        scale = Vec3F(1.f, 1.f, 1.f);
-    }
-
-    if (state.action == State::Action::Neutral)
-    {
-        scale = Vec3F(1.f, 1.f, 1.5f);
-    }
-
-    //========================================================//
-
-    if (state.move == State::Move::None)
-    {
-        tint = Vec3F(1.f, 0.f, 0.f);
-    }
-
-    if (state.move == State::Move::Walking)
-    {
-        tint = Vec3F(0.f, 1.f, 0.f);
-    }
-
-    if (state.move == State::Move::Dashing)
-    {
-        tint = Vec3F(0.3f, 0.3f, 0.6f);
-    }
-
-    if (state.move == State::Move::Jumping)
-    {
-        tint = Vec3F(0.f, 0.f, 1.f);
-    }
-
-    if (state.move == State::Move::Falling)
-    {
-        tint = Vec3F(0.1f, 0.1f, 2.f);
-    }
+    QuatF rotation { 0.f, 0.f, 0.f, 1.f };
+    Vec3F scale { 1.f, 1.f, 1.f };
 
     //========================================================//
 
     if (state.direction == State::Direction::Left)
-    {
-        rotation = -0.25f;
-    }
+        rotation = QuatF(0.f, 0.f, -0.25f);
 
     if (state.direction == State::Direction::Right)
-    {
-        rotation = +0.25f;
-    }
+        rotation = QuatF(0.f, 0.f, +0.25f);
 
     //========================================================//
 
-    Vec2F position = maths::mix(previous.position, current.position, progress);
-    const Mat4F modelMatrix = maths::transform(Vec3F(position.x, 0.f, position.y), QuatF(0.f, 0.f, rotation), scale);
+    const Vec2F position = maths::mix(previous.position, current.position, progress);
+    const Mat4F modelMatrix = maths::transform(Vec3F(position.x, 0.f, position.y), rotation, scale);
     const Mat3F normalMatrix = maths::normal_matrix(camera.viewMatrix * modelMatrix);
 
     //========================================================//

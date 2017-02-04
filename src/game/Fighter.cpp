@@ -10,7 +10,7 @@ using namespace sts;
 
 Fighter::Fighter(string name) : mName(name)
 {
-    const auto json = sq::parse_json("assets/fighters/" + name + "/fighter.json");
+    const auto json = sq::parse_json("assets/fighters/" + name + "/Fighter.json");
 
     stats.walk_speed    = json.at("walk_speed");
     stats.dash_speed    = json.at("dash_speed");

@@ -32,7 +32,7 @@ private:
     sq::Armature::Pose POSE_Stand;
     sq::Armature::Pose POSE_Jump;
 
-    std::array<sq::Armature::Pose, 8> ANIM_Walk;
+    sq::Armature::Animation ANIM_Walk;
 
     sq::Texture2D TX_Main_diff { sq::Texture::Format::RGB8_UN };
     sq::Texture2D TX_Main_spec { sq::Texture::Format::R8_UN };
@@ -48,9 +48,7 @@ private:
     sq::Armature::Pose mPosePrevious;
     sq::Armature::Pose mPoseCurrent;
 
-    bool mAnimationSwitch = false;
     float mAnimationProgress = 0.f;
-    uint mAnimationIndex = 0u;
 };
 
 //============================================================================//
