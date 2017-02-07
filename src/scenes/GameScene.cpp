@@ -41,8 +41,8 @@ GameScene::GameScene(SmashApp& smashApp)
     mControllers[0]->load_config("player1.txt");
     mControllers[1]->load_config("player2.txt");
 
-    mRenderer->functions.draw_FighterA = [&]() { mFighters[0]->render(); };
-    mRenderer->functions.draw_FighterB = [&]() { mFighters[1]->render(); };
+    mRenderer->mFighters.push_back(mFighters[0].get());
+    mRenderer->mFighters.push_back(mFighters[1].get());
 }
 
 //============================================================================//

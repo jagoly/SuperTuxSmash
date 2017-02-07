@@ -17,7 +17,9 @@ public:
 
     void setup() override;
     void tick() override;
-    void render() override;
+    void integrate() override;
+    void render_depth() override;
+    void render_main() override;
 
     //========================================================//
 
@@ -31,6 +33,11 @@ private:
 
     sq::Shader VS_Cheese { sq::Shader::Stage::Vertex };
     sq::Shader FS_Cheese { sq::Shader::Stage::Fragment };
+
+    //========================================================//
+
+    Mat4F mFinalMatrix;
+    Mat3F mNormalMatrix;
 };
 
 //============================================================================//

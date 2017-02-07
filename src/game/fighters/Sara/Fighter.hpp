@@ -17,7 +17,9 @@ public:
 
     void setup() override;
     void tick() override;
-    void render() override;
+    void integrate() override;
+    void render_depth() override;
+    void render_main() override;
 
     //========================================================//
 
@@ -45,10 +47,15 @@ private:
     sq::Shader FS_Main { sq::Shader::Stage::Fragment };
     sq::Shader FS_Hair { sq::Shader::Stage::Fragment };
 
+    //========================================================//
+
     sq::Armature::Pose mPosePrevious;
     sq::Armature::Pose mPoseCurrent;
 
     float mAnimationProgress = 0.f;
+
+    Mat4F mFinalMatrix;
+    Mat3F mNormalMatrix;
 };
 
 //============================================================================//

@@ -20,6 +20,10 @@ namespace sts {
 
 //============================================================================//
 
+class Fighter; // Forward Declaration
+
+//============================================================================//
+
 class Renderer final : sq::NonCopyable
 {
 public:
@@ -42,12 +46,7 @@ public:
 
     //========================================================//
 
-    struct {
-
-        std::function<void()> draw_FighterA;
-        std::function<void()> draw_FighterB;
-
-    } functions;
+    vector<Fighter*> mFighters;
 
     //========================================================//
 
@@ -55,6 +54,7 @@ public:
 
         sq::FrameBuffer Depth;
         sq::FrameBuffer Main;
+        sq::FrameBuffer Resolve;
         sq::FrameBuffer Final;
 
     } fbos;
@@ -63,8 +63,12 @@ public:
 
     struct {
 
-        sq::Texture2D Depth { sq::Texture::Format::DEP24S8 };
-        sq::Texture2D Main { sq::Texture::Format::RGB16_FP };
+        //sq::Texture2D Depth { sq::Texture::Format::DEP24S8 };
+        //sq::Texture2D Main { sq::Texture::Format::RGB16_FP };
+
+        sq::TextureMulti Depth { sq::Texture::Format::DEP24S8 };
+        sq::TextureMulti Colour { sq::Texture::Format::RGB16_FP };
+        sq::Texture2D Resolve { sq::Texture::Format::RGB16_FP };
         sq::Texture2D Final { sq::Texture::Format::RGBA8_UN };
 
     } textures;
@@ -72,6 +76,10 @@ public:
     //========================================================//
 
     struct {
+
+        sq::Shader VS_Depth_Simple { sq::Shader::Stage::Vertex };
+        sq::Shader VS_Depth_Skelly { sq::Shader::Stage::Vertex };
+        sq::Shader FS_Depth_Mask { sq::Shader::Stage::Fragment };
 
         sq::Shader VS_FullScreen { sq::Shader::Stage::Vertex };
         sq::Shader FS_PassThrough { sq::Shader::Stage::Fragment };

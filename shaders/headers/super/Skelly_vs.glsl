@@ -17,7 +17,7 @@ layout(location=3) in vec4 V_tan;
 layout(location=5) in ivec4 V_bones;
 layout(location=6) in vec4 V_weights;
 
-uniform mat4 u_model_mat;
+uniform mat4 u_final_mat;
 uniform mat3 u_normal_mat;
 
 out vec2 texcrd;
@@ -55,9 +55,9 @@ void main()
     texcrd = V_tcrd;
 
     N = normalize(u_normal_mat * a_norm);
-    T = normalize(u_normal_mat * a_tan.xyz);
-    B = normalize(u_normal_mat * cross(a_norm, a_tan.xyz) * V_tan.w);
+    T = normalize(u_normal_mat * a_tan);
+    B = normalize(u_normal_mat * cross(a_norm, a_tan) * V_tan.w);
 
-    viewpos = vec3(CB.view_mat * u_model_mat * vec4(a_pos, 1.f));
-    gl_Position = CB.proj_mat * CB.view_mat * u_model_mat * vec4(a_pos, 1.f);
+    viewpos = vec3(CB.proj_inv * u_final_mat * vec4(a_pos, 1.f));
+    gl_Position = u_final_mat * vec4(a_pos, 1.f);
 }

@@ -74,7 +74,7 @@ void Sara_Fighter::setup()
 
     //========================================================//
 
-    VS_Sara.add_uniform("u_model_mat"); // Mat4F
+    VS_Sara.add_uniform("u_final_mat"); // Mat4F
     VS_Sara.add_uniform("u_normal_mat"); // Mat3F
     FS_Hair.add_uniform("u_specular"); // Vec3F
 
@@ -122,10 +122,8 @@ void Sara_Fighter::tick()
 
 //============================================================================//
 
-void Sara_Fighter::render()
+void Sara_Fighter::integrate()
 {
-    static auto& context = Context::get();
-
     const auto& progress = mRenderer->progress;
     const auto& camera = mRenderer->camera;
 
@@ -137,9 +135,6 @@ void Sara_Fighter::render()
     UBO_Sara.update(0u, data.size() * 12u, data.data());
 
     //========================================================//
-
-    context.set_state(Context::Cull_Face::Back);
-    context.set_state(Context::Depth_Test::Replace);
 
     QuatF rotation { 0.f, 0.f, 0.f, 1.f };
     Vec3F scale { 1.f, 1.f, 1.f };
@@ -156,14 +151,61 @@ void Sara_Fighter::render()
 
     const Vec2F position = maths::mix(previous.position, current.position, progress);
     const Mat4F modelMatrix = maths::transform(Vec3F(position.x, 0.f, position.y), rotation, scale);
-    const Mat3F normalMatrix = maths::normal_matrix(camera.viewMatrix * modelMatrix);
+
+    mFinalMatrix = camera.projMatrix * camera.viewMatrix * modelMatrix;
+    mNormalMatrix = maths::normal_matrix(camera.viewMatrix * modelMatrix);
+}
+
+void Sara_Fighter::render_depth()
+{
+    static auto& context = Context::get();
+
+    const auto& shaders = mRenderer->shaders;
+
+    //========================================================//
+
+    context.set_state(Context::Cull_Face::Back);
+    context.set_state(Context::Depth_Compare::LessEqual);
+    context.set_state(Context::Depth_Test::Replace);
+
+    //========================================================//
+
+    shaders.VS_Depth_Skelly.update("u_final_mat", mFinalMatrix);
+    context.use_Shader_Vert(shaders.VS_Depth_Skelly);
+
+    context.bind_VertexArray(MESH_Sara.get_vao());
+    context.bind_UniformBuffer(UBO_Sara, 2u);
+
+    //========================================================//
+
+    context.disable_shader_stage_fragment();
+    MESH_Sara.draw_partial(0u);
+
+    //========================================================//
+
+    context.use_Shader_Frag(shaders.FS_Depth_Mask);
+    context.bind_Texture(TX_Hair_mask, 0u);
+    MESH_Sara.draw_partial(1u);
+}
+
+void Sara_Fighter::render_main()
+{
+    static auto& context = Context::get();
+
+    //========================================================//
+
+    context.set_state(Context::Cull_Face::Back);
+    context.set_state(Context::Depth_Compare::Equal);
+    context.set_state(Context::Depth_Test::Keep);
+
+    //========================================================//
+
+    VS_Sara.update("u_final_mat", mFinalMatrix);
+    VS_Sara.update("u_normal_mat", mNormalMatrix);
 
     //========================================================//
 
     context.use_Shader_Vert(VS_Sara);
-
-    VS_Sara.update("u_model_mat", modelMatrix);
-    VS_Sara.update("u_normal_mat", normalMatrix);
 
     context.bind_VertexArray(MESH_Sara.get_vao());
     context.bind_UniformBuffer(UBO_Sara, 2u);
@@ -181,7 +223,6 @@ void Sara_Fighter::render()
 
     context.bind_Texture(TX_Hair_diff, 0u);
     context.bind_Texture(TX_Hair_norm, 1u);
-    context.bind_Texture(TX_Hair_mask, 3u);
 
     context.use_Shader_Frag(FS_Hair);
 

@@ -3,7 +3,6 @@
 // #define OPT_TEX_DIFFUSE
 // #define OPT_TEX_NORMAL
 // #define OPT_TEX_SPECULAR
-// #define OPT_TEX_MASK
 // #define OPT_COLOUR
 
 //============================================================================//
@@ -38,10 +37,6 @@ layout(binding=2) uniform sampler2D tex_specular;
 uniform vec3 u_specular;
 #endif
 
-#ifdef OPT_TEX_MASK
-layout(binding=3) uniform sampler2D tex_mask;
-#endif
-
 #ifdef OPT_COLOUR
 uniform vec3 u_colour;
 #endif
@@ -71,12 +66,6 @@ vec3 get_specular_value(vec3 specular, float gloss, vec3 lightDir, vec3 normal)
 
 void main() 
 {
-    #ifdef OPT_TEX_MASK
-    if (texture(tex_mask, texcrd).a < 0.5f) discard;
-    #endif
-
-    //========================================================//
-
     #ifdef OPT_TEX_DIFFUSE
     const vec3 diffuse = texture(tex_diffuse, texcrd).rgb;
     #else

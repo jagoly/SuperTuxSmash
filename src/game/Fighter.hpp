@@ -37,7 +37,11 @@ public:
 
     virtual void tick() = 0;
 
-    virtual void render() = 0;
+    virtual void integrate() = 0;
+
+    virtual void render_depth() = 0;
+
+    virtual void render_main() = 0;
 
     //========================================================//
 

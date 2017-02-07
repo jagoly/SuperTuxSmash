@@ -7,6 +7,8 @@
 
 #include <main/Options.hpp>
 
+#include <game/Fighter.hpp>
+
 #include "Renderer.hpp"
 
 using namespace sts;
@@ -23,7 +25,7 @@ Renderer::Renderer()
 {
     // Set Texture Paramaters /////
 
-    textures.Main.set_filter_mode(true);
+    textures.Colour.set_filter_mode(true);
     textures.Final.set_filter_mode(true);
 
     // Import GLSL Headers /////
@@ -35,6 +37,11 @@ Renderer::Renderer()
     shaders.preprocs.import_header("headers/super/Simple_vs");
     shaders.preprocs.import_header("headers/super/Skelly_vs");
     shaders.preprocs.import_header("headers/super/Model_fs");
+
+    // Add Shader Uniforms /////
+
+    shaders.VS_Depth_Simple.add_uniform("u_final_mat"); // Mat4F
+    shaders.VS_Depth_Skelly.add_uniform("u_final_mat"); // Mat4F
 
     // Create Uniform Buffers /////
 
@@ -82,17 +89,27 @@ void Renderer::update_options()
 
     //========================================================//
 
-    textures.Depth.allocate_storage(options.Window_Size);
-    textures.Main.allocate_storage(options.Window_Size);
+    textures.Depth.allocate_storage(Vec3U(options.Window_Size, 4u));
+    textures.Colour.allocate_storage(Vec3U(options.Window_Size, 4u));
+    textures.Resolve.allocate_storage(options.Window_Size);
     textures.Final.allocate_storage(options.Window_Size);
 
+    //========================================================//
+
     fbos.Depth.attach(gl::DEPTH_STENCIL_ATTACHMENT, textures.Depth);
+
     fbos.Main.attach(gl::DEPTH_STENCIL_ATTACHMENT, textures.Depth);
-    fbos.Final.attach(gl::DEPTH_STENCIL_ATTACHMENT, textures.Depth);
-    fbos.Main.attach(gl::COLOR_ATTACHMENT0, textures.Main);
+    fbos.Main.attach(gl::COLOR_ATTACHMENT0, textures.Colour);
+
+    fbos.Resolve.attach(gl::COLOR_ATTACHMENT0, textures.Resolve);
+
     fbos.Final.attach(gl::COLOR_ATTACHMENT0, textures.Final);
 
     //========================================================//
+
+    shaders.preprocs(shaders.VS_Depth_Simple, "generic/depth/Simple_vs");
+    shaders.preprocs(shaders.VS_Depth_Skelly, "generic/depth/Skelly_vs");
+    shaders.preprocs(shaders.FS_Depth_Mask, "generic/depth/Mask_fs");
 
     shaders.preprocs(shaders.VS_FullScreen, "generic/FullScreen_vs");
     shaders.preprocs(shaders.FS_PassThrough, "generic/PassThrough_fs");
@@ -142,7 +159,7 @@ void Renderer::render()
     //========================================================//
 
     static Vec3F cameraPosition = { 0.f, -3.f, +1.5f };
-    cameraPosition = maths::rotate_z(cameraPosition, 0.0005f);
+    //cameraPosition = maths::rotate_z(cameraPosition, 0.0005f);
 
     const Vec3F cameraDirection = maths::normalize(-cameraPosition);
 
@@ -202,8 +219,17 @@ void Renderer::render()
 
     //========================================================//
 
-    if (functions.draw_FighterA) functions.draw_FighterA();
-    if (functions.draw_FighterB) functions.draw_FighterB();
+    for (const auto fighter : mFighters) fighter->integrate();
+
+    context.bind_FrameBuffer(fbos.Depth);
+    for (const auto fighter : mFighters) fighter->render_depth();
+
+    context.bind_FrameBuffer(fbos.Main);
+    for (const auto fighter : mFighters) fighter->render_main();
+
+    //========================================================//
+
+    fbos.Main.blit(fbos.Resolve, options.Window_Size, gl::COLOR_BUFFER_BIT);
 
     //========================================================//
 
@@ -216,7 +242,7 @@ void Renderer::render()
     context.use_Shader_Vert(shaders.VS_FullScreen);
     context.use_Shader_Frag(shaders.FS_Composite);
 
-    context.bind_Texture(textures.Main, 0u);
+    context.bind_Texture(textures.Resolve, 0u);
 
     sq::draw_screen_quad();
 }
