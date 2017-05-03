@@ -1,0 +1,10 @@
+{
+
+"Cheese":
+{
+  "diffuse":  "fighters/Cheese:Cheese_diff",
+  "normal":   "fighters/Cheese:Cheese_norm",
+  "specular": "fighters/Cheese:Cheese_spec"
+}
+
+}

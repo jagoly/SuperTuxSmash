@@ -1,35 +1,30 @@
 #pragma once
 
 #include <sqee/builtins.hpp>
-#include <sqee/maths/Vectors.hpp>
+
+#include <game/Renderer.hpp>
+#include <game/Stage.hpp>
+#include <game/Fighter.hpp>
 
 namespace sts {
 
 //============================================================================//
 
-class Game; // Forward Declaration
-
-//============================================================================//
-
-class Stage : sq::NonCopyable
+class Game final
 {
 public:
 
     //========================================================//
 
-    Stage(Game& game);
-
-    virtual ~Stage() = default;
+    Game();
 
     //========================================================//
 
-    virtual void tick() = 0;
+    unique_ptr<Renderer> renderer;
 
-private:
+    unique_ptr<Stage> stage;
 
-    //========================================================//
-
-    Game& mGame;
+    vector<unique_ptr<Fighter>> fighters;
 };
 
 //============================================================================//

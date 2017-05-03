@@ -4,6 +4,8 @@
 // #define OPT_TEX_NORMAL
 // #define OPT_TEX_SPECULAR
 // #define OPT_COLOUR
+// #define OPT_BACK_FACES
+// #define OPT_SUB_SCATTER
 
 //============================================================================//
 
@@ -49,7 +51,13 @@ layout(location=0) out vec3 frag_colour;
 
 vec3 get_diffuse_value(vec3 diffuse, vec3 lightDir, vec3 normal)
 {
+    #ifdef OPT_SUB_SCATTER
+    const float wrap = 0.5f;
+    float factor = max((dot(-lightDir, normal) + wrap) / (1.f + wrap), 0.f);
+    #else
     float factor = max(dot(-lightDir, normal), 0.f);
+    #endif
+    
     return diffuse * factor;
 }
 

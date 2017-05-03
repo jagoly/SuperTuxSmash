@@ -1,20 +1,16 @@
 #pragma once
 
-#include <game/Stage.hpp>
+#include <game/Actions.hpp>
 
-namespace sts { namespace stages {
+namespace sts { namespace fighters {
 
 //============================================================================//
 
-class TestZone final : public sts::Stage
+class Sara_Actions final : public DebugActions
 {
 public:
 
-    TestZone(Game& game);
-
-    //========================================================//
-
-    void tick() override;
+    using DebugActions::DebugActions;
 };
 
 //============================================================================//

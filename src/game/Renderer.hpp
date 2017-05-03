@@ -20,7 +20,7 @@ namespace sts {
 
 //============================================================================//
 
-class Fighter; // Forward Declaration
+class Game; // Forward Declaration
 
 //============================================================================//
 
@@ -30,7 +30,7 @@ public:
 
     //========================================================//
 
-    Renderer();
+    Renderer(Game& game);
 
     ~Renderer();
 
@@ -46,7 +46,7 @@ public:
 
     //========================================================//
 
-    vector<Fighter*> mFighters;
+    Game& mGame;
 
     //========================================================//
 
@@ -62,9 +62,6 @@ public:
     //========================================================//
 
     struct {
-
-        //sq::Texture2D Depth { sq::Texture::Format::DEP24S8 };
-        //sq::Texture2D Main { sq::Texture::Format::RGB16_FP };
 
         sq::TextureMulti Depth { sq::Texture::Format::DEP24S8 };
         sq::TextureMulti Colour { sq::Texture::Format::RGB16_FP };

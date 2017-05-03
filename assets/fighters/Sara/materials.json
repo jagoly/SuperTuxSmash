@@ -1,0 +1,17 @@
+{
+
+"Main":
+{
+  "diffuse":  "fighters/Sara:Main_diff",
+  "specular": "fighters/Sara:Main_spec"
+},
+
+"Hair":
+{
+  "diffuse":  "fighters/Sara:Hair_diff",
+  "normal":   "fighters/Sara:Hair_norm",
+  "specular": "0.35 0.35 0.25",
+  "mask":     "fighters/Sara:Hair_mask"
+}
+
+}

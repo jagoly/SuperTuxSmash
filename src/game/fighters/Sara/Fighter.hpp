@@ -1,5 +1,6 @@
 #pragma once
 
+#include <game/Renderer.hpp>
 #include <game/Fighter.hpp>
 
 namespace sts { namespace fighters {
@@ -12,11 +13,14 @@ public:
 
     //========================================================//
 
-    Sara_Fighter();
+    Sara_Fighter(Game& game);
     ~Sara_Fighter();
+
+    //========================================================//
 
     void setup() override;
     void tick() override;
+
     void integrate() override;
     void render_depth() override;
     void render_main() override;
@@ -28,11 +32,14 @@ private:
     sq::Armature ARMA_Sara;
     sq::Mesh MESH_Sara;
 
-    sq::UniformBuffer UBO_Sara;
-
     sq::Armature::Pose POSE_Rest;
     sq::Armature::Pose POSE_Stand;
     sq::Armature::Pose POSE_Jump;
+
+    sq::Armature::Pose POSE_Act_Neutral;
+    sq::Armature::Pose POSE_Act_TiltDown;
+    sq::Armature::Pose POSE_Act_TiltForward;
+    sq::Armature::Pose POSE_Act_TiltUp;
 
     sq::Armature::Animation ANIM_Walk;
 
@@ -48,6 +55,8 @@ private:
     sq::Shader FS_Hair { sq::Shader::Stage::Fragment };
 
     //========================================================//
+
+    sq::UniformBuffer mUbo;
 
     sq::Armature::Pose mPosePrevious;
     sq::Armature::Pose mPoseCurrent;

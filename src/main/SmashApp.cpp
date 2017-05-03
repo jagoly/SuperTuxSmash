@@ -18,7 +18,6 @@ namespace maths = sq::maths;
 
 SmashApp::SmashApp()
 {
-    std::cout << "foo" << std::endl;
     mScenes.emplace_back(new GameScene(*this));
 
     OPTION_WindowSize = { 1280u, 720u };

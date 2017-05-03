@@ -5,9 +5,12 @@
 
 #include <game/Actions.hpp>
 #include <game/Controller.hpp>
-#include <game/Renderer.hpp>
 
 namespace sts {
+
+//============================================================================//
+
+class Game; // Forward Declaration
 
 //============================================================================//
 
@@ -19,7 +22,6 @@ public:
 
     struct State {
 
-        enum class Action { None, Neutral, Tilt, Air, Dash } action;
         enum class Move { None, Walking, Dashing, Jumping, Falling } move;
         enum class Direction { Left, Right } direction;
 
@@ -27,9 +29,14 @@ public:
 
     //========================================================//
 
-    Fighter(string name);
+    Fighter(string name, Game& game);
 
     virtual ~Fighter() = default;
+
+    //========================================================//
+
+    const string name;
+    Game& game;
 
     //========================================================//
 
@@ -45,44 +52,18 @@ public:
 
     //========================================================//
 
-    const string mName;
-
-    Controller* mController = nullptr;
-    Renderer* mRenderer = nullptr;
-
-    //========================================================//
-
-    struct TickState
+    struct Frame
     {
+        Vec2F velocity;
         Vec2F position;
-        Vec3F colour;
     };
 
-    TickState previous, current;
+    Frame previous, current;
 
     //========================================================//
 
-    struct {
-
-        unique_ptr<Action> neutral_first;
-        unique_ptr<Action> neutral_second;
-        unique_ptr<Action> neutral_third;
-
-        unique_ptr<Action> tilt_down;
-        unique_ptr<Action> tilt_forward;
-        unique_ptr<Action> tilt_up;
-
-        //unique_ptr<Action> air_neutral;
-        //unique_ptr<Action> air_back;
-        //unique_ptr<Action> air_forward;
-        //unique_ptr<Action> air_down;
-        //unique_ptr<Action> air_up;
-
-        //unique_ptr<Action> dashing;
-
-        Action* active = nullptr;
-
-    } actions;
+    unique_ptr<Controller> controller;
+    unique_ptr<Actions> actions;
 
     //========================================================//
 
@@ -103,12 +84,10 @@ protected:
 
     //========================================================//
 
-    void impl_update_before();
-
-    void impl_input_actions(Controller::Input input);
     void impl_input_movement(Controller::Input input);
+    void impl_input_actions(Controller::Input input);
 
-    void impl_update_after();
+    void impl_update_fighter();
 
     //========================================================//
 
@@ -118,8 +97,7 @@ protected:
 
     //========================================================//
 
-    Vec2F mVelocity = { 0.f, 0.f };
-
+    bool mAttackHeld = false;
     bool mJumpHeld = false;
 };
 

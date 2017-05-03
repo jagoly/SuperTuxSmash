@@ -5,7 +5,7 @@
 // render a full screen quad with a bufferless VAO
 
 const vec2 V_pos_data[4] = { vec2(-1, -1), vec2(-1, +1), vec2(+1, -1), vec2(+1, +1) };
-const vec2 V_pos = V_pos_data[gl_VertexID];
+vec2 V_pos = V_pos_data[gl_VertexID];
 
 //============================================================================//
 

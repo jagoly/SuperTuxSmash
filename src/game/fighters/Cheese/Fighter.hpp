@@ -1,5 +1,6 @@
 #pragma once
 
+#include <game/Renderer.hpp>
 #include <game/Fighter.hpp>
 
 namespace sts { namespace fighters {
@@ -12,11 +13,14 @@ public:
 
     //========================================================//
 
-    Cheese_Fighter();
+    Cheese_Fighter(Game& game);
     ~Cheese_Fighter();
+
+    //========================================================//
 
     void setup() override;
     void tick() override;
+
     void integrate() override;
     void render_depth() override;
     void render_main() override;

@@ -1,8 +1,9 @@
 #include <sqee/gl/Context.hpp>
 #include <sqee/maths/Functions.hpp>
 
-#include <game/Misc.hpp>
+#include <game/Game.hpp>
 
+#include <game/fighters/Sara/Actions.hpp>
 #include <game/fighters/Sara/Fighter.hpp>
 
 namespace maths = sq::maths;
@@ -11,7 +12,7 @@ using Context = sq::Context;
 
 //============================================================================//
 
-Sara_Fighter::Sara_Fighter() : Fighter("Sara") {}
+Sara_Fighter::Sara_Fighter(Game& game) : Fighter("Sara", game) {}
 
 Sara_Fighter::~Sara_Fighter() = default;
 
@@ -19,16 +20,11 @@ Sara_Fighter::~Sara_Fighter() = default;
 
 void Sara_Fighter::setup()
 {
-    SQASSERT(mController != nullptr, "");
-    SQASSERT(mRenderer != nullptr, "");
+    actions = std::make_unique<Sara_Actions>(*this);
 
     //========================================================//
 
-    misc::load_actions_from_json(*this);
-
-    //========================================================//
-
-    ARMA_Sara.load_bones("fighters/Sara/Armature.txt");
+    ARMA_Sara.load_bones("fighters/Sara/armature.txt");
     ARMA_Sara.load_rest_pose("fighters/Sara/poses/Rest.txt");
 
     //========================================================//
@@ -37,16 +33,21 @@ void Sara_Fighter::setup()
     POSE_Stand = ARMA_Sara.make_pose("fighters/Sara/poses/Stand.txt");
     POSE_Jump = ARMA_Sara.make_pose("fighters/Sara/poses/Jump.txt");
 
+    POSE_Act_Neutral = ARMA_Sara.make_pose("fighters/Sara/poses/Act_Neutral.txt");
+    POSE_Act_TiltDown = ARMA_Sara.make_pose("fighters/Sara/poses/Act_TiltDown.txt");
+    POSE_Act_TiltForward = ARMA_Sara.make_pose("fighters/Sara/poses/Act_TiltForward.txt");
+    POSE_Act_TiltUp = ARMA_Sara.make_pose("fighters/Sara/poses/Act_TiltUp.txt");
+
     ANIM_Walk = ARMA_Sara.make_animation("fighters/Sara/anims/Walk.txt");
 
     mPosePrevious = mPoseCurrent = POSE_Rest;
 
-    UBO_Sara.reserve("bones", 960u);
-    UBO_Sara.create_and_allocate();
+    mUbo.reserve("bones", 960u);
+    mUbo.create_and_allocate();
 
     //========================================================//
 
-    MESH_Sara.load_from_file("fighters/Sara/Mesh");
+    MESH_Sara.load_from_file("fighters/Sara/meshes/Mesh");
 
     //========================================================//
 
@@ -65,9 +66,9 @@ void Sara_Fighter::setup()
     setup_texture(TX_Main_diff, 2048u, "fighters/Sara/textures/Main_diff");
     setup_texture(TX_Main_spec, 2048u, "fighters/Sara/textures/Main_spec");
 
-    setup_texture(TX_Hair_diff, 512u, "fighters/Sara/textures/Hair_diff");
-    setup_texture(TX_Hair_norm, 512u, "fighters/Sara/textures/Hair_norm");
-    setup_texture(TX_Hair_mask, 512u, "fighters/Sara/textures/Hair_mask");
+    setup_texture(TX_Hair_diff, 256u, "fighters/Sara/textures/Hair_diff");
+    setup_texture(TX_Hair_norm, 256u, "fighters/Sara/textures/Hair_norm");
+    setup_texture(TX_Hair_mask, 256u, "fighters/Sara/textures/Hair_mask");
 
     TX_Main_spec.set_swizzle_mode('R', 'R', 'R', '1');
     TX_Hair_mask.set_swizzle_mode('0', '0', '0', 'R');
@@ -78,9 +79,9 @@ void Sara_Fighter::setup()
     VS_Sara.add_uniform("u_normal_mat"); // Mat3F
     FS_Hair.add_uniform("u_specular"); // Vec3F
 
-    mRenderer->shaders.preprocs(VS_Sara, "fighters/Sara/Sara_vs");
-    mRenderer->shaders.preprocs(FS_Main, "fighters/Sara/Main_fs");
-    mRenderer->shaders.preprocs(FS_Hair, "fighters/Sara/Hair_fs");
+    game.renderer->shaders.preprocs(VS_Sara, "fighters/Sara/Sara_vs");
+    game.renderer->shaders.preprocs(FS_Main, "fighters/Sara/Main_fs");
+    game.renderer->shaders.preprocs(FS_Hair, "fighters/Sara/Hair_fs");
 }
 
 //============================================================================//
@@ -102,14 +103,14 @@ void Sara_Fighter::tick()
     if (state.move == State::Move::Walking)
     {
         // todo: work out exact walk animation speed
-        mAnimationProgress += std::abs(mVelocity.x) / 2.f;
+        mAnimationProgress += std::abs(current.velocity.x) / 2.f;
         mPoseCurrent = ARMA_Sara.compute_pose(ANIM_Walk, mAnimationProgress);
     }
 
     if (state.move == State::Move::Dashing)
     {
         // todo: work out exact dash animation speed
-        mAnimationProgress += std::abs(mVelocity.x) / 2.f;
+        mAnimationProgress += std::abs(current.velocity.x) / 2.f;
         mPoseCurrent = ARMA_Sara.compute_pose(ANIM_Walk, mAnimationProgress);
     }
 
@@ -118,21 +119,46 @@ void Sara_Fighter::tick()
         mAnimationProgress = 0.f;
         mPoseCurrent = POSE_Jump;
     }
+
+    if (actions->active.type == Actions::Type::Neutral_First)
+    {
+        mAnimationProgress = 0.f;
+        mPoseCurrent = POSE_Act_Neutral;
+    }
+
+    if (actions->active.type == Actions::Type::Tilt_Down)
+    {
+        mAnimationProgress = 0.f;
+        mPoseCurrent = POSE_Act_TiltDown;
+    }
+
+//    if (actions->active.type == Actions::Type::Tilt_Forward)
+//    {
+//        mAnimationProgress = 0.f;
+//        mPoseCurrent = POSE_Act_TiltForward;
+//    }
+
+    if (actions->active.type == Actions::Type::Tilt_Up)
+    {
+        mAnimationProgress = 0.f;
+        mPoseCurrent = POSE_Act_TiltUp;
+    }
+
 }
 
 //============================================================================//
 
 void Sara_Fighter::integrate()
 {
-    const auto& progress = mRenderer->progress;
-    const auto& camera = mRenderer->camera;
+    const auto& progress = game.renderer->progress;
+    const auto& camera = game.renderer->camera;
 
     //========================================================//
 
     const auto blendPose = ARMA_Sara.blend_poses(mPosePrevious, mPoseCurrent, progress);
 
     const auto data = ARMA_Sara.compute_ubo_data(blendPose);
-    UBO_Sara.update(0u, data.size() * 12u, data.data());
+    mUbo.update(0u, data.size() * 12u, data.data());
 
     //========================================================//
 
@@ -160,7 +186,7 @@ void Sara_Fighter::render_depth()
 {
     static auto& context = Context::get();
 
-    const auto& shaders = mRenderer->shaders;
+    const auto& shaders = game.renderer->shaders;
 
     //========================================================//
 
@@ -174,7 +200,7 @@ void Sara_Fighter::render_depth()
     context.use_Shader_Vert(shaders.VS_Depth_Skelly);
 
     context.bind_VertexArray(MESH_Sara.get_vao());
-    context.bind_UniformBuffer(UBO_Sara, 2u);
+    context.bind_UniformBuffer(mUbo, 2u);
 
     //========================================================//
 
@@ -183,9 +209,13 @@ void Sara_Fighter::render_depth()
 
     //========================================================//
 
+    context.set_state(Context::Cull_Face::Disable);
+
     context.use_Shader_Frag(shaders.FS_Depth_Mask);
     context.bind_Texture(TX_Hair_mask, 0u);
     MESH_Sara.draw_partial(1u);
+
+    context.set_state(Context::Cull_Face::Back);
 }
 
 void Sara_Fighter::render_main()
@@ -208,7 +238,7 @@ void Sara_Fighter::render_main()
     context.use_Shader_Vert(VS_Sara);
 
     context.bind_VertexArray(MESH_Sara.get_vao());
-    context.bind_UniformBuffer(UBO_Sara, 2u);
+    context.bind_UniformBuffer(mUbo, 2u);
 
     //========================================================//
 
@@ -221,12 +251,16 @@ void Sara_Fighter::render_main()
 
     //========================================================//
 
+    context.set_state(Context::Cull_Face::Disable);
+
     context.bind_Texture(TX_Hair_diff, 0u);
     context.bind_Texture(TX_Hair_norm, 1u);
 
     context.use_Shader_Frag(FS_Hair);
 
-    FS_Hair.update("u_specular", Vec3F(0.5f, 0.4f, 0.1f));
+    FS_Hair.update("u_specular", Vec3F(0.35f, 0.35f, 0.25f));
 
     MESH_Sara.draw_partial(1u);
+
+    context.set_state(Context::Cull_Face::Back);
 }

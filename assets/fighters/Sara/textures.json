@@ -1,0 +1,10 @@
+{
+
+"Main_diff": { "format": "RGB8_UN", "wrap": "CC", "swizzle": "RGB1" },
+"Main_spec": { "format": "R8_UN",   "wrap": "CC", "swizzle": "RRR1" },
+
+"Hair_diff": { "format": "RGB8_UN", "wrap": "RC", "swizzle": "RGB1" },
+"Hair_norm": { "format": "RGB8_SN", "wrap": "RC", "swizzle": "RGB1" },
+"Hair_mask": { "format": "R8_UN",   "wrap": "RC", "swizzle": "000R" }
+
+}

@@ -1,8 +1,9 @@
 #include <sqee/gl/Context.hpp>
 #include <sqee/maths/Functions.hpp>
 
-#include <game/Misc.hpp>
+#include <game/Game.hpp>
 
+#include <game/fighters/Cheese/Actions.hpp>
 #include <game/fighters/Cheese/Fighter.hpp>
 
 namespace maths = sq::maths;
@@ -11,7 +12,7 @@ using Context = sq::Context;
 
 //============================================================================//
 
-Cheese_Fighter::Cheese_Fighter() : Fighter("Cheese") {}
+Cheese_Fighter::Cheese_Fighter(Game& game) : Fighter("Cheese", game) {}
 
 Cheese_Fighter::~Cheese_Fighter() = default;
 
@@ -19,16 +20,11 @@ Cheese_Fighter::~Cheese_Fighter() = default;
 
 void Cheese_Fighter::setup()
 {
-    SQASSERT(mController != nullptr, "");
-    SQASSERT(mRenderer != nullptr, "");
+    actions = std::make_unique<Cheese_Actions>(*this);
 
     //========================================================//
 
-    misc::load_actions_from_json(*this);
-
-    //========================================================//
-
-    MESH_Cheese.load_from_file("fighters/Cheese/Mesh");
+    MESH_Cheese.load_from_file("fighters/Cheese/meshes/Mesh");
 
     //========================================================//
 
@@ -53,8 +49,8 @@ void Cheese_Fighter::setup()
 
     //========================================================//
 
-    mRenderer->shaders.preprocs(VS_Cheese, "fighters/Cheese/Cheese_vs");
-    mRenderer->shaders.preprocs(FS_Cheese, "fighters/Cheese/Cheese_fs");
+    game.renderer->shaders.preprocs(VS_Cheese, "fighters/Cheese/Cheese_vs");
+    game.renderer->shaders.preprocs(FS_Cheese, "fighters/Cheese/Cheese_fs");
 }
 
 //============================================================================//
@@ -68,22 +64,14 @@ void Cheese_Fighter::tick()
 
 void Cheese_Fighter::integrate()
 {
-    const auto& progress = mRenderer->progress;
-    const auto& camera = mRenderer->camera;
+    const auto& progress = game.renderer->progress;
+    const auto& camera = game.renderer->camera;
 
     //========================================================//
 
     QuatF rotation { 0.f, 0.f, 0.f, 1.f };
     Vec3F scale { 1.f, 1.f, 1.f };
     Vec3F colour { 0.f, 0.f, 0.f };
-
-    //========================================================//
-
-    if (state.action == State::Action::None)
-        scale = Vec3F(1.f, 1.f, 1.f);
-
-    if (state.action == State::Action::Neutral)
-        scale = Vec3F(1.f, 1.f, 1.5f);
 
     //========================================================//
 
@@ -127,7 +115,7 @@ void Cheese_Fighter::render_depth()
 {
     static auto& context = Context::get();
 
-    const auto& shaders = mRenderer->shaders;
+    const auto& shaders = game.renderer->shaders;
 
     //========================================================//
 

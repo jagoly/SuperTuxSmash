@@ -7,14 +7,8 @@ namespace sts {
 
 //============================================================================//
 
-// Forward Declarations /////
-
-class SmashApp;
-class Renderer;
-
-class Stage;
-class Controller;
-class Fighter;
+class SmashApp; // Forward Declaration
+class Game; // Forward Declaration
 
 //============================================================================//
 
@@ -38,13 +32,7 @@ private:
 
     SmashApp& mSmashApp;
 
-    unique_ptr<Renderer> mRenderer;
-
-    unique_ptr<Stage> mStage;
-
-    vector<unique_ptr<Controller>> mControllers;
-
-    vector<unique_ptr<Fighter>> mFighters;
+    unique_ptr<Game> mGame;
 };
 
 //============================================================================//

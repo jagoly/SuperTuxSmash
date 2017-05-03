@@ -1,7 +1,5 @@
 #include <sqee/debug/Logging.hpp>
 
-#include <sqee/assert.hpp>
-
 #include <sqee/misc/Files.hpp>
 
 #include <SFML/Window/Joystick.hpp>
@@ -13,13 +11,6 @@ namespace maths = sq::maths;
 using namespace sts;
 
 //============================================================================//
-
-template <uint N>
-bool impl_inputs_enabled(std::array<int, N> inputs)
-{
-    for (int input : inputs) if (input < 0) return false;
-    return true;
-}
 
 void Controller::load_config(const string& path)
 {
@@ -40,6 +31,8 @@ void Controller::load_config(const string& path)
     }
 }
 
+//============================================================================//
+
 bool Controller::handle_event(sf::Event event)
 {
     if (event.type == sf::Event::JoystickButtonPressed)
@@ -51,9 +44,10 @@ bool Controller::handle_event(sf::Event event)
             if (button == config.button_attack) mInput.press_attack = true;
             if (button == config.button_jump)   mInput.press_jump   = true;
 
-//            sq::log_only("button: %i", button);
+            //sq::log_only("button: %i", button);
 
             //return true;
+            return false; // one gamepad for multiple players
         }
     }
 
@@ -63,9 +57,10 @@ bool Controller::handle_event(sf::Event event)
         {
             const int axis = int(event.joystickMove.axis);
 
-//            sq::log_only("axis: %i", axis);
+            //sq::log_only("axis: %i", axis);
 
             //return true;
+            return false; // one gamepad for multiple players
         }
     }
 
@@ -74,11 +69,9 @@ bool Controller::handle_event(sf::Event event)
 
 //============================================================================//
 
-
 Controller::Input Controller::get_input()
 {
     using JS = sf::Joystick;
-    using KB = sf::Keyboard;
 
     //========================================================//
 

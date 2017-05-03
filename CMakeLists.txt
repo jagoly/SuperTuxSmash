@@ -71,6 +71,9 @@ set(SOURCES
 
   ############################################################
 
+  "src/game/Game.hpp"
+  "src/game/Game.cpp"
+
   "src/game/Actions.hpp"
   "src/game/Actions.cpp"
 
@@ -80,9 +83,6 @@ set(SOURCES
   "src/game/Fighter.hpp"
   "src/game/Fighter.cpp"
 
-  "src/game/Misc.hpp"
-  "src/game/Misc.cpp"
-
   "src/game/Renderer.hpp"
   "src/game/Renderer.cpp"
 
@@ -91,9 +91,13 @@ set(SOURCES
 
   ############################################################
 
+  "src/game/fighters/Cheese/Actions.hpp"
+  "src/game/fighters/Cheese/Actions.cpp"
   "src/game/fighters/Cheese/Fighter.hpp"
   "src/game/fighters/Cheese/Fighter.cpp"
 
+  "src/game/fighters/Sara/Actions.hpp"
+  "src/game/fighters/Sara/Actions.cpp"
   "src/game/fighters/Sara/Fighter.hpp"
   "src/game/fighters/Sara/Fighter.cpp"
 

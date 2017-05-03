@@ -7,7 +7,7 @@
 
 #include <main/Options.hpp>
 
-#include <game/Fighter.hpp>
+#include <game/Game.hpp>
 
 #include "Renderer.hpp"
 
@@ -21,7 +21,7 @@ Renderer::~Renderer() = default;
 
 //============================================================================//
 
-Renderer::Renderer()
+Renderer::Renderer(Game& game) : mGame(game)
 {
     // Set Texture Paramaters /////
 
@@ -180,9 +180,10 @@ void Renderer::render()
 
     //========================================================//
 
-    Vec3F ambiColour = { 0.4f, 0.4f, 0.4f };
-    Vec3F skyColour = { 0.9f, 0.9f, 0.9f };
+    Vec3F ambiColour = { 0.5f, 0.5f, 0.5f };
+    Vec3F skyColour = { 0.5f, 0.5f, 0.5f };
     Vec3F skyDirection = { 0.f, 0.5f, -1.f };
+    //skyDirection = -cameraDirection;
     Mat4F skyMatrix = Mat4F();
 
     light.ubo.update("ambi_colour", &ambiColour);
@@ -219,13 +220,13 @@ void Renderer::render()
 
     //========================================================//
 
-    for (const auto fighter : mFighters) fighter->integrate();
+    for (const auto& fighter : mGame.fighters) fighter->integrate();
 
     context.bind_FrameBuffer(fbos.Depth);
-    for (const auto fighter : mFighters) fighter->render_depth();
+    for (const auto& fighter : mGame.fighters) fighter->render_depth();
 
     context.bind_FrameBuffer(fbos.Main);
-    for (const auto fighter : mFighters) fighter->render_main();
+    for (const auto& fighter : mGame.fighters) fighter->render_main();
 
     //========================================================//
 
