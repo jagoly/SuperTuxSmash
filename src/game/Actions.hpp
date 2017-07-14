@@ -1,6 +1,8 @@
 #pragma once
 
-#include <sqee/builtins.hpp>
+#include <functional>
+
+#include <sqee/setup.hpp>
 
 namespace sts {
 

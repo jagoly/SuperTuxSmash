@@ -13,14 +13,12 @@ layout(location=1) in vec2 V_tcrd;
 layout(location=2) in vec3 V_norm;
 layout(location=3) in vec4 V_tan;
 
-uniform mat4 u_final_mat;
-uniform mat3 u_normal_mat;
+layout(location=0) uniform mat4 u_final_mat;
+layout(location=1) uniform mat3 u_normal_mat;
 
 out vec2 texcrd;
 out vec3 viewpos;
 out vec3 N, T, B;
-
-out gl_PerVertex { vec4 gl_Position; };
 
 //============================================================================//
 

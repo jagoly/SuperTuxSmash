@@ -1,24 +1,16 @@
 #pragma once
 
-#include <sqee/builtins.hpp>
-#include <sqee/maths/Vectors.hpp>
-
-#include <game/Actions.hpp>
-#include <game/Controller.hpp>
+#include "game/Actions.hpp"
+#include "game/Controller.hpp"
+#include "game/Entity.hpp"
 
 namespace sts {
 
 //============================================================================//
 
-class Game; // Forward Declaration
-
-//============================================================================//
-
-class Fighter : sq::NonCopyable
+class Fighter : public Entity
 {
-public:
-
-    //========================================================//
+public: //====================================================//
 
     struct State {
 
@@ -27,45 +19,31 @@ public:
 
     } state;
 
-    //========================================================//
+    //--------------------------------------------------------//
 
-    Fighter(string name, Game& game);
+    Fighter(string name, Game& game, Controller& controller);
 
-    virtual ~Fighter() = default;
+    virtual ~Fighter() override = default;
 
-    //========================================================//
+    //--------------------------------------------------------//
 
-    const string name;
-    Game& game;
+    virtual void setup() override = 0;
 
-    //========================================================//
+    virtual void tick() override = 0;
 
-    virtual void setup() = 0;
+    virtual void integrate(float blend) override = 0;
 
-    virtual void tick() = 0;
+    virtual void render_depth() override = 0;
 
-    virtual void integrate() = 0;
+    virtual void render_main() override = 0;
 
-    virtual void render_depth() = 0;
+    //--------------------------------------------------------//
 
-    virtual void render_main() = 0;
+    Controller& controller;
 
-    //========================================================//
-
-    struct Frame
-    {
-        Vec2F velocity;
-        Vec2F position;
-    };
-
-    Frame previous, current;
-
-    //========================================================//
-
-    unique_ptr<Controller> controller;
     unique_ptr<Actions> actions;
 
-    //========================================================//
+    //--------------------------------------------------------//
 
     struct {
 
@@ -80,25 +58,25 @@ public:
 
     } stats;
 
-protected:
+protected: //=================================================//
 
-    //========================================================//
+    Vec2F mVelocity = { 0.f, 0.f };
+
+    bool mAttackHeld = false;
+    bool mJumpHeld = false;
+
+    //--------------------------------------------------------//
+
+    void base_tick_Fighter();
+
+private: //===================================================//
 
     void impl_input_movement(Controller::Input input);
     void impl_input_actions(Controller::Input input);
 
     void impl_update_fighter();
 
-    //========================================================//
-
-    void impl_tick_base();
-
     void impl_validate_stats();
-
-    //========================================================//
-
-    bool mAttackHeld = false;
-    bool mJumpHeld = false;
 };
 
 //============================================================================//

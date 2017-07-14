@@ -4,11 +4,9 @@
 
 #include "Options.hpp"
 
-using namespace sts;
-
 //============================================================================//
 
-void Options::validate() const
+void sts::Options::validate() const
 {
     sq::log_assert(Window_Size.x >= 640u,  "horizontal resolution too low");
     sq::log_assert(Window_Size.y >= 360u,  "vertical resolution too low");
@@ -23,12 +21,4 @@ void Options::validate() const
     };
 
     sq::log_assert(validDebugTextures.count(Debug_Texture), "Debug_Texture not recognised");
-}
-
-//============================================================================//
-
-Options& Options::get()
-{
-    static Options instance;
-    return instance;
 }

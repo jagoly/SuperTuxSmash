@@ -1,20 +1,19 @@
 #pragma once
 
 #include <sqee/builtins.hpp>
-#include <sqee/maths/Vectors.hpp>
 
-// Forward Declaration
-namespace sf { class Event; }
-
-namespace sts {
+#include <sqee/app/InputDevices.hpp>
+#include <sqee/app/Event.hpp>
 
 //============================================================================//
 
+namespace sts {
+
 class Controller final : sq::NonCopyable
 {
-public:
+public: //====================================================//
 
-    //========================================================//
+    Controller(const sq::InputDevices& devices);
 
     struct Input
     {
@@ -29,38 +28,38 @@ public:
         Vec2F axis_move {};
     };
 
-    //========================================================//
+    //--------------------------------------------------------//
 
     void load_config(const string& path);
 
-    bool handle_event(sf::Event event);
+    void handle_event(sq::Event event);
 
-    //========================================================//
+    //--------------------------------------------------------//
 
     Input get_input();
 
-private:
-
-    //========================================================//
+private: //===================================================//
 
     struct {
 
-        int joystick_id    = -1;
+        int gamepad_port = -1;
 
-        int button_attack  = -1;
-        int button_jump    = -1;
+        sq::Gamepad_Stick stick_move = sq::Gamepad_Stick::Unknown;
 
-        int button_left    = -1;
-        int button_right   = -1;
-        int button_down    = -1;
-        int button_up      = -1;
+        sq::Gamepad_Button button_attack = sq::Gamepad_Button::Unknown;
+        sq::Gamepad_Button button_jump   = sq::Gamepad_Button::Unknown;
 
-        int axis_move_x    = -1;
-        int axis_move_y    = -1;
+        sq::Keyboard_Key key_left  = sq::Keyboard_Key::Unknown;
+        sq::Keyboard_Key key_up    = sq::Keyboard_Key::Unknown;
+        sq::Keyboard_Key key_right = sq::Keyboard_Key::Unknown;
+        sq::Keyboard_Key key_down  = sq::Keyboard_Key::Unknown;
+
+        sq::Keyboard_Key key_attack = sq::Keyboard_Key::Unknown;
+        sq::Keyboard_Key key_jump   = sq::Keyboard_Key::Unknown;
 
     } config;
 
-    //========================================================//
+    //--------------------------------------------------------//
 
     uint mTimeSinceNotLeft = 0u;
     uint mTimeSinceNotRight = 0u;
@@ -68,8 +67,10 @@ private:
     Vec2F mPrevAxisMove;
 
     Input mInput;
-};
 
-//============================================================================//
+    //--------------------------------------------------------//
+
+    const sq::InputDevices& mDevices;
+};
 
 } // namespace sts

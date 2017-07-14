@@ -10,13 +10,10 @@ out vec4 fragColour;
 
 //============================================================================//
 
-vec3 tone_map(vec3 texel)
+vec3 tone_map(vec3 vec)
 {
-    float A = 0.15f; float B = 0.50f; float C = 0.10f;
-    float D = 0.20f; float E = 0.02f; float F = 0.30f;
-    vec3 num = texel * (A * texel + C * B) + D * E;
-    vec3 den = texel * (A * texel + B) + D * F;
-    return (num / den) - (E / F);
+    const float A = 0.15f, B = 0.50f, C = 0.10f, D = 0.20f, E = 0.02f, F = 0.30f;
+    return ((vec * (A * vec + C*B) + D*E) / (vec * (A * vec + B) + D*F)) - E/F;
 }
 
 //============================================================================//

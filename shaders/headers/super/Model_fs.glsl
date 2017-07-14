@@ -26,7 +26,7 @@ in vec3 N, T, B;
 #ifdef OPT_TEX_DIFFUSE
 layout(binding=0) uniform sampler2D tex_diffuse;
 #else
-uniform vec3 u_diffuse;
+layout(location=2) uniform vec3 u_diffuse;
 #endif
 
 #ifdef OPT_TEX_NORMAL
@@ -36,11 +36,11 @@ layout(binding=1) uniform sampler2D tex_normal;
 #ifdef OPT_TEX_SPECULAR
 layout(binding=2) uniform sampler2D tex_specular;
 #else
-uniform vec3 u_specular;
+layout(location=3) uniform vec3 u_specular;
 #endif
 
 #ifdef OPT_COLOUR
-uniform vec3 u_colour;
+layout(location=4) uniform vec3 u_colour;
 #endif
 
 //============================================================================//

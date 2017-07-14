@@ -2,7 +2,7 @@
 
 struct SkeletonBlock
 {
-    mat3x4 bones[80]; // 960
+    mat3x4 bones[80]; // 3840
 
-    // Size: 960
+    // TOTAL: 3840
 };

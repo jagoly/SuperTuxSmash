@@ -1,5 +1,5 @@
+cmake_minimum_required(VERSION 3.2)
 project(SuperTuxSmash_Game)
-cmake_minimum_required(VERSION 3.0)
 
 ################################################################################
 
@@ -18,34 +18,35 @@ endif ()
 
 ################################################################################
 
-option(STS_BUNDLED_LIBS "Use bundled libraries from extlibs" TRUE)
-
-################################################################################
-
 if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
 endif ()
 
-if (CMAKE_COMPILER_IS_GNUCC)
+if (CMAKE_BUILD_TYPE MATCHES "Debug")
+    add_definitions(-DSQEE_DEBUG)
+endif ()
 
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -Wextra -Wno-comment")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-parameter -Wno-strict-aliasing")
+################################################################################
 
-    if (STS_LINUX)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-    elseif (STS_WINDOWS)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mwindows -Wa,-mbig-obj")
-    endif ()
+#set(CMAKE_CXX_STANDARD 14)
+string(APPEND CMAKE_CXX_FLAGS " -std=c++17")
 
-else ()
+################################################################################
 
-    message(FATAL_ERROR "Non-GNU compilers are not yet supported, please help fix this :)")
+string(APPEND CMAKE_CXX_FLAGS " -Wall -Wextra")
+string(APPEND CMAKE_CXX_FLAGS " -Wno-unused-parameter -Wno-strict-aliasing")
+string(APPEND CMAKE_CXX_FLAGS " -Wno-comment -Wno-misleading-indentation")
 
+if (STS_LINUX)
+    string(APPEND CMAKE_CXX_FLAGS "")
+elseif (STS_WINDOWS)
+    string(APPEND CMAKE_CXX_FLAGS " -mwindows -Wa,-mbig-obj")
 endif ()
 
 ################################################################################
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/build")
+set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules/")
 
 ################################################################################
 
@@ -63,13 +64,8 @@ set(SOURCES
 
   ############################################################
 
-  "src/scenes/GameScene.hpp"
-  "src/scenes/GameScene.cpp"
-
-  "src/scenes/MenuScene.hpp"
-  "src/scenes/MenuScene.cpp"
-
-  ############################################################
+  "src/game/GameScene.hpp"
+  "src/game/GameScene.cpp"
 
   "src/game/Game.hpp"
   "src/game/Game.cpp"
@@ -79,6 +75,9 @@ set(SOURCES
 
   "src/game/Controller.hpp"
   "src/game/Controller.cpp"
+
+  "src/game/Entity.hpp"
+  "src/game/Entity.cpp"
 
   "src/game/Fighter.hpp"
   "src/game/Fighter.cpp"
@@ -105,40 +104,30 @@ set(SOURCES
 
   "src/game/stages/TestZone/Stage.hpp"
   "src/game/stages/TestZone/Stage.cpp"
-
 )
 
 ################################################################################
 
-if (STS_BUNDLED_LIBS)
-
-    include_directories("${CMAKE_SOURCE_DIR}/extlibs/include")
-
-    if (STS_LINUX)
-        set(EXTLIBS "${CMAKE_SOURCE_DIR}/extlibs/libs/linux")
-    elseif (STS_WINDOWS)
-        set(EXTLIBS "${CMAKE_SOURCE_DIR}/extlibs/libs/windows")
-    endif ()
-
-    list(APPEND CMAKE_FIND_ROOT_PATH "${EXTLIBS}" "${EXTLIBS}/..")
-
-endif ()
+file(GLOB_RECURSE SHADERS "shaders/*.glsl")
 
 ################################################################################
 
-include_directories("${CMAKE_SOURCE_DIR}/src")
-
-add_executable(sts-game ${SOURCES})
+include_directories("${PROJECT_SOURCE_DIR}/src")
+add_executable(sts-game ${SOURCES} ${SHADERS})
 
 ################################################################################
 
-find_library(SQEE_LIB sqee /)
+find_package(SQEE REQUIRED)
 
-find_library(SFML_AUDIO_LIB sfml-audio /)
-find_library(SFML_WINDOW_LIB sfml-window /)
-find_library(SFML_SYSTEM_LIB sfml-system /)
+include_directories(${SQEE_INCLUDE_DIR})
+target_link_libraries(sts-game ${SQEE_LIBRARY})
 
-target_link_libraries(sts-game ${SQEE_LIB} ${SFML_AUDIO_LIB} ${SFML_WINDOW_LIB} ${SFML_SYSTEM_LIB})
+################################################################################
+
+find_package(SFML 2.4 COMPONENTS audio window system REQUIRED)
+
+include_directories(${SFML_INCLUDE_DIR})
+target_link_libraries(sts-game ${SFML_LIBRARIES})
 
 ################################################################################
 

@@ -3,31 +3,30 @@
 #include <game/Renderer.hpp>
 #include <game/Fighter.hpp>
 
-namespace sts { namespace fighters {
-
 //============================================================================//
+
+namespace sts::fighters {
 
 class Cheese_Fighter final : public Fighter
 {
-public:
+public: //====================================================//
 
-    //========================================================//
-
-    Cheese_Fighter(Game& game);
+    Cheese_Fighter(Game& game, Controller& controller);
     ~Cheese_Fighter();
 
-    //========================================================//
+    //--------------------------------------------------------//
 
     void setup() override;
+
     void tick() override;
 
-    void integrate() override;
+    void integrate(float blend) override;
+
     void render_depth() override;
+
     void render_main() override;
 
-    //========================================================//
-
-private:
+private: //===================================================//
 
     sq::Mesh MESH_Cheese;
 
@@ -35,15 +34,12 @@ private:
     sq::Texture2D TX_Cheese_norm { sq::Texture::Format::RGB8_SN };
     sq::Texture2D TX_Cheese_spec { sq::Texture::Format::RGB8_UN };
 
-    sq::Shader VS_Cheese { sq::Shader::Stage::Vertex };
-    sq::Shader FS_Cheese { sq::Shader::Stage::Fragment };
+    sq::Program PROG_Cheese;
 
-    //========================================================//
+    //--------------------------------------------------------//
 
     Mat4F mFinalMatrix;
     Mat3F mNormalMatrix;
 };
 
-//============================================================================//
-
-}} // namespace sts::fighters
+} // namespace sts::fighters

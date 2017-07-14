@@ -1,33 +1,32 @@
 #pragma once
 
-#include <game/Renderer.hpp>
-#include <game/Fighter.hpp>
+#include "game/Renderer.hpp"
+#include "game/Fighter.hpp"
 
-namespace sts { namespace fighters {
+namespace sts::fighters {
 
 //============================================================================//
 
 class Sara_Fighter final : public Fighter
 {
-public:
+public: //====================================================//
 
-    //========================================================//
-
-    Sara_Fighter(Game& game);
+    Sara_Fighter(Game& game, Controller& controller);
     ~Sara_Fighter();
 
-    //========================================================//
+    //--------------------------------------------------------//
 
     void setup() override;
+
     void tick() override;
 
-    void integrate() override;
+    void integrate(float blend) override;
+
     void render_depth() override;
+
     void render_main() override;
 
-    //========================================================//
-
-private:
+private: //===================================================//
 
     sq::Armature ARMA_Sara;
     sq::Mesh MESH_Sara;
@@ -50,11 +49,10 @@ private:
     sq::Texture2D TX_Hair_norm { sq::Texture::Format::RGB8_SN };
     sq::Texture2D TX_Hair_mask { sq::Texture::Format::R8_UN };
 
-    sq::Shader VS_Sara { sq::Shader::Stage::Vertex };
-    sq::Shader FS_Main { sq::Shader::Stage::Fragment };
-    sq::Shader FS_Hair { sq::Shader::Stage::Fragment };
+    sq::Program PROG_Main;
+    sq::Program PROG_Hair;
 
-    //========================================================//
+    //--------------------------------------------------------//
 
     sq::UniformBuffer mUbo;
 
@@ -69,4 +67,4 @@ private:
 
 //============================================================================//
 
-}} // namespace sts::fighters
+} // namespace sts::fighters

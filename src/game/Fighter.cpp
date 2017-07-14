@@ -10,7 +10,8 @@ using namespace sts;
 
 //============================================================================//
 
-Fighter::Fighter(string name, Game& game) : name(name), game(game)
+Fighter::Fighter(string name, Game& game, Controller& controller)
+    : Entity(name, game), controller(controller)
 {
     const auto json = sq::parse_json("assets/fighters/" + name + "/fighter.json");
 
@@ -25,8 +26,6 @@ Fighter::Fighter(string name, Game& game) : name(name), game(game)
 
     state.move = State::Move::None;
     state.direction = State::Direction::Left;
-
-    controller = std::make_unique<Controller>();
 }
 
 //============================================================================//
@@ -55,14 +54,14 @@ void Fighter::impl_input_movement(Controller::Input input)
         {
             state.move = State::Move::Walking;
             state.direction = State::Direction::Left;
-            current.velocity.x = -(stats.land_traction * 1.f);
+            mVelocity.x = -(stats.land_traction * 1.f);
         }
 
         if (input.axis_move.x > +0.f)
         {
             state.move = State::Move::Walking;
             state.direction = State::Direction::Right;
-            current.velocity.x = +(stats.land_traction * 1.f);
+            mVelocity.x = +(stats.land_traction * 1.f);
         }
 
         //========================================================//
@@ -74,7 +73,7 @@ void Fighter::impl_input_movement(Controller::Input input)
             mJumpHeld = true;
 
             const float base = stats.fall_speed * stats.jump_height;
-            current.velocity.y = std::sqrt(base * 3.f * 48.f);
+            mVelocity.y = std::sqrt(base * 3.f * 48.f);
         }
 
         else if (input.activate_dash == true)
@@ -104,10 +103,10 @@ void Fighter::impl_input_movement(Controller::Input input)
         {
             state.direction = State::Direction::Left;
 
-            if (current.velocity.x > maxNewWalkSpeed)
+            if (mVelocity.x > maxNewWalkSpeed)
             {
-                current.velocity.x -= stats.land_traction * 1.f;
-                current.velocity.x = maths::max(current.velocity.x, maxNewWalkSpeed);
+                mVelocity.x -= stats.land_traction * 1.f;
+                mVelocity.x = maths::max(mVelocity.x, maxNewWalkSpeed);
             }
         }
 
@@ -115,10 +114,10 @@ void Fighter::impl_input_movement(Controller::Input input)
         {
             state.direction = State::Direction::Right;
 
-            if (current.velocity.x < maxNewWalkSpeed)
+            if (mVelocity.x < maxNewWalkSpeed)
             {
-                current.velocity.x += stats.land_traction * 1.f;
-                current.velocity.x = maths::min(current.velocity.x, maxNewWalkSpeed);
+                mVelocity.x += stats.land_traction * 1.f;
+                mVelocity.x = maths::min(mVelocity.x, maxNewWalkSpeed);
             }
         }
 
@@ -131,7 +130,7 @@ void Fighter::impl_input_movement(Controller::Input input)
             mJumpHeld = true;
 
             const float base = stats.fall_speed * stats.jump_height;
-            current.velocity.y = std::sqrt(base * 3.f * 48.f);
+            mVelocity.y = std::sqrt(base * 3.f * 48.f);
         }
 
         else if (input.activate_dash == true)
@@ -159,10 +158,10 @@ void Fighter::impl_input_movement(Controller::Input input)
 
         else if (input.axis_move.x < -0.f)
         {
-            if (current.velocity.x > -maxDashSpeed)
+            if (mVelocity.x > -maxDashSpeed)
             {
-                current.velocity.x -= stats.land_traction * 1.5f;
-                current.velocity.x = maths::max(current.velocity.x, -maxDashSpeed);
+                mVelocity.x -= stats.land_traction * 1.5f;
+                mVelocity.x = maths::max(mVelocity.x, -maxDashSpeed);
             }
 
             if (input.axis_move.x > -0.8f) state.move = State::Move::Walking;
@@ -170,10 +169,10 @@ void Fighter::impl_input_movement(Controller::Input input)
 
         else if (input.axis_move.x > +0.f)
         {
-            if (current.velocity.x < +maxDashSpeed)
+            if (mVelocity.x < +maxDashSpeed)
             {
-                current.velocity.x += stats.land_traction * 1.5f;
-                current.velocity.x = maths::min(current.velocity.x, +maxDashSpeed);
+                mVelocity.x += stats.land_traction * 1.5f;
+                mVelocity.x = maths::min(mVelocity.x, +maxDashSpeed);
             }
 
             if (input.axis_move.x < +0.8f) state.move = State::Move::Walking;
@@ -188,7 +187,7 @@ void Fighter::impl_input_movement(Controller::Input input)
             mJumpHeld = true;
 
             const float base = stats.fall_speed * stats.jump_height;
-            current.velocity.y = std::sqrt(base * 3.f * 48.f);
+            mVelocity.y = std::sqrt(base * 3.f * 48.f);
         }
 
         //========================================================//
@@ -204,32 +203,32 @@ void Fighter::impl_input_movement(Controller::Input input)
 
         if (input.axis_move.x < -0.f)
         {
-            if (current.velocity.x > maxNewAirSpeed)
+            if (mVelocity.x > maxNewAirSpeed)
             {
-                current.velocity.x -= stats.air_traction * 0.4f;
-                current.velocity.x = maths::max(current.velocity.x, maxNewAirSpeed);
+                mVelocity.x -= stats.air_traction * 0.4f;
+                mVelocity.x = maths::max(mVelocity.x, maxNewAirSpeed);
             }
         }
 
         if (input.axis_move.x > +0.f)
         {
-            if (current.velocity.x < maxNewAirSpeed)
+            if (mVelocity.x < maxNewAirSpeed)
             {
-                current.velocity.x += stats.air_traction * 0.4f;
-                current.velocity.x = maths::min(current.velocity.x, maxNewAirSpeed);
+                mVelocity.x += stats.air_traction * 0.4f;
+                mVelocity.x = maths::min(mVelocity.x, maxNewAirSpeed);
             }
         }
 
         if (input.axis_move.y < -0.f)
         {
             const float base = stats.jump_height * stats.fall_speed;
-            current.velocity.y += base * input.axis_move.y * 0.1f;
+            mVelocity.y += base * input.axis_move.y * 0.1f;
         }
 
         if (input.axis_move.y > +0.f)
         {
             const float base = stats.jump_height * stats.fall_speed;
-            current.velocity.y += base * input.axis_move.y * 0.1f;
+            mVelocity.y += base * input.axis_move.y * 0.1f;
         }
 
         break;
@@ -351,14 +350,14 @@ void Fighter::impl_update_fighter()
 
     if (state.move == State::Move::None || state.move == State::Move::Walking || state.move == State::Move::Dashing)
     {
-        if (current.velocity.x < -0.f) current.velocity.x = maths::min(current.velocity.x + (stats.land_traction * 0.5f), -0.f);
-        if (current.velocity.x > +0.f) current.velocity.x = maths::max(current.velocity.x - (stats.land_traction * 0.5f), +0.f);
+        if (mVelocity.x < -0.f) mVelocity.x = maths::min(mVelocity.x + (stats.land_traction * 0.5f), -0.f);
+        if (mVelocity.x > +0.f) mVelocity.x = maths::max(mVelocity.x - (stats.land_traction * 0.5f), +0.f);
     }
 
     if (state.move == State::Move::Jumping || state.move == State::Move::Falling)
     {
-        if (current.velocity.x < -0.f) current.velocity.x = maths::min(current.velocity.x + (stats.air_traction * 0.2f), -0.f);
-        if (current.velocity.x > +0.f) current.velocity.x = maths::max(current.velocity.x - (stats.air_traction * 0.2f), +0.f);
+        if (mVelocity.x < -0.f) mVelocity.x = maths::min(mVelocity.x + (stats.air_traction * 0.2f), -0.f);
+        if (mVelocity.x > +0.f) mVelocity.x = maths::max(mVelocity.x - (stats.air_traction * 0.2f), +0.f);
     }
 
     //========================================================//
@@ -370,18 +369,18 @@ void Fighter::impl_update_fighter()
         const float fraction = (2.f/3.f) * stats.hop_height / stats.jump_height;
 
         float gravity = stats.fall_speed * 0.5f;
-        if (!mJumpHeld && current.velocity.y > 0.f) gravity /= fraction;
-        current.velocity.y -= gravity;
+        if (!mJumpHeld && mVelocity.y > 0.f) gravity /= fraction;
+        mVelocity.y -= gravity;
 
         const float maxFall = stats.fall_speed * 15.f;
-        current.velocity.y = maths::max(current.velocity.y, -maxFall);
+        mVelocity.y = maths::max(mVelocity.y, -maxFall);
     }
 
     //========================================================//
 
     // update position /////
 
-    current.position += current.velocity / 48.f;
+    mCurrentPosition += mVelocity / 48.f;
 
     //========================================================//
 
@@ -389,9 +388,9 @@ void Fighter::impl_update_fighter()
 
     if (state.move == State::Move::Jumping)
     {
-        if (current.position.y <= 0.f)
+        if (mCurrentPosition.y <= 0.f)
         {
-            current.velocity.y = current.position.y = 0.f;
+            mVelocity.y = mCurrentPosition.y = 0.f;
             state.move = State::Move::None;
         }
     }
@@ -406,13 +405,13 @@ void Fighter::impl_update_fighter()
 
 //============================================================================//
 
-void Fighter::impl_tick_base()
+void Fighter::base_tick_Fighter()
 {
-    const auto input = controller->get_input();
+    // this->base_tick_Entity(); //
+
+    const auto input = controller.get_input();
 
     this->impl_validate_stats();
-
-    previous = current;
 
     this->impl_input_movement(input);
     this->impl_input_actions(input);

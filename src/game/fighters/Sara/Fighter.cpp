@@ -12,7 +12,7 @@ using Context = sq::Context;
 
 //============================================================================//
 
-Sara_Fighter::Sara_Fighter(Game& game) : Fighter("Sara", game) {}
+Sara_Fighter::Sara_Fighter(Game& game, Controller& controller) : Fighter("Sara", game, controller) {}
 
 Sara_Fighter::~Sara_Fighter() = default;
 
@@ -42,8 +42,7 @@ void Sara_Fighter::setup()
 
     mPosePrevious = mPoseCurrent = POSE_Rest;
 
-    mUbo.reserve("bones", 960u);
-    mUbo.create_and_allocate();
+    mUbo.create_and_allocate(3840u);
 
     //========================================================//
 
@@ -75,20 +74,22 @@ void Sara_Fighter::setup()
 
     //========================================================//
 
-    VS_Sara.add_uniform("u_final_mat"); // Mat4F
-    VS_Sara.add_uniform("u_normal_mat"); // Mat3F
-    FS_Hair.add_uniform("u_specular"); // Vec3F
+    game.renderer->processor.load_vertex(PROG_Main, "fighters/Sara/Sara_vs");
+    game.renderer->processor.load_vertex(PROG_Hair, "fighters/Sara/Sara_vs");
 
-    game.renderer->shaders.preprocs(VS_Sara, "fighters/Sara/Sara_vs");
-    game.renderer->shaders.preprocs(FS_Main, "fighters/Sara/Main_fs");
-    game.renderer->shaders.preprocs(FS_Hair, "fighters/Sara/Hair_fs");
+    game.renderer->processor.load_fragment(PROG_Main, "fighters/Sara/Main_fs");
+    game.renderer->processor.load_fragment(PROG_Hair, "fighters/Sara/Hair_fs");
+
+    PROG_Main.link_program_stages();
+    PROG_Hair.link_program_stages();
 }
 
 //============================================================================//
 
 void Sara_Fighter::tick()
 {
-    this->impl_tick_base();
+    this->base_tick_Entity();
+    this->base_tick_Fighter();
 
     mPosePrevious = mPoseCurrent;
 
@@ -103,14 +104,14 @@ void Sara_Fighter::tick()
     if (state.move == State::Move::Walking)
     {
         // todo: work out exact walk animation speed
-        mAnimationProgress += std::abs(current.velocity.x) / 2.f;
+        mAnimationProgress += std::abs(mVelocity.x) / 2.f;
         mPoseCurrent = ARMA_Sara.compute_pose(ANIM_Walk, mAnimationProgress);
     }
 
     if (state.move == State::Move::Dashing)
     {
         // todo: work out exact dash animation speed
-        mAnimationProgress += std::abs(current.velocity.x) / 2.f;
+        mAnimationProgress += std::abs(mVelocity.x) / 2.f;
         mPoseCurrent = ARMA_Sara.compute_pose(ANIM_Walk, mAnimationProgress);
     }
 
@@ -148,17 +149,16 @@ void Sara_Fighter::tick()
 
 //============================================================================//
 
-void Sara_Fighter::integrate()
+void Sara_Fighter::integrate(float blend)
 {
-    const auto& progress = game.renderer->progress;
     const auto& camera = game.renderer->camera;
 
     //========================================================//
 
-    const auto blendPose = ARMA_Sara.blend_poses(mPosePrevious, mPoseCurrent, progress);
+    const auto blendPose = ARMA_Sara.blend_poses(mPosePrevious, mPoseCurrent, blend);
 
     const auto data = ARMA_Sara.compute_ubo_data(blendPose);
-    mUbo.update(0u, data.size() * 12u, data.data());
+    mUbo.update(0u, uint(data.size()) * 48u, data.data());
 
     //========================================================//
 
@@ -175,7 +175,7 @@ void Sara_Fighter::integrate()
 
     //========================================================//
 
-    const Vec2F position = maths::mix(previous.position, current.position, progress);
+    const Vec2F position = maths::mix(mPreviousPosition, mCurrentPosition, blend);
     const Mat4F modelMatrix = maths::transform(Vec3F(position.x, 0.f, position.y), rotation, scale);
 
     mFinalMatrix = camera.projMatrix * camera.viewMatrix * modelMatrix;
@@ -196,22 +196,23 @@ void Sara_Fighter::render_depth()
 
     //========================================================//
 
-    shaders.VS_Depth_Skelly.update("u_final_mat", mFinalMatrix);
-    context.use_Shader_Vert(shaders.VS_Depth_Skelly);
-
     context.bind_VertexArray(MESH_Sara.get_vao());
     context.bind_UniformBuffer(mUbo, 2u);
 
     //========================================================//
 
-    context.disable_shader_stage_fragment();
+    shaders.PROG_Depth_SkellySolid.update(0, mFinalMatrix);
+    context.bind_Program(shaders.PROG_Depth_SkellySolid);
+
     MESH_Sara.draw_partial(0u);
 
     //========================================================//
 
     context.set_state(Context::Cull_Face::Disable);
 
-    context.use_Shader_Frag(shaders.FS_Depth_Mask);
+    shaders.PROG_Depth_SkellyPunch.update(0, mFinalMatrix);
+    context.bind_Program(shaders.PROG_Depth_SkellyPunch);
+
     context.bind_Texture(TX_Hair_mask, 0u);
     MESH_Sara.draw_partial(1u);
 
@@ -230,12 +231,15 @@ void Sara_Fighter::render_main()
 
     //========================================================//
 
-    VS_Sara.update("u_final_mat", mFinalMatrix);
-    VS_Sara.update("u_normal_mat", mNormalMatrix);
+    PROG_Main.update(0, mFinalMatrix);
+    PROG_Main.update(1, mNormalMatrix);
+
+    PROG_Hair.update(0, mFinalMatrix);
+    PROG_Hair.update(1, mNormalMatrix);
+
+    PROG_Hair.update(3, Vec3F(0.35f, 0.35f, 0.25f));
 
     //========================================================//
-
-    context.use_Shader_Vert(VS_Sara);
 
     context.bind_VertexArray(MESH_Sara.get_vao());
     context.bind_UniformBuffer(mUbo, 2u);
@@ -245,8 +249,7 @@ void Sara_Fighter::render_main()
     context.bind_Texture(TX_Main_diff, 0u);
     context.bind_Texture(TX_Main_spec, 2u);
 
-    context.use_Shader_Frag(FS_Main);
-
+    context.bind_Program(PROG_Main);
     MESH_Sara.draw_partial(0u);
 
     //========================================================//
@@ -256,10 +259,7 @@ void Sara_Fighter::render_main()
     context.bind_Texture(TX_Hair_diff, 0u);
     context.bind_Texture(TX_Hair_norm, 1u);
 
-    context.use_Shader_Frag(FS_Hair);
-
-    FS_Hair.update("u_specular", Vec3F(0.35f, 0.35f, 0.25f));
-
+    context.bind_Program(PROG_Hair);
     MESH_Sara.draw_partial(1u);
 
     context.set_state(Context::Cull_Face::Back);

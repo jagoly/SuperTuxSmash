@@ -1,27 +1,25 @@
 #include <sqee/misc/StringCast.hpp>
+#include <sqee/debug/Misc.hpp>
 
 #include <sqee/maths/Functions.hpp>
 
 #include <sqee/gl/Context.hpp>
 #include <sqee/gl/Drawing.hpp>
 
-#include <main/Options.hpp>
+#include <sqee/render/Mesh.hpp>
 
-#include <game/Game.hpp>
+#include "game/Game.hpp"
+#include "game/Fighter.hpp"
 
 #include "Renderer.hpp"
 
-using namespace sts;
 using Context = sq::Context;
 namespace maths = sq::maths;
+using namespace sts;
 
 //============================================================================//
 
-Renderer::~Renderer() = default;
-
-//============================================================================//
-
-Renderer::Renderer(Game& game) : mGame(game)
+Renderer::Renderer(Game& game, const Options& options) : game(game), options(options)
 {
     // Set Texture Paramaters /////
 
@@ -30,44 +28,25 @@ Renderer::Renderer(Game& game) : mGame(game)
 
     // Import GLSL Headers /////
 
-    shaders.preprocs.import_header("headers/blocks/Camera");
-    shaders.preprocs.import_header("headers/blocks/Light");
-    shaders.preprocs.import_header("headers/blocks/Skeleton");
+    processor.import_header("headers/blocks/Camera");
+    processor.import_header("headers/blocks/Light");
+    processor.import_header("headers/blocks/Skeleton");
 
-    shaders.preprocs.import_header("headers/super/Simple_vs");
-    shaders.preprocs.import_header("headers/super/Skelly_vs");
-    shaders.preprocs.import_header("headers/super/Model_fs");
-
-    // Add Shader Uniforms /////
-
-    shaders.VS_Depth_Simple.add_uniform("u_final_mat"); // Mat4F
-    shaders.VS_Depth_Skelly.add_uniform("u_final_mat"); // Mat4F
+    processor.import_header("headers/super/Simple_vs");
+    processor.import_header("headers/super/Skelly_vs");
+    processor.import_header("headers/super/Model_fs");
 
     // Create Uniform Buffers /////
 
-    camera.ubo.reserve("view_mat", 16); // Mat4F
-    camera.ubo.reserve("proj_mat", 16); // Mat4F
-    camera.ubo.reserve("view_inv", 16); // Mat4F
-    camera.ubo.reserve("proj_inv", 16); // Mat4F
-    camera.ubo.reserve("pos", 4); // Vec3F
-    camera.ubo.reserve("dir", 4); // Vec3F
-    camera.ubo.create_and_allocate();
+    camera.ubo.create_and_allocate(284u);
 
-    light.ubo.reserve("ambi_colour", 4); // Vec3F
-    light.ubo.reserve("sky_colour", 4); // Vec3F
-    light.ubo.reserve("sky_direction", 4); // Vec3F
-    light.ubo.reserve("sky_matrix", 16); // Mat4F
-    light.ubo.create_and_allocate();
+    light.ubo.create_and_allocate(112u);
 }
 
 //============================================================================//
 
-void Renderer::update_options()
+void Renderer::refresh_options()
 {
-    static const auto& options = Options::get();
-
-    //========================================================//
-
     string headerStr = "// set of constants and defines added at runtime\n";
 
     headerStr += "const uint OPTION_WinWidth  = " + std::to_string(options.Window_Size.x) + ";\n";
@@ -75,9 +54,7 @@ void Renderer::update_options()
 
     if (options.Bloom_Enable == true) headerStr += "#define OPTION_BLOOM_ENABLE\n";;
     if (options.SSAO_Quality != 0u)   headerStr += "#define OPTION_SSAO_ENABLE\n";
-    if (options.FSAA_Quality != 0u)   headerStr += "#define OPTION_FSAA_ENABLE\n";
     if (options.SSAO_Quality >= 2u)   headerStr += "#define OPTION_SSAO_HIGH\n";
-    if (options.FSAA_Quality >= 2u)   headerStr += "#define OPTION_FSAA_HIGH\n";
 
     headerStr += "// some handy shortcuts for comman use of this data\n"
                  "const float OPTION_Aspect = float(OPTION_WinWidth) / float(OPTION_WinHeight);\n"
@@ -85,7 +62,7 @@ void Renderer::update_options()
                  "const vec2 OPTION_WinSizeHalf = round(OPTION_WinSizeFull / 2.f);\n"
                  "const vec2 OPTION_WinSizeQter = round(OPTION_WinSizeFull / 4.f);\n";
 
-    shaders.preprocs.update_header("runtime/Options", headerStr);
+    processor.update_header("runtime/Options", headerStr);
 
     //========================================================//
 
@@ -107,18 +84,35 @@ void Renderer::update_options()
 
     //========================================================//
 
-    shaders.preprocs(shaders.VS_Depth_Simple, "generic/depth/Simple_vs");
-    shaders.preprocs(shaders.VS_Depth_Skelly, "generic/depth/Skelly_vs");
-    shaders.preprocs(shaders.FS_Depth_Mask, "generic/depth/Mask_fs");
+    processor.load_vertex(shaders.PROG_Depth_SimpleSolid, "generic/depth/Simple_vs");
+    shaders.PROG_Depth_SimpleSolid.link_program_stages();
 
-    shaders.preprocs(shaders.VS_FullScreen, "generic/FullScreen_vs");
-    shaders.preprocs(shaders.FS_PassThrough, "generic/PassThrough_fs");
+    processor.load_vertex(shaders.PROG_Depth_SkellySolid, "generic/depth/Skelly_vs");
+    shaders.PROG_Depth_SkellySolid.link_program_stages();
 
-    shaders.preprocs(shaders.VS_Lighting_Skybox, "lighting/Skybox_vs");
-    shaders.preprocs(shaders.FS_Lighting_Skybox, "lighting/Skybox_fs");
+    processor.load_vertex(shaders.PROG_Depth_SimplePunch, "generic/depth/Simple_vs");
+    processor.load_fragment(shaders.PROG_Depth_SimplePunch, "generic/depth/Mask_fs");
+    shaders.PROG_Depth_SimplePunch.link_program_stages();
 
-    shaders.preprocs(shaders.FS_Composite, "composite/Composite_fs");
-    shaders.preprocs(shaders.FS_FSAA_Screen, "composite/FSAA/FXAA_fs");
+    processor.load_vertex(shaders.PROG_Depth_SkellyPunch, "generic/depth/Skelly_vs");
+    processor.load_fragment(shaders.PROG_Depth_SkellyPunch, "generic/depth/Mask_fs");
+    shaders.PROG_Depth_SkellyPunch.link_program_stages();
+
+    processor.load_vertex(shaders.PROG_PassThrough, "generic/FullScreen_vs");
+    processor.load_fragment(shaders.PROG_PassThrough, "generic/PassThrough_fs");
+    shaders.PROG_PassThrough.link_program_stages();
+
+    processor.load_vertex(shaders.PROG_Lighting_Skybox, "lighting/Skybox_vs");
+    processor.load_fragment(shaders.PROG_Lighting_Skybox, "lighting/Skybox_fs");
+    shaders.PROG_Lighting_Skybox.link_program_stages();
+
+    processor.load_vertex(shaders.PROG_Composite, "generic/FullScreen_vs");
+    processor.load_fragment(shaders.PROG_Composite, "composite/Composite_fs");
+    shaders.PROG_Composite.link_program_stages();
+
+    processor.load_vertex(shaders.PROG_Debug_HitShape, "debug/HitShape_vs");
+    processor.load_fragment(shaders.PROG_Debug_HitShape, "debug/HitShape_fs");
+    shaders.PROG_Debug_HitShape.link_program_stages();
 }
 
 //============================================================================//
@@ -140,26 +134,37 @@ struct StaticShit
         TEX_Skybox.load_file("skybox/5_down",    5u);
 
         TEX_Skybox.generate_auto_mipmaps();
+
+        MESH_Sphere.load_from_file("debug/volumes/Sphere");
     }
 
     sq::TextureCube TEX_Skybox { sq::Texture::Format::RGB8_UN };
+
+    sq::Mesh MESH_Sphere;
 };
 
 //============================================================================//
 
-void Renderer::render()
+void Renderer::render(float blend)
 {
-    static auto& context = Context::get();
-    static const auto& options = Options::get();
+    auto& context = Context::get();
+
+    context.set_ViewPort(options.Window_Size);
 
     //========================================================//
 
-    static StaticShit shit;
+    thread_local StaticShit shit;
 
     //========================================================//
 
     static Vec3F cameraPosition = { 0.f, -3.f, +1.5f };
-    //cameraPosition = maths::rotate_z(cameraPosition, 0.0005f);
+
+    static Vec3F skyDirection = maths::normalize(Vec3F(0.f, 0.5f, -1.f));
+
+    #ifdef SQEE_DEBUG
+    if (sqeeDebugToggle1) cameraPosition = maths::rotate_z(cameraPosition, 0.0005f);
+    if (sqeeDebugToggle2) skyDirection = maths::rotate_z(skyDirection, 0.0005f);
+    #endif
 
     const Vec3F cameraDirection = maths::normalize(-cameraPosition);
 
@@ -171,29 +176,18 @@ void Renderer::render()
     const Mat4F inverseViewMat = maths::inverse(camera.viewMatrix);
     const Mat4F inverseProjMat = maths::inverse(camera.projMatrix);
 
-    camera.ubo.update("view_mat", &camera.viewMatrix);
-    camera.ubo.update("proj_mat", &camera.projMatrix);
-    camera.ubo.update("view_inv", &inverseViewMat);
-    camera.ubo.update("proj_inv", &inverseProjMat);
-    camera.ubo.update("pos", &cameraPosition);
-    camera.ubo.update("dir", &cameraDirection);
+    camera.ubo.update_complete ( camera.viewMatrix, camera.projMatrix, inverseViewMat,
+                                 inverseProjMat, cameraPosition, 0, cameraDirection );
 
     //========================================================//
 
-    Vec3F ambiColour = { 0.5f, 0.5f, 0.5f };
-    Vec3F skyColour = { 0.5f, 0.5f, 0.5f };
-    Vec3F skyDirection = { 0.f, 0.5f, -1.f };
-    //skyDirection = -cameraDirection;
-    Mat4F skyMatrix = Mat4F();
+    const Vec3F ambiColour = { 0.5f, 0.5f, 0.5f };
+    const Vec3F skyColour = { 0.5f, 0.5f, 0.5f };
+    const Mat4F skyMatrix = Mat4F();
 
-    light.ubo.update("ambi_colour", &ambiColour);
-    light.ubo.update("sky_colour", &skyColour);
-    light.ubo.update("sky_direction", &skyDirection);
-    light.ubo.update("sky_matrix", &skyMatrix);
+    light.ubo.update_complete(ambiColour, 0, skyColour, 0, skyDirection, 0, skyMatrix);
 
     //========================================================//
-
-    context.bind_shader_pipeline();
 
     context.bind_UniformBuffer(camera.ubo, 0u);
     context.bind_UniformBuffer(light.ubo, 1u);
@@ -211,8 +205,7 @@ void Renderer::render()
     context.set_state(Context::Cull_Face::Disable);
     context.set_state(Context::Depth_Test::Disable);
 
-    context.use_Shader_Vert(shaders.VS_Lighting_Skybox);
-    context.use_Shader_Frag(shaders.FS_Lighting_Skybox);
+    context.bind_Program(shaders.PROG_Lighting_Skybox);
 
     context.bind_Texture(shit.TEX_Skybox, 0u);
 
@@ -220,13 +213,39 @@ void Renderer::render()
 
     //========================================================//
 
-    for (const auto& fighter : mGame.fighters) fighter->integrate();
+    for (const auto& fighter : game.fighters)
+        if (fighter != nullptr) fighter->integrate(blend);
 
     context.bind_FrameBuffer(fbos.Depth);
-    for (const auto& fighter : mGame.fighters) fighter->render_depth();
+    for (const auto& fighter : game.fighters)
+        if (fighter != nullptr) fighter->render_depth();
 
     context.bind_FrameBuffer(fbos.Main);
-    for (const auto& fighter : mGame.fighters) fighter->render_main();
+    for (const auto& fighter : game.fighters)
+        if (fighter != nullptr) fighter->render_main();
+
+    //========================================================//
+
+    // debug stuff
+
+//    context.set_state(Context::Blend_Mode::Alpha);
+//    context.set_state(Context::Cull_Face::Disable);
+//    context.set_state(Context::Depth_Test::Keep);
+//    context.set_state(Context::Depth_Compare::Less);
+
+//    context.use_Shader_Vert(shaders.VS_Debug_HitShape);
+//    context.use_Shader_Frag(shaders.FS_Debug_HitShape);
+
+//    for (const auto* hb : mGame.hitBlobs)
+//    {
+//        Mat4F matrix = Mat4F(Mat3F(hb->radius));
+//        matrix[3] = Vec4F(hb->origin, 1.f);
+//        matrix = camera.projMatrix * camera.viewMatrix * matrix;
+
+//        shaders.VS_Debug_HitShape.update<Mat4F>("u_final_mat", matrix);
+//        context.bind_VertexArray(shit.MESH_Sphere.get_vao());
+//        shit.MESH_Sphere.draw_complete();
+//    }
 
     //========================================================//
 
@@ -240,8 +259,7 @@ void Renderer::render()
 
     context.bind_FrameBuffer_default();
 
-    context.use_Shader_Vert(shaders.VS_FullScreen);
-    context.use_Shader_Frag(shaders.FS_Composite);
+    context.bind_Program(shaders.PROG_Composite);
 
     context.bind_Texture(textures.Resolve, 0u);
 

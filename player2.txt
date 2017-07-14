@@ -1,9 +1,10 @@
-joystick_id    0
+gamepad_port   0
+stick_move     1
 button_attack  1
 button_jump    5
-button_left    -1
-button_right   -1
-button_down    -1
-button_up      -1
-axis_move_x    4
-axis_move_y    5
+key_left       -1
+key_up         -1
+key_right      -1
+key_down       -1
+key_attack     -1
+key_jump       -1

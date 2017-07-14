@@ -1,14 +1,17 @@
 #include <sqee/debug/Logging.hpp>
-
 #include <sqee/misc/Files.hpp>
-
-#include <SFML/Window/Joystick.hpp>
-#include <SFML/Window/Event.hpp>
 
 #include "Controller.hpp"
 
-namespace maths = sq::maths;
 using namespace sts;
+namespace maths = sq::maths;
+
+//============================================================================//
+
+Controller::Controller(const sq::InputDevices& devices) : mDevices(devices)
+{
+
+}
 
 //============================================================================//
 
@@ -19,135 +22,115 @@ void Controller::load_config(const string& path)
         const auto& key = linePair.first.at(0);
         const auto& value = linePair.first.at(1);
 
-        if (key == "joystick_id")   config.joystick_id   = stoi(value);
-        if (key == "button_attack") config.button_attack = stoi(value);
-        if (key == "button_jump")   config.button_jump   = stoi(value);
-        if (key == "button_left")   config.button_left   = stoi(value);
-        if (key == "button_right")  config.button_right  = stoi(value);
-        if (key == "button_down")   config.button_down   = stoi(value);
-        if (key == "button_up")     config.button_up     = stoi(value);
-        if (key == "axis_move_x")   config.axis_move_x   = stoi(value);
-        if (key == "axis_move_y")   config.axis_move_y   = stoi(value);
+        if (key == "gamepad_port")  config.gamepad_port  = stoi(value);
+        if (key == "stick_move")    config.stick_move    = static_cast<sq::Gamepad_Stick>(stoi(value));
+        if (key == "button_attack") config.button_attack = static_cast<sq::Gamepad_Button>(stoi(value));
+        if (key == "button_jump")   config.button_jump   = static_cast<sq::Gamepad_Button>(stoi(value));
+        if (key == "key_left")      config.key_left      = static_cast<sq::Keyboard_Key>(stoi(value));
+        if (key == "key_up")        config.key_up        = static_cast<sq::Keyboard_Key>(stoi(value));
+        if (key == "key_right")     config.key_right     = static_cast<sq::Keyboard_Key>(stoi(value));
+        if (key == "key_down")      config.key_down      = static_cast<sq::Keyboard_Key>(stoi(value));
+        if (key == "key_attack")    config.key_attack    = static_cast<sq::Keyboard_Key>(stoi(value));
+        if (key == "key_jump")      config.key_jump      = static_cast<sq::Keyboard_Key>(stoi(value));
     }
 }
 
 //============================================================================//
 
-bool Controller::handle_event(sf::Event event)
+void Controller::handle_event(sq::Event event)
 {
-    if (event.type == sf::Event::JoystickButtonPressed)
+    if (event.type == sq::Event::Type::Gamepad_Press)
     {
-        if (event.joystickButton.joystickId == uint(config.joystick_id))
+        if (int(event.data.gamepad.port) == config.gamepad_port)
         {
-            const int button = int(event.joystickButton.button);
+            const auto button = event.data.gamepad.button;
 
             if (button == config.button_attack) mInput.press_attack = true;
             if (button == config.button_jump)   mInput.press_jump   = true;
-
-            //sq::log_only("button: %i", button);
-
-            //return true;
-            return false; // one gamepad for multiple players
         }
     }
 
-    if (event.type == sf::Event::JoystickMoved)
+    if (event.type == sq::Event::Type::Keyboard_Press)
     {
-        if (event.joystickButton.joystickId == uint(config.joystick_id))
-        {
-            const int axis = int(event.joystickMove.axis);
+        const auto key = event.data.keyboard.key;
 
-            //sq::log_only("axis: %i", axis);
-
-            //return true;
-            return false; // one gamepad for multiple players
-        }
+        if (key == config.key_attack) mInput.press_attack = true;
+        if (key == config.key_jump)   mInput.press_jump   = true;
     }
-
-    return false;
 }
 
 //============================================================================//
 
 Controller::Input Controller::get_input()
 {
-    using JS = sf::Joystick;
+    using Stick = sq::Gamepad_Stick;
+    using Button = sq::Gamepad_Button;
+    using Key = sq::Keyboard_Key;
 
-    //========================================================//
+    //--------------------------------------------------------//
 
-    if (config.joystick_id >= 0)
+    if (config.gamepad_port >= 0)
     {
-        const uint joystick = static_cast<uint>(config.joystick_id);
+        const int port = config.gamepad_port;
 
-        //========================================================//
-
-        if (config.axis_move_x >= 0)
+        if (config.stick_move != Stick::Unknown)
         {
-            const auto axis = static_cast<JS::Axis>(config.axis_move_x);
-            mInput.axis_move.x = +JS::getAxisPosition(joystick, axis) * 0.01f;
+            mInput.axis_move = mDevices.get_stick_pos(port, config.stick_move);
         }
 
-        if (config.axis_move_y >= 0)
-        {
-            const auto axis = static_cast<JS::Axis>(config.axis_move_y);
-            mInput.axis_move.y = -JS::getAxisPosition(joystick, axis) * 0.01f;
-        }
-
-        //========================================================//}
-
-        if (config.button_attack >= 0)
-            if (JS::isButtonPressed(joystick, uint(config.button_attack)))
+        if (config.button_attack != Button::Unknown)
+            if (mDevices.is_pressed(port, config.button_attack))
                 mInput.hold_attack = true;
 
-        if (config.button_jump >= 0)
-            if (JS::isButtonPressed(joystick, uint(config.button_jump)))
+        if (config.button_jump != Button::Unknown)
+            if (mDevices.is_pressed(port, config.button_jump))
                 mInput.hold_jump = true;
-
-        //========================================================//
-
-//        if (config.button_left >= 0)
-//            if (JS::isButtonPressed(joystick, uint(config.button_left)))
-//                mInput.axis_move.x -= 1.f;
-
-//        if (config.button_right >= 0)
-//            if (JS::isButtonPressed(joystick, uint(config.button_right)))
-//                mInput.axis_move.x += 1.f;
-
-//        if (config.button_down >= 0)
-//            if (JS::isButtonPressed(joystick, uint(config.button_down)))
-//                mInput.axis_move.y -= 1.f;
-
-//        if (config.button_up >= 0)
-//            if (JS::isButtonPressed(joystick, uint(config.button_up)))
-//                mInput.axis_move.y += 1.f;
-
-        //========================================================//
-
-        // must normalize when using button movement
-        const float axisLength = maths::length(mInput.axis_move);
-        if (axisLength > 1.f) mInput.axis_move /= axisLength;
-
-        const auto remove_deadzone = [](float value)
-        {
-            if (std::abs(value) < 0.1f) return 0.f * value;
-            return (value - std::copysign(0.1f, value)) / 0.9f;
-        };
-
-        mInput.axis_move.x = remove_deadzone(mInput.axis_move.x);
-        mInput.axis_move.y = remove_deadzone(mInput.axis_move.y);
-
-        //========================================================//
-
-        mInput.activate_dash |= (++mTimeSinceNotLeft < 4u && mInput.axis_move.x < -0.8f);
-        mInput.activate_dash |= (++mTimeSinceNotRight < 4u && mInput.axis_move.x > +0.8f);
-
-        if (mInput.axis_move.x > -0.2f) mTimeSinceNotLeft = 0u;
-        if (mInput.axis_move.x < +0.2f) mTimeSinceNotRight = 0u;
     }
 
-    //========================================================//
+    //--------------------------------------------------------//
 
-    auto result = mInput;
+    if (config.key_left != Key::Unknown)
+        if (mDevices.is_pressed(config.key_left))
+            mInput.axis_move.x -= 1.f;
+
+    if (config.key_up != Key::Unknown)
+        if (mDevices.is_pressed(config.key_up))
+            mInput.axis_move.y += 1.f;
+
+    if (config.key_right != Key::Unknown)
+        if (mDevices.is_pressed(config.key_right))
+            mInput.axis_move.x += 1.f;
+
+    if (config.key_down != Key::Unknown)
+        if (mDevices.is_pressed(config.key_down))
+            mInput.axis_move.y -= 1.f;
+
+    //--------------------------------------------------------//
+
+    // must normalize when using key or button input
+    const float axisLength = maths::length(mInput.axis_move);
+    if (axisLength > 1.f) mInput.axis_move /= axisLength;
+
+    const auto remove_deadzone = [](float value)
+    {
+        if (std::abs(value) < 0.1f) return 0.f * value;
+        return (value - std::copysign(0.1f, value)) / 0.9f;
+    };
+
+    mInput.axis_move.x = remove_deadzone(mInput.axis_move.x);
+    mInput.axis_move.y = remove_deadzone(mInput.axis_move.y);
+
+    //--------------------------------------------------------//
+
+    mInput.activate_dash |= (++mTimeSinceNotLeft < 4u && mInput.axis_move.x < -0.8f);
+    mInput.activate_dash |= (++mTimeSinceNotRight < 4u && mInput.axis_move.x > +0.8f);
+
+    if (mInput.axis_move.x > -0.2f) mTimeSinceNotLeft = 0u;
+    if (mInput.axis_move.x < +0.2f) mTimeSinceNotRight = 0u;
+
+    //--------------------------------------------------------//
+
+    Input result = mInput;
     mInput = Input();
 
     return result;

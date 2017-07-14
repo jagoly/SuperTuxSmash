@@ -12,7 +12,7 @@ using Context = sq::Context;
 
 //============================================================================//
 
-Cheese_Fighter::Cheese_Fighter(Game& game) : Fighter("Cheese", game) {}
+Cheese_Fighter::Cheese_Fighter(Game& game, Controller& controller) : Fighter("Cheese", game, controller) {}
 
 Cheese_Fighter::~Cheese_Fighter() = default;
 
@@ -43,28 +43,24 @@ void Cheese_Fighter::setup()
 
     //========================================================//
 
-    VS_Cheese.add_uniform("u_final_mat"); // Mat4F
-    VS_Cheese.add_uniform("u_normal_mat"); // Mat3F
-    FS_Cheese.add_uniform("u_colour"); // Vec3F
+    game.renderer->processor.load_vertex(PROG_Cheese, "fighters/Cheese/Cheese_vs");
+    game.renderer->processor.load_fragment(PROG_Cheese, "fighters/Cheese/Cheese_fs");
 
-    //========================================================//
-
-    game.renderer->shaders.preprocs(VS_Cheese, "fighters/Cheese/Cheese_vs");
-    game.renderer->shaders.preprocs(FS_Cheese, "fighters/Cheese/Cheese_fs");
+    PROG_Cheese.link_program_stages();
 }
 
 //============================================================================//
 
 void Cheese_Fighter::tick()
 {
-    this->impl_tick_base();
+    this->base_tick_Entity();
+    this->base_tick_Fighter();
 }
 
 //============================================================================//
 
-void Cheese_Fighter::integrate()
+void Cheese_Fighter::integrate(float blend)
 {
-    const auto& progress = game.renderer->progress;
     const auto& camera = game.renderer->camera;
 
     //========================================================//
@@ -100,13 +96,13 @@ void Cheese_Fighter::integrate()
 
     //========================================================//
 
-    const Vec2F position = maths::mix(previous.position, current.position, progress);
+    const Vec2F position = maths::mix(mPreviousPosition, mCurrentPosition, blend);
     const Mat4F modelMatrix = maths::transform(Vec3F(position.x, 0.f, position.y), rotation, scale);
 
     mFinalMatrix = camera.projMatrix * camera.viewMatrix * modelMatrix;
     mNormalMatrix = maths::normal_matrix(camera.viewMatrix * modelMatrix);
 
-    FS_Cheese.update("u_colour", colour);
+    PROG_Cheese.update(4, colour);
 }
 
 //============================================================================//
@@ -125,14 +121,13 @@ void Cheese_Fighter::render_depth()
 
     //========================================================//
 
-    shaders.VS_Depth_Simple.update("u_final_mat", mFinalMatrix);
-    context.use_Shader_Vert(shaders.VS_Depth_Simple);
+    shaders.PROG_Depth_SimpleSolid.update(0, mFinalMatrix);
+    context.bind_Program(shaders.PROG_Depth_SimpleSolid);
 
     context.bind_VertexArray(MESH_Cheese.get_vao());
 
     //========================================================//
 
-    context.disable_shader_stage_fragment();
     MESH_Cheese.draw_complete();
 }
 
@@ -150,12 +145,10 @@ void Cheese_Fighter::render_main()
 
     //========================================================//
 
-    VS_Cheese.update("u_final_mat", mFinalMatrix);
-    VS_Cheese.update("u_normal_mat", mNormalMatrix);
+    PROG_Cheese.update(0, mFinalMatrix);
+    PROG_Cheese.update(1, mNormalMatrix);
 
     //========================================================//
-
-    context.use_Shader_Vert(VS_Cheese);
 
     context.bind_VertexArray(MESH_Cheese.get_vao());
 
@@ -165,7 +158,6 @@ void Cheese_Fighter::render_main()
     context.bind_Texture(TX_Cheese_norm, 1u);
     context.bind_Texture(TX_Cheese_spec, 2u);
 
-    context.use_Shader_Frag(FS_Cheese);
-
+    context.bind_Program(PROG_Cheese);
     MESH_Cheese.draw_complete();
 }

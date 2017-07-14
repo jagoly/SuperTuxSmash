@@ -13,11 +13,9 @@ layout(location=1) in vec2 V_tcrd;
 layout(location=5) in ivec4 V_bones;
 layout(location=6) in vec4 V_weights;
 
-uniform mat4 u_final_mat;
+layout(location=0) uniform mat4 u_final_mat;
 
 out vec2 texcrd;
-
-out gl_PerVertex { vec4 gl_Position; };
 
 //============================================================================//
 

@@ -1,52 +1,46 @@
 #pragma once
 
-#include <sqee/builtins.hpp>
-#include <sqee/dop/Classes.hpp>
-
-#include <sqee/maths/Vectors.hpp>
-#include <sqee/maths/Matrices.hpp>
-
 #include <sqee/app/PreProcessor.hpp>
 
 #include <sqee/gl/FrameBuffer.hpp>
-#include <sqee/gl/Shaders.hpp>
+#include <sqee/gl/Program.hpp>
 #include <sqee/gl/Textures.hpp>
 #include <sqee/gl/UniformBuffer.hpp>
 
-#include <sqee/render/Armature.hpp>
 #include <sqee/render/Mesh.hpp>
+#include <sqee/render/Armature.hpp>
+#include <sqee/render/Volume.hpp>
+
+#include "main/Options.hpp"
+
+//====== Data Declarations ===================================================//
+
+extern "C" const float data_CubeVertices [8*3];
+extern "C" const uchar data_CubeIndices  [12*3];
+extern "C" const float data_SphereVertices [42*3];
+extern "C" const uchar data_SphereIndices  [80*3];
+
+//====== Forward Declarations ================================================//
+
+namespace sts { class Game; }
+
+//============================================================================//
 
 namespace sts {
 
 //============================================================================//
 
-class Game; // Forward Declaration
-
-//============================================================================//
-
 class Renderer final : sq::NonCopyable
 {
-public:
+public: //====================================================//
+
+    Renderer(Game& game, const Options& options);
 
     //========================================================//
 
-    Renderer(Game& game);
+    void refresh_options();
 
-    ~Renderer();
-
-    //========================================================//
-
-    float progress = 0.f;
-
-    //========================================================//
-
-    void update_options();
-
-    void render();
-
-    //========================================================//
-
-    Game& mGame;
+    void render(float blend);
 
     //========================================================//
 
@@ -74,22 +68,29 @@ public:
 
     struct {
 
-        sq::Shader VS_Depth_Simple { sq::Shader::Stage::Vertex };
-        sq::Shader VS_Depth_Skelly { sq::Shader::Stage::Vertex };
-        sq::Shader FS_Depth_Mask { sq::Shader::Stage::Fragment };
+        sq::Program PROG_Depth_SimpleSolid;
+        sq::Program PROG_Depth_SkellySolid;
+        sq::Program PROG_Depth_SimplePunch;
+        sq::Program PROG_Depth_SkellyPunch;
 
-        sq::Shader VS_FullScreen { sq::Shader::Stage::Vertex };
-        sq::Shader FS_PassThrough { sq::Shader::Stage::Fragment };
+        sq::Program PROG_PassThrough;
 
-        sq::Shader VS_Lighting_Skybox { sq::Shader::Stage::Vertex };
-        sq::Shader FS_Lighting_Skybox { sq::Shader::Stage::Fragment };
+        sq::Program PROG_Lighting_Skybox;
 
-        sq::Shader FS_Composite { sq::Shader::Stage::Fragment };
-        sq::Shader FS_FSAA_Screen { sq::Shader::Stage::Fragment };
+        sq::Program PROG_Composite;
 
-        sq::PreProcessor preprocs;
+        sq::Program PROG_Debug_HitShape;
 
     } shaders;
+
+    //========================================================//
+
+    struct {
+
+        sq::Volume Cube { data_CubeVertices, data_CubeIndices, 8u, 36u };
+        sq::Volume Sphere { data_SphereVertices, data_SphereIndices, 42u, 240u };
+
+    } volumes;
 
     //========================================================//
 
@@ -105,8 +106,18 @@ public:
         sq::UniformBuffer ubo;
 
     } light;
+
+    //--------------------------------------------------------//
+
+    sq::PreProcessor processor;
+
+private: //===================================================//
+
+    Game& game;
+
+    const Options& options;
 };
 
 //============================================================================//
 
-} // namespace sts
+} // namespace client

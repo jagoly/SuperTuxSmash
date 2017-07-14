@@ -1,32 +1,38 @@
 #pragma once
 
 #include <sqee/builtins.hpp>
+#include <sqee/app/InputDevices.hpp>
 
-#include <game/Renderer.hpp>
-#include <game/Stage.hpp>
-#include <game/Fighter.hpp>
+#include "main/Options.hpp"
 
-namespace sts {
+//====== Forward Declarations ================================================//
+
+namespace sts { class Renderer; class Stage; class Controller; class Fighter; }
 
 //============================================================================//
 
-class Game final
+namespace sts {
+
+class Game final : sq::NonCopyable
 {
-public:
+public: //====================================================//
 
-    //========================================================//
+    Game(const sq::InputDevices& inputDevices, const Options& options);
 
-    Game();
-
-    //========================================================//
+    //--------------------------------------------------------//
 
     unique_ptr<Renderer> renderer;
 
     unique_ptr<Stage> stage;
 
-    vector<unique_ptr<Fighter>> fighters;
-};
+    std::array<unique_ptr<Controller>, 4> controllers;
+    std::array<unique_ptr<Fighter>, 4> fighters;
 
-//============================================================================//
+private: //===================================================//
+
+    const sq::InputDevices& mInputDevices;
+
+    const Options& mOptions;
+};
 
 } // namespace sts
