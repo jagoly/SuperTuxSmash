@@ -133,6 +133,12 @@ void SmashApp::handle_event(sq::Event event)
 
             refresh_options();
         }
+	if (data.keyboard.key == Key::Q)
+	{
+		mReturnCode = 0;
+		return;
+	}
+
 
         #ifdef SQEE_DEBUG
 
