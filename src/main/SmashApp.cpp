@@ -133,7 +133,7 @@ void SmashApp::handle_event(sq::Event event)
 
             refresh_options();
         }
-	if (data.keyboard.key == Key::Q)
+	if (data.keyboard.key == Key::Escape)
 	{
 		mReturnCode = 0;
 		return;
