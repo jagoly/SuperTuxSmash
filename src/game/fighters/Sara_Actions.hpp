@@ -1,16 +1,11 @@
 #pragma once
 
-#include <game/Actions.hpp>
+#include "game/fighters/Sara_Fighter.hpp"
 
 //============================================================================//
 
 namespace sts {
 
-class Sara_Actions final : public DebugActions
-{
-public: //====================================================//
-
-    using DebugActions::DebugActions;
-};
+unique_ptr<Actions> create_actions(Sara_Fighter& fighter);
 
 } // namespace sts

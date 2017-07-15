@@ -1,50 +1,59 @@
 #include <sqee/debug/Logging.hpp>
 
-#include <game/Fighter.hpp>
-
-#include "Actions.hpp"
+#include "game/Actions.hpp"
 
 using namespace sts;
 
 //============================================================================//
 
-namespace { // anonymous
+Action::~Action() = default;
 
-bool impl_debug_action(Fighter& fighter, uint& timeLeft, string action)
+//============================================================================//
+
+void Action::start()
 {
-    if (timeLeft == 0u)
-    {
-        sq::log_info(" start: %s %s", fighter.name, action);
-        timeLeft = 6u;
-    }
+    this->on_start();
 
-    else if (--timeLeft == 0u)
+    mMethodIter = mMethodVec.begin();
+    mCurrentFrame = 0u;
+}
+
+//============================================================================//
+
+void Action::cancel()
+{
+    this->on_cancel();
+}
+
+//============================================================================//
+
+bool Action::tick()
+{
+    if (this->on_tick())
     {
-        sq::log_info("finish: %s %s", fighter.name, action);
+        this->on_finish();
         return true;
     }
 
+    if (mMethodIter != mMethodVec.end())
+    {
+        if (mMethodIter->frame == mCurrentFrame)
+        {
+            mMethodIter->func();
+            ++mMethodIter;
+        }
+    }
+
+    ++mCurrentFrame;
     return false;
 }
 
-} // anonymous namespace
-
 //============================================================================//
 
-DebugActions::DebugActions(Fighter& fighter) : mFighter(fighter) {}
+void DumbAction::on_start() { sq::log_info(" start: %s", mMessage); }
 
-//============================================================================//
+void DumbAction::on_finish() { sq::log_info("finish: %s", mMessage); }
 
-bool DebugActions::fn_neutral_first() { return impl_debug_action(mFighter, mTimeLeft, "neutral_first"); }
+void DumbAction::on_cancel() { sq::log_info("cancel: %s", mMessage); }
 
-bool DebugActions::fn_tilt_down() { return impl_debug_action(mFighter, mTimeLeft, "tilt_down"); }
-bool DebugActions::fn_tilt_forward() { return impl_debug_action(mFighter, mTimeLeft, "tilt_forward"); }
-bool DebugActions::fn_tilt_up() { return impl_debug_action(mFighter, mTimeLeft, "tilt_up"); }
-
-bool DebugActions::fn_air_back() { return impl_debug_action(mFighter, mTimeLeft, "air_back"); }
-bool DebugActions::fn_air_down() { return impl_debug_action(mFighter, mTimeLeft, "air_down"); }
-bool DebugActions::fn_air_forward() { return impl_debug_action(mFighter, mTimeLeft, "air_forward"); }
-bool DebugActions::fn_air_neutral() { return impl_debug_action(mFighter, mTimeLeft, "air_neutral"); }
-bool DebugActions::fn_air_up() { return impl_debug_action(mFighter, mTimeLeft, "air_up"); }
-
-bool DebugActions::fn_dash_attack() { return impl_debug_action(mFighter, mTimeLeft, "dash_attack"); }
+bool DumbAction::on_tick() { return get_current_frame() == 12u; }

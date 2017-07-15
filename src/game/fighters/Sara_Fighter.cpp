@@ -7,7 +7,7 @@ using namespace sts;
 
 Sara_Fighter::Sara_Fighter(Controller& controller) : Fighter("Sara", controller)
 {
-    actions = std::make_unique<Sara_Actions>(*this);
+    actions = create_actions(*this);
 
     //--------------------------------------------------------//
 

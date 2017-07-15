@@ -1,16 +1,11 @@
 #pragma once
 
-#include <game/Actions.hpp>
+#include "game/fighters/Cheese_Fighter.hpp"
 
 //============================================================================//
 
 namespace sts {
 
-class Cheese_Actions final : public DebugActions
-{
-public: //====================================================//
-
-    using DebugActions::DebugActions;
-};
+unique_ptr<Actions> create_actions(Cheese_Fighter& fighter);
 
 } // namespace sts

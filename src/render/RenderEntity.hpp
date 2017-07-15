@@ -6,7 +6,7 @@ namespace sts {
 
 //====== Forward Declarations ================================================//
 
-class Entity; class Renderer; class Options;
+class Entity; class Renderer;
 
 //============================================================================//
 

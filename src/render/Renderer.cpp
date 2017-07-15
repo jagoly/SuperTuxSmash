@@ -127,14 +127,7 @@ struct StaticShit
         TEX_Skybox.set_mipmaps_mode(true);
 
         TEX_Skybox.allocate_storage(2048u);
-
-        TEX_Skybox.load_file("skybox/0_right",   0u);
-        TEX_Skybox.load_file("skybox/1_left",    1u);
-        TEX_Skybox.load_file("skybox/2_forward", 2u);
-        TEX_Skybox.load_file("skybox/3_back",    3u);
-        TEX_Skybox.load_file("skybox/4_up",      4u);
-        TEX_Skybox.load_file("skybox/5_down",    5u);
-
+        TEX_Skybox.load_directory("skybox");
         TEX_Skybox.generate_auto_mipmaps();
 
         MESH_Sphere.load_from_file("debug/volumes/Sphere");

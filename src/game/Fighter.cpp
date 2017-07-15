@@ -258,14 +258,11 @@ void Fighter::impl_input_actions(Controller::Input input)
 
             if (state.move == State::Move::None)
             {
-                if (input.axis_move.y == 0.f) actions->active = { [&](){ return actions->fn_neutral_first(); },
-                                                                  Actions::Type::Neutral_First };
+                if (input.axis_move.y == 0.f) actions->switch_active(Actions::Type::Neutral_First);
 
-                else if (input.axis_move.y < -0.f) actions->active = { [&](){ return actions->fn_tilt_down(); },
-                                                                       Actions::Type::Tilt_Down };
+                else if (input.axis_move.y < -0.f) actions->switch_active(Actions::Type::Tilt_Down);
 
-                else if (input.axis_move.y > +0.f) actions->active = { [&](){ return actions->fn_tilt_up(); },
-                                                                       Actions::Type::Tilt_Up };
+                else if (input.axis_move.y > +0.f) actions->switch_active(Actions::Type::Tilt_Up);
             }
 
             //========================================================//
@@ -276,15 +273,12 @@ void Fighter::impl_input_actions(Controller::Input input)
 
                 if (std::abs(input.axis_move.y) > std::abs(input.axis_move.x))
                 {
-                    if (input.axis_move.y < -0.f) actions->active = { [&](){ return actions->fn_tilt_down(); },
-                                                                      Actions::Type::Tilt_Down };
+                    if (input.axis_move.y < -0.f) actions->switch_active(Actions::Type::Tilt_Down);
 
-                    if (input.axis_move.y > +0.f) actions->active = { [&](){ return actions->fn_tilt_up(); },
-                                                                      Actions::Type::Tilt_Up };
+                    if (input.axis_move.y > +0.f) actions->switch_active(Actions::Type::Tilt_Up);
                 }
 
-                else actions->active = { [&](){ return actions->fn_tilt_forward(); },
-                                         Actions::Type::Tilt_Forward };
+                else actions->switch_active(Actions::Type::Tilt_Forward);
             }
 
             //========================================================//
@@ -293,8 +287,7 @@ void Fighter::impl_input_actions(Controller::Input input)
             {
                 state.move = State::Move::None;
 
-                actions->active = { [&](){ return actions->fn_dash_attack(); },
-                                    Actions::Type::Dash_Attack };
+                actions->switch_active(Actions::Type::Dash_Attack);
             }
 
             //========================================================//
@@ -303,31 +296,24 @@ void Fighter::impl_input_actions(Controller::Input input)
             {
                 if (std::abs(input.axis_move.y) > std::abs(input.axis_move.x))
                 {
-                    if (input.axis_move.y < -0.f) actions->active = { [&](){ return actions->fn_air_down(); },
-                                                                      Actions::Type::Air_Down };
+                    if (input.axis_move.y < -0.f) actions->switch_active(Actions::Type::Air_Down);
 
-                    if (input.axis_move.y > +0.f) actions->active = { [&](){ return actions->fn_air_up(); },
-                                                                      Actions::Type::Air_Up };
+                    if (input.axis_move.y > +0.f) actions->switch_active(Actions::Type::Air_Up);
                 }
 
                 else if (input.axis_move.x < -0.f && state.direction == State::Direction::Left)
-                    actions->active = { [&](){ return actions->fn_air_forward(); },
-                                        Actions::Type::Air_Forward };
+                    actions->switch_active(Actions::Type::Air_Forward);
 
                 else if (input.axis_move.x < -0.f && state.direction == State::Direction::Right)
-                    actions->active = { [&](){ return actions->fn_air_back(); },
-                                        Actions::Type::Air_Back };
+                    actions->switch_active(Actions::Type::Air_Back);
 
                 else if (input.axis_move.x > +0.f && state.direction == State::Direction::Left)
-                    actions->active = { [&](){ return actions->fn_air_back(); },
-                                        Actions::Type::Air_Back };
+                    actions->switch_active(Actions::Type::Air_Back);
 
                 else if (input.axis_move.x > +0.f && state.direction == State::Direction::Right)
-                    actions->active = { [&](){ return actions->fn_air_forward(); },
-                                        Actions::Type::Air_Forward };
+                    actions->switch_active(Actions::Type::Air_Forward);
 
-                else actions->active = { [&](){ return actions->fn_air_neutral(); },
-                                         Actions::Type::Air_Neutral };
+                else actions->switch_active(Actions::Type::Air_Neutral);
             }
 
             //========================================================//
@@ -399,8 +385,9 @@ void Fighter::impl_update_fighter()
 
     // update active action /////
 
-    if (actions->active.func != nullptr && actions->active.func())
-        actions->active = { nullptr, Actions::Type::None };
+    if (actions->active.action != nullptr)
+        if (actions->active.action->tick() == true)
+            actions->active = { Actions::Type::None, nullptr };
 }
 
 //============================================================================//

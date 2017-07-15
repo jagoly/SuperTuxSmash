@@ -7,7 +7,7 @@ using namespace sts;
 
 Cheese_Fighter::Cheese_Fighter(Controller& controller) : Fighter("Cheese", controller)
 {
-    actions = std::make_unique<Cheese_Actions>(*this);
+    actions = create_actions(*this);
 }
 
 //============================================================================//
