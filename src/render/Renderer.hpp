@@ -7,9 +7,9 @@
 #include <sqee/gl/Textures.hpp>
 #include <sqee/gl/UniformBuffer.hpp>
 
-#include <sqee/render/Mesh.hpp>
-#include <sqee/render/Armature.hpp>
 #include <sqee/render/Volume.hpp>
+
+#include "render/RenderEntity.hpp"
 
 #include "main/Options.hpp"
 
@@ -20,29 +20,27 @@ extern "C" const uchar data_CubeIndices  [12*3];
 extern "C" const float data_SphereVertices [42*3];
 extern "C" const uchar data_SphereIndices  [80*3];
 
-//====== Forward Declarations ================================================//
-
-namespace sts { class Game; }
-
 //============================================================================//
 
 namespace sts {
-
-//============================================================================//
 
 class Renderer final : sq::NonCopyable
 {
 public: //====================================================//
 
-    Renderer(Game& game, const Options& options);
-
-    //========================================================//
+    Renderer(const Options& options);
 
     void refresh_options();
 
-    void render(float blend);
+    //--------------------------------------------------------//
 
-    //========================================================//
+    void add_entity(unique_ptr<RenderEntity> entity);
+
+    //--------------------------------------------------------//
+
+    void render(float accum, float blend);
+
+    //--------------------------------------------------------//
 
     struct {
 
@@ -53,7 +51,7 @@ public: //====================================================//
 
     } fbos;
 
-    //========================================================//
+    //--------------------------------------------------------//
 
     struct {
 
@@ -64,26 +62,22 @@ public: //====================================================//
 
     } textures;
 
-    //========================================================//
+    //--------------------------------------------------------//
 
     struct {
 
-        sq::Program PROG_Depth_SimpleSolid;
-        sq::Program PROG_Depth_SkellySolid;
-        sq::Program PROG_Depth_SimplePunch;
-        sq::Program PROG_Depth_SkellyPunch;
+        sq::Program Depth_SimpleSolid;
+        sq::Program Depth_SkellySolid;
+        sq::Program Depth_SimplePunch;
+        sq::Program Depth_SkellyPunch;
 
-        sq::Program PROG_PassThrough;
-
-        sq::Program PROG_Lighting_Skybox;
-
-        sq::Program PROG_Composite;
-
-        sq::Program PROG_Debug_HitShape;
+        sq::Program Lighting_Skybox;
+        sq::Program Debug_HitShape;
+        sq::Program Composite;
 
     } shaders;
 
-    //========================================================//
+    //--------------------------------------------------------//
 
     struct {
 
@@ -92,7 +86,7 @@ public: //====================================================//
 
     } volumes;
 
-    //========================================================//
+    //--------------------------------------------------------//
 
     struct {
 
@@ -111,13 +105,13 @@ public: //====================================================//
 
     sq::PreProcessor processor;
 
+    sq::Context& context;
+
 private: //===================================================//
 
-    Game& game;
+    std::vector<unique_ptr<RenderEntity>> entities;
 
     const Options& options;
 };
 
-//============================================================================//
-
-} // namespace client
+} // namespace sts

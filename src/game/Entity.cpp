@@ -1,14 +1,14 @@
-#include "Entity.hpp"
+#include "game/Entity.hpp"
 
 using namespace sts;
 
 //============================================================================//
 
-Entity::Entity(string name, Game& game) : name(name), game(game) {}
+Entity::Entity(const string& name) : name(name) {}
 
 //============================================================================//
 
-void Entity::base_tick_Entity()
+void Entity::base_tick_entity()
 {
     mPreviousPosition = mCurrentPosition;
 }

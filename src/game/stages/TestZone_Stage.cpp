@@ -1,17 +1,13 @@
-#include "Stage.hpp"
+#include "game/stages/TestZone_Stage.hpp"
 
-using namespace sts::stages;
-
-//============================================================================//
-
-TestZone::TestZone(Game& game) : Stage(game)
-{
-
-}
+using namespace sts;
 
 //============================================================================//
 
-void TestZone::tick()
-{
+TestZone_Stage::TestZone_Stage() : Stage() {}
 
+//============================================================================//
+
+void TestZone_Stage::tick()
+{
 }

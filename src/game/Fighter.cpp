@@ -10,8 +10,8 @@ using namespace sts;
 
 //============================================================================//
 
-Fighter::Fighter(string name, Game& game, Controller& controller)
-    : Entity(name, game), controller(controller)
+Fighter::Fighter(const string& name, Controller& controller)
+    : Entity(name), controller(controller)
 {
     const auto json = sq::parse_json("assets/fighters/" + name + "/fighter.json");
 
@@ -405,10 +405,8 @@ void Fighter::impl_update_fighter()
 
 //============================================================================//
 
-void Fighter::base_tick_Fighter()
+void Fighter::base_tick_fighter()
 {
-    // this->base_tick_Entity(); //
-
     const auto input = controller.get_input();
 
     this->impl_validate_stats();

@@ -54,7 +54,7 @@ set(SOURCES
 
   "src/main.cpp"
 
-  ############################################################
+  #----------------------------------------------------------#
 
   "src/main/Options.hpp"
   "src/main/Options.cpp"
@@ -62,13 +62,26 @@ set(SOURCES
   "src/main/SmashApp.hpp"
   "src/main/SmashApp.cpp"
 
-  ############################################################
+  #----------------------------------------------------------#
+
+  "src/render/Renderer.hpp"
+  "src/render/Renderer.cpp"
+
+  "src/render/RenderEntity.hpp"
+  "src/render/RenderEntity.cpp"
+
+  #----------------------------------------------------------#
+
+  "src/render/fighters/Cheese_Render.hpp"
+  "src/render/fighters/Cheese_Render.cpp"
+
+  "src/render/fighters/Sara_Render.hpp"
+  "src/render/fighters/Sara_Render.cpp"
+
+  #----------------------------------------------------------#
 
   "src/game/GameScene.hpp"
   "src/game/GameScene.cpp"
-
-  "src/game/Game.hpp"
-  "src/game/Game.cpp"
 
   "src/game/Actions.hpp"
   "src/game/Actions.cpp"
@@ -82,28 +95,27 @@ set(SOURCES
   "src/game/Fighter.hpp"
   "src/game/Fighter.cpp"
 
-  "src/game/Renderer.hpp"
-  "src/game/Renderer.cpp"
-
   "src/game/Stage.hpp"
   "src/game/Stage.cpp"
 
-  ############################################################
+  #----------------------------------------------------------#
 
-  "src/game/fighters/Cheese/Actions.hpp"
-  "src/game/fighters/Cheese/Actions.cpp"
-  "src/game/fighters/Cheese/Fighter.hpp"
-  "src/game/fighters/Cheese/Fighter.cpp"
+  "src/game/stages/TestZone_Stage.hpp"
+  "src/game/stages/TestZone_Stage.cpp"
 
-  "src/game/fighters/Sara/Actions.hpp"
-  "src/game/fighters/Sara/Actions.cpp"
-  "src/game/fighters/Sara/Fighter.hpp"
-  "src/game/fighters/Sara/Fighter.cpp"
+  #----------------------------------------------------------#
 
-  ############################################################
+  "src/game/fighters/Cheese_Actions.hpp"
+  "src/game/fighters/Cheese_Actions.cpp"
 
-  "src/game/stages/TestZone/Stage.hpp"
-  "src/game/stages/TestZone/Stage.cpp"
+  "src/game/fighters/Cheese_Fighter.hpp"
+  "src/game/fighters/Cheese_Fighter.cpp"
+
+  "src/game/fighters/Sara_Actions.hpp"
+  "src/game/fighters/Sara_Actions.cpp"
+
+  "src/game/fighters/Sara_Fighter.hpp"
+  "src/game/fighters/Sara_Fighter.cpp"
 )
 
 ################################################################################

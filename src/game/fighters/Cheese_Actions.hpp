@@ -2,17 +2,15 @@
 
 #include <game/Actions.hpp>
 
-namespace sts { namespace fighters {
-
 //============================================================================//
+
+namespace sts {
 
 class Cheese_Actions final : public DebugActions
 {
-public:
+public: //====================================================//
 
     using DebugActions::DebugActions;
 };
 
-//============================================================================//
-
-}} // namespace sts::fighters
+} // namespace sts

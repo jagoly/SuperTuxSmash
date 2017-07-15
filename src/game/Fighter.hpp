@@ -21,21 +21,13 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    Fighter(string name, Game& game, Controller& controller);
+    Fighter(const string& name, Controller& controller);
 
     virtual ~Fighter() override = default;
 
     //--------------------------------------------------------//
 
-    virtual void setup() override = 0;
-
     virtual void tick() override = 0;
-
-    virtual void integrate(float blend) override = 0;
-
-    virtual void render_depth() override = 0;
-
-    virtual void render_main() override = 0;
 
     //--------------------------------------------------------//
 
@@ -67,7 +59,7 @@ protected: //=================================================//
 
     //--------------------------------------------------------//
 
-    void base_tick_Fighter();
+    void base_tick_fighter();
 
 private: //===================================================//
 

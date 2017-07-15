@@ -1,24 +1,23 @@
 #pragma once
 
-#include <game/Renderer.hpp>
-#include <game/Fighter.hpp>
+#include <sqee/gl/Textures.hpp>
+#include <sqee/gl/Program.hpp>
+
+#include <sqee/render/Mesh.hpp>
+
+#include "render/RenderEntity.hpp"
 
 //============================================================================//
 
-namespace sts::fighters {
+namespace sts {
 
-class Cheese_Fighter final : public Fighter
+class Cheese_Render final : public RenderEntity
 {
 public: //====================================================//
 
-    Cheese_Fighter(Game& game, Controller& controller);
-    ~Cheese_Fighter();
+    Cheese_Render(const Entity& entity, const Renderer& renderer);
 
     //--------------------------------------------------------//
-
-    void setup() override;
-
-    void tick() override;
 
     void integrate(float blend) override;
 
@@ -42,4 +41,4 @@ private: //===================================================//
     Mat3F mNormalMatrix;
 };
 
-} // namespace sts::fighters
+} // namespace sts

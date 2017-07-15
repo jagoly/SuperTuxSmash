@@ -7,7 +7,7 @@
 
 namespace sts {
 
-/// SuperTuxSmash Options
+/// SuperTuxSmash Options.
 class Options final : sq::NonCopyable
 {
 public: //====================================================//
@@ -16,24 +16,24 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    /// The Size of the Viewport
+    /// The Size of the Viewport.
     Vec2U Window_Size = {800u, 600u};
 
-    /// Enable HDR Bloom Effect
+    /// Enable HDR Bloom Effect.
     bool Bloom_Enable = true;
 
-    /// Screen Space Ambient Occlusion Quality
+    /// Screen Space Ambient Occlusion Quality.
     uchar SSAO_Quality = 2u;
 
-    /// Full Screen Anti-Aliasing Quality
-    uchar FSAA_Quality = 2u;
+    /// Multi Sample Anti-Aliasing Quality.
+    uchar MSAA_Quality = 2u;
 
-    /// Debug Texture to Draw to Screen
+    /// Debug Texture to Draw to Screen.
     string Debug_Texture = "";
 
     //--------------------------------------------------------//
 
-    /// Assert that options are valid
+    /// Assert that options are valid.
     void validate() const;
 };
 
