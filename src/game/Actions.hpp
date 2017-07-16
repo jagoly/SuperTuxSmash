@@ -13,83 +13,6 @@ class Action : sq::NonCopyable
 {
 public: //====================================================//
 
-    virtual ~Action();
-
-    void start();
-
-    void cancel();
-
-    bool tick();
-
-protected: //=================================================//
-
-    struct FrameMethod
-    {
-        const uint frame;
-        std::function<void()> func;
-    };
-
-    //--------------------------------------------------------//
-
-    std::function<void()>& add_frame_method(uint frame)
-    {
-        SQASSERT(mMethodVec.empty() || frame > mMethodVec.back().frame, "");
-
-        mMethodVec.push_back(FrameMethod{frame, {}});
-        return mMethodVec.back().func;
-    }
-
-    //--------------------------------------------------------//
-
-    uint get_current_frame() const
-    {
-        return mCurrentFrame;
-    }
-
-    //--------------------------------------------------------//
-
-    virtual void on_start() {}
-
-    virtual void on_finish() {}
-
-    virtual void on_cancel() {}
-
-    virtual bool on_tick() = 0;
-
-private: //===================================================//
-
-    std::vector<FrameMethod> mMethodVec;
-    std::vector<FrameMethod>::iterator mMethodIter;
-
-    uint mCurrentFrame = 0u;
-};
-
-//============================================================================//
-
-class DumbAction final : public Action
-{
-public: //====================================================//
-
-    DumbAction(string message) : mMessage(message) {}
-
-protected: //=================================================//
-
-    void on_start() override;
-    void on_finish() override;
-    void on_cancel() override;
-    bool on_tick() override;
-
-    //--------------------------------------------------------//
-
-    const string mMessage;
-};
-
-//============================================================================//
-
-class Actions final : public sq::NonCopyable
-{
-public: //====================================================//
-
     enum class Type
     {
         None = -1,
@@ -107,26 +30,97 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    void switch_active(Type type)
+    virtual ~Action();
+
+protected: //=================================================//
+
+    struct FrameMethod
     {
-        if (active.action != nullptr) active.action->cancel();
+        FrameMethod(uint frame) : frame(frame) {}
+        const uint frame; std::function<void()> func;
+    };
 
-        if (type == Type::None)          active.action = nullptr;
-        if (type == Type::Neutral_First) active.action = neutral_first.get();
-        if (type == Type::Tilt_Down)     active.action = tilt_down.get();
-        if (type == Type::Tilt_Forward)  active.action = tilt_forward.get();
-        if (type == Type::Tilt_Up)       active.action = tilt_up.get();
-        if (type == Type::Air_Back)      active.action = air_back.get();
-        if (type == Type::Air_Down)      active.action = air_down.get();
-        if (type == Type::Air_Forward)   active.action = air_forward.get();
-        if (type == Type::Air_Neutral)   active.action = air_neutral.get();
-        if (type == Type::Air_Up)        active.action = air_up.get();
-        if (type == Type::Dash_Attack)   active.action = dash_attack.get();
+    //--------------------------------------------------------//
 
-        active.type = type;
+    /// Add a method for the specified frame.
+    std::function<void()>& add_frame_method(uint frame);
 
-        active.action->start();
+    /// Jump action to the specified frame.
+    void jump_to_frame(uint frame);
+
+    /// Check what frame the action is currently on.
+    uint get_current_frame() const { return mCurrentFrame; }
+
+    //--------------------------------------------------------//
+
+    /// Do stuff when action first starts.
+    virtual void on_start() {}
+
+    /// Do stuff when action finishes normally.
+    virtual void on_finish() {}
+
+    /// Do stuff when action is cancelled early.
+    virtual void on_cancel() {}
+
+    /// Return true to finish the action.
+    virtual bool on_tick() = 0;
+
+private: //===================================================//
+
+    std::vector<FrameMethod> mMethodVec;
+    std::vector<FrameMethod>::iterator mMethodIter;
+
+    uint mCurrentFrame = 0u;
+
+    //--------------------------------------------------------//
+
+    void impl_start();
+
+    void impl_cancel();
+
+    bool impl_tick();
+
+    //--------------------------------------------------------//
+
+    friend class Actions;
+};
+
+//============================================================================//
+
+class Actions final : public sq::NonCopyable
+{
+public: //====================================================//
+
+    void switch_active(Action::Type type)
+    {
+        if (mActiveAction != nullptr) mActiveAction->impl_cancel();
+
+        if (type == Action::Type::None)          mActiveAction = nullptr;
+        if (type == Action::Type::Neutral_First) mActiveAction = neutral_first.get();
+        if (type == Action::Type::Tilt_Down)     mActiveAction = tilt_down.get();
+        if (type == Action::Type::Tilt_Forward)  mActiveAction = tilt_forward.get();
+        if (type == Action::Type::Tilt_Up)       mActiveAction = tilt_up.get();
+        if (type == Action::Type::Air_Back)      mActiveAction = air_back.get();
+        if (type == Action::Type::Air_Down)      mActiveAction = air_down.get();
+        if (type == Action::Type::Air_Forward)   mActiveAction = air_forward.get();
+        if (type == Action::Type::Air_Neutral)   mActiveAction = air_neutral.get();
+        if (type == Action::Type::Air_Up)        mActiveAction = air_up.get();
+        if (type == Action::Type::Dash_Attack)   mActiveAction = dash_attack.get();
+
+        mActiveType = type;
+
+        mActiveAction->impl_start();
     }
+
+    //--------------------------------------------------------//
+
+    /// Get the type of the active action.
+    Action::Type active_type() const { return mActiveType; }
+
+    //--------------------------------------------------------//
+
+    /// Tick the active action if not none.
+    void tick_active_action();
 
     //--------------------------------------------------------//
 
@@ -144,12 +138,30 @@ public: //====================================================//
 
     unique_ptr<Action> dash_attack;
 
+private: //===================================================//
+
+    Action::Type mActiveType = Action::Type::None;
+    Action* mActiveAction = nullptr;
+};
+
+//============================================================================//
+
+class DumbAction final : public Action
+{
+public: //====================================================//
+
+    DumbAction(string message) : mMessage(message) {}
+
+private: //===================================================//
+
+    void on_start() override;
+    void on_finish() override;
+    void on_cancel() override;
+    bool on_tick() override;
+
     //--------------------------------------------------------//
 
-    struct {
-        Type type = Type::None;
-        Action* action = nullptr;
-    } active;
+    const string mMessage;
 };
 
 //============================================================================//

@@ -32,23 +32,21 @@ Fighter::Fighter(const string& name, Controller& controller)
 
 void Fighter::impl_input_movement(Controller::Input input)
 {
-    //========================================================//
-
-    // maximum horizontal velocities (signed)
+    //-- maximum horizontal velocities (signed) --------------//
 
     const float maxNewWalkSpeed = input.axis_move.x * (stats.walk_speed * 5.f + stats.land_traction * 0.5f);
     const float maxNewAirSpeed = input.axis_move.x * (stats.air_speed * 5.f + stats.air_traction * 0.2f);
     const float maxDashSpeed = stats.dash_speed * 8.f + stats.land_traction * 0.5f;
 
-    //========================================================//
     switch (state.move) {
-    //========================================================//
+
+    //== None ====================================================//
 
     case State::Move::None:
     {
-        if (actions->active.type != Actions::Type::None) break;
+        if (actions->active_type() != Action::Type::None) break;
 
-        //========================================================//
+        //--------------------------------------------------------//
 
         if (input.axis_move.x < -0.f)
         {
@@ -64,7 +62,7 @@ void Fighter::impl_input_movement(Controller::Input input)
             mVelocity.x = +(stats.land_traction * 1.f);
         }
 
-        //========================================================//
+        //--------------------------------------------------------//
 
         if (input.press_jump == true)
         {
@@ -81,18 +79,18 @@ void Fighter::impl_input_movement(Controller::Input input)
             state.move = State::Move::Dashing;
         }
 
-        //========================================================//
+        //--------------------------------------------------------//
 
         break;
     }
 
-    //========================================================//
+    //== Walking =================================================//
 
     case State::Move::Walking:
     {
-        SQASSERT(actions->active.type == Actions::Type::None, "");
+        SQASSERT(actions->active_type() == Action::Type::None, "");
 
-        //========================================================//
+        //--------------------------------------------------------//
 
         if (input.axis_move.x == 0.f)
         {
@@ -121,7 +119,7 @@ void Fighter::impl_input_movement(Controller::Input input)
             }
         }
 
-        //========================================================//
+        //--------------------------------------------------------//
 
         if (input.press_jump == true)
         {
@@ -138,18 +136,18 @@ void Fighter::impl_input_movement(Controller::Input input)
             state.move = State::Move::Dashing;
         }
 
-        //========================================================//
+        //--------------------------------------------------------//
 
         break;
     }
 
-    //========================================================//
+    //== Dashing =================================================//
 
     case State::Move::Dashing:
     {
-        SQASSERT(actions->active.type == Actions::Type::None, "");
+        SQASSERT(actions->active_type() == Action::Type::None, "");
 
-        //========================================================//
+        //--------------------------------------------------------//
 
         if (input.axis_move.x == 0.f)
         {
@@ -178,7 +176,7 @@ void Fighter::impl_input_movement(Controller::Input input)
             if (input.axis_move.x < +0.8f) state.move = State::Move::Walking;
         }
 
-        //========================================================//
+        //--------------------------------------------------------//
 
         if (input.press_jump == true)
         {
@@ -190,12 +188,12 @@ void Fighter::impl_input_movement(Controller::Input input)
             mVelocity.y = std::sqrt(base * 3.f * 48.f);
         }
 
-        //========================================================//
+        //--------------------------------------------------------//
 
         break;
     }
 
-    //========================================================//
+    //== Jumping =================================================//
 
     case State::Move::Jumping:
     {
@@ -234,95 +232,94 @@ void Fighter::impl_input_movement(Controller::Input input)
         break;
     }
 
-    //========================================================//
+    //== Falling =================================================//
 
     case State::Move::Falling:
     {
         break;
     }
 
-    //========================================================//
+    //============================================================//
+
     } // switch (state.move)
-    //========================================================//
 }
 
 //============================================================================//
 
 void Fighter::impl_input_actions(Controller::Input input)
 {
-    if (actions->active.type == Actions::Type::None)
+    if (actions->active_type() != Action::Type::None)
+        return;
+
+    Action::Type target = Action::Type::None;
+
+    //--------------------------------------------------------//
+
+    if (input.press_attack == true)
     {
-        if (input.press_attack == true)
+        const Vec2F tilt = input.axis_move;
+
+        const Vec2F absTilt = maths::abs(tilt);
+        const bool compareXY = absTilt.x > absTilt.y;
+
+        const bool signX = std::signbit(tilt.x);
+        const bool signY = std::signbit(tilt.y);
+
+        //--------------------------------------------------------//
+
+        if (state.move == State::Move::None)
         {
-            //========================================================//
-
-            if (state.move == State::Move::None)
-            {
-                if (input.axis_move.y == 0.f) actions->switch_active(Actions::Type::Neutral_First);
-
-                else if (input.axis_move.y < -0.f) actions->switch_active(Actions::Type::Tilt_Down);
-
-                else if (input.axis_move.y > +0.f) actions->switch_active(Actions::Type::Tilt_Up);
-            }
-
-            //========================================================//
-
-            else if (state.move == State::Move::Walking)
-            {
-                state.move = State::Move::None;
-
-                if (std::abs(input.axis_move.y) > std::abs(input.axis_move.x))
-                {
-                    if (input.axis_move.y < -0.f) actions->switch_active(Actions::Type::Tilt_Down);
-
-                    if (input.axis_move.y > +0.f) actions->switch_active(Actions::Type::Tilt_Up);
-                }
-
-                else actions->switch_active(Actions::Type::Tilt_Forward);
-            }
-
-            //========================================================//
-
-            else if (state.move == State::Move::Dashing)
-            {
-                state.move = State::Move::None;
-
-                actions->switch_active(Actions::Type::Dash_Attack);
-            }
-
-            //========================================================//
-
-            else if (state.move == State::Move::Jumping)
-            {
-                if (std::abs(input.axis_move.y) > std::abs(input.axis_move.x))
-                {
-                    if (input.axis_move.y < -0.f) actions->switch_active(Actions::Type::Air_Down);
-
-                    if (input.axis_move.y > +0.f) actions->switch_active(Actions::Type::Air_Up);
-                }
-
-                else if (input.axis_move.x < -0.f && state.direction == State::Direction::Left)
-                    actions->switch_active(Actions::Type::Air_Forward);
-
-                else if (input.axis_move.x < -0.f && state.direction == State::Direction::Right)
-                    actions->switch_active(Actions::Type::Air_Back);
-
-                else if (input.axis_move.x > +0.f && state.direction == State::Direction::Left)
-                    actions->switch_active(Actions::Type::Air_Back);
-
-                else if (input.axis_move.x > +0.f && state.direction == State::Direction::Right)
-                    actions->switch_active(Actions::Type::Air_Forward);
-
-                else actions->switch_active(Actions::Type::Air_Neutral);
-            }
-
-            //========================================================//
-
-            else if (state.move == State::Move::Falling)
-            {
-
-            }
+            if (tilt.y == 0.f) target = Action::Type::Neutral_First;
+            else target = signY ? Action::Type::Tilt_Down : Action::Type::Tilt_Up;
         }
+
+        //--------------------------------------------------------//
+
+        else if (state.move == State::Move::Walking)
+        {
+            state.move = State::Move::None;
+
+            if (compareXY == true) target = Action::Type::Tilt_Forward;
+            else target = signY ? Action::Type::Tilt_Down : Action::Type::Tilt_Up;
+        }
+
+        //--------------------------------------------------------//
+
+        else if (state.move == State::Move::Dashing)
+        {
+            state.move = State::Move::None;
+
+            target = Action::Type::Dash_Attack;
+        }
+
+        //--------------------------------------------------------//
+
+        else if (state.move == State::Move::Jumping)
+        {
+            if (tilt == Vec2F(0.f, 0.f)) target = Action::Type::Air_Neutral;
+
+            else if (compareXY && state.direction == State::Direction::Left)
+                target = signX ? Action::Type::Air_Forward : Action::Type::Air_Back;
+
+            else if (compareXY && state.direction == State::Direction::Right)
+                target = signX ? Action::Type::Air_Back : Action::Type::Air_Forward;
+
+            else target = signY ? Action::Type::Air_Down : Action::Type::Air_Up;
+        }
+
+        //--------------------------------------------------------//
+
+        else if (state.move == State::Move::Falling)
+        {
+
+        }
+    }
+
+    //--------------------------------------------------------//
+
+    if (target != Action::Type::None)
+    {
+        actions->switch_active(target);
     }
 }
 
@@ -330,9 +327,7 @@ void Fighter::impl_input_actions(Controller::Input input)
 
 void Fighter::impl_update_fighter()
 {
-    //========================================================//
-
-    // apply friction /////
+    //-- apply friction --------------------------------------//
 
     if (state.move == State::Move::None || state.move == State::Move::Walking || state.move == State::Move::Dashing)
     {
@@ -346,9 +341,7 @@ void Fighter::impl_update_fighter()
         if (mVelocity.x > +0.f) mVelocity.x = maths::max(mVelocity.x - (stats.air_traction * 0.2f), +0.f);
     }
 
-    //========================================================//
-
-    // apply gravity /////
+    //-- apply gravity ---------------------------------------//
 
     if (state.move == State::Move::Jumping)
     {
@@ -362,15 +355,11 @@ void Fighter::impl_update_fighter()
         mVelocity.y = maths::max(mVelocity.y, -maxFall);
     }
 
-    //========================================================//
-
-    // update position /////
+    //-- update position -------------------------------------//
 
     mCurrentPosition += mVelocity / 48.f;
 
-    //========================================================//
-
-    // check landing /////
+    //-- check landing ---------------------------------------//
 
     if (state.move == State::Move::Jumping)
     {
@@ -380,28 +369,22 @@ void Fighter::impl_update_fighter()
             state.move = State::Move::None;
         }
     }
-
-    //========================================================//
-
-    // update active action /////
-
-    if (actions->active.action != nullptr)
-        if (actions->active.action->tick() == true)
-            actions->active = { Actions::Type::None, nullptr };
 }
 
 //============================================================================//
 
 void Fighter::base_tick_fighter()
 {
-    const auto input = controller.get_input();
+    auto input = controller.get_input();
 
-    this->impl_validate_stats();
+    impl_validate_stats();
 
-    this->impl_input_movement(input);
-    this->impl_input_actions(input);
+    impl_input_movement(input);
+    impl_input_actions(input);
 
-    this->impl_update_fighter();
+    impl_update_fighter();
+
+    actions->tick_active_action();
 }
 
 //============================================================================//

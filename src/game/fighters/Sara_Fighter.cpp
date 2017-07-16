@@ -71,25 +71,25 @@ void Sara_Fighter::tick()
         currentPose = POSE_Jump;
     }
 
-    if (actions->active.type == Actions::Type::Neutral_First)
+    if (actions->active_type() == Action::Type::Neutral_First)
     {
         animationProgress = 0.f;
         currentPose = POSE_Act_Neutral;
     }
 
-    if (actions->active.type == Actions::Type::Tilt_Down)
+    if (actions->active_type() == Action::Type::Tilt_Down)
     {
         animationProgress = 0.f;
         currentPose = POSE_Act_TiltDown;
     }
 
-//    if (actions->active.type == Actions::Type::Tilt_Forward)
+//    if (actions->active_type() == Action::Type::Tilt_Forward)
 //    {
 //        mAnimationProgress = 0.f;
 //        mPoseCurrent = POSE_Act_TiltForward;
 //    }
 
-    if (actions->active.type == Actions::Type::Tilt_Up)
+    if (actions->active_type() == Action::Type::Tilt_Up)
     {
         animationProgress = 0.f;
         currentPose = POSE_Act_TiltUp;

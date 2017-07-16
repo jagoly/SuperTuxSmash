@@ -1,4 +1,5 @@
 #include <sqee/debug/Logging.hpp>
+#include <sqee/misc/Algorithms.hpp>
 
 #include "game/Actions.hpp"
 
@@ -10,9 +11,9 @@ Action::~Action() = default;
 
 //============================================================================//
 
-void Action::start()
+void Action::impl_start()
 {
-    this->on_start();
+    on_start();
 
     mMethodIter = mMethodVec.begin();
     mCurrentFrame = 0u;
@@ -20,20 +21,16 @@ void Action::start()
 
 //============================================================================//
 
-void Action::cancel()
+void Action::impl_cancel()
 {
-    this->on_cancel();
+    on_cancel();
 }
 
 //============================================================================//
 
-bool Action::tick()
+bool Action::impl_tick()
 {
-    if (this->on_tick())
-    {
-        this->on_finish();
-        return true;
-    }
+    if (on_tick()) { on_finish(); return true; }
 
     if (mMethodIter != mMethodVec.end())
     {
@@ -44,8 +41,37 @@ bool Action::tick()
         }
     }
 
-    ++mCurrentFrame;
-    return false;
+    ++mCurrentFrame; return false;
+}
+
+//============================================================================//
+
+std::function<void()>& Action::add_frame_method(uint frame)
+{
+    SQASSERT(mMethodVec.empty() || frame > mMethodVec.back().frame, "");
+
+    return mMethodVec.emplace_back(frame).func;
+}
+
+//============================================================================//
+
+void Action::jump_to_frame(uint frame)
+{
+    auto predicate = [&](auto& method) { return method.frame >= frame; };
+    mMethodIter = sq::algo::find_if(mMethodVec, predicate);
+
+    mCurrentFrame = frame;
+}
+
+//============================================================================//
+
+void Actions::tick_active_action()
+{
+    if (mActiveAction && mActiveAction->impl_tick())
+    {
+        mActiveType = Action::Type::None;
+        mActiveAction = nullptr;
+    }
 }
 
 //============================================================================//
