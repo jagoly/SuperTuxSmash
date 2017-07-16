@@ -1,5 +1,5 @@
-#include "game/fighters/Sara_Actions.hpp"
-#include "game/fighters/Sara_Fighter.hpp"
+#include "fighters/Sara_Actions.hpp"
+#include "fighters/Sara_Fighter.hpp"
 
 using namespace sts;
 

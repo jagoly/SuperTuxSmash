@@ -3,8 +3,8 @@
 
 #include "render/Renderer.hpp"
 
-#include "game/fighters/Sara_Fighter.hpp"
-#include "render/fighters/Sara_Render.hpp"
+#include "fighters/Sara_Fighter.hpp"
+#include "fighters/Sara_Render.hpp"
 
 using Context = sq::Context;
 namespace maths = sq::maths;

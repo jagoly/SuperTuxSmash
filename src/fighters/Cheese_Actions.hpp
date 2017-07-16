@@ -1,6 +1,6 @@
 #pragma once
 
-#include "game/fighters/Cheese_Fighter.hpp"
+#include "fighters/Cheese_Fighter.hpp"
 
 //============================================================================//
 

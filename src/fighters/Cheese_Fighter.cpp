@@ -1,5 +1,5 @@
-#include "game/fighters/Cheese_Actions.hpp"
-#include "game/fighters/Cheese_Fighter.hpp"
+#include "fighters/Cheese_Actions.hpp"
+#include "fighters/Cheese_Fighter.hpp"
 
 using namespace sts;
 

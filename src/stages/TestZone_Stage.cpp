@@ -1,4 +1,4 @@
-#include "game/stages/TestZone_Stage.hpp"
+#include "stages/TestZone_Stage.hpp"
 
 using namespace sts;
 

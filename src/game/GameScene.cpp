@@ -1,10 +1,10 @@
-#include "game/stages/TestZone_Stage.hpp"
+#include "stages/TestZone_Stage.hpp"
 
-#include "game/fighters/Sara_Fighter.hpp"
-#include "game/fighters/Cheese_Fighter.hpp"
+#include "fighters/Sara_Fighter.hpp"
+#include "fighters/Cheese_Fighter.hpp"
 
-#include "render/fighters/Sara_Render.hpp"
-#include "render/fighters/Cheese_Render.hpp"
+#include "fighters/Sara_Render.hpp"
+#include "fighters/Cheese_Render.hpp"
 
 #include "game/GameScene.hpp"
 

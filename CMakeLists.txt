@@ -64,22 +64,6 @@ set(SOURCES
 
   #----------------------------------------------------------#
 
-  "src/render/Renderer.hpp"
-  "src/render/Renderer.cpp"
-
-  "src/render/RenderEntity.hpp"
-  "src/render/RenderEntity.cpp"
-
-  #----------------------------------------------------------#
-
-  "src/render/fighters/Cheese_Render.hpp"
-  "src/render/fighters/Cheese_Render.cpp"
-
-  "src/render/fighters/Sara_Render.hpp"
-  "src/render/fighters/Sara_Render.cpp"
-
-  #----------------------------------------------------------#
-
   "src/game/GameScene.hpp"
   "src/game/GameScene.cpp"
 
@@ -100,22 +84,32 @@ set(SOURCES
 
   #----------------------------------------------------------#
 
-  "src/game/stages/TestZone_Stage.hpp"
-  "src/game/stages/TestZone_Stage.cpp"
+  "src/render/Renderer.hpp"
+  "src/render/Renderer.cpp"
+
+  "src/render/RenderEntity.hpp"
+  "src/render/RenderEntity.cpp"
 
   #----------------------------------------------------------#
 
-  "src/game/fighters/Cheese_Actions.hpp"
-  "src/game/fighters/Cheese_Actions.cpp"
+  "src/stages/TestZone_Stage.hpp"
+  "src/stages/TestZone_Stage.cpp"
 
-  "src/game/fighters/Cheese_Fighter.hpp"
-  "src/game/fighters/Cheese_Fighter.cpp"
+  #----------------------------------------------------------#
 
-  "src/game/fighters/Sara_Actions.hpp"
-  "src/game/fighters/Sara_Actions.cpp"
+  "src/fighters/Cheese_Actions.hpp"
+  "src/fighters/Cheese_Actions.cpp"
+  "src/fighters/Cheese_Fighter.hpp"
+  "src/fighters/Cheese_Fighter.cpp"
+  "src/fighters/Cheese_Render.hpp"
+  "src/fighters/Cheese_Render.cpp"
 
-  "src/game/fighters/Sara_Fighter.hpp"
-  "src/game/fighters/Sara_Fighter.cpp"
+  "src/fighters/Sara_Actions.hpp"
+  "src/fighters/Sara_Actions.cpp"
+  "src/fighters/Sara_Fighter.hpp"
+  "src/fighters/Sara_Fighter.cpp"
+  "src/fighters/Sara_Render.hpp"
+  "src/fighters/Sara_Render.cpp"
 )
 
 ################################################################################

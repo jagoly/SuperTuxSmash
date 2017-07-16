@@ -1,6 +1,6 @@
 #pragma once
 
-#include "game/fighters/Sara_Fighter.hpp"
+#include "fighters/Sara_Fighter.hpp"
 
 //============================================================================//
 

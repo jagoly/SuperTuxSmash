@@ -3,8 +3,8 @@
 
 #include "render/Renderer.hpp"
 
-#include "game/fighters/Cheese_Fighter.hpp"
-#include "render/fighters/Cheese_Render.hpp"
+#include "fighters/Cheese_Fighter.hpp"
+#include "fighters/Cheese_Render.hpp"
 
 using Context = sq::Context;
 namespace maths = sq::maths;
