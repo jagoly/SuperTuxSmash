@@ -9,6 +9,8 @@
 
 #include <sqee/render/Volume.hpp>
 
+#include "game/HitBlob.hpp"
+
 #include "render/RenderEntity.hpp"
 
 #include "main/Options.hpp"
@@ -39,6 +41,8 @@ public: //====================================================//
     //--------------------------------------------------------//
 
     void render(float accum, float blend);
+
+    void render_hit_blobs(const std::vector<HitBlob*>& blobs);
 
     //--------------------------------------------------------//
 
@@ -72,7 +76,7 @@ public: //====================================================//
         sq::Program Depth_SkellyPunch;
 
         sq::Program Lighting_Skybox;
-        sq::Program Debug_HitShape;
+        sq::Program Debug_HitBlob;
         sq::Program Composite;
 
     } shaders;

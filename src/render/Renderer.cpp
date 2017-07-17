@@ -91,11 +91,11 @@ void Renderer::refresh_options()
     processor.load_fragment(shaders.Depth_SkellyPunch, "depth/Mask_fs");
 
     processor.load_vertex(shaders.Lighting_Skybox, "lighting/Skybox_vs");
-    processor.load_vertex(shaders.Debug_HitShape, "debug/HitShape_vs");
+    processor.load_vertex(shaders.Debug_HitBlob, "debug/HitBlob_vs");
     processor.load_vertex(shaders.Composite, "FullScreen_vs");
 
     processor.load_fragment(shaders.Lighting_Skybox, "lighting/Skybox_fs");
-    processor.load_fragment(shaders.Debug_HitShape, "debug/HitShape_fs");
+    processor.load_fragment(shaders.Debug_HitBlob, "debug/HitBlob_fs");
     processor.load_fragment(shaders.Composite, "Composite_fs");
 
     //-- Link Shader Program Stages --------------------------//
@@ -106,7 +106,7 @@ void Renderer::refresh_options()
     shaders.Depth_SkellyPunch.link_program_stages();
 
     shaders.Lighting_Skybox.link_program_stages();
-    shaders.Debug_HitShape.link_program_stages();
+    shaders.Debug_HitBlob.link_program_stages();
     shaders.Composite.link_program_stages();
 }
 
@@ -146,7 +146,7 @@ void Renderer::render(float elapsed, float blend)
 
     //-- Camera and Light can spin, for funzies --------------//
 
-    static Vec3F cameraPosition = { 0.f, -3.f, +1.5f };
+    static Vec3F cameraPosition = { 0.f, -4.f, +2.f };
     static Vec3F skyDirection = maths::normalize(Vec3F(0.f, 0.5f, -1.f));
 
     #ifdef SQEE_DEBUG
@@ -221,27 +221,6 @@ void Renderer::render(float elapsed, float blend)
     for (const auto& entity : entities)
         entity->render_main();
 
-    //--------------------------------------------------------//
-
-//    context.set_state(Context::Blend_Mode::Alpha);
-//    context.set_state(Context::Cull_Face::Disable);
-//    context.set_state(Context::Depth_Test::Keep);
-//    context.set_state(Context::Depth_Compare::Less);
-
-//    context.use_Shader_Vert(shaders.VS_Debug_HitShape);
-//    context.use_Shader_Frag(shaders.FS_Debug_HitShape);
-
-//    for (const auto* hb : mGame.hitBlobs)
-//    {
-//        Mat4F matrix = Mat4F(Mat3F(hb->radius));
-//        matrix[3] = Vec4F(hb->origin, 1.f);
-//        matrix = camera.projMatrix * camera.viewMatrix * matrix;
-
-//        shaders.VS_Debug_HitShape.update<Mat4F>("u_final_mat", matrix);
-//        context.bind_VertexArray(shit.MESH_Sphere.get_vao());
-//        shit.MESH_Sphere.draw_complete();
-//    }
-
     //-- Resolve the Multi Sample Texture --------------------//
 
     fbos.Main.blit(fbos.Resolve, options.Window_Size, gl::COLOR_BUFFER_BIT);
@@ -258,4 +237,27 @@ void Renderer::render(float elapsed, float blend)
     context.bind_Program(shaders.Composite);
 
     sq::draw_screen_quad();
+}
+
+void Renderer::render_hit_blobs(const std::vector<HitBlob*>& blobs)
+{
+    context.bind_FrameBuffer_default();
+
+    context.set_state(Context::Blend_Mode::Alpha);
+    context.set_state(Context::Cull_Face::Disable);
+    context.set_state(Context::Depth_Test::Disable);
+
+    context.bind_Program(shaders.Debug_HitBlob);
+
+    for (const auto& blob : blobs)
+    {
+        Mat4F matrix = Mat4F(Mat3F(blob->sphere.radius));
+        matrix[3] = Vec4F(blob->sphere.origin, 1.f);
+        matrix = camera.projMatrix * camera.viewMatrix * matrix;
+
+        shaders.Debug_HitBlob.update(0, matrix);
+        shaders.Debug_HitBlob.update(1, blob->get_debug_colour());
+
+        volumes.Sphere.bind_and_draw(context);
+    }
 }

@@ -4,7 +4,7 @@ using namespace sts;
 
 //============================================================================//
 
-Entity::Entity(const string& name) : name(name) {}
+Entity::Entity(FightSystem& system) : mFightSystem(system) {}
 
 //============================================================================//
 

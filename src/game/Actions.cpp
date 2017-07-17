@@ -1,65 +1,33 @@
 #include <sqee/debug/Logging.hpp>
 #include <sqee/misc/Algorithms.hpp>
+#include <sqee/assert.hpp>
 
+#include "game/Fighter.hpp"
+#include "game/FightSystem.hpp"
 #include "game/Actions.hpp"
 
 using namespace sts;
 
 //============================================================================//
 
-Action::~Action() = default;
-
-//============================================================================//
-
-void Action::impl_start()
+Action::~Action()
 {
-    on_start();
-
-    mMethodIter = mMethodVec.begin();
-    mCurrentFrame = 0u;
+    SQASSERT ( sq::algo::exists_not(blobs, nullptr) == false,
+               "forgot to delete one or more hit blobs" );
 }
 
 //============================================================================//
 
-void Action::impl_cancel()
+bool Action::impl_do_tick()
 {
-    on_cancel();
-}
-
-//============================================================================//
-
-bool Action::impl_tick()
-{
-    if (on_tick()) { on_finish(); return true; }
-
-    if (mMethodIter != mMethodVec.end())
-    {
-        if (mMethodIter->frame == mCurrentFrame)
-        {
-            mMethodIter->func();
-            ++mMethodIter;
-        }
-    }
-
-    ++mCurrentFrame; return false;
-}
-
-//============================================================================//
-
-std::function<void()>& Action::add_frame_method(uint frame)
-{
-    SQASSERT(mMethodVec.empty() || frame > mMethodVec.back().frame, "");
-
-    return mMethodVec.emplace_back(frame).func;
+    if (on_tick(mCurrentFrame)) { on_finish(); return true; }
+    else { ++mCurrentFrame; return false; }
 }
 
 //============================================================================//
 
 void Action::jump_to_frame(uint frame)
 {
-    auto predicate = [&](auto& method) { return method.frame >= frame; };
-    mMethodIter = sq::algo::find_if(mMethodVec, predicate);
-
     mCurrentFrame = frame;
 }
 
@@ -67,7 +35,7 @@ void Action::jump_to_frame(uint frame)
 
 void Actions::tick_active_action()
 {
-    if (mActiveAction && mActiveAction->impl_tick())
+    if (mActiveAction && mActiveAction->impl_do_tick())
     {
         mActiveType = Action::Type::None;
         mActiveAction = nullptr;
@@ -76,10 +44,12 @@ void Actions::tick_active_action()
 
 //============================================================================//
 
-void DumbAction::on_start() { sq::log_info(" start: %s", mMessage); }
+void DumbAction::on_start() { sq::log_info(" start: " + message); }
 
-void DumbAction::on_finish() { sq::log_info("finish: %s", mMessage); }
+void DumbAction::on_finish() { sq::log_info("finish: " + message); }
 
-void DumbAction::on_cancel() { sq::log_info("cancel: %s", mMessage); }
+void DumbAction::on_cancel() { sq::log_info("cancel: " + message); }
 
-bool DumbAction::on_tick() { return get_current_frame() == 12u; }
+bool DumbAction::on_tick(uint frame) { return frame == 12u; }
+
+void DumbAction::on_collide(HitBlob*, HitBlob*) {}

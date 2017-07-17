@@ -13,7 +13,9 @@ class Controller final : sq::NonCopyable
 {
 public: //====================================================//
 
-    Controller(const sq::InputDevices& devices);
+    Controller(const sq::InputDevices& devices, string configPath);
+
+    //--------------------------------------------------------//
 
     struct Input
     {
@@ -30,12 +32,10 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    void load_config(const string& path);
-
+    /// Handle a system input event.
     void handle_event(sq::Event event);
 
-    //--------------------------------------------------------//
-
+    /// Access controller state.
     Input get_input();
 
 private: //===================================================//

@@ -58,7 +58,7 @@ Sara_Render::Sara_Render(const Entity& entity, const Renderer& renderer)
 
 void Sara_Render::integrate(float blend)
 {
-    const auto& fighter = entity_cast<Sara_Fighter>();
+    auto& fighter = static_cast<const Sara_Fighter&>(entity);
 
     //--------------------------------------------------------//
 

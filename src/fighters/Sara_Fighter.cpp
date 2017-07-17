@@ -5,9 +5,10 @@ using namespace sts;
 
 //============================================================================//
 
-Sara_Fighter::Sara_Fighter(Controller& controller) : Fighter("Sara", controller)
+Sara_Fighter::Sara_Fighter(FightSystem& system, Controller& controller)
+    : Fighter(system, controller, "Sara")
 {
-    actions = create_actions(*this);
+    mActions = create_actions(mFightSystem, *this);
 
     //--------------------------------------------------------//
 
@@ -71,13 +72,13 @@ void Sara_Fighter::tick()
         currentPose = POSE_Jump;
     }
 
-    if (actions->active_type() == Action::Type::Neutral_First)
+    if (mActions->active_type() == Action::Type::Neutral_First)
     {
         animationProgress = 0.f;
         currentPose = POSE_Act_Neutral;
     }
 
-    if (actions->active_type() == Action::Type::Tilt_Down)
+    if (mActions->active_type() == Action::Type::Tilt_Down)
     {
         animationProgress = 0.f;
         currentPose = POSE_Act_TiltDown;
@@ -89,7 +90,7 @@ void Sara_Fighter::tick()
 //        mPoseCurrent = POSE_Act_TiltForward;
 //    }
 
-    if (actions->active_type() == Action::Type::Tilt_Up)
+    if (mActions->active_type() == Action::Type::Tilt_Up)
     {
         animationProgress = 0.f;
         currentPose = POSE_Act_TiltUp;

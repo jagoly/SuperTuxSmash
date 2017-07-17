@@ -7,13 +7,9 @@ using namespace sts;
 
 //============================================================================//
 
-Controller::Controller(const sq::InputDevices& devices) : mDevices(devices) {}
-
-//============================================================================//
-
-void Controller::load_config(const string& path)
+Controller::Controller(const sq::InputDevices& devices, string configPath) : mDevices(devices)
 {
-    for (auto& linePair : sq::tokenise_file(path))
+    for (auto& linePair : sq::tokenise_file(configPath))
     {
         const auto& key = linePair.first.at(0);
         const auto& value = linePair.first.at(1);

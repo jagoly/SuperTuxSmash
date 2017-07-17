@@ -1,17 +1,16 @@
 #include <sqee/assert.hpp>
-#include <sqee/misc/Json.hpp>
 #include <sqee/debug/Logging.hpp>
-#include <sqee/misc/StringCast.hpp>
+#include <sqee/misc/Json.hpp>
 
-#include "Fighter.hpp"
+#include "game/Fighter.hpp"
 
 namespace maths = sq::maths;
 using namespace sts;
 
 //============================================================================//
 
-Fighter::Fighter(const string& name, Controller& controller)
-    : Entity(name), controller(controller)
+Fighter::Fighter(FightSystem& system, Controller& controller, string name)
+    : Entity(system), mController(controller)
 {
     const auto json = sq::parse_json("assets/fighters/" + name + "/fighter.json");
 
@@ -27,6 +26,8 @@ Fighter::Fighter(const string& name, Controller& controller)
     state.move = State::Move::None;
     state.direction = State::Direction::Left;
 }
+
+Fighter::~Fighter() = default;
 
 //============================================================================//
 
@@ -44,7 +45,7 @@ void Fighter::impl_input_movement(Controller::Input input)
 
     case State::Move::None:
     {
-        if (actions->active_type() != Action::Type::None) break;
+        if (mActions->active_type() != Action::Type::None) break;
 
         //--------------------------------------------------------//
 
@@ -88,7 +89,7 @@ void Fighter::impl_input_movement(Controller::Input input)
 
     case State::Move::Walking:
     {
-        SQASSERT(actions->active_type() == Action::Type::None, "");
+        SQASSERT(mActions->active_type() == Action::Type::None, "");
 
         //--------------------------------------------------------//
 
@@ -145,7 +146,7 @@ void Fighter::impl_input_movement(Controller::Input input)
 
     case State::Move::Dashing:
     {
-        SQASSERT(actions->active_type() == Action::Type::None, "");
+        SQASSERT(mActions->active_type() == Action::Type::None, "");
 
         //--------------------------------------------------------//
 
@@ -248,7 +249,7 @@ void Fighter::impl_input_movement(Controller::Input input)
 
 void Fighter::impl_input_actions(Controller::Input input)
 {
-    if (actions->active_type() != Action::Type::None)
+    if (mActions->active_type() != Action::Type::None)
         return;
 
     Action::Type target = Action::Type::None;
@@ -319,7 +320,7 @@ void Fighter::impl_input_actions(Controller::Input input)
 
     if (target != Action::Type::None)
     {
-        actions->switch_active(target);
+        mActions->switch_active(target);
     }
 }
 
@@ -375,7 +376,7 @@ void Fighter::impl_update_fighter()
 
 void Fighter::base_tick_fighter()
 {
-    auto input = controller.get_input();
+    auto input = mController.get_input();
 
     impl_validate_stats();
 
@@ -384,7 +385,7 @@ void Fighter::base_tick_fighter()
 
     impl_update_fighter();
 
-    actions->tick_active_action();
+    mActions->tick_active_action();
 }
 
 //============================================================================//

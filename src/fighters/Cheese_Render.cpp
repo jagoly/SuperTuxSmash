@@ -44,7 +44,7 @@ Cheese_Render::Cheese_Render(const Entity& entity, const Renderer& renderer)
 
 void Cheese_Render::integrate(float blend)
 {
-    const auto& fighter = entity_cast<Cheese_Fighter>();
+    auto& fighter = static_cast<const Cheese_Fighter&>(entity);
 
     //--------------------------------------------------------//
 
@@ -69,7 +69,7 @@ void Cheese_Render::integrate(float blend)
 
     //--------------------------------------------------------//
 
-    PROG_Cheese.update(4, fighter.colour);
+    PROG_Cheese.update(4, fighter.mColour);
 }
 
 //============================================================================//

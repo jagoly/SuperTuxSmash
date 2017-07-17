@@ -1,5 +1,7 @@
 #pragma once
 
+#include <sqee/maths/Volumes.hpp>
+
 #include "game/Fighter.hpp"
 
 //============================================================================//
@@ -10,7 +12,7 @@ class Cheese_Fighter final : public Fighter
 {
 public: //====================================================//
 
-    Cheese_Fighter(Controller& controller);
+    Cheese_Fighter(FightSystem& system, Controller& controller);
 
     //--------------------------------------------------------//
 
@@ -18,7 +20,9 @@ public: //====================================================//
 
 private: //===================================================//
 
-    Vec3F colour;
+    Vec3F mColour;
+
+    std::vector<sq::maths::Sphere> mSpheres;
 
     //--------------------------------------------------------//
 

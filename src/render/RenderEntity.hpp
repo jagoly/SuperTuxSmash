@@ -28,11 +28,6 @@ public: //====================================================//
 
 protected: //=================================================//
 
-    template <class T> constexpr auto& entity_cast()
-    { return static_cast<const T&>(entity); }
-
-    //--------------------------------------------------------//
-
     const Entity& entity;
     const Renderer& renderer;
 };

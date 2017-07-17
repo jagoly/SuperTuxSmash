@@ -4,9 +4,7 @@
 
 layout(location=0) in vec3 V_pos;
 
-uniform mat4 u_final_mat;
-
-out gl_PerVertex { vec4 gl_Position; };
+layout(location=0) uniform mat4 u_final_mat;
 
 //============================================================================//
 

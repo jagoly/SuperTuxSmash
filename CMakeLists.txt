@@ -64,6 +64,14 @@ set(SOURCES
 
   #----------------------------------------------------------#
 
+  "src/game/forward.hpp"
+
+  "src/game/FightSystem.hpp"
+  "src/game/FightSystem.cpp"
+
+  "src/game/HitBlob.hpp"
+  "src/game/HitBlob.cpp"
+
   "src/game/GameScene.hpp"
   "src/game/GameScene.cpp"
 

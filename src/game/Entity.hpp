@@ -3,6 +3,8 @@
 #include <sqee/builtins.hpp>
 #include <sqee/maths/Vectors.hpp>
 
+#include "game/forward.hpp"
+
 //============================================================================//
 
 namespace sts {
@@ -11,7 +13,7 @@ class Entity : sq::NonCopyable
 {
 public: //====================================================//
 
-    Entity(const string& name);
+    Entity(FightSystem& system);
 
     virtual ~Entity() = default;
 
@@ -21,16 +23,16 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    const string name;
-
-    //--------------------------------------------------------//
-
     Vec2F mPreviousPosition;
     Vec2F mCurrentPosition;
 
 protected: //=================================================//
 
     void base_tick_entity();
+
+    //--------------------------------------------------------//
+
+    FightSystem& mFightSystem;
 };
 
 } // namespace sts

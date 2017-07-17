@@ -3,7 +3,8 @@
 #include <functional>
 
 #include <sqee/builtins.hpp>
-#include <sqee/assert.hpp>
+
+#include "game/forward.hpp"
 
 namespace sts {
 
@@ -30,26 +31,15 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
+    Action(FightSystem& system, Fighter& fighter)
+        : system(system), fighter(fighter) {}
+
     virtual ~Action();
 
 protected: //=================================================//
 
-    struct FrameMethod
-    {
-        FrameMethod(uint frame) : frame(frame) {}
-        const uint frame; std::function<void()> func;
-    };
-
-    //--------------------------------------------------------//
-
-    /// Add a method for the specified frame.
-    std::function<void()>& add_frame_method(uint frame);
-
     /// Jump action to the specified frame.
     void jump_to_frame(uint frame);
-
-    /// Check what frame the action is currently on.
-    uint get_current_frame() const { return mCurrentFrame; }
 
     //--------------------------------------------------------//
 
@@ -62,26 +52,34 @@ protected: //=================================================//
     /// Do stuff when action is cancelled early.
     virtual void on_cancel() {}
 
-    /// Return true to finish the action.
-    virtual bool on_tick() = 0;
+    //--------------------------------------------------------//
+
+    /// Return true to finish action.
+    virtual bool on_tick(uint frame) = 0;
+
+    /// Do stuff upon collision with another hit blob.
+    virtual void on_collide(HitBlob* blob, HitBlob* other) = 0;
+
+    //--------------------------------------------------------//
+
+    FightSystem& system;
+    Fighter& fighter;
+
+    std::array<HitBlob*, 13> blobs {};
 
 private: //===================================================//
 
-    std::vector<FrameMethod> mMethodVec;
-    std::vector<FrameMethod>::iterator mMethodIter;
-
     uint mCurrentFrame = 0u;
 
-    //--------------------------------------------------------//
-
-    void impl_start();
-
-    void impl_cancel();
-
-    bool impl_tick();
+    char mPadding[4] {};
 
     //--------------------------------------------------------//
 
+    bool impl_do_tick();
+
+    //--------------------------------------------------------//
+
+    friend class FightSystem;
     friend class Actions;
 };
 
@@ -93,7 +91,7 @@ public: //====================================================//
 
     void switch_active(Action::Type type)
     {
-        if (mActiveAction != nullptr) mActiveAction->impl_cancel();
+        if (mActiveAction != nullptr) mActiveAction->on_cancel();
 
         if (type == Action::Type::None)          mActiveAction = nullptr;
         if (type == Action::Type::Neutral_First) mActiveAction = neutral_first.get();
@@ -109,13 +107,14 @@ public: //====================================================//
 
         mActiveType = type;
 
-        mActiveAction->impl_start();
+        mActiveAction->mCurrentFrame = 0u;
+        mActiveAction->on_start();
     }
 
     //--------------------------------------------------------//
 
     /// Get the type of the active action.
-    Action::Type active_type() const { return mActiveType; }
+    auto active_type() const { return mActiveType; }
 
     //--------------------------------------------------------//
 
@@ -150,18 +149,24 @@ class DumbAction final : public Action
 {
 public: //====================================================//
 
-    DumbAction(string message) : mMessage(message) {}
+    DumbAction(FightSystem& system, Fighter& fighter, string message)
+        : Action(system, fighter), message(message) {}
 
 private: //===================================================//
 
     void on_start() override;
     void on_finish() override;
     void on_cancel() override;
-    bool on_tick() override;
 
     //--------------------------------------------------------//
 
-    const string mMessage;
+    bool on_tick(uint frame) override;
+
+    void on_collide(HitBlob*, HitBlob*) override;
+
+    //--------------------------------------------------------//
+
+    const string message;
 };
 
 //============================================================================//

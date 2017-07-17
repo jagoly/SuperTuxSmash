@@ -17,16 +17,15 @@ GameScene::GameScene(const sq::InputDevices& inputDevices, const Options& option
 {
     mRenderer = std::make_unique<Renderer>(options);
 
+    mFightSystem = std::make_unique<FightSystem>();
+
     mStage = std::make_unique<TestZone_Stage>();
 
-    mControllers[0] = std::make_unique<Controller>(mInputDevices);
-    mControllers[1] = std::make_unique<Controller>(mInputDevices);
+    mControllers[0] = std::make_unique<Controller>(mInputDevices, "player1.txt");
+    mControllers[1] = std::make_unique<Controller>(mInputDevices, "player2.txt");
 
-    mControllers[0]->load_config("player1.txt");
-    mControllers[1]->load_config("player2.txt");
-
-    mFighters[0] = std::make_unique<Sara_Fighter>(*mControllers[0]);
-    mFighters[1] = std::make_unique<Cheese_Fighter>(*mControllers[1]);
+    mFighters[0] = std::make_unique<Sara_Fighter>(*mFightSystem, *mControllers[0]);
+    mFighters[1] = std::make_unique<Cheese_Fighter>(*mFightSystem, *mControllers[1]);
 
     mRenderer->add_entity(std::make_unique<Sara_Render>(*mFighters[0], *mRenderer));
     mRenderer->add_entity(std::make_unique<Cheese_Render>(*mFighters[1], *mRenderer));
@@ -65,6 +64,10 @@ void GameScene::update()
         if (fighter != nullptr)
             fighter->tick();
     }
+
+    //--------------------------------------------------------//
+
+    mFightSystem->tick();
 }
 
 //============================================================================//
@@ -72,4 +75,7 @@ void GameScene::update()
 void GameScene::render(double elapsed)
 {
     mRenderer->render(float(elapsed), float(mAccumulation / mTickTime));
+
+    mRenderer->render_hit_blobs(mFightSystem->get_offensive_blobs());
+    mRenderer->render_hit_blobs(mFightSystem->get_damageable_blobs());
 }

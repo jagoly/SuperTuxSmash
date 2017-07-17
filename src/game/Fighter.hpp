@@ -1,12 +1,16 @@
 #pragma once
 
-#include "game/Actions.hpp"
-#include "game/Controller.hpp"
-#include "game/Entity.hpp"
+#include <sqee/builtins.hpp>
 
-namespace sts {
+#include "game/Entity.hpp"
+#include "game/Controller.hpp"
+#include "game/Actions.hpp"
+
+#include "game/forward.hpp"
 
 //============================================================================//
+
+namespace sts {
 
 class Fighter : public Entity
 {
@@ -15,15 +19,15 @@ public: //====================================================//
     struct State {
 
         enum class Move { None, Walking, Dashing, Jumping, Falling } move;
-        enum class Direction { Left, Right } direction;
+        enum class Direction { Left = -1, Right = +1 } direction;
 
     } state;
 
     //--------------------------------------------------------//
 
-    Fighter(const string& name, Controller& controller);
+    Fighter(FightSystem& system, Controller& controller, string name);
 
-    virtual ~Fighter() override = default;
+    virtual ~Fighter() override;
 
     //--------------------------------------------------------//
 
@@ -31,9 +35,10 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    Controller& controller;
-
-    unique_ptr<Actions> actions;
+    float get_direction_factor() const
+    {
+        return float(state.direction);
+    }
 
     //--------------------------------------------------------//
 
@@ -56,6 +61,12 @@ protected: //=================================================//
 
     bool mAttackHeld = false;
     bool mJumpHeld = false;
+
+    Controller& mController;
+
+    unique_ptr<Actions> mActions;
+
+    std::vector<HitBlob*> mHurtBlobs;
 
     //--------------------------------------------------------//
 
