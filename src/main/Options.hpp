@@ -26,7 +26,7 @@ public: //====================================================//
     uchar SSAO_Quality = 2u;
 
     /// Multi Sample Anti-Aliasing Quality.
-    uchar MSAA_Quality = 2u;
+    uchar MSAA_Quality = 1u;
 
     /// Debug Texture to Draw to Screen.
     string Debug_Texture = "";
