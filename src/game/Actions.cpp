@@ -1,50 +1,55 @@
 #include <sqee/debug/Logging.hpp>
+#include <sqee/misc/Algorithms.hpp>
+#include <sqee/assert.hpp>
 
-#include <game/Fighter.hpp>
-
-#include "Actions.hpp"
+#include "game/Fighter.hpp"
+#include "game/FightSystem.hpp"
+#include "game/Actions.hpp"
 
 using namespace sts;
 
 //============================================================================//
 
-namespace { // anonymous
-
-bool impl_debug_action(Fighter& fighter, uint& timeLeft, string action)
+Action::~Action()
 {
-    if (timeLeft == 0u)
-    {
-        sq::log_info(" start: %s %s", fighter.name, action);
-        timeLeft = 6u;
-    }
-
-    else if (--timeLeft == 0u)
-    {
-        sq::log_info("finish: %s %s", fighter.name, action);
-        return true;
-    }
-
-    return false;
+    SQASSERT ( sq::algo::exists_not(blobs, nullptr) == false,
+               "forgot to delete one or more hit blobs" );
 }
 
-} // anonymous namespace
+//============================================================================//
+
+bool Action::impl_do_tick()
+{
+    if (on_tick(mCurrentFrame)) { on_finish(); return true; }
+    else { ++mCurrentFrame; return false; }
+}
 
 //============================================================================//
 
-DebugActions::DebugActions(Fighter& fighter) : mFighter(fighter) {}
+void Action::jump_to_frame(uint frame)
+{
+    mCurrentFrame = frame;
+}
 
 //============================================================================//
 
-bool DebugActions::fn_neutral_first() { return impl_debug_action(mFighter, mTimeLeft, "neutral_first"); }
+void Actions::tick_active_action()
+{
+    if (mActiveAction && mActiveAction->impl_do_tick())
+    {
+        mActiveType = Action::Type::None;
+        mActiveAction = nullptr;
+    }
+}
 
-bool DebugActions::fn_tilt_down() { return impl_debug_action(mFighter, mTimeLeft, "tilt_down"); }
-bool DebugActions::fn_tilt_forward() { return impl_debug_action(mFighter, mTimeLeft, "tilt_forward"); }
-bool DebugActions::fn_tilt_up() { return impl_debug_action(mFighter, mTimeLeft, "tilt_up"); }
+//============================================================================//
 
-bool DebugActions::fn_air_back() { return impl_debug_action(mFighter, mTimeLeft, "air_back"); }
-bool DebugActions::fn_air_down() { return impl_debug_action(mFighter, mTimeLeft, "air_down"); }
-bool DebugActions::fn_air_forward() { return impl_debug_action(mFighter, mTimeLeft, "air_forward"); }
-bool DebugActions::fn_air_neutral() { return impl_debug_action(mFighter, mTimeLeft, "air_neutral"); }
-bool DebugActions::fn_air_up() { return impl_debug_action(mFighter, mTimeLeft, "air_up"); }
+void DumbAction::on_start() { sq::log_info(" start: " + message); }
 
-bool DebugActions::fn_dash_attack() { return impl_debug_action(mFighter, mTimeLeft, "dash_attack"); }
+void DumbAction::on_finish() { sq::log_info("finish: " + message); }
+
+void DumbAction::on_cancel() { sq::log_info("cancel: " + message); }
+
+bool DumbAction::on_tick(uint frame) { return frame == 12u; }
+
+void DumbAction::on_collide(HitBlob*, HitBlob*) {}

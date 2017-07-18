@@ -1,13 +1,7 @@
-#include <game/Game.hpp>
+#include "game/Stage.hpp"
 
-#include "Stage.hpp"
-
-namespace maths = sq::maths;
 using namespace sts;
 
 //============================================================================//
 
-Stage::Stage(Game& game) : mGame(game)
-{
-
-}
+Stage::Stage() {}

@@ -1,24 +1,25 @@
 #pragma once
 
-#include "game/Renderer.hpp"
-#include "game/Fighter.hpp"
+#include <sqee/gl/Textures.hpp>
+#include <sqee/gl/UniformBuffer.hpp>
+#include <sqee/gl/Program.hpp>
 
-namespace sts::fighters {
+#include <sqee/render/Armature.hpp>
+#include <sqee/render/Mesh.hpp>
+
+#include "render/RenderEntity.hpp"
 
 //============================================================================//
 
-class Sara_Fighter final : public Fighter
+namespace sts {
+
+class Sara_Render final : public RenderEntity
 {
 public: //====================================================//
 
-    Sara_Fighter(Game& game, Controller& controller);
-    ~Sara_Fighter();
+    Sara_Render(const Entity& entity, const Renderer& renderer);
 
     //--------------------------------------------------------//
-
-    void setup() override;
-
-    void tick() override;
 
     void integrate(float blend) override;
 
@@ -28,19 +29,7 @@ public: //====================================================//
 
 private: //===================================================//
 
-    sq::Armature ARMA_Sara;
     sq::Mesh MESH_Sara;
-
-    sq::Armature::Pose POSE_Rest;
-    sq::Armature::Pose POSE_Stand;
-    sq::Armature::Pose POSE_Jump;
-
-    sq::Armature::Pose POSE_Act_Neutral;
-    sq::Armature::Pose POSE_Act_TiltDown;
-    sq::Armature::Pose POSE_Act_TiltForward;
-    sq::Armature::Pose POSE_Act_TiltUp;
-
-    sq::Armature::Animation ANIM_Walk;
 
     sq::Texture2D TX_Main_diff { sq::Texture::Format::RGB8_UN };
     sq::Texture2D TX_Main_spec { sq::Texture::Format::R8_UN };
@@ -56,15 +45,8 @@ private: //===================================================//
 
     sq::UniformBuffer mUbo;
 
-    sq::Armature::Pose mPosePrevious;
-    sq::Armature::Pose mPoseCurrent;
-
-    float mAnimationProgress = 0.f;
-
     Mat4F mFinalMatrix;
     Mat3F mNormalMatrix;
 };
 
-//============================================================================//
-
-} // namespace sts::fighters
+} // namespace sts

@@ -3,8 +3,11 @@
 #include <sqee/app/Event.hpp>
 #include <sqee/app/Scene.hpp>
 
-#include "game/Renderer.hpp"
+#include "render/Renderer.hpp"
+
+#include "game/FightSystem.hpp"
 #include "game/Stage.hpp"
+#include "game/Controller.hpp"
 #include "game/Fighter.hpp"
 
 #include "main/Options.hpp"
@@ -19,13 +22,15 @@ public: //====================================================//
 
     GameScene(const sq::InputDevices& inputDevices, const Options& options);
 
+    ~GameScene() override;
+
     //--------------------------------------------------------//
 
     void refresh_options();
 
     void handle_event(sq::Event event);
 
-public: //====================================================//
+private: //===================================================//
 
     void update() override;
 
@@ -33,7 +38,17 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    unique_ptr<Game> mGame;
+    unique_ptr<Renderer> mRenderer;
+
+    unique_ptr<FightSystem> mFightSystem;
+
+    unique_ptr<Stage> mStage;
+
+    std::array<unique_ptr<Controller>, 4> mControllers;
+
+    std::array<unique_ptr<Fighter>, 4> mFighters;
+
+    //--------------------------------------------------------//
 
     const sq::InputDevices& mInputDevices;
 

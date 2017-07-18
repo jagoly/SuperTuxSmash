@@ -1,23 +1,15 @@
-#include <sqee/debug/Logging.hpp>
 #include <sqee/misc/Files.hpp>
 
 #include "Controller.hpp"
 
-using namespace sts;
 namespace maths = sq::maths;
+using namespace sts;
 
 //============================================================================//
 
-Controller::Controller(const sq::InputDevices& devices) : mDevices(devices)
+Controller::Controller(const sq::InputDevices& devices, string configPath) : mDevices(devices)
 {
-
-}
-
-//============================================================================//
-
-void Controller::load_config(const string& path)
-{
-    for (auto& linePair : sq::tokenise_file(path))
+    for (auto& linePair : sq::tokenise_file(configPath))
     {
         const auto& key = linePair.first.at(0);
         const auto& value = linePair.first.at(1);
@@ -74,9 +66,7 @@ Controller::Input Controller::get_input()
         const int port = config.gamepad_port;
 
         if (config.stick_move != Stick::Unknown)
-        {
             mInput.axis_move = mDevices.get_stick_pos(port, config.stick_move);
-        }
 
         if (config.button_attack != Button::Unknown)
             if (mDevices.is_pressed(port, config.button_attack))
@@ -104,6 +94,14 @@ Controller::Input Controller::get_input()
     if (config.key_down != Key::Unknown)
         if (mDevices.is_pressed(config.key_down))
             mInput.axis_move.y -= 1.f;
+
+    if (config.key_attack != Key::Unknown)
+        if (mDevices.is_pressed(config.key_attack))
+            mInput.hold_attack = true;
+
+    if (config.key_jump != Key::Unknown)
+        if (mDevices.is_pressed(config.key_jump))
+            mInput.hold_jump = true;
 
     //--------------------------------------------------------//
 

@@ -2,98 +2,171 @@
 
 #include <functional>
 
-#include <sqee/setup.hpp>
+#include <sqee/builtins.hpp>
+
+#include "game/forward.hpp"
 
 namespace sts {
 
 //============================================================================//
 
-class Fighter; // Forward Declaration
-
-//============================================================================//
-
-class Actions : sq::NonCopyable
+class Action : sq::NonCopyable
 {
-public:
-
-    //========================================================//
+public: //====================================================//
 
     enum class Type
     {
-        None           =  0,
-        Neutral_First  =  1,
-        Tilt_Forward   =  2,
-        Tilt_Down      =  3,
-        Tilt_Up        =  4,
-        Air_Neutral    =  5,
-        Air_Back       =  6,
-        Air_Forward    =  7,
-        Air_Down       =  8,
-        Air_Up         =  9,
-        Dash_Attack    = 10,
+        None = -1,
+        Neutral_First,
+        Tilt_Down,
+        Tilt_Forward,
+        Tilt_Up,
+        Air_Back,
+        Air_Down,
+        Air_Forward,
+        Air_Neutral,
+        Air_Up,
+        Dash_Attack,
     };
 
-    //========================================================//
+    //--------------------------------------------------------//
 
-    virtual ~Actions() = default;
+    Action(FightSystem& system, Fighter& fighter)
+        : system(system), fighter(fighter) {}
 
-    //========================================================//
+    virtual ~Action();
 
-    virtual bool fn_neutral_first() = 0;
+protected: //=================================================//
 
-    virtual bool fn_tilt_down() = 0;
-    virtual bool fn_tilt_forward() = 0;
-    virtual bool fn_tilt_up() = 0;
+    /// Jump action to the specified frame.
+    void jump_to_frame(uint frame);
 
-    virtual bool fn_air_back() = 0;
-    virtual bool fn_air_down() = 0;
-    virtual bool fn_air_forward() = 0;
-    virtual bool fn_air_neutral() = 0;
-    virtual bool fn_air_up() = 0;
+    //--------------------------------------------------------//
 
-    virtual bool fn_dash_attack() = 0;
+    /// Do stuff when action first starts.
+    virtual void on_start() {}
 
-    //========================================================//
+    /// Do stuff when action finishes normally.
+    virtual void on_finish() {}
 
-    struct {
-        std::function<bool()> func;
-        Type type = Type::None;
-    } active;
+    /// Do stuff when action is cancelled early.
+    virtual void on_cancel() {}
 
+    //--------------------------------------------------------//
+
+    /// Return true to finish action.
+    virtual bool on_tick(uint frame) = 0;
+
+    /// Do stuff upon collision with another hit blob.
+    virtual void on_collide(HitBlob* blob, HitBlob* other) = 0;
+
+    //--------------------------------------------------------//
+
+    FightSystem& system;
+    Fighter& fighter;
+
+    std::array<HitBlob*, 13> blobs {};
+
+private: //===================================================//
+
+    uint mCurrentFrame = 0u;
+
+    char mPadding[4] {};
+
+    //--------------------------------------------------------//
+
+    bool impl_do_tick();
+
+    //--------------------------------------------------------//
+
+    friend class FightSystem;
+    friend class Actions;
 };
 
 //============================================================================//
 
-class DebugActions : public Actions
+class Actions final : public sq::NonCopyable
 {
-public:
+public: //====================================================//
 
-    //========================================================//
+    void switch_active(Action::Type type)
+    {
+        if (mActiveAction != nullptr) mActiveAction->on_cancel();
 
-    DebugActions(Fighter& fighter);
+        if (type == Action::Type::None)          mActiveAction = nullptr;
+        if (type == Action::Type::Neutral_First) mActiveAction = neutral_first.get();
+        if (type == Action::Type::Tilt_Down)     mActiveAction = tilt_down.get();
+        if (type == Action::Type::Tilt_Forward)  mActiveAction = tilt_forward.get();
+        if (type == Action::Type::Tilt_Up)       mActiveAction = tilt_up.get();
+        if (type == Action::Type::Air_Back)      mActiveAction = air_back.get();
+        if (type == Action::Type::Air_Down)      mActiveAction = air_down.get();
+        if (type == Action::Type::Air_Forward)   mActiveAction = air_forward.get();
+        if (type == Action::Type::Air_Neutral)   mActiveAction = air_neutral.get();
+        if (type == Action::Type::Air_Up)        mActiveAction = air_up.get();
+        if (type == Action::Type::Dash_Attack)   mActiveAction = dash_attack.get();
 
-    //========================================================//
+        mActiveType = type;
 
-    virtual bool fn_neutral_first() override;
+        mActiveAction->mCurrentFrame = 0u;
+        mActiveAction->on_start();
+    }
 
-    virtual bool fn_tilt_down() override;
-    virtual bool fn_tilt_forward() override;
-    virtual bool fn_tilt_up() override;
+    //--------------------------------------------------------//
 
-    virtual bool fn_air_back() override;
-    virtual bool fn_air_down() override;
-    virtual bool fn_air_forward() override;
-    virtual bool fn_air_neutral() override;
-    virtual bool fn_air_up() override;
+    /// Get the type of the active action.
+    auto active_type() const { return mActiveType; }
 
-    virtual bool fn_dash_attack() override;
+    //--------------------------------------------------------//
 
-protected:
+    /// Tick the active action if not none.
+    void tick_active_action();
 
-    //========================================================//
+    //--------------------------------------------------------//
 
-    Fighter& mFighter;
-    uint mTimeLeft = 0u;
+    unique_ptr<Action> neutral_first;
+
+    unique_ptr<Action> tilt_down;
+    unique_ptr<Action> tilt_forward;
+    unique_ptr<Action> tilt_up;
+
+    unique_ptr<Action> air_back;
+    unique_ptr<Action> air_down;
+    unique_ptr<Action> air_forward;
+    unique_ptr<Action> air_neutral;
+    unique_ptr<Action> air_up;
+
+    unique_ptr<Action> dash_attack;
+
+private: //===================================================//
+
+    Action::Type mActiveType = Action::Type::None;
+    Action* mActiveAction = nullptr;
+};
+
+//============================================================================//
+
+class DumbAction final : public Action
+{
+public: //====================================================//
+
+    DumbAction(FightSystem& system, Fighter& fighter, string message)
+        : Action(system, fighter), message(message) {}
+
+private: //===================================================//
+
+    void on_start() override;
+    void on_finish() override;
+    void on_cancel() override;
+
+    //--------------------------------------------------------//
+
+    bool on_tick(uint frame) override;
+
+    void on_collide(HitBlob*, HitBlob*) override;
+
+    //--------------------------------------------------------//
+
+    const string message;
 };
 
 //============================================================================//

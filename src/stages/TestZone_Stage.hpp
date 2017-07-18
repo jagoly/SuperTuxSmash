@@ -1,25 +1,20 @@
 #pragma once
 
-#include <sqee/builtins.hpp>
+#include "game/Stage.hpp"
 
 //============================================================================//
 
 namespace sts {
 
-class Stage : sq::NonCopyable
+class TestZone_Stage final : public Stage
 {
 public: //====================================================//
 
-    Stage();
-
-    virtual ~Stage() = default;
+    TestZone_Stage();
 
     //--------------------------------------------------------//
 
-    virtual void tick() = 0;
-
-protected: //=================================================//
-
+    void tick() override;
 };
 
 } // namespace sts

@@ -23,6 +23,8 @@ void SmashApp::initialise(std::vector<string> args)
     mDebugOverlay = std::make_unique<sq::DebugOverlay>();
 
     mGameScene = std::make_unique<GameScene>(*mInputDevices, mOptions);
+
+    mWindow->set_key_repeat(false);
 }
 
 //============================================================================//
@@ -84,10 +86,19 @@ void SmashApp::handle_event(sq::Event event)
 
     //--------------------------------------------------------//
 
-    if (type == Type::Keyboard_Press && data.keyboard.key == Key::Menu)
+    if (type == Type::Keyboard_Press)
     {
-        mDebugOverlay->toggle_active();
-        return;
+        if (data.keyboard.key == Key::Menu)
+        {
+            mDebugOverlay->toggle_active();
+            return;
+        }
+
+        if (data.keyboard.key == Key::Escape)
+        {
+            mReturnCode = 0;
+            return;
+        }
     }
 
     //--------------------------------------------------------//
@@ -113,32 +124,29 @@ void SmashApp::handle_event(sq::Event event)
 
         if (data.keyboard.key == Key::O)
         {
-            mOptions.SSAO_Quality = ++mOptions.SSAO_Quality == 3 ? 0 : mOptions.SSAO_Quality;
+            if (++mOptions.SSAO_Quality == 3) mOptions.SSAO_Quality = 0;
             notify(mOptions.SSAO_Quality, "ssao set to ", {"OFF", "LOW", "HIGH"});
+            refresh_options();
+        }
+
+        if (data.keyboard.key == Key::A)
+        {
+            if (++mOptions.MSAA_Quality == 3) mOptions.MSAA_Quality = 0;
+            notify(mOptions.MSAA_Quality, "msaa set to ", {"OFF", "4x", "16x"});
             refresh_options();
         }
 
         if (data.keyboard.key == Key::D)
         {
-            if      ( mOptions.Debug_Texture == ""           ) mOptions.Debug_Texture = "diffuse";
-            else if ( mOptions.Debug_Texture == "diffuse"    ) mOptions.Debug_Texture = "surface";
-            else if ( mOptions.Debug_Texture == "surface"    ) mOptions.Debug_Texture = "normals";
-            else if ( mOptions.Debug_Texture == "normals"    ) mOptions.Debug_Texture = "specular";
-            else if ( mOptions.Debug_Texture == "specular"   ) mOptions.Debug_Texture = "lighting";
-            else if ( mOptions.Debug_Texture == "lighting"   ) mOptions.Debug_Texture = "ssao";
-            else if ( mOptions.Debug_Texture == "ssao"       ) mOptions.Debug_Texture = "bloom";
-            else if ( mOptions.Debug_Texture == "bloom"      ) mOptions.Debug_Texture = "";
+            if      ( mOptions.Debug_Texture == ""      ) mOptions.Debug_Texture = "depth";
+            else if ( mOptions.Debug_Texture == "depth" ) mOptions.Debug_Texture = "ssao";
+            else if ( mOptions.Debug_Texture == "ssao"  ) mOptions.Debug_Texture = "bloom";
+            else if ( mOptions.Debug_Texture == "bloom" ) mOptions.Debug_Texture = "";
 
             mDebugOverlay->notify("debug texture set to \"" + mOptions.Debug_Texture + "\"");
 
             refresh_options();
         }
-	if (data.keyboard.key == Key::Escape)
-	{
-		mReturnCode = 0;
-		return;
-	}
-
 
         #ifdef SQEE_DEBUG
 
@@ -159,5 +167,8 @@ void SmashApp::handle_event(sq::Event event)
         #endif
     }
 
-    mGameScene->handle_event(event);
+    //--------------------------------------------------------//
+
+    if (mGameScene != nullptr)
+        mGameScene->handle_event(event);
 }

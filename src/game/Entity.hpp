@@ -3,7 +3,7 @@
 #include <sqee/builtins.hpp>
 #include <sqee/maths/Vectors.hpp>
 
-#include "game/Game.hpp"
+#include "game/forward.hpp"
 
 //============================================================================//
 
@@ -13,26 +13,13 @@ class Entity : sq::NonCopyable
 {
 public: //====================================================//
 
-    Entity(string name, Game& game);
+    Entity(FightSystem& system);
 
     virtual ~Entity() = default;
 
     //--------------------------------------------------------//
 
-    const string name;
-    Game& game;
-
-    //--------------------------------------------------------//
-
-    virtual void setup() = 0;
-
     virtual void tick() = 0;
-
-    virtual void integrate(float blend) = 0;
-
-    virtual void render_depth() = 0;
-
-    virtual void render_main() = 0;
 
     //--------------------------------------------------------//
 
@@ -41,7 +28,11 @@ public: //====================================================//
 
 protected: //=================================================//
 
-    void base_tick_Entity();
+    void base_tick_entity();
+
+    //--------------------------------------------------------//
+
+    FightSystem& mFightSystem;
 };
 
 } // namespace sts
