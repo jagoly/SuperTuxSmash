@@ -12,7 +12,7 @@ class Cheese_Fighter final : public Fighter
 {
 public: //====================================================//
 
-    Cheese_Fighter(FightSystem& system, Controller& controller);
+    Cheese_Fighter(uint8_t index, FightSystem& system, Controller& controller);
 
     //--------------------------------------------------------//
 

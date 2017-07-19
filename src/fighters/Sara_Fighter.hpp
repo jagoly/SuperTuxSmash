@@ -16,7 +16,7 @@ class Sara_Fighter final : public Fighter
 {
 public: //====================================================//
 
-    Sara_Fighter(FightSystem& system, Controller& controller);
+    Sara_Fighter(uint8_t index, FightSystem& system, Controller& controller);
 
     //--------------------------------------------------------//
 
@@ -26,8 +26,14 @@ private: //===================================================//
 
     sq::Armature armature;
 
-    std::vector<HitBlob*> mHurtBlobs;
-    std::vector<Mat4F> mBlobMats;
+    struct BlobInfo
+    {
+        uint index;
+        Vec3F origin;
+        float radius;
+    };
+
+    std::vector<BlobInfo> mBlobInfos;
 
     sq::Armature::Pose previousPose;
     sq::Armature::Pose currentPose;
@@ -48,7 +54,6 @@ private: //===================================================//
     sq::Armature::Animation ANIM_Walk;
 
     //--------------------------------------------------------//
-
 
     friend struct actions::Sara_Base;
 

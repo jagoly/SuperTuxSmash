@@ -7,7 +7,8 @@ using namespace sts;
 
 //============================================================================//
 
-Controller::Controller(const sq::InputDevices& devices, string configPath) : mDevices(devices)
+Controller::Controller(uint8_t index, const sq::InputDevices& devices, string configPath)
+    : index(index), mDevices(devices)
 {
     for (auto& linePair : sq::tokenise_file(configPath))
     {

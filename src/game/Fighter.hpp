@@ -8,6 +8,8 @@
 
 #include "game/forward.hpp"
 
+// todo: should fighter really inherit from Entity?
+
 //============================================================================//
 
 namespace sts {
@@ -25,7 +27,7 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    Fighter(FightSystem& system, Controller& controller, string name);
+    Fighter(uint8_t index, FightSystem& system, Controller& controller, string name);
 
     virtual ~Fighter() override;
 
@@ -54,6 +56,11 @@ public: //====================================================//
         float fall_speed      = 1.f; // 15m/s
 
     } stats;
+
+    //--------------------------------------------------------//
+
+    /// Index of the fighter.
+    const uint8_t index;
 
 protected: //=================================================//
 

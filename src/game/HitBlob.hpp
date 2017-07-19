@@ -10,19 +10,30 @@ namespace sts {
 
 struct HitBlob final : sq::NonCopyable
 {
-    enum class Type : int8_t { Offensive, Damageable };
-    enum class Flavour : int8_t { Sour, Tangy, Sweet };
+    enum class Type : char
+    {
+        Offensive, Damageable
+    };
+
+    enum class Flavour : char
+    {
+        Sour, Tangy, Sweet
+    };
+
+    enum class Priority : char
+    {
+        Low, Normal, High, Transcendent
+    };
 
     //--------------------------------------------------------//
 
-    HitBlob(Type type, Fighter* fighter, Action* action)
+    HitBlob(Type type, uint8_t fighter, Action* action)
         : type(type), fighter(fighter), action(action) {}
 
     //--------------------------------------------------------//
 
     const Type type;
-
-    Fighter* const fighter;
+    const uint8_t fighter;
     Action* const action;
 
     sq::maths::Sphere sphere;
@@ -32,6 +43,10 @@ struct HitBlob final : sq::NonCopyable
     struct OffensiveProps
     {
         Flavour flavour;
+        Priority priority;
+        uint8_t group;
+        Vec2F direction;
+        float damage;
     };
 
     struct DamageableProps
@@ -44,7 +59,8 @@ struct HitBlob final : sq::NonCopyable
     {
         OffensiveProps offensive;
         DamageableProps damageable;
-        char _union_max_size[24];
+
+        char _union_max_size[32];
     };
 
     //--------------------------------------------------------//

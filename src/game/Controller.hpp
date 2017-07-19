@@ -13,7 +13,7 @@ class Controller final : sq::NonCopyable
 {
 public: //====================================================//
 
-    Controller(const sq::InputDevices& devices, string configPath);
+    Controller(uint8_t index, const sq::InputDevices& devices, string configPath);
 
     //--------------------------------------------------------//
 
@@ -37,6 +37,10 @@ public: //====================================================//
 
     /// Access controller state.
     Input get_input();
+
+    //--------------------------------------------------------//
+
+    const uint8_t index;
 
 private: //===================================================//
 

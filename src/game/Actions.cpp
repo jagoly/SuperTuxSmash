@@ -46,10 +46,8 @@ void Actions::tick_active_action()
 
 void DumbAction::on_start() { sq::log_info(" start: " + message); }
 
-void DumbAction::on_finish() { sq::log_info("finish: " + message); }
-
-void DumbAction::on_cancel() { sq::log_info("cancel: " + message); }
-
 bool DumbAction::on_tick(uint frame) { return frame == 12u; }
 
-void DumbAction::on_collide(HitBlob*, HitBlob*) {}
+void DumbAction::on_collide(HitBlob*, Fighter&, Vec3F) {}
+
+void DumbAction::on_finish() { sq::log_info("finish: " + message); }

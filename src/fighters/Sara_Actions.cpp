@@ -12,34 +12,45 @@ namespace sts::actions {
 
 struct Sara_Base : public Action
 {
+    using Flavour = HitBlob::Flavour;
+    using Priority = HitBlob::Priority;
+
     Sara_Base(FightSystem& system, Sara_Fighter& fighter) : Action(system, fighter) {}
 
     Sara_Fighter& get_fighter() { return static_cast<Sara_Fighter&>(fighter); }
 
     //--------------------------------------------------------//
 
-    Vec2F get_position() { return fighter.mCurrentPosition; }
+    Vec2F get_position() const { return fighter.mCurrentPosition; }
 
-    float sign_direction(float x) { return x * float(fighter.state.direction); }
+    float sign_direction(float x) const { return x * float(fighter.state.direction); }
 
-    void set_blob_origin(HitBlob* blob, float x, float z, float y = 0.f)
+    //--------------------------------------------------------//
+
+    void set_blob_sphere_relative(HitBlob* blob, Vec3F origin, float radius)
     {
-        x += get_position().x; z += get_position().y;
-        blob->sphere.origin = { x, y, z };
+        if (blob == nullptr) return;
+
+        origin.x = sign_direction(origin.x);
+        origin.y = sign_direction(origin.y);
+
+        origin.x += get_position().x;
+        origin.z += get_position().y;
+
+        blob->sphere = { origin, radius };
     }
 
     //--------------------------------------------------------//
 
-    HitBlob* add_offensive_hit_blob(HitBlob::Flavour flavour, float radius)
+    HitBlob* add_hit_blob(uint8_t group, Flavour flavour, Priority priority)
     {
-        auto blob = system.create_hit_blob(HitBlob::Type::Offensive, fighter, *this);
-        blob->offensive.flavour = flavour; blob->sphere.radius = radius;
+        auto blob = system.create_offensive_hit_blob(fighter, *this, group);
+
+        blob->offensive.flavour = flavour;
+        blob->offensive.priority = priority;
+
         return blob;
     }
-
-    auto add_sour_hit_blob  (float radius) { return add_offensive_hit_blob(HitBlob::Flavour::Sour,  radius); }
-    auto add_tangy_hit_blob (float radius) { return add_offensive_hit_blob(HitBlob::Flavour::Tangy, radius); }
-    auto add_sweet_hit_blob (float radius) { return add_offensive_hit_blob(HitBlob::Flavour::Sweet, radius); }
 
     //--------------------------------------------------------//
 
@@ -47,8 +58,17 @@ struct Sara_Base : public Action
     void remove_hit_blobs(Args*&... blobs)
     {
         static_assert(( std::is_same_v<HitBlob, Args> && ... ));
-        ( system.delete_hit_blob(blobs) , ... );
-        ( (blobs = nullptr) , ... );
+        auto func = [this](HitBlob*& blob) { if (blob) system.delete_hit_blob(blob); };
+        ( func(blobs) , ... ); ( (blobs = nullptr) , ... );
+    }
+
+    //--------------------------------------------------------//
+
+    template <class... Args>
+    void reset_hit_blob_groups(const Args... groups)
+    {
+        static_assert(( std::is_arithmetic_v<Args> && ... ));
+        ( system.reset_offensive_blob_group(fighter, uint8_t(groups)) , ... );
     }
 };
 
@@ -58,22 +78,27 @@ struct Sara_Neutral_First final : public Sara_Base
 {
     bool on_tick(uint frame) override
     {
-        if (frame == 20u) return true;
+        if (frame ==  4u) blobs[0] = add_hit_blob(0u, Flavour::Sour, Priority::Normal);
+        if (frame ==  8u) blobs[1] = add_hit_blob(1u, Flavour::Sweet, Priority::Normal);
 
-        if (frame ==  4u) blobs[0] = add_sour_hit_blob(0.6f);
-        if (frame ==  8u) blobs[1] = add_sweet_hit_blob(0.15f);
         if (frame == 10u) remove_hit_blobs(blobs[0], blobs[1]);
 
-        if (blobs[0]) set_blob_origin(blobs[0], sign_direction(0.55f), 0.9f);
-        if (blobs[1]) set_blob_origin(blobs[1], sign_direction(1.05f), 1.1f);
+        set_blob_sphere_relative(blobs[0], { 0.55f, 0.f, 0.9f }, 0.6f);
+        set_blob_sphere_relative(blobs[1], { 1.05f, 0.f, 1.1f }, 0.15f);
 
-        return false;
+        return frame >= 20u;
     }
 
-    void on_collide(HitBlob* blob, HitBlob* other) override
+    void on_collide(HitBlob* blob, Fighter& other, Vec3F point) override
     {
         if (blob == blobs[0]) std::cout << "sour hit!"  << std::endl;
         if (blob == blobs[1]) std::cout << "sweet hit!" << std::endl;
+    }
+
+    void on_finish() override
+    {
+        remove_hit_blobs(blobs[0], blobs[1]);
+        reset_hit_blob_groups(0u, 1u);
     }
 
     using Sara_Base::Sara_Base;
@@ -85,26 +110,31 @@ struct Sara_Tilt_Up final : public Sara_Base
 {
     bool on_tick(uint frame) override
     {
-        if (frame == 18u) return true;
+        if (frame ==  3u) blobs[0] = add_hit_blob(0u, Flavour::Tangy, Priority::Normal);
+        if (frame ==  4u) blobs[1] = add_hit_blob(1u, Flavour::Sour, Priority::Normal);
+        if (frame ==  6u) blobs[2] = add_hit_blob(1u, Flavour::Sweet, Priority::High);
 
-        if (frame ==  3u) { blobs[0] = add_tangy_hit_blob(0.4f); }
-        if (frame ==  4u) { blobs[1] = add_sour_hit_blob(0.6f); }
-        if (frame ==  6u) { blobs[2] = add_sweet_hit_blob(0.2f); }
-        if (frame ==  8u) { remove_hit_blobs(blobs[0], blobs[2]); }
-        if (frame == 11u) { remove_hit_blobs(blobs[1]); }
+        if (frame ==  8u) remove_hit_blobs(blobs[0], blobs[2]);
+        if (frame == 11u) remove_hit_blobs(blobs[1]);
 
-        if (blobs[0]) set_blob_origin(blobs[0], sign_direction(0.25f), 1.6f);
-        if (blobs[1]) set_blob_origin(blobs[1], sign_direction(0.1f), 2.0f);
-        if (blobs[2]) set_blob_origin(blobs[2], sign_direction(0.1f), 2.5f);
+        set_blob_sphere_relative(blobs[0], { 0.25f, 0.f, 1.6f }, 0.4f);
+        set_blob_sphere_relative(blobs[1], { 0.12f, 0.f, 2.0f }, 0.6f);
+        set_blob_sphere_relative(blobs[2], { 0.12f, 0.f, 2.5f }, 0.2f);
 
-        return false;
+        return frame >= 18u;
     }
 
-    void on_collide(HitBlob* blob, HitBlob* other) override
+    void on_collide(HitBlob* blob, Fighter& other, Vec3F point) override
     {
         if (blob == blobs[0]) std::cout << "tangy hit!" << std::endl;
         if (blob == blobs[1]) std::cout << "sour hit!"  << std::endl;
         if (blob == blobs[2]) std::cout << "sweet hit!" << std::endl;
+    }
+
+    void on_finish() override
+    {
+        remove_hit_blobs(blobs[0], blobs[1], blobs[2]);
+        reset_hit_blob_groups(0u, 1u);
     }
 
     using Sara_Base::Sara_Base;
@@ -116,25 +146,32 @@ struct Sara_Tilt_Down final : public Sara_Base
 {
     bool on_tick(uint frame) override
     {
-        if (frame == 24u) return true;
+        if (frame ==  4u) blobs[0] = add_hit_blob(0u, Flavour::Sweet, Priority::High);
+        if (frame ==  6u) blobs[1] = add_hit_blob(1u, Flavour::Sour, Priority::Normal);
+        if (frame == 10u) blobs[2] = add_hit_blob(2u, Flavour::Sour, Priority::Normal);
 
-        if (frame ==  4u) { blobs[0] = add_sweet_hit_blob(0.3f); }
-        if (frame ==  6u) { blobs[1] = add_sour_hit_blob(0.5f); remove_hit_blobs(blobs[0]); }
-        if (frame == 10u) { blobs[2] = add_sour_hit_blob(0.5f); remove_hit_blobs(blobs[1]); }
-        if (frame == 16u) { remove_hit_blobs(blobs[2]); }
+        if (frame ==  6u) remove_hit_blobs(blobs[0]);
+        if (frame == 10u) remove_hit_blobs(blobs[1]);
+        if (frame == 16u) remove_hit_blobs(blobs[2]);
 
-        if (blobs[0]) set_blob_origin(blobs[0], sign_direction(1.0f), 0.1f);
-        if (blobs[1]) set_blob_origin(blobs[1], sign_direction(1.5f), 0.1f);
-        if (blobs[2]) set_blob_origin(blobs[2], sign_direction(2.0f), 0.1f);
+        set_blob_sphere_relative(blobs[0], { 1.0f, 0.f, 0.1f }, 0.3f);
+        set_blob_sphere_relative(blobs[1], { 1.5f, 0.f, 0.1f }, 0.5f);
+        set_blob_sphere_relative(blobs[2], { 2.0f, 0.f, 0.1f }, 0.5f);
 
-        return false;
+        return frame >= 24u;
     }
 
-    void on_collide(HitBlob* blob, HitBlob* other) override
+    void on_collide(HitBlob* blob, Fighter& other, Vec3F point) override
     {
         if (blob == blobs[0]) std::cout << "sweet hit!" << std::endl;
         if (blob == blobs[1]) std::cout << "sour hit!"  << std::endl;
         if (blob == blobs[2]) std::cout << "sour hit!"  << std::endl;
+    }
+
+    void on_finish() override
+    {
+        remove_hit_blobs(blobs[0], blobs[1], blobs[2]);
+        reset_hit_blob_groups(0u, 1u, 2u);
     }
 
     using Sara_Base::Sara_Base;

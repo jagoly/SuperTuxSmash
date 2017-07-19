@@ -1,8 +1,7 @@
 #pragma once
 
-#include <functional>
-
 #include <sqee/builtins.hpp>
+#include <sqee/maths/Vectors.hpp>
 
 #include "game/forward.hpp"
 
@@ -46,19 +45,14 @@ protected: //=================================================//
     /// Do stuff when action first starts.
     virtual void on_start() {}
 
-    /// Do stuff when action finishes normally.
-    virtual void on_finish() {}
-
-    /// Do stuff when action is cancelled early.
-    virtual void on_cancel() {}
-
-    //--------------------------------------------------------//
-
-    /// Return true to finish action.
+    /// Return true when the action is finished.
     virtual bool on_tick(uint frame) = 0;
 
-    /// Do stuff upon collision with another hit blob.
-    virtual void on_collide(HitBlob* blob, HitBlob* other) = 0;
+    /// Do stuff when a blob collides with a fighter.
+    virtual void on_collide(HitBlob* blob, Fighter& other, Vec3F point) = 0;
+
+    /// Do stuff when finished or cancelled.
+    virtual void on_finish() = 0;
 
     //--------------------------------------------------------//
 
@@ -91,7 +85,7 @@ public: //====================================================//
 
     void switch_active(Action::Type type)
     {
-        if (mActiveAction != nullptr) mActiveAction->on_cancel();
+        if (mActiveAction != nullptr) mActiveAction->on_finish();
 
         if (type == Action::Type::None)          mActiveAction = nullptr;
         if (type == Action::Type::Neutral_First) mActiveAction = neutral_first.get();
@@ -155,14 +149,12 @@ public: //====================================================//
 private: //===================================================//
 
     void on_start() override;
-    void on_finish() override;
-    void on_cancel() override;
-
-    //--------------------------------------------------------//
 
     bool on_tick(uint frame) override;
 
-    void on_collide(HitBlob*, HitBlob*) override;
+    void on_collide(HitBlob*, Fighter&, Vec3F) override;
+
+    void on_finish() override;
 
     //--------------------------------------------------------//
 

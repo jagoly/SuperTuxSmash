@@ -7,8 +7,8 @@ using namespace sts;
 
 //============================================================================//
 
-Cheese_Fighter::Cheese_Fighter(FightSystem& system, Controller& controller)
-    : Fighter(system, controller, "Cheese")
+Cheese_Fighter::Cheese_Fighter(uint8_t index, FightSystem& system, Controller& controller)
+    : Fighter(index, system, controller, "Cheese")
 {
     mActions = create_actions(mFightSystem, *this);
 
@@ -22,7 +22,7 @@ Cheese_Fighter::Cheese_Fighter(FightSystem& system, Controller& controller)
     //--------------------------------------------------------//
 
     for ([[maybe_unused]] const auto& sphere : mSpheres)
-        mHurtBlobs.push_back(system.create_hit_blob(HitBlob::Type::Damageable, *this));
+        mHurtBlobs.push_back(system.create_damageable_hit_blob(*this));
 }
 
 //============================================================================//
@@ -34,7 +34,7 @@ void Cheese_Fighter::tick()
 
     //--------------------------------------------------------//
 
-    for (size_t i = 0u; i < mSpheres.size(); ++i)
+    for (uint i = 0u; i < mSpheres.size(); ++i)
     {
         auto& blobSphere = (mHurtBlobs[i]->sphere = mSpheres[i]);
         blobSphere.origin.x *= float(state.direction);

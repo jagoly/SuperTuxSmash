@@ -9,8 +9,8 @@ using namespace sts;
 
 //============================================================================//
 
-Fighter::Fighter(FightSystem& system, Controller& controller, string name)
-    : Entity(system), mController(controller)
+Fighter::Fighter(uint8_t index, FightSystem& system, Controller& controller, string name)
+    : Entity(system), index(index), mController(controller)
 {
     const auto json = sq::parse_json("assets/fighters/" + name + "/fighter.json");
 

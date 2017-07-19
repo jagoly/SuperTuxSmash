@@ -1,14 +1,29 @@
+#include <sqee/maths/Functions.hpp>
+
+#include "game/FightSystem.hpp"
+
 #include "fighters/Sara_Actions.hpp"
 #include "fighters/Sara_Fighter.hpp"
 
+namespace maths = sq::maths;
 using namespace sts;
 
 //============================================================================//
 
-Sara_Fighter::Sara_Fighter(FightSystem& system, Controller& controller)
-    : Fighter(system, controller, "Sara")
+Sara_Fighter::Sara_Fighter(uint8_t index, FightSystem& system, Controller& controller)
+    : Fighter(index, system, controller, "Sara")
 {
     mActions = create_actions(mFightSystem, *this);
+
+    //--------------------------------------------------------//
+
+    mBlobInfos.push_back({ 17u, { 0.f, 0.f, 1.66f }, 0.15f });
+    mBlobInfos.push_back({ 17u, { 0.f, -0.01f, 1.82f }, 0.16f });
+
+    //--------------------------------------------------------//
+
+    for ([[maybe_unused]] const auto& blobInfo : mBlobInfos)
+        mHurtBlobs.push_back(system.create_damageable_hit_blob(*this));
 
     //--------------------------------------------------------//
 
@@ -94,5 +109,26 @@ void Sara_Fighter::tick()
     {
         animationProgress = 0.f;
         currentPose = POSE_Act_TiltUp;
+    }
+
+    //--------------------------------------------------------//
+
+    // this is really quick and dirty code, so gross :(
+
+    const Vec3F position = { mCurrentPosition.x, 0.f, mCurrentPosition.y };
+    const QuatF rotation = QuatF(0.f, 0.f, 0.25f * float(state.direction));
+
+    const Mat4F modelMatrix = maths::transform(position, rotation, Vec3F(1.f));
+
+    const auto matrices = armature.compute_ubo_data(currentPose);
+
+    for (uint i = 0u; i < mBlobInfos.size(); ++i)
+    {
+        const auto& blobInfo = mBlobInfos[i];
+        const Mat4F boneMatrix = maths::transpose(Mat4F(matrices[blobInfo.index]));
+        Vec3F newOrigin = Vec3F(modelMatrix * boneMatrix * Vec4F(blobInfo.origin, 1.f));
+
+        mHurtBlobs[i]->sphere.origin = newOrigin;
+        mHurtBlobs[i]->sphere.radius = blobInfo.radius;
     }
 }
