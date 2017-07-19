@@ -19,7 +19,7 @@ Sara_Render::Sara_Render(const Entity& entity, const Renderer& renderer)
 
     //--------------------------------------------------------//
 
-    MESH_Sara.load_from_file("fighters/Sara/meshes/Mesh");
+    MESH_Sara.load_from_file("fighters/Sara/meshes/Mesh", true);
 
     //--------------------------------------------------------//
 
@@ -69,21 +69,10 @@ void Sara_Render::integrate(float blend)
 
     //--------------------------------------------------------//
 
-    QuatF rotation { 0.f, 0.f, 0.f, 1.f };
-    Vec3F scale { 1.f, 1.f, 1.f };
-
-    //--------------------------------------------------------//
-
-    if (fighter.state.direction == Fighter::State::Direction::Left)
-        rotation = QuatF(0.f, 0.f, -0.25f);
-
-    if (fighter.state.direction == Fighter::State::Direction::Right)
-        rotation = QuatF(0.f, 0.f, +0.25f);
-
-    //--------------------------------------------------------//
-
     const Vec2F position = maths::mix(fighter.mPreviousPosition, fighter.mCurrentPosition, blend);
-    const Mat4F modelMatrix = maths::transform(Vec3F(position.x, 0.f, position.y), rotation, scale);
+    const QuatF rotation = QuatF(0.f, 0.25f * float(fighter.state.direction), 0.f);
+
+    const Mat4F modelMatrix = maths::transform(Vec3F(position, 0.f), rotation, Vec3F(1.f));
 
     mFinalMatrix = renderer.camera.projMatrix * renderer.camera.viewMatrix * modelMatrix;
     mNormalMatrix = maths::normal_matrix(renderer.camera.viewMatrix * modelMatrix);

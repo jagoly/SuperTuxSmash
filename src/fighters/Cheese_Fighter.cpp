@@ -1,8 +1,11 @@
+#include <sqee/maths/Functions.hpp>
+
 #include "game/FightSystem.hpp"
 
 #include "fighters/Cheese_Actions.hpp"
 #include "fighters/Cheese_Fighter.hpp"
 
+namespace maths = sq::maths;
 using namespace sts;
 
 //============================================================================//
@@ -14,10 +17,12 @@ Cheese_Fighter::Cheese_Fighter(uint8_t index, FightSystem& system, Controller& c
 
     //--------------------------------------------------------//
 
-    mSpheres.push_back({ { -0.15f, +0.18f, +0.1f }, 0.35f });
-    mSpheres.push_back({ { -0.15f, -0.18f, +0.1f }, 0.35f });
-    mSpheres.push_back({ { +0.15f, +0.18f, -0.1f }, 0.35f });
-    mSpheres.push_back({ { +0.15f, -0.18f, -0.1f }, 0.35f });
+    mSpheres.push_back({ { -0.137f, 0.f, -0.238f }, 0.3f });
+    mSpheres.push_back({ { -0.137f, 0.f, +0.238f }, 0.3f });
+    mSpheres.push_back({ { +0.137f, 0.f, -0.238f }, 0.3f });
+    mSpheres.push_back({ { +0.137f, 0.f, +0.238f }, 0.3f });
+    mSpheres.push_back({ { -0.275f, 0.f, 0.f }, 0.3f });
+    mSpheres.push_back({ { +0.275f, 0.f, 0.f }, 0.3f });
 
     //--------------------------------------------------------//
 
@@ -31,16 +36,6 @@ void Cheese_Fighter::tick()
 {
     this->base_tick_entity();
     this->base_tick_fighter();
-
-    //--------------------------------------------------------//
-
-    for (uint i = 0u; i < mSpheres.size(); ++i)
-    {
-        auto& blobSphere = (mHurtBlobs[i]->sphere = mSpheres[i]);
-        blobSphere.origin.x *= float(state.direction);
-        blobSphere.origin.x += mCurrentPosition.x;
-        blobSphere.origin.z += mCurrentPosition.y;
-    }
 
     //--------------------------------------------------------//
 
@@ -58,4 +53,17 @@ void Cheese_Fighter::tick()
 
     if (state.move == State::Move::Falling)
         mColour = Vec3F(0.1f, 0.1f, 2.f);
+
+    //--------------------------------------------------------//
+
+    const Vec3F position = Vec3F(mCurrentPosition, 0.f);
+    const QuatF rotation = QuatF(0.f, 0.f, -0.1f * float(state.direction));
+
+    const Mat4F modelMatrix = maths::transform(position, rotation, Vec3F(1.f));
+
+    for (uint i = 0u; i < mSpheres.size(); ++i)
+    {
+        mHurtBlobs[i]->sphere.origin = Vec3F(modelMatrix * Vec4F(mSpheres[i].origin, 1.f));
+        mHurtBlobs[i]->sphere.radius = mSpheres[i].radius;
+    }
 }

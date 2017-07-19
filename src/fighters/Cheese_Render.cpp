@@ -15,7 +15,7 @@ using namespace sts;
 Cheese_Render::Cheese_Render(const Entity& entity, const Renderer& renderer)
     : RenderEntity(entity, renderer)
 {
-    MESH_Cheese.load_from_file("fighters/Cheese/meshes/Mesh");
+    MESH_Cheese.load_from_file("fighters/Cheese/meshes/Mesh", true);
 
     //--------------------------------------------------------//
 
@@ -48,21 +48,10 @@ void Cheese_Render::integrate(float blend)
 
     //--------------------------------------------------------//
 
-    QuatF rotation { 0.f, 0.f, 0.f, 1.f };
-    Vec3F scale { 1.f, 1.f, 1.f };
-
-    //--------------------------------------------------------//
-
-    if (fighter.state.direction == Fighter::State::Direction::Left)
-        rotation = QuatF(0.f, -0.1f, 0.f);
-
-    if (fighter.state.direction == Fighter::State::Direction::Right)
-        rotation = QuatF(0.f, +0.1f, 0.f);
-
-    //--------------------------------------------------------//
-
     const Vec2F position = maths::mix(fighter.mPreviousPosition, fighter.mCurrentPosition, blend);
-    const Mat4F modelMatrix = maths::transform(Vec3F(position.x, 0.f, position.y), rotation, scale);
+    const QuatF rotation = QuatF(0.f, 0.f, -0.1f * float(fighter.state.direction));
+
+    const Mat4F modelMatrix = maths::transform(Vec3F(position, 0.f), rotation, Vec3F(1.f));
 
     mFinalMatrix = renderer.camera.projMatrix * renderer.camera.viewMatrix * modelMatrix;
     mNormalMatrix = maths::normal_matrix(renderer.camera.viewMatrix * modelMatrix);

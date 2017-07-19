@@ -32,10 +32,9 @@ struct Sara_Base : public Action
         if (blob == nullptr) return;
 
         origin.x = sign_direction(origin.x);
-        origin.y = sign_direction(origin.y);
+        origin.z = sign_direction(origin.z);
 
-        origin.x += get_position().x;
-        origin.z += get_position().y;
+        origin += Vec3F(get_position(), 0.f);
 
         blob->sphere = { origin, radius };
     }
@@ -83,8 +82,8 @@ struct Sara_Neutral_First final : public Sara_Base
 
         if (frame == 10u) remove_hit_blobs(blobs[0], blobs[1]);
 
-        set_blob_sphere_relative(blobs[0], { 0.55f, 0.f, 0.9f }, 0.6f);
-        set_blob_sphere_relative(blobs[1], { 1.05f, 0.f, 1.1f }, 0.15f);
+        set_blob_sphere_relative(blobs[0], { 0.55f, 0.9f, 0.f }, 0.6f);
+        set_blob_sphere_relative(blobs[1], { 1.05f, 1.1f, 0.f }, 0.15f);
 
         return frame >= 20u;
     }
@@ -117,9 +116,9 @@ struct Sara_Tilt_Up final : public Sara_Base
         if (frame ==  8u) remove_hit_blobs(blobs[0], blobs[2]);
         if (frame == 11u) remove_hit_blobs(blobs[1]);
 
-        set_blob_sphere_relative(blobs[0], { 0.25f, 0.f, 1.6f }, 0.4f);
-        set_blob_sphere_relative(blobs[1], { 0.12f, 0.f, 2.0f }, 0.6f);
-        set_blob_sphere_relative(blobs[2], { 0.12f, 0.f, 2.5f }, 0.2f);
+        set_blob_sphere_relative(blobs[0], { 0.25f, 1.6f, 0.f }, 0.4f);
+        set_blob_sphere_relative(blobs[1], { 0.12f, 2.0f, 0.f }, 0.6f);
+        set_blob_sphere_relative(blobs[2], { 0.12f, 2.5f, 0.f }, 0.2f);
 
         return frame >= 18u;
     }
@@ -154,9 +153,9 @@ struct Sara_Tilt_Down final : public Sara_Base
         if (frame == 10u) remove_hit_blobs(blobs[1]);
         if (frame == 16u) remove_hit_blobs(blobs[2]);
 
-        set_blob_sphere_relative(blobs[0], { 1.0f, 0.f, 0.1f }, 0.3f);
-        set_blob_sphere_relative(blobs[1], { 1.5f, 0.f, 0.1f }, 0.5f);
-        set_blob_sphere_relative(blobs[2], { 2.0f, 0.f, 0.1f }, 0.5f);
+        set_blob_sphere_relative(blobs[0], { 1.0f, 0.1f, 0.f }, 0.3f);
+        set_blob_sphere_relative(blobs[1], { 1.5f, 0.1f, 0.f }, 0.5f);
+        set_blob_sphere_relative(blobs[2], { 2.0f, 0.1f, 0.f }, 0.5f);
 
         return frame >= 24u;
     }

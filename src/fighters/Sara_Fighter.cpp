@@ -17,8 +17,8 @@ Sara_Fighter::Sara_Fighter(uint8_t index, FightSystem& system, Controller& contr
 
     //--------------------------------------------------------//
 
-    mBlobInfos.push_back({ 17u, { 0.f, 0.f, 1.66f }, 0.15f });
-    mBlobInfos.push_back({ 17u, { 0.f, -0.01f, 1.82f }, 0.16f });
+    mBlobInfos.push_back({ 17u, { 0.f, 1.66f, 0.f }, 0.15f });
+    mBlobInfos.push_back({ 17u, { 0.f, 1.82f, -0.01f }, 0.16f });
 
     //--------------------------------------------------------//
 
@@ -27,7 +27,7 @@ Sara_Fighter::Sara_Fighter(uint8_t index, FightSystem& system, Controller& contr
 
     //--------------------------------------------------------//
 
-    armature.load_bones("fighters/Sara/armature.txt");
+    armature.load_bones("fighters/Sara/armature.txt", true);
     armature.load_rest_pose("fighters/Sara/poses/Rest.txt");
 
     //--------------------------------------------------------//
@@ -115,8 +115,8 @@ void Sara_Fighter::tick()
 
     // this is really quick and dirty code, so gross :(
 
-    const Vec3F position = { mCurrentPosition.x, 0.f, mCurrentPosition.y };
-    const QuatF rotation = QuatF(0.f, 0.f, 0.25f * float(state.direction));
+    const Vec3F position = Vec3F(mCurrentPosition, 0.f);
+    const QuatF rotation = QuatF(0.f, 0.25f * float(state.direction), 0.f);
 
     const Mat4F modelMatrix = maths::transform(position, rotation, Vec3F(1.f));
 

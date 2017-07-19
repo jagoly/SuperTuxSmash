@@ -146,21 +146,25 @@ void Renderer::render(float elapsed, float blend)
 
     //-- Camera and Light can spin, for funzies --------------//
 
-    static Vec3F cameraPosition = { 0.f, -4.f, +2.f };
-    static Vec3F skyDirection = maths::normalize(Vec3F(0.f, 0.5f, -1.f));
+    static Vec3F cameraPosition = { 0.f, +2.f, +4.f };
+    static Vec3F skyDirection = maths::normalize(Vec3F(0.f, -1.f, -0.5f));
 
     #ifdef SQEE_DEBUG
-    if (sqeeDebugToggle1) cameraPosition = maths::rotate_z(cameraPosition, 0.1f * elapsed);
-    if (sqeeDebugToggle2) skyDirection = maths::rotate_z(skyDirection, 0.1f * elapsed);
+    if (sqeeDebugToggle1) cameraPosition = maths::rotate_y(cameraPosition, 0.1f * elapsed);
+    if (sqeeDebugToggle2) skyDirection = maths::rotate_y(skyDirection, 0.1f * elapsed);
     #endif
 
     //-- Update the Camera -----------------------------------//
 
-    const Vec3F cameraDirection = maths::normalize(-cameraPosition);
+    const Vec3F cameraTarget = { 0.f, 1.f, 0.f };
+    const Vec3F cameraDirection = maths::normalize(cameraTarget - cameraPosition);
+
     const Vec2F viewSize = Vec2F(options.Window_Size);
 
-    camera.viewMatrix = maths::look_at(cameraPosition, Vec3F(0.f, 0.f, 1.f), Vec3F(0.f, 0.f, 1.f));
+    camera.viewMatrix = maths::look_at(cameraPosition, cameraTarget, Vec3F(0.f, 1.f, 0.f));
     camera.projMatrix = maths::perspective(1.f, viewSize.x / viewSize.y, 0.2f, 200.f);
+
+    //camera.projMatrix[2].w *= -1.f;
 
     const Mat4F inverseViewMat = maths::inverse(camera.viewMatrix);
     const Mat4F inverseProjMat = maths::inverse(camera.projMatrix);
