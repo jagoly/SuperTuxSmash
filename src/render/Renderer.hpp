@@ -7,17 +7,9 @@
 #include <sqee/gl/Textures.hpp>
 #include <sqee/gl/UniformBuffer.hpp>
 
-#include <sqee/render/Volume.hpp>
 #include <sqee/render/Mesh.hpp>
 
 #include "main/Options.hpp"
-
-//====== Data Declarations ===================================================//
-
-extern "C" const float data_CubeVertices [8*3];
-extern "C" const uchar data_CubeIndices  [12*3];
-extern "C" const float data_SphereVertices [42*3];
-extern "C" const uchar data_SphereIndices  [80*3];
 
 //====== Forward Declarations ================================================//
 
@@ -43,11 +35,13 @@ public: //====================================================//
 
     void set_camera_view_bounds(Vec2F min, Vec2F max);
 
-    void render(float accum, float blend);
+    void render_objects(float accum, float blend);
 
     void render_blobs(const std::vector<HitBlob*>& blobs);
 
     void render_blobs(const std::vector<HurtBlob*>& blobs);
+
+    void finish_rendering();
 
     //--------------------------------------------------------//
 
@@ -56,7 +50,7 @@ public: //====================================================//
         sq::FrameBuffer Depth;
         sq::FrameBuffer Main;
         sq::FrameBuffer Resolve;
-        sq::FrameBuffer Final;
+        //sq::FrameBuffer Final;
 
     } fbos;
 
@@ -88,29 +82,13 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    struct {
-
-        sq::Volume Cube { data_CubeVertices, data_CubeIndices, 8u, 36u };
-        sq::Volume Sphere { data_SphereVertices, data_SphereIndices, 42u, 240u };
-
-        sq::Mesh Capsule;
-
-    } meshes;
+    struct { sq::Mesh Sphere; sq::Mesh Capsule; } meshes;
 
     //--------------------------------------------------------//
 
-    struct {
+    struct { sq::UniformBuffer ubo; Mat4F viewMatrix, projMatrix; } camera;
 
-        sq::UniformBuffer ubo;
-        Mat4F viewMatrix, projMatrix;
-
-    } camera;
-
-    struct {
-
-        sq::UniformBuffer ubo;
-
-    } light;
+    struct { sq::UniformBuffer ubo; } light;
 
     //--------------------------------------------------------//
 

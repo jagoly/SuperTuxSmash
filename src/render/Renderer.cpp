@@ -22,6 +22,7 @@ Renderer::Renderer(const Options& options) : context(sq::Context::get()), option
 {
     //-- Load Mesh Objects -----------------------------------//
 
+    meshes.Sphere.load_from_file("debug/Sphere", true);
     meshes.Capsule.load_from_file("debug/Capsule", true);
 
     //-- Set Texture Paramaters ------------------------------//
@@ -76,7 +77,7 @@ void Renderer::refresh_options()
     textures.Colour.allocate_storage(Vec3U(options.Window_Size, msaaNum));
 
     textures.Resolve.allocate_storage(options.Window_Size);
-    textures.Final.allocate_storage(options.Window_Size);
+    //textures.Final.allocate_storage(options.Window_Size);
 
     //-- Attach Textures to FrameBuffers ---------------------//
 
@@ -84,7 +85,7 @@ void Renderer::refresh_options()
     fbos.Main.attach(gl::DEPTH_STENCIL_ATTACHMENT, textures.Depth);
     fbos.Main.attach(gl::COLOR_ATTACHMENT0, textures.Colour);
     fbos.Resolve.attach(gl::COLOR_ATTACHMENT0, textures.Resolve);
-    fbos.Final.attach(gl::COLOR_ATTACHMENT0, textures.Final);
+    //fbos.Final.attach(gl::COLOR_ATTACHMENT0, textures.Final);
 
     //-- Load GLSL Shader Sources ----------------------------//
 
@@ -144,18 +145,14 @@ struct StaticShit
         TEX_Skybox.allocate_storage(2048u);
         TEX_Skybox.load_directory("skybox");
         TEX_Skybox.generate_auto_mipmaps();
-
-        MESH_Sphere.load_from_file("debug/volumes/Sphere");
     }
 
     sq::TextureCube TEX_Skybox { sq::Texture::Format::RGB8_UN };
-
-    sq::Mesh MESH_Sphere;
 };
 
 //============================================================================//
 
-void Renderer::render(float elapsed, float blend)
+void Renderer::render_objects(float elapsed, float blend)
 {
     static StaticShit shit;
 
@@ -240,7 +237,12 @@ void Renderer::render(float elapsed, float blend)
 
     for (const auto& object : mRenderObjects)
         object->render_main();
+}
 
+//============================================================================//
+
+void Renderer::finish_rendering()
+{
     //-- Resolve the Multi Sample Texture --------------------//
 
     fbos.Main.blit(fbos.Resolve, options.Window_Size, gl::COLOR_BUFFER_BIT);
@@ -263,13 +265,15 @@ void Renderer::render(float elapsed, float blend)
 
 void Renderer::render_blobs(const std::vector<HitBlob*>& blobs)
 {
-    context.bind_FrameBuffer_default();
+    context.bind_FrameBuffer(fbos.Main);
 
     context.set_state(Context::Blend_Mode::Alpha);
     context.set_state(Context::Cull_Face::Disable);
     context.set_state(Context::Depth_Test::Disable);
 
     context.bind_Program(shaders.Debug_HitBlob);
+
+    context.bind_VertexArray(meshes.Sphere.get_vao());
 
     const Mat4F projViewMat = camera.projMatrix * camera.viewMatrix;
 
@@ -282,7 +286,7 @@ void Renderer::render_blobs(const std::vector<HitBlob*>& blobs)
         shaders.Debug_HitBlob.update(0, projViewMat * matrix);
         shaders.Debug_HitBlob.update(1, blob->get_debug_colour());
 
-        meshes.Sphere.bind_and_draw(context);
+        meshes.Sphere.draw_complete();
     }
 }
 
@@ -290,7 +294,7 @@ void Renderer::render_blobs(const std::vector<HitBlob*>& blobs)
 
 void Renderer::render_blobs(const std::vector<HurtBlob*>& blobs)
 {
-    context.bind_FrameBuffer_default();
+    context.bind_FrameBuffer(fbos.Main);
 
     context.set_state(Context::Blend_Mode::Alpha);
     context.set_state(Context::Cull_Face::Disable);

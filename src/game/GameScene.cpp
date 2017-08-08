@@ -75,8 +75,10 @@ void GameScene::update()
 
 void GameScene::render(double elapsed)
 {
-    mRenderer->render(float(elapsed), float(mAccumulation / mTickTime));
+    mRenderer->render_objects(float(elapsed), float(mAccumulation / mTickTime));
 
     mRenderer->render_blobs(mFightWorld->get_hit_blobs());
     mRenderer->render_blobs(mFightWorld->get_hurt_blobs());
+
+    mRenderer->finish_rendering();
 }
