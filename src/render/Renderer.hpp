@@ -8,10 +8,7 @@
 #include <sqee/gl/UniformBuffer.hpp>
 
 #include <sqee/render/Volume.hpp>
-
-#include "game/HitBlob.hpp"
-
-#include "render/RenderEntity.hpp"
+#include <sqee/render/Mesh.hpp>
 
 #include "main/Options.hpp"
 
@@ -21,6 +18,10 @@ extern "C" const float data_CubeVertices [8*3];
 extern "C" const uchar data_CubeIndices  [12*3];
 extern "C" const float data_SphereVertices [42*3];
 extern "C" const uchar data_SphereIndices  [80*3];
+
+//====== Forward Declarations ================================================//
+
+namespace sts { struct HitBlob; struct HurtBlob; class RenderObject; }
 
 //============================================================================//
 
@@ -36,13 +37,17 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    void add_entity(unique_ptr<RenderEntity> entity);
+    void add_object(unique_ptr<RenderObject> object);
 
     //--------------------------------------------------------//
 
+    void set_camera_view_bounds(Vec2F min, Vec2F max);
+
     void render(float accum, float blend);
 
-    void render_hit_blobs(const std::vector<HitBlob*>& blobs);
+    void render_blobs(const std::vector<HitBlob*>& blobs);
+
+    void render_blobs(const std::vector<HurtBlob*>& blobs);
 
     //--------------------------------------------------------//
 
@@ -88,7 +93,9 @@ public: //====================================================//
         sq::Volume Cube { data_CubeVertices, data_CubeIndices, 8u, 36u };
         sq::Volume Sphere { data_SphereVertices, data_SphereIndices, 42u, 240u };
 
-    } volumes;
+        sq::Mesh Capsule;
+
+    } meshes;
 
     //--------------------------------------------------------//
 
@@ -113,7 +120,17 @@ public: //====================================================//
 
 private: //===================================================//
 
-    std::vector<unique_ptr<RenderEntity>> entities;
+    Vec2F mPreviousViewBoundsMin;
+    Vec2F mPreviousViewBoundsMax;
+
+    Vec2F mCurrentViewBoundsMin;
+    Vec2F mCurrentViewBoundsMax;
+
+    //--------------------------------------------------------//
+
+    std::vector<unique_ptr<RenderObject>> mRenderObjects;
+
+    //--------------------------------------------------------//
 
     const Options& options;
 };

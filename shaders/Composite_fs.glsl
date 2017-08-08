@@ -4,9 +4,9 @@
 
 in vec2 texcrd;
 
-layout(binding=0) uniform sampler2D texMain;
+layout(binding=0) uniform sampler2D tex_Main;
 
-out vec4 fragColour;
+out vec4 frag_Colour;
 
 //============================================================================//
 
@@ -20,11 +20,11 @@ vec3 tone_map(vec3 vec)
 
 void main()
 {
-    vec3 value = texture(texMain, texcrd).rgb;
+    vec3 value = texture(tex_Main, texcrd).rgb;
 
     float sqrtLuma = sqrt(dot(vec3(0.22f, 0.69f, 0.09f), value));
     value = tone_map(value) / tone_map(vec3(1.f / sqrtLuma));
 
-//    fragColour = vec4(value, dot(vec3(0.22f, 0.69f, 0.09f), value));
-    fragColour = vec4(value, 1.f);
+    //frag_Colour = vec4(value, dot(vec3(0.22f, 0.69f, 0.09f), value));
+    frag_Colour = vec4(value, 1.f);
 }

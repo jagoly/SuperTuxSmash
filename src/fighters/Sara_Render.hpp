@@ -9,15 +9,17 @@
 
 #include "render/RenderEntity.hpp"
 
+#include "fighters/Sara_Fighter.hpp"
+
 //============================================================================//
 
 namespace sts {
 
-class Sara_Render final : public RenderEntity
+class Sara_Render final : public RenderObject
 {
 public: //====================================================//
 
-    Sara_Render(const Entity& entity, const Renderer& renderer);
+    Sara_Render(const Renderer& renderer, const Sara_Fighter& fighter);
 
     //--------------------------------------------------------//
 
@@ -47,6 +49,10 @@ private: //===================================================//
 
     Mat4F mFinalMatrix;
     Mat3F mNormalMatrix;
+
+    //--------------------------------------------------------//
+
+    const Sara_Fighter& fighter;
 };
 
 } // namespace sts

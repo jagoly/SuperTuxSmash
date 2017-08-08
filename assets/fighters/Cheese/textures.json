@@ -1,7 +1,0 @@
-{
-
-"Cheese_diff": { "format": "RGB8_UN", "wrap": "CC", "swizzle": "RGB1" },
-"Cheese_norm": { "format": "RGB8_SN", "wrap": "CC", "swizzle": "RGB1" },
-"Cheese_spec": { "format": "RGB8_UN", "wrap": "CC", "swizzle": "RGB1" }
-
-}

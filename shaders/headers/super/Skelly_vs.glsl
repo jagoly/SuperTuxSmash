@@ -10,15 +10,15 @@ layout(std140, binding=2) uniform SKELETONBLOCK { SkeletonBlock SB; };
 
 //============================================================================//
 
-layout(location=0) in vec3 V_pos;
-layout(location=1) in vec2 V_tcrd;
-layout(location=2) in vec3 V_norm;
-layout(location=3) in vec4 V_tan;
-layout(location=5) in ivec4 V_bones;
-layout(location=6) in vec4 V_weights;
+layout(location=0) in vec3 v_Position;
+layout(location=1) in vec2 v_TexCoord;
+layout(location=2) in vec3 v_Normal;
+layout(location=3) in vec4 v_Tangent;
+layout(location=5) in ivec4 v_Bones;
+layout(location=6) in vec4 v_Weights;
 
-layout(location=0) uniform mat4 u_final_mat;
-layout(location=1) uniform mat3 u_normal_mat;
+layout(location=0) uniform mat4 u_Matrix;
+layout(location=1) uniform mat3 u_NormMat;
 
 out vec2 texcrd;
 out vec3 viewpos;
@@ -28,34 +28,34 @@ out vec3 N, T, B;
 
 void main() 
 {
-    // ensure that bone weights are normalized
-    const vec4 weights = V_weights / dot(V_weights, vec4(1.f));
+    vec3 position = vec3(0.f, 0.f, 0.f);
+    vec3 normal   = vec3(0.f, 0.f, 0.f);
+    vec3 tangent  = vec3(0.f, 0.f, 0.f);
 
-    vec3 a_pos = vec3(0.f, 0.f, 0.f);
-    vec3 a_norm = vec3(0.f, 0.f, 0.f);
-    vec3 a_tan = vec3(0.f, 0.f, 0.f);
+    if (v_Bones.r != -1) position += vec4(v_Position, 1.f) * SB.bones[v_Bones.r] * v_Weights.r;
+    if (v_Bones.g != -1) position += vec4(v_Position, 1.f) * SB.bones[v_Bones.g] * v_Weights.g;
+    if (v_Bones.b != -1) position += vec4(v_Position, 1.f) * SB.bones[v_Bones.b] * v_Weights.b;
+    if (v_Bones.a != -1) position += vec4(v_Position, 1.f) * SB.bones[v_Bones.a] * v_Weights.a;
 
-    if (V_bones.r >= 0) a_pos += vec4(V_pos, 1.f) * SB.bones[V_bones.r] * weights.r;
-    if (V_bones.g >= 0) a_pos += vec4(V_pos, 1.f) * SB.bones[V_bones.g] * weights.g;
-    if (V_bones.b >= 0) a_pos += vec4(V_pos, 1.f) * SB.bones[V_bones.b] * weights.b;
-    if (V_bones.a >= 0) a_pos += vec4(V_pos, 1.f) * SB.bones[V_bones.a] * weights.a;
+    if (v_Bones.r != -1) normal += v_Normal * mat3(SB.bones[v_Bones.r]) * v_Weights.r;
+    if (v_Bones.g != -1) normal += v_Normal * mat3(SB.bones[v_Bones.g]) * v_Weights.g;
+    if (v_Bones.b != -1) normal += v_Normal * mat3(SB.bones[v_Bones.b]) * v_Weights.b;
+    if (v_Bones.a != -1) normal += v_Normal * mat3(SB.bones[v_Bones.a]) * v_Weights.a;
 
-    if (V_bones.r >= 0) a_norm += V_norm * mat3(SB.bones[V_bones.r]) * weights.r;
-    if (V_bones.g >= 0) a_norm += V_norm * mat3(SB.bones[V_bones.g]) * weights.g;
-    if (V_bones.b >= 0) a_norm += V_norm * mat3(SB.bones[V_bones.b]) * weights.b;
-    if (V_bones.a >= 0) a_norm += V_norm * mat3(SB.bones[V_bones.a]) * weights.a;
+    if (v_Bones.r != -1) tangent += v_Tangent.xyz * mat3(SB.bones[v_Bones.r]) * v_Weights.r;
+    if (v_Bones.g != -1) tangent += v_Tangent.xyz * mat3(SB.bones[v_Bones.g]) * v_Weights.g;
+    if (v_Bones.b != -1) tangent += v_Tangent.xyz * mat3(SB.bones[v_Bones.b]) * v_Weights.b;
+    if (v_Bones.a != -1) tangent += v_Tangent.xyz * mat3(SB.bones[v_Bones.a]) * v_Weights.a;
 
-    if (V_bones.r >= 0) a_tan += V_tan.xyz * mat3(SB.bones[V_bones.r]) * weights.r;
-    if (V_bones.g >= 0) a_tan += V_tan.xyz * mat3(SB.bones[V_bones.g]) * weights.g;
-    if (V_bones.b >= 0) a_tan += V_tan.xyz * mat3(SB.bones[V_bones.b]) * weights.b;
-    if (V_bones.a >= 0) a_tan += V_tan.xyz * mat3(SB.bones[V_bones.a]) * weights.a;
+    //--------------------------------------------------------//
 
-    texcrd = V_tcrd;
+    texcrd = v_TexCoord;
 
-    N = normalize(u_normal_mat * a_norm);
-    T = normalize(u_normal_mat * a_tan);
-    B = normalize(u_normal_mat * cross(a_norm, a_tan) * V_tan.w);
+    N = normalize(u_NormMat * normal);
+    T = normalize(u_NormMat * tangent);
+    B = normalize(u_NormMat * cross(normal, tangent) * v_Tangent.w);
 
-    viewpos = vec3(CB.proj_inv * u_final_mat * vec4(a_pos, 1.f));
-    gl_Position = u_final_mat * vec4(a_pos, 1.f);
+    viewpos = vec3(CB.invProjMat * u_Matrix * vec4(position, 1.f));
+
+    gl_Position = u_Matrix * vec4(position, 1.f);
 }

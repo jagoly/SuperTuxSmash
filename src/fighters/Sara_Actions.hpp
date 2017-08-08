@@ -6,6 +6,6 @@
 
 namespace sts {
 
-unique_ptr<Actions> create_actions(FightSystem& system, Sara_Fighter& fighter);
+unique_ptr<Actions> create_actions(FightWorld& world, Sara_Fighter& fighter);
 
 } // namespace sts

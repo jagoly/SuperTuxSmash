@@ -1,10 +1,10 @@
 #include "stages/TestZone_Stage.hpp"
 
 #include "fighters/Sara_Fighter.hpp"
-#include "fighters/Cheese_Fighter.hpp"
+#include "fighters/Tux_Fighter.hpp"
 
 #include "fighters/Sara_Render.hpp"
-#include "fighters/Cheese_Render.hpp"
+#include "fighters/Tux_Render.hpp"
 
 #include "game/GameScene.hpp"
 
@@ -13,22 +13,28 @@ using namespace sts;
 //============================================================================//
 
 GameScene::GameScene(const sq::InputDevices& inputDevices, const Options& options)
-    : Scene(1.0 / 48.0), mInputDevices(inputDevices), mOptions(options)
+    : Scene(1.0 / 24.0), mInputDevices(inputDevices), mOptions(options)
 {
     mRenderer = std::make_unique<Renderer>(options);
 
-    mFightSystem = std::make_unique<FightSystem>();
+    mFightWorld = std::make_unique<FightWorld>();
 
     mStage = std::make_unique<TestZone_Stage>();
 
-    mControllers[0] = std::make_unique<Controller>(0u, mInputDevices, "player1.txt");
-    mControllers[1] = std::make_unique<Controller>(1u, mInputDevices, "player2.txt");
+    mControllers[0] = std::make_unique<Controller>(0u, mInputDevices, "player1.json");
+    mControllers[1] = std::make_unique<Controller>(1u, mInputDevices, "player2.json");
 
-    mFighters[0] = std::make_unique<Sara_Fighter>(0u, *mFightSystem, *mControllers[0]);
-    mFighters[1] = std::make_unique<Cheese_Fighter>(1u, *mFightSystem, *mControllers[1]);
+    auto fighterA = std::make_unique<Sara_Fighter>(0u, *mFightWorld, *mControllers[0]);
+    auto fighterB = std::make_unique<Tux_Fighter>(1u, *mFightWorld, *mControllers[1]);
 
-    mRenderer->add_entity(std::make_unique<Sara_Render>(*mFighters[0], *mRenderer));
-    mRenderer->add_entity(std::make_unique<Cheese_Render>(*mFighters[1], *mRenderer));
+    auto renderFighterA = std::make_unique<Sara_Render>(*mRenderer, *fighterA);
+    auto renderFighterB = std::make_unique<Tux_Render>(*mRenderer, *fighterB);
+
+    mFightWorld->add_fighter(std::move(fighterA));
+    mFightWorld->add_fighter(std::move(fighterB));
+
+    mRenderer->add_object(std::move(renderFighterA));
+    mRenderer->add_object(std::move(renderFighterB));
 }
 
 GameScene::~GameScene() = default;
@@ -57,17 +63,12 @@ void GameScene::update()
 {
     mStage->tick();
 
-    //--------------------------------------------------------//
-
-    for (auto& fighter : mFighters)
-    {
-        if (fighter != nullptr)
-            fighter->tick();
-    }
+    mFightWorld->tick();
 
     //--------------------------------------------------------//
 
-    mFightSystem->tick();
+    const auto viewBounds = mFightWorld->compute_camera_view_bounds();
+    mRenderer->set_camera_view_bounds(viewBounds.first, viewBounds.second);
 }
 
 //============================================================================//
@@ -76,6 +77,6 @@ void GameScene::render(double elapsed)
 {
     mRenderer->render(float(elapsed), float(mAccumulation / mTickTime));
 
-    mRenderer->render_hit_blobs(mFightSystem->get_offensive_blobs());
-    mRenderer->render_hit_blobs(mFightSystem->get_damageable_blobs());
+    mRenderer->render_blobs(mFightWorld->get_hit_blobs());
+    mRenderer->render_blobs(mFightWorld->get_hurt_blobs());
 }

@@ -1,12 +1,6 @@
 #pragma once
 
-#include <sqee/render/Armature.hpp>
-
 #include "game/Fighter.hpp"
-
-//====== Forward Declarations ================================================//
-
-namespace sts::actions { struct Sara_Base; }
 
 //============================================================================//
 
@@ -16,46 +10,35 @@ class Sara_Fighter final : public Fighter
 {
 public: //====================================================//
 
-    Sara_Fighter(uint8_t index, FightSystem& system, Controller& controller);
+    Sara_Fighter(uint8_t index, FightWorld& world, Controller& controller);
 
     //--------------------------------------------------------//
 
     void tick() override;
 
-private: //===================================================//
-
-    sq::Armature armature;
-
-    struct BlobInfo
-    {
-        uint index;
-        Vec3F origin;
-        float radius;
-    };
-
-    std::vector<BlobInfo> mBlobInfos;
-
-    sq::Armature::Pose previousPose;
-    sq::Armature::Pose currentPose;
-
-    float animationProgress = 0.f;
-
     //--------------------------------------------------------//
 
-    sq::Armature::Pose POSE_Rest;
     sq::Armature::Pose POSE_Stand;
-    sq::Armature::Pose POSE_Jump;
 
-    sq::Armature::Pose POSE_Act_Neutral;
-    sq::Armature::Pose POSE_Act_TiltDown;
-    sq::Armature::Pose POSE_Act_TiltForward;
-    sq::Armature::Pose POSE_Act_TiltUp;
+    //sq::Armature::Pose POSE_Jump_Ascend;
+    //sq::Armature::Pose POSE_Jump_Descend;
 
     sq::Armature::Animation ANIM_Walk;
 
-    //--------------------------------------------------------//
+    sq::Armature::Animation ANIM_Jump_Start;
 
-    friend struct actions::Sara_Base;
+    sq::Armature::Animation ANIM_Action_Neutral_First;
+    sq::Armature::Animation ANIM_Action_Tilt_Down;
+    sq::Armature::Animation ANIM_Action_Tilt_Forward;
+    sq::Armature::Animation ANIM_Action_Tilt_Up;
+
+private: //===================================================//
+
+    float mAnimTimeContinuous = 0.f;
+
+    bool mJumpStartDone = false;
+
+    //--------------------------------------------------------//
 
     friend class Sara_Render;
 };

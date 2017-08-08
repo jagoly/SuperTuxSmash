@@ -81,9 +81,6 @@ set(SOURCES
   "src/game/Controller.hpp"
   "src/game/Controller.cpp"
 
-  "src/game/Entity.hpp"
-  "src/game/Entity.cpp"
-
   "src/game/Fighter.hpp"
   "src/game/Fighter.cpp"
 
@@ -105,19 +102,19 @@ set(SOURCES
 
   #----------------------------------------------------------#
 
-  "src/fighters/Cheese_Actions.hpp"
-  "src/fighters/Cheese_Actions.cpp"
-  "src/fighters/Cheese_Fighter.hpp"
-  "src/fighters/Cheese_Fighter.cpp"
-  "src/fighters/Cheese_Render.hpp"
-  "src/fighters/Cheese_Render.cpp"
-
   "src/fighters/Sara_Actions.hpp"
   "src/fighters/Sara_Actions.cpp"
   "src/fighters/Sara_Fighter.hpp"
   "src/fighters/Sara_Fighter.cpp"
   "src/fighters/Sara_Render.hpp"
   "src/fighters/Sara_Render.cpp"
+
+  "src/fighters/Tux_Actions.hpp"
+  "src/fighters/Tux_Actions.cpp"
+  "src/fighters/Tux_Fighter.hpp"
+  "src/fighters/Tux_Fighter.cpp"
+  "src/fighters/Tux_Render.hpp"
+  "src/fighters/Tux_Render.cpp"
 )
 
 ################################################################################
@@ -148,6 +145,6 @@ target_link_libraries(sts-game ${SFML_LIBRARIES})
 file(COPY "assets" DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 file(COPY "shaders" DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 
-file(COPY "player1.txt" DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
-file(COPY "player2.txt" DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+file(COPY "player1.json" DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+file(COPY "player2.json" DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 

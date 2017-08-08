@@ -1,0 +1,23 @@
+{
+
+"blobs":
+{
+  "0a":
+  {
+    "origin": [ 0.0, 0.6, 0.65 ], "radius": 0.4,
+    "bone": -1, "group": 0,
+    "knockAngle": 0.125, "knockBase": 1.5,
+    "damage": 5.0,
+    "flavour": "SOUR", "priority": "LOW"
+  },
+  "0b":
+  {
+    "origin": [ 0.0, 1.0, 0.7 ], "radius": 0.45,
+    "bone": -1, "group": 0,
+    "knockAngle": 0.125, "knockBase": 1.5,
+    "damage": 5.0,
+    "flavour": "SOUR", "priority": "LOW"
+  }
+}
+
+}

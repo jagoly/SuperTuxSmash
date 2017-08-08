@@ -1,7 +1,10 @@
 #pragma once
 
 #include <sqee/builtins.hpp>
-#include <sqee/maths/Vectors.hpp>
+#include <sqee/misc/PoolTools.hpp>
+
+#include "game/HitBlob.hpp"
+#include "game/FightSystem.hpp"
 
 #include "game/forward.hpp"
 
@@ -9,7 +12,7 @@ namespace sts {
 
 //============================================================================//
 
-class Action : sq::NonCopyable
+class Action : public sq::NonCopyable
 {
 public: //====================================================//
 
@@ -30,15 +33,9 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    Action(FightSystem& system, Fighter& fighter)
-        : system(system), fighter(fighter) {}
+    Action(FightWorld& world, Fighter& fighter);
 
     virtual ~Action();
-
-protected: //=================================================//
-
-    /// Jump action to the specified frame.
-    void jump_to_frame(uint frame);
 
     //--------------------------------------------------------//
 
@@ -48,32 +45,32 @@ protected: //=================================================//
     /// Return true when the action is finished.
     virtual bool on_tick(uint frame) = 0;
 
-    /// Do stuff when a blob collides with a fighter.
-    virtual void on_collide(HitBlob* blob, Fighter& other, Vec3F point) = 0;
-
     /// Do stuff when finished or cancelled.
     virtual void on_finish() = 0;
 
+    /// Do stuff when a blob collides with a fighter.
+    virtual void on_collide(HitBlob* blob, Fighter& other) = 0;
+
+protected: //=================================================//
+
+    /// Jump action to the specified frame.
+    void jump_to_frame(uint frame);
+
     //--------------------------------------------------------//
 
-    FightSystem& system;
+    FightWorld& world;
     Fighter& fighter;
 
-    std::array<HitBlob*, 13> blobs {};
+    sq::TinyPoolMap<HitBlob> blobs;
 
 private: //===================================================//
 
     uint mCurrentFrame = 0u;
 
-    char mPadding[4] {};
+    char _padding[4];
 
     //--------------------------------------------------------//
 
-    bool impl_do_tick();
-
-    //--------------------------------------------------------//
-
-    friend class FightSystem;
     friend class Actions;
 };
 
@@ -82,6 +79,11 @@ private: //===================================================//
 class Actions final : public sq::NonCopyable
 {
 public: //====================================================//
+
+    /// Load JSON data for all actions.
+    void load_json(const string& fighterName);
+
+    //--------------------------------------------------------//
 
     void switch_active(Action::Type type)
     {
@@ -110,10 +112,16 @@ public: //====================================================//
     /// Get the type of the active action.
     auto active_type() const { return mActiveType; }
 
+    /// Get the active action.
+    auto active_action() const { return mActiveAction; }
+
     //--------------------------------------------------------//
 
     /// Tick the active action if not none.
     void tick_active_action();
+
+    /// Update blobs of the active action if not none.
+    void update_active_action_blobs();
 
     //--------------------------------------------------------//
 
@@ -143,8 +151,8 @@ class DumbAction final : public Action
 {
 public: //====================================================//
 
-    DumbAction(FightSystem& system, Fighter& fighter, string message)
-        : Action(system, fighter), message(message) {}
+    DumbAction(FightWorld& world, Fighter& fighter, string message)
+        : Action(world, fighter), message(message) {}
 
 private: //===================================================//
 
@@ -152,13 +160,45 @@ private: //===================================================//
 
     bool on_tick(uint frame) override;
 
-    void on_collide(HitBlob*, Fighter&, Vec3F) override;
+    void on_collide(HitBlob*, Fighter&) override;
 
     void on_finish() override;
 
     //--------------------------------------------------------//
 
     const string message;
+};
+
+//============================================================================//
+
+/// Helper base class for defining new actions.
+///
+/// @tparam ConcreteFighter Type of this action's fighter.
+
+template <class ConcreteFighter>
+struct BaseAction : public Action
+{
+    //--------------------------------------------------------//
+
+    using Flavour = HitBlob::Flavour;
+    using Priority = HitBlob::Priority;
+
+    //--------------------------------------------------------//
+
+    BaseAction(FightWorld& world, ConcreteFighter& fighter) : Action(world, fighter) {}
+
+    ConcreteFighter& get_fighter() { return static_cast<ConcreteFighter&>(fighter); }
+
+    //--------------------------------------------------------//
+
+    template <class... Args>
+    void reset_hit_blob_groups(const Args... groups)
+    {
+        static_assert(( std::is_convertible_v<Args, uint8_t> && ... ));
+        ( world.reset_hit_blob_group(fighter, uint8_t(groups)) , ... );
+    }
+
+    //--------------------------------------------------------//
 };
 
 //============================================================================//

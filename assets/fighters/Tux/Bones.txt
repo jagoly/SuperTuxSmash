@@ -1,0 +1,21 @@
+Torso
+Thigh.L Torso
+Thigh.R Torso
+Waist Torso
+Chest Waist
+Leg.L Thigh.L
+Leg.R Thigh.R
+Clavicle.L Chest
+Clavicle.R Chest
+Foot.L Leg.L
+Foot.R Leg.R
+Neck Chest
+ArmA.L Clavicle.L
+ArmA.R Clavicle.R
+Head Neck
+Toes.L Foot.L
+Toes.R Foot.R
+ArmB.L ArmA.L
+ArmB.R ArmA.R
+Hand.L ArmB.L
+Hand.R ArmB.R

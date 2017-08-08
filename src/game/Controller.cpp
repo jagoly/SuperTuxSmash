@@ -1,4 +1,4 @@
-#include <sqee/misc/Files.hpp>
+#include <sqee/misc/Json.hpp>
 
 #include "Controller.hpp"
 
@@ -10,22 +10,18 @@ using namespace sts;
 Controller::Controller(uint8_t index, const sq::InputDevices& devices, string configPath)
     : index(index), mDevices(devices)
 {
-    for (auto& linePair : sq::tokenise_file(configPath))
-    {
-        const auto& key = linePair.first.at(0);
-        const auto& value = linePair.first.at(1);
+    const auto root = sq::parse_json(configPath);
 
-        if (key == "gamepad_port")  config.gamepad_port  = stoi(value);
-        if (key == "stick_move")    config.stick_move    = static_cast<sq::Gamepad_Stick>(stoi(value));
-        if (key == "button_attack") config.button_attack = static_cast<sq::Gamepad_Button>(stoi(value));
-        if (key == "button_jump")   config.button_jump   = static_cast<sq::Gamepad_Button>(stoi(value));
-        if (key == "key_left")      config.key_left      = static_cast<sq::Keyboard_Key>(stoi(value));
-        if (key == "key_up")        config.key_up        = static_cast<sq::Keyboard_Key>(stoi(value));
-        if (key == "key_right")     config.key_right     = static_cast<sq::Keyboard_Key>(stoi(value));
-        if (key == "key_down")      config.key_down      = static_cast<sq::Keyboard_Key>(stoi(value));
-        if (key == "key_attack")    config.key_attack    = static_cast<sq::Keyboard_Key>(stoi(value));
-        if (key == "key_jump")      config.key_jump      = static_cast<sq::Keyboard_Key>(stoi(value));
-    }
+    config.gamepad_port  = static_cast<int>                (int(root.at("gamepad_port")));
+    config.stick_move    = static_cast<sq::Gamepad_Stick>  (int(root.at("stick_move")));
+    config.button_attack = static_cast<sq::Gamepad_Button> (int(root.at("button_attack")));
+    config.button_jump   = static_cast<sq::Gamepad_Button> (int(root.at("button_jump")));
+    config.key_left      = static_cast<sq::Keyboard_Key>   (int(root.at("key_left")));
+    config.key_up        = static_cast<sq::Keyboard_Key>   (int(root.at("key_up")));
+    config.key_right     = static_cast<sq::Keyboard_Key>   (int(root.at("key_right")));
+    config.key_down      = static_cast<sq::Keyboard_Key>   (int(root.at("key_down")));
+    config.key_attack    = static_cast<sq::Keyboard_Key>   (int(root.at("key_attack")));
+    config.key_jump      = static_cast<sq::Keyboard_Key>   (int(root.at("key_jump")));
 }
 
 //============================================================================//

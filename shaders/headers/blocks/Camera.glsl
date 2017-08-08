@@ -2,12 +2,12 @@
 
 struct CameraBlock
 {
-    mat4 view_mat; // 64
-    mat4 proj_mat; // 64
-    mat4 view_inv; // 64
-    mat4 proj_inv; // 64
-    vec3 pos;      // 16
-    vec3 dir;      // 12
+    mat4 viewMat;    // 64
+    mat4 projMat;    // 64
+    mat4 invViewMat; // 64
+    mat4 invProjMat; // 64
+    vec3 position;   // 16
+    vec3 direction;  // 16
 
-    // TOTAL: 284
+    // TOTAL: 288
 };

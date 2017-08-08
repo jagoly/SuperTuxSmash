@@ -1,6 +1,10 @@
 #include <sqee/assert.hpp>
 #include <sqee/misc/Algorithms.hpp>
 
+#include <sqee/misc/StringCast.hpp>
+
+#include <sqee/maths/Culling.hpp>
+
 #include "game/Actions.hpp"
 #include "game/Fighter.hpp"
 #include "game/FightSystem.hpp"
@@ -11,61 +15,85 @@ using namespace sts;
 
 //============================================================================//
 
-FightSystem::FightSystem() = default;
+FightWorld::FightWorld() = default;
 
 //============================================================================//
 
-void FightSystem::tick()
+void FightWorld::tick()
 {
-    constexpr auto check_collision = [](auto first, auto second) -> bool
+    for (auto& fighter : mFighters)
     {
-        const float dist = maths::distance_squared(first.origin, second.origin);
-        const float radiusSum = first.radius + second.radius;
+        if (fighter != nullptr)
+            fighter->tick();
+    }
 
-        return dist < radiusSum * radiusSum;
+
+    //== misc helper lambda functions ==================================//
+
+    const auto check_hit_bit = [this](HitBlob* hit, HurtBlob* hurt) -> bool
+    {
+        uint32_t bits = mHitBitsArray[hit->fighter->index][hurt->fighter->index];
+        return (bits & (1u << hit->group)) != 0u;
     };
 
-    constexpr auto compute_collision_point = [](auto first, auto second) -> Vec3F
+    const auto fill_hit_bit = [this](HitBlob* hit, HurtBlob* hurt) -> void
     {
-        const Vec3F direction = maths::normalize(second.origin - first.origin);
-
-        const Vec3F pointA = first.origin + direction * first.radius;
-        const Vec3F pointB = second.origin + direction * second.origin;
-
-        return (pointA + pointB) * 0.5f;
+        uint32_t& bits = mHitBitsArray[hit->fighter->index][hurt->fighter->index];
+        bits = (bits | (1u << hit->group));
     };
 
-    //--------------------------------------------------------//
 
-    const auto check_hit_bit = [this](HitBlob* hit, HitBlob* hurt) -> bool
+    //== update world-space shapes of hit blobs & hurt blobs ===========//
+
+    for (HitBlob* blob : mEnabledHitBlobs)
     {
-        uint32_t bits = mHitBitsArray[hit->fighter][hurt->fighter];
-        return (bits & (1u << hit->offensive.group)) != 0u;
-    };
+        Mat4F matrix = blob->fighter->get_model_matrix();
 
-    const auto fill_hit_bit = [this](HitBlob* hit, HitBlob* hurt) -> void
+        if (blob->bone >= 0)
+        {
+            const auto& matrices = blob->fighter->get_bone_matrices();
+            const auto& boneMatrix = matrices[uint(blob->bone)];
+            matrix *= maths::transpose(Mat4F(boneMatrix));
+        }
+
+        blob->sphere.origin = Vec3F(matrix * Vec4F(blob->origin, 1.f));
+        blob->sphere.radius = blob->radius;// * matrix[0][0];
+    }
+
+    for (HurtBlob* blob : mHurtBlobs)
     {
-        uint32_t& bits = mHitBitsArray[hit->fighter][hurt->fighter];
-        bits = (bits | (1u << hit->offensive.group));
-    };
+        Mat4F matrix = blob->fighter->get_model_matrix();
 
-    //--------------------------------------------------------//
+        if (blob->bone >= 0)
+        {
+            const auto& matrices = blob->fighter->get_bone_matrices();
+            const auto& boneMatrix = matrices[uint(blob->bone)];
+            matrix *= maths::transpose(Mat4F(boneMatrix));
+        }
 
-    for (HitBlob* hit : mOffensiveBlobs)
+        blob->capsule.originA = Vec3F(matrix * Vec4F(blob->originA, 1.f));
+        blob->capsule.originB = Vec3F(matrix * Vec4F(blob->originB, 1.f));
+        blob->capsule.radius = blob->radius;// * matrix[0][0];
+    }
+
+
+    //== find all collisions between hit and hurt blobs ================//
+
+    for (HitBlob* hit : mEnabledHitBlobs)
     {
-        for (HitBlob* hurt : mDamageableBlobs)
+        for (HurtBlob* hurt : mHurtBlobs)
         {
             // check if both blobs belong to the same fighter
             if (hit->fighter == hurt->fighter) continue;
 
             // check if the blobs are not intersecting
-            if (!check_collision(hit->sphere, hurt->sphere)) continue;
+            if (maths::intersect_sphere_capsule(hit->sphere, hurt->capsule) == -1) continue;
 
-            // check if the group has already the hit fighter
+            // check if the group has already hit the fighter
             if (check_hit_bit(hit, hurt)) continue;
 
             // add the collision to the appropriate vector
-            mCollisions[hit->fighter][hurt->fighter].emplace_back(hit, hurt);
+            mCollisions[hit->fighter->index][hurt->fighter->index].emplace_back(hit, hurt);
         }
     }
 
@@ -78,13 +106,12 @@ void FightSystem::tick()
     {
         HitBlob* blob;
         Fighter& other;
-        Vec3F point;
     };
 
     std::vector<FinalResult> finalResultVec;
 
     std::array<HitBlob*, 32> bestHitBlobs {};
-    std::array<HitBlob*, 32> bestHurtBlobs {};
+    std::array<HurtBlob*, 32> bestHurtBlobs {};
 
     for (auto& collisionsArr : mCollisions)
     {
@@ -92,10 +119,10 @@ void FightSystem::tick()
         {
             for (auto [hit, hurt] : collisionsVec)
             {
-                const uint8_t group = hit->offensive.group;
+                const uint8_t group = hit->group;
 
                 if ( bestHitBlobs[group] == nullptr ||
-                     hit->offensive.damage > bestHitBlobs[group]->offensive.damage )
+                     hit->damage > bestHitBlobs[group]->damage )
                 {
                     bestHitBlobs[group] = hit;
                     bestHurtBlobs[group] = hurt;
@@ -106,10 +133,7 @@ void FightSystem::tick()
             {
                 if (HitBlob* hitBlob = bestHitBlobs[i])
                 {
-                    Fighter& other = *mFighters[bestHurtBlobs[i]->fighter];
-                    Vec3F point = compute_collision_point(hitBlob->sphere, bestHurtBlobs[i]->sphere);
-
-                    finalResultVec.push_back({ hitBlob, other, point });
+                    finalResultVec.push_back({ hitBlob, *bestHurtBlobs[i]->fighter });
 
                     fill_hit_bit(bestHitBlobs[i], bestHurtBlobs[i]);
                 }
@@ -122,53 +146,56 @@ void FightSystem::tick()
         }
     }
 
-    for (auto& [blob, other, point] : finalResultVec)
+    for (auto& [blob, other] : finalResultVec)
     {
-        blob->action->on_collide(blob, other, point);
+        blob->action->on_collide(blob, other);
     }
 }
 
 //============================================================================//
 
-void FightSystem::add_fighter(Fighter& fighter)
+void FightWorld::add_fighter(unique_ptr<Fighter> fighter)
 {
-    mFighters[fighter.index] = &fighter;
+    mFighters[fighter->index] = std::move(fighter);
 }
 
 //============================================================================//
 
-HitBlob* FightSystem::create_offensive_hit_blob(Fighter& fighter, Action& action, uint8_t group)
+HurtBlob* FightWorld::create_hurt_blob(Fighter& fighter)
 {
-    auto blob = new (mBlobAllocator.allocate()) HitBlob(HitBlob::Type::Offensive, fighter.index, &action);
+    HurtBlob* blob = mHurtBlobAlloc.allocate(fighter);
 
-    blob->offensive.group = group;
-
-    return mOffensiveBlobs.emplace_back(blob);
+    return mHurtBlobs.emplace_back(blob);
 }
 
-HitBlob* FightSystem::create_damageable_hit_blob(Fighter& fighter)
+void FightWorld::delete_hurt_blob(HurtBlob* blob)
 {
-    auto blob = new (mBlobAllocator.allocate()) HitBlob(HitBlob::Type::Damageable, fighter.index, nullptr);
+    mHurtBlobs.erase(algo::find(mHurtBlobs, blob));
 
-    return mDamageableBlobs.emplace_back(blob);
-}
-
-//============================================================================//
-
-void FightSystem::delete_hit_blob(HitBlob* blob)
-{
-    if (blob->type == HitBlob::Type::Offensive)
-        mOffensiveBlobs.erase(algo::find(mOffensiveBlobs, blob));
-
-    if (blob->type == HitBlob::Type::Damageable)
-        mDamageableBlobs.erase(algo::find(mDamageableBlobs, blob));
-
-    mBlobAllocator.deallocate(blob);
+    mHurtBlobAlloc.deallocate(blob);
 }
 
 //============================================================================//
 
-void FightSystem::reset_offensive_blob_group(Fighter& fighter, uint8_t group)
+void FightWorld::enable_hit_blob(HitBlob* blob)
+{
+    const auto iter = algo::find(mEnabledHitBlobs, blob);
+    if (iter != mEnabledHitBlobs.end()) return;
+
+    mEnabledHitBlobs.push_back(blob);
+}
+
+void FightWorld::disable_hit_blob(HitBlob* blob)
+{
+    const auto iter = algo::find(mEnabledHitBlobs, blob);
+    if (iter == mEnabledHitBlobs.end()) return;
+
+    mEnabledHitBlobs.erase(iter);
+}
+
+//============================================================================//
+
+void FightWorld::reset_hit_blob_group(Fighter& fighter, uint8_t group)
 {
     mHitBitsArray[fighter.index][0] &= ~uint32_t(1u << group);
     mHitBitsArray[fighter.index][1] &= ~uint32_t(1u << group);
@@ -178,38 +205,17 @@ void FightSystem::reset_offensive_blob_group(Fighter& fighter, uint8_t group)
 
 //============================================================================//
 
-FightSystem::BlobAllocator::BlobAllocator(uint maxBlobs)
+std::pair<Vec2F, Vec2F> FightWorld::compute_camera_view_bounds() const
 {
-    storage.reset(new FreeSlot[maxBlobs]);
-    nextFreeSlot = storage.get();
+    Vec2F resultMin(+INFINITY), resultMax(-INFINITY);
 
-    FreeSlot* iter = nextFreeSlot;
-    for (uint i = 1u; i < maxBlobs; ++i)
+    for (const auto& fighter : mFighters)
     {
-        iter->nextFreeSlot = std::next(iter);
-        iter = iter->nextFreeSlot;
+        if (fighter == nullptr) continue;
+
+        resultMin = maths::min(resultMin, Vec2F(fighter->get_model_matrix()[3]));
+        resultMax = maths::max(resultMax, Vec2F(fighter->get_model_matrix()[3]));
     }
 
-    iter->nextFreeSlot = nullptr;
-    finalSlot = iter;
-}
-
-HitBlob* FightSystem::BlobAllocator::allocate()
-{
-    SQASSERT(nextFreeSlot != nullptr, "too many blobs");
-
-    auto ptr = reinterpret_cast<HitBlob*>(nextFreeSlot);
-    nextFreeSlot = nextFreeSlot->nextFreeSlot;
-    return ptr;
-}
-
-void FightSystem::BlobAllocator::deallocate(HitBlob* ptr)
-{
-    auto slot = reinterpret_cast<FreeSlot*>(ptr);
-
-    SQASSERT ( slot >= storage.get() && slot <= finalSlot,
-               "pointer outside of allocation range" );
-
-    slot->nextFreeSlot = nextFreeSlot;
-    nextFreeSlot = slot;
+    return { resultMin, resultMax };
 }

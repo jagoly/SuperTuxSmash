@@ -2,45 +2,40 @@
 
 #include <sqee/builtins.hpp>
 
-#include "game/Entity.hpp"
+#include <sqee/render/Armature.hpp>
+
 #include "game/Controller.hpp"
 #include "game/Actions.hpp"
 
 #include "game/forward.hpp"
 
-// todo: should fighter really inherit from Entity?
-
 //============================================================================//
 
 namespace sts {
 
-class Fighter : public Entity
+class Fighter : sq::NonCopyable
 {
 public: //====================================================//
 
     struct State {
 
-        enum class Move { None, Walking, Dashing, Jumping, Falling } move;
+        enum class Move { None, Walk, Dash, Air, Knock } move;
         enum class Direction { Left = -1, Right = +1 } direction;
+
+        bool helpless = false;
+        bool stunned = false;
 
     } state;
 
     //--------------------------------------------------------//
 
-    Fighter(uint8_t index, FightSystem& system, Controller& controller, string name);
+    Fighter(uint8_t index, FightWorld& world, Controller& controller, string path);
 
-    virtual ~Fighter() override;
-
-    //--------------------------------------------------------//
-
-    virtual void tick() override = 0;
+    virtual ~Fighter();
 
     //--------------------------------------------------------//
 
-    float get_direction_factor() const
-    {
-        return float(state.direction);
-    }
+    virtual void tick() = 0;
 
     //--------------------------------------------------------//
 
@@ -62,31 +57,99 @@ public: //====================================================//
     /// Index of the fighter.
     const uint8_t index;
 
+    //--------------------------------------------------------//
+
+    /// Update the armature pose.
+    void update_pose(const sq::Armature::Pose& pose);
+
+    /// Update the pose from a continuous animation.
+    void update_pose(const sq::Armature::Animation& anim, float time);
+
+    /// Play an animation with discrete timing.
+    void play_animation(const sq::Armature::Animation& anim);
+
+    //--------------------------------------------------------//
+
+    /// Called when hit by a basic attack.
+    void apply_hit_basic(const HitBlob& hit);
+
+    //--------------------------------------------------------//
+
+    /// Access the active animation, or nullptr.
+    const sq::Armature::Animation* get_animation() const { return mAnimation; }
+
+    //--------------------------------------------------------//
+
+    /// Get current model matrix.
+    const Mat4F& get_model_matrix() const { return mModelMatrix; }
+
+    /// Get current armature pose matrices.
+    const std::vector<Mat34F>& get_bone_matrices() const { return mBoneMatrices; }
+
+    /// Compute interpolated model matrix.
+    Mat4F interpolate_model_matrix(float blend) const;
+
+    /// Compute interpolated armature pose matrices.
+    std::vector<Mat34F> interpolate_bone_matrices(float blend) const;
+
 protected: //=================================================//
 
-    Vec2F mVelocity = { 0.f, 0.f };
+    unique_ptr<Actions> mActions;
+
+    sq::Armature mArmature;
+
+    std::vector<HurtBlob*> mHurtBlobs;
+
+    //--------------------------------------------------------//
+
+    FightWorld& mFightWorld;
+
+    Controller& mController;
 
     bool mAttackHeld = false;
     bool mJumpHeld = false;
 
-    Controller& mController;
-
-    unique_ptr<Actions> mActions;
-
-    std::vector<HitBlob*> mHurtBlobs;
+    Vec2F mVelocity = { 0.f, 0.f };
 
     //--------------------------------------------------------//
 
     void base_tick_fighter();
 
+    void base_tick_animation();
+
 private: //===================================================//
+
+    struct InterpolationData
+    {
+        Vec2F position;
+        sq::Armature::Pose pose;
+    }
+    previous, current;
+
+    //--------------------------------------------------------//
+
+    const sq::Armature::Animation* mAnimation = nullptr;
+
+    uint mAnimationTime = 0u;
+
+    std::vector<Mat34F> mBoneMatrices;
+
+    Mat4F mModelMatrix;
+
+    //--------------------------------------------------------//
+
+    void impl_initialise_armature(const string& path);
+
+    void impl_initialise_hurt_blobs(const string& path);
+
+    void impl_initialise_stats(const string& path);
+
+    //--------------------------------------------------------//
 
     void impl_input_movement(Controller::Input input);
     void impl_input_actions(Controller::Input input);
 
-    void impl_update_fighter();
-
-    void impl_validate_stats();
+    void impl_update_physics();
 };
 
 //============================================================================//

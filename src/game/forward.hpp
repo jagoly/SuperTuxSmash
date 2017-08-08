@@ -7,12 +7,9 @@ namespace sts {
 class Action;
 class Actions;
 class Controller;
-class Entity;
 class Fighter;
-class FightSystem;
+class FightWorld;
 class Stage;
-
-struct HitBlob;
 
 //============================================================================//
 

@@ -2,18 +2,15 @@
 
 //============================================================================//
 
-in vec3 v_cube_norm;
+in vec3 cubeNorm;
 
-layout(binding=0) uniform samplerCube tex_skybox;
+layout(binding=0) uniform samplerCube tex_Skybox;
 
-out vec3 frag_colour;
+out vec3 frag_Colour;
 
 //============================================================================//
 
 void main()
 {
-    frag_colour = texture(tex_skybox, v_cube_norm).rgb;
-
-//    frag_colour = v_cube_norm;
-//    frag_colour = vec3(0.5, 0.1, 0.1);
+    frag_Colour = texture(tex_Skybox, cubeNorm).rgb;
 }

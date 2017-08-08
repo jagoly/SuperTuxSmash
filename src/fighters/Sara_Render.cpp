@@ -1,9 +1,6 @@
 #include <sqee/gl/Context.hpp>
 #include <sqee/maths/Functions.hpp>
 
-#include "render/Renderer.hpp"
-
-#include "fighters/Sara_Fighter.hpp"
 #include "fighters/Sara_Render.hpp"
 
 using Context = sq::Context;
@@ -12,8 +9,8 @@ using namespace sts;
 
 //============================================================================//
 
-Sara_Render::Sara_Render(const Entity& entity, const Renderer& renderer)
-    : RenderEntity(entity, renderer)
+Sara_Render::Sara_Render(const Renderer& renderer, const Sara_Fighter& fighter)
+    : RenderObject(renderer), fighter(fighter)
 {
     mUbo.create_and_allocate(3840u);
 
@@ -58,24 +55,14 @@ Sara_Render::Sara_Render(const Entity& entity, const Renderer& renderer)
 
 void Sara_Render::integrate(float blend)
 {
-    auto& fighter = static_cast<const Sara_Fighter&>(entity);
-
-    //--------------------------------------------------------//
-
-    const auto blendPose = fighter.armature.blend_poses(fighter.previousPose, fighter.currentPose, blend);
-    const auto poseData = fighter.armature.compute_ubo_data(blendPose);
-
-    mUbo.update(0u, uint(poseData.size()) * 48u, poseData.data());
-
-    //--------------------------------------------------------//
-
-    const Vec2F position = maths::mix(fighter.mPreviousPosition, fighter.mCurrentPosition, blend);
-    const QuatF rotation = QuatF(0.f, 0.25f * float(fighter.state.direction), 0.f);
-
-    const Mat4F modelMatrix = maths::transform(Vec3F(position, 0.f), rotation, Vec3F(1.f));
+    const Mat4F modelMatrix = fighter.interpolate_model_matrix(blend);
 
     mFinalMatrix = renderer.camera.projMatrix * renderer.camera.viewMatrix * modelMatrix;
     mNormalMatrix = maths::normal_matrix(renderer.camera.viewMatrix * modelMatrix);
+
+    const auto& boneMatrices = fighter.interpolate_bone_matrices(blend);
+
+    mUbo.update(0u, uint(boneMatrices.size()) * 48u, boneMatrices.data());
 }
 
 //============================================================================//

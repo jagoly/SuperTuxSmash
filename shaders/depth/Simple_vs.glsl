@@ -2,10 +2,10 @@
 
 //============================================================================//
 
-layout(location=0) in vec3 V_pos;
-layout(location=1) in vec2 V_tcrd;
+layout(location=0) in vec3 v_Position;
+layout(location=1) in vec2 v_TexCoord;
 
-layout(location=0) uniform mat4 u_final_mat;
+layout(location=0) uniform mat4 u_Matrix;
 
 out vec2 texcrd;
 
@@ -13,7 +13,7 @@ out vec2 texcrd;
 
 void main() 
 {
-    texcrd = V_tcrd;
+    texcrd = v_TexCoord;
 
-    gl_Position = u_final_mat * vec4(V_pos, 1.f);
+    gl_Position = u_Matrix * vec4(v_Position, 1.f);
 }

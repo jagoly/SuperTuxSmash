@@ -4,5 +4,4 @@ using namespace sts;
 
 //============================================================================//
 
-RenderEntity::RenderEntity(const Entity& entity, const Renderer& renderer)
-    : entity(entity), renderer(renderer) {}
+RenderObject::RenderObject(const Renderer& renderer) : renderer(renderer) {}

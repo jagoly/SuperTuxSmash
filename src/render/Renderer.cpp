@@ -1,4 +1,5 @@
 #include <sqee/misc/StringCast.hpp>
+#include <sqee/debug/Logging.hpp>
 #include <sqee/debug/Misc.hpp>
 
 #include <sqee/maths/Functions.hpp>
@@ -7,6 +8,10 @@
 #include <sqee/gl/Drawing.hpp>
 
 #include <sqee/render/Mesh.hpp>
+
+#include "game/HitBlob.hpp"
+
+#include "render/RenderEntity.hpp"
 
 #include "Renderer.hpp"
 
@@ -18,6 +23,10 @@ using namespace sts;
 
 Renderer::Renderer(const Options& options) : context(sq::Context::get()), options(options)
 {
+    //-- Load Mesh Objects -----------------------------------//
+
+    meshes.Capsule.load_from_file("debug/Capsule", true);
+
     //-- Set Texture Paramaters ------------------------------//
 
     textures.Colour.set_filter_mode(true);
@@ -35,7 +44,7 @@ Renderer::Renderer(const Options& options) : context(sq::Context::get()), option
 
     //-- Create Uniform Buffers ------------------------------//
 
-    camera.ubo.create_and_allocate(284u);
+    camera.ubo.create_and_allocate(288u);
     light.ubo.create_and_allocate(112u);
 }
 
@@ -112,9 +121,18 @@ void Renderer::refresh_options()
 
 //============================================================================//
 
-void Renderer::add_entity(unique_ptr<RenderEntity> entity)
+void Renderer::add_object(unique_ptr<RenderObject> object)
 {
-    entities.push_back(std::move(entity));
+    mRenderObjects.push_back(std::move(object));
+}
+
+void Renderer::set_camera_view_bounds(Vec2F min, Vec2F max)
+{
+    mPreviousViewBoundsMin = mCurrentViewBoundsMin;
+    mPreviousViewBoundsMax = mCurrentViewBoundsMax;
+
+    mCurrentViewBoundsMin = min;
+    mCurrentViewBoundsMax = max;
 }
 
 //============================================================================//
@@ -146,8 +164,8 @@ void Renderer::render(float elapsed, float blend)
 
     //-- Camera and Light can spin, for funzies --------------//
 
-    static Vec3F cameraPosition = { 0.f, +2.f, +4.f };
-    static Vec3F skyDirection = maths::normalize(Vec3F(0.f, -1.f, -0.5f));
+    static Vec3F cameraPosition = { 0.f, +3.f, -6.f };
+    static Vec3F skyDirection = maths::normalize(Vec3F(0.f, -1.f, 0.5f));
 
     #ifdef SQEE_DEBUG
     if (sqeeDebugToggle1) cameraPosition = maths::rotate_y(cameraPosition, 0.1f * elapsed);
@@ -157,12 +175,13 @@ void Renderer::render(float elapsed, float blend)
     //-- Update the Camera -----------------------------------//
 
     const Vec3F cameraTarget = { 0.f, 1.f, 0.f };
+
     const Vec3F cameraDirection = maths::normalize(cameraTarget - cameraPosition);
 
     const Vec2F viewSize = Vec2F(options.Window_Size);
 
-    camera.viewMatrix = maths::look_at(cameraPosition, cameraTarget, Vec3F(0.f, 1.f, 0.f));
-    camera.projMatrix = maths::perspective(1.f, viewSize.x / viewSize.y, 0.2f, 200.f);
+    camera.viewMatrix = maths::look_at_LH(cameraPosition, cameraTarget, Vec3F(0.f, 1.f, 0.f));
+    camera.projMatrix = maths::perspective_LH(1.f, viewSize.x / viewSize.y, 0.2f, 200.f);
 
     //camera.projMatrix[2].w *= -1.f;
 
@@ -171,7 +190,7 @@ void Renderer::render(float elapsed, float blend)
 
     camera.ubo.update_complete ( camera.viewMatrix, camera.projMatrix,
                                  inverseViewMat, inverseProjMat,
-                                 cameraPosition, 0, cameraDirection );
+                                 cameraPosition, 0, cameraDirection, 0 );
 
     //-- Update the Lighting ---------------------------------//
 
@@ -183,8 +202,8 @@ void Renderer::render(float elapsed, float blend)
 
     //-- Integrate Object Changes ----------------------------//
 
-    for (const auto& entity : entities)
-        entity->integrate(blend);
+    for (const auto& object : mRenderObjects)
+        object->integrate(blend);
 
     //-- Setup Shared Rendering State ------------------------//
 
@@ -215,15 +234,15 @@ void Renderer::render(float elapsed, float blend)
 
     context.bind_FrameBuffer(fbos.Depth);
 
-    for (const auto& entity : entities)
-        entity->render_depth();
+    for (const auto& object : mRenderObjects)
+        object->render_depth();
 
     //-- Render Main Pass ------------------------------------//
 
     context.bind_FrameBuffer(fbos.Main);
 
-    for (const auto& entity : entities)
-        entity->render_main();
+    for (const auto& object : mRenderObjects)
+        object->render_main();
 
     //-- Resolve the Multi Sample Texture --------------------//
 
@@ -243,7 +262,9 @@ void Renderer::render(float elapsed, float blend)
     sq::draw_screen_quad();
 }
 
-void Renderer::render_hit_blobs(const std::vector<HitBlob*>& blobs)
+//============================================================================//
+
+void Renderer::render_blobs(const std::vector<HitBlob*>& blobs)
 {
     context.bind_FrameBuffer_default();
 
@@ -253,15 +274,60 @@ void Renderer::render_hit_blobs(const std::vector<HitBlob*>& blobs)
 
     context.bind_Program(shaders.Debug_HitBlob);
 
-    for (const auto& blob : blobs)
-    {
-        Mat4F matrix = Mat4F(Mat3F(blob->sphere.radius));
-        matrix[3] = Vec4F(blob->sphere.origin, 1.f);
-        matrix = camera.projMatrix * camera.viewMatrix * matrix;
+    const Mat4F projViewMat = camera.projMatrix * camera.viewMatrix;
 
-        shaders.Debug_HitBlob.update(0, matrix);
+    for (const HitBlob* blob : blobs)
+    {
+        const maths::Sphere& s = blob->sphere;
+
+        const Mat4F matrix = maths::transform(s.origin, Vec3F(s.radius));
+
+        shaders.Debug_HitBlob.update(0, projViewMat * matrix);
         shaders.Debug_HitBlob.update(1, blob->get_debug_colour());
 
-        volumes.Sphere.bind_and_draw(context);
+        meshes.Sphere.bind_and_draw(context);
+    }
+}
+
+//============================================================================//
+
+void Renderer::render_blobs(const std::vector<HurtBlob*>& blobs)
+{
+    context.bind_FrameBuffer_default();
+
+    context.set_state(Context::Blend_Mode::Alpha);
+    context.set_state(Context::Cull_Face::Disable);
+    context.set_state(Context::Depth_Test::Disable);
+
+    context.bind_Program(shaders.Debug_HitBlob);
+
+    context.bind_VertexArray(meshes.Capsule.get_vao());
+
+    const Mat4F projViewMat = camera.projMatrix * camera.viewMatrix;
+
+    for (const HurtBlob* blob : blobs)
+    {
+        const maths::Capsule& c = blob->capsule;
+
+        const Mat3F rotation = maths::basis_from_y(maths::normalize(c.originB - c.originA));
+
+        const Vec3F originM = (c.originA + c.originB) * 0.5f;
+        const float lengthM = maths::distance(c.originA, c.originB);
+
+        const Mat4F matrixA = maths::transform(c.originA, rotation, c.radius);
+        const Mat4F matrixB = maths::transform(c.originB, rotation, c.radius);
+
+        const Mat4F matrixM = maths::transform(originM, rotation, Vec3F(c.radius, lengthM, c.radius));
+
+        shaders.Debug_HitBlob.update(1, blob->get_debug_colour());
+
+        shaders.Debug_HitBlob.update(0, projViewMat * matrixA);
+        meshes.Capsule.draw_partial(0u);
+
+        shaders.Debug_HitBlob.update(0, projViewMat * matrixB);
+        meshes.Capsule.draw_partial(1u);
+
+        shaders.Debug_HitBlob.update(0, projViewMat * matrixM);
+        meshes.Capsule.draw_partial(2u);
     }
 }

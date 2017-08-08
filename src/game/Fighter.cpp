@@ -1,6 +1,11 @@
 #include <sqee/assert.hpp>
 #include <sqee/debug/Logging.hpp>
 #include <sqee/misc/Json.hpp>
+#include <sqee/misc/Files.hpp>
+#include <sqee/maths/Functions.hpp>
+
+#include "game/HitBlob.hpp"
+#include "game/FightSystem.hpp"
 
 #include "game/Fighter.hpp"
 
@@ -9,10 +14,46 @@ using namespace sts;
 
 //============================================================================//
 
-Fighter::Fighter(uint8_t index, FightSystem& system, Controller& controller, string name)
-    : Entity(system), index(index), mController(controller)
+Fighter::Fighter(uint8_t index, FightWorld& world, Controller& controller, string path)
+    : index(index), mFightWorld(world), mController(controller)
 {
-    const auto json = sq::parse_json("assets/fighters/" + name + "/fighter.json");
+    state.move = State::Move::None;
+    state.direction = State::Direction::Left;
+
+    impl_initialise_armature(path);
+    impl_initialise_hurt_blobs(path);
+    impl_initialise_stats(path);
+}
+
+Fighter::~Fighter() = default;
+
+//============================================================================//
+
+void Fighter::impl_initialise_armature(const string& path)
+{
+    mArmature.load_bones(path + "Bones.txt", true);
+    mArmature.load_rest_pose(path + "RestPose.txt");
+
+    current.pose = previous.pose = mArmature.get_rest_pose();
+}
+
+void Fighter::impl_initialise_hurt_blobs(const string& path)
+{
+    for (const auto& item : sq::parse_json(path + "HurtBlobs.json"))
+    {
+        mHurtBlobs.push_back(mFightWorld.create_hurt_blob(*this));
+        HurtBlob& blob = *mHurtBlobs.back();
+
+        blob.bone = int8_t(item[0]);
+        blob.originA = Vec3F(item[1], item[2], item[3]);
+        blob.originB = Vec3F(item[4], item[5], item[6]);
+        blob.radius = float(item[7]);
+    }
+}
+
+void Fighter::impl_initialise_stats(const string& path)
+{
+    const auto json = sq::parse_json(path + "Stats.json");
 
     stats.walk_speed    = json.at("walk_speed");
     stats.dash_speed    = json.at("dash_speed");
@@ -22,12 +63,7 @@ Fighter::Fighter(uint8_t index, FightSystem& system, Controller& controller, str
     stats.hop_height    = json.at("hop_height");
     stats.jump_height   = json.at("jump_height");
     stats.fall_speed    = json.at("fall_speed");
-
-    state.move = State::Move::None;
-    state.direction = State::Direction::Left;
 }
-
-Fighter::~Fighter() = default;
 
 //============================================================================//
 
@@ -51,14 +87,14 @@ void Fighter::impl_input_movement(Controller::Input input)
 
         if (input.axis_move.x < -0.f)
         {
-            state.move = State::Move::Walking;
+            state.move = State::Move::Walk;
             state.direction = State::Direction::Left;
             mVelocity.x = -(stats.land_traction * 1.f);
         }
 
         if (input.axis_move.x > +0.f)
         {
-            state.move = State::Move::Walking;
+            state.move = State::Move::Walk;
             state.direction = State::Direction::Right;
             mVelocity.x = +(stats.land_traction * 1.f);
         }
@@ -67,7 +103,7 @@ void Fighter::impl_input_movement(Controller::Input input)
 
         if (input.press_jump == true)
         {
-            state.move = State::Move::Jumping;
+            state.move = State::Move::Air;
 
             mJumpHeld = true;
 
@@ -77,7 +113,7 @@ void Fighter::impl_input_movement(Controller::Input input)
 
         else if (input.activate_dash == true)
         {
-            state.move = State::Move::Dashing;
+            state.move = State::Move::Dash;
         }
 
         //--------------------------------------------------------//
@@ -87,7 +123,7 @@ void Fighter::impl_input_movement(Controller::Input input)
 
     //== Walking =================================================//
 
-    case State::Move::Walking:
+    case State::Move::Walk:
     {
         SQASSERT(mActions->active_type() == Action::Type::None, "");
 
@@ -124,7 +160,7 @@ void Fighter::impl_input_movement(Controller::Input input)
 
         if (input.press_jump == true)
         {
-            state.move = State::Move::Jumping;
+            state.move = State::Move::Air;
 
             mJumpHeld = true;
 
@@ -134,7 +170,7 @@ void Fighter::impl_input_movement(Controller::Input input)
 
         else if (input.activate_dash == true)
         {
-            state.move = State::Move::Dashing;
+            state.move = State::Move::Dash;
         }
 
         //--------------------------------------------------------//
@@ -144,7 +180,7 @@ void Fighter::impl_input_movement(Controller::Input input)
 
     //== Dashing =================================================//
 
-    case State::Move::Dashing:
+    case State::Move::Dash:
     {
         SQASSERT(mActions->active_type() == Action::Type::None, "");
 
@@ -163,7 +199,7 @@ void Fighter::impl_input_movement(Controller::Input input)
                 mVelocity.x = maths::max(mVelocity.x, -maxDashSpeed);
             }
 
-            if (input.axis_move.x > -0.8f) state.move = State::Move::Walking;
+            if (input.axis_move.x > -0.8f) state.move = State::Move::Walk;
         }
 
         else if (input.axis_move.x > +0.f)
@@ -174,14 +210,14 @@ void Fighter::impl_input_movement(Controller::Input input)
                 mVelocity.x = maths::min(mVelocity.x, +maxDashSpeed);
             }
 
-            if (input.axis_move.x < +0.8f) state.move = State::Move::Walking;
+            if (input.axis_move.x < +0.8f) state.move = State::Move::Walk;
         }
 
         //--------------------------------------------------------//
 
         if (input.press_jump == true)
         {
-            state.move = State::Move::Jumping;
+            state.move = State::Move::Air;
 
             mJumpHeld = true;
 
@@ -194,9 +230,9 @@ void Fighter::impl_input_movement(Controller::Input input)
         break;
     }
 
-    //== Jumping =================================================//
+    //== Aerial ==================================================//
 
-    case State::Move::Jumping:
+    case State::Move::Air:
     {
         mJumpHeld = mJumpHeld && input.hold_jump;
 
@@ -233,9 +269,9 @@ void Fighter::impl_input_movement(Controller::Input input)
         break;
     }
 
-    //== Falling =================================================//
+    //== Knocked =================================================//
 
-    case State::Move::Falling:
+    case State::Move::Knock:
     {
         break;
     }
@@ -276,7 +312,7 @@ void Fighter::impl_input_actions(Controller::Input input)
 
         //--------------------------------------------------------//
 
-        else if (state.move == State::Move::Walking)
+        else if (state.move == State::Move::Walk)
         {
             state.move = State::Move::None;
 
@@ -286,7 +322,7 @@ void Fighter::impl_input_actions(Controller::Input input)
 
         //--------------------------------------------------------//
 
-        else if (state.move == State::Move::Dashing)
+        else if (state.move == State::Move::Dash)
         {
             state.move = State::Move::None;
 
@@ -295,7 +331,7 @@ void Fighter::impl_input_actions(Controller::Input input)
 
         //--------------------------------------------------------//
 
-        else if (state.move == State::Move::Jumping)
+        else if (state.move == State::Move::Air)
         {
             if (tilt == Vec2F(0.f, 0.f)) target = Action::Type::Air_Neutral;
 
@@ -310,7 +346,7 @@ void Fighter::impl_input_actions(Controller::Input input)
 
         //--------------------------------------------------------//
 
-        else if (state.move == State::Move::Falling)
+        else if (state.move == State::Move::Knock)
         {
 
         }
@@ -326,17 +362,17 @@ void Fighter::impl_input_actions(Controller::Input input)
 
 //============================================================================//
 
-void Fighter::impl_update_fighter()
+void Fighter::impl_update_physics()
 {
     //-- apply friction --------------------------------------//
 
-    if (state.move == State::Move::None || state.move == State::Move::Walking || state.move == State::Move::Dashing)
+    if (state.move == State::Move::None || state.move == State::Move::Walk || state.move == State::Move::Dash)
     {
         if (mVelocity.x < -0.f) mVelocity.x = maths::min(mVelocity.x + (stats.land_traction * 0.5f), -0.f);
         if (mVelocity.x > +0.f) mVelocity.x = maths::max(mVelocity.x - (stats.land_traction * 0.5f), +0.f);
     }
 
-    if (state.move == State::Move::Jumping || state.move == State::Move::Falling)
+    if (state.move == State::Move::Air || state.move == State::Move::Knock)
     {
         if (mVelocity.x < -0.f) mVelocity.x = maths::min(mVelocity.x + (stats.air_traction * 0.2f), -0.f);
         if (mVelocity.x > +0.f) mVelocity.x = maths::max(mVelocity.x - (stats.air_traction * 0.2f), +0.f);
@@ -344,7 +380,7 @@ void Fighter::impl_update_fighter()
 
     //-- apply gravity ---------------------------------------//
 
-    if (state.move == State::Move::Jumping)
+    if (state.move == State::Move::Air || state.move == State::Move::Knock)
     {
         const float fraction = (2.f/3.f) * stats.hop_height / stats.jump_height;
 
@@ -358,16 +394,27 @@ void Fighter::impl_update_fighter()
 
     //-- update position -------------------------------------//
 
-    mCurrentPosition += mVelocity / 48.f;
+    current.position += mVelocity / 48.f;
 
     //-- check landing ---------------------------------------//
 
-    if (state.move == State::Move::Jumping)
+    if (state.move == State::Move::Air)
     {
-        if (mCurrentPosition.y <= 0.f)
+        if (current.position.y <= 0.f)
         {
-            mVelocity.y = mCurrentPosition.y = 0.f;
+            mVelocity.y = current.position.y = 0.f;
             state.move = State::Move::None;
+            // normal landing
+        }
+    }
+
+    if (state.move == State::Move::Knock)
+    {
+        if (current.position.y <= 0.f)
+        {
+            mVelocity.y = current.position.y = 0.f;
+            state.move = State::Move::None;
+            // splat on the ground
         }
     }
 }
@@ -376,22 +423,87 @@ void Fighter::impl_update_fighter()
 
 void Fighter::base_tick_fighter()
 {
-    auto input = mController.get_input();
+    previous = current;
 
-    impl_validate_stats();
+    //--------------------------------------------------------//
+
+    auto input = mController.get_input();
 
     impl_input_movement(input);
     impl_input_actions(input);
 
-    impl_update_fighter();
+    //--------------------------------------------------------//
+
+    impl_update_physics();
 
     mActions->tick_active_action();
+
+    //--------------------------------------------------------//
+
+    const Vec3F position ( current.position, 0.f );
+    const QuatF rotation ( 0.f, 0.25f * float(state.direction), 0.f );
+
+    mModelMatrix = maths::transform(position, rotation, Vec3F(1.f));
 }
 
 //============================================================================//
 
-void Fighter::impl_validate_stats()
+void Fighter::base_tick_animation()
 {
-    SQASSERT(stats.walk_speed / stats.dash_speed < (8.f / 5.f), "invalid walk/dash ratio");
-    SQASSERT(stats.hop_height / stats.jump_height < (3.f / 2.f), "invalid hop/jump ratio");
+    if (mAnimation != nullptr)
+    {
+        update_pose(*mAnimation, float(mAnimationTime));
+
+        if (++mAnimationTime == mAnimation->totalTime)
+            mAnimation = nullptr;
+    }
+
+    mBoneMatrices = mArmature.compute_ubo_data(current.pose);
+}
+
+//============================================================================//
+
+void Fighter::update_pose(const sq::Armature::Pose& pose)
+{
+    current.pose = pose;
+}
+
+void Fighter::update_pose(const sq::Armature::Animation& anim, float time)
+{
+    current.pose = mArmature.compute_pose(anim, time);
+}
+
+void Fighter::play_animation(const sq::Armature::Animation& anim)
+{
+    mAnimation = &anim;
+    mAnimationTime = 0u;
+}
+
+//============================================================================//
+
+void Fighter::apply_hit_basic(const HitBlob& hit)
+{
+    const float angle = maths::radians(hit.knockAngle * float(hit.fighter->state.direction));
+    const Vec2F knockDir = { std::sin(angle), std::cos(angle) };
+
+    mVelocity = maths::normalize(knockDir) * hit.knockBase;
+
+    state.move = State::Move::Knock;
+}
+
+//============================================================================//
+
+Mat4F Fighter::interpolate_model_matrix(float blend) const
+{
+    const Vec2F position = maths::mix(previous.position, current.position, blend);
+    const QuatF rotation = QuatF(0.f, 0.25f * float(state.direction), 0.f);
+
+    return maths::transform(Vec3F(position, 0.f), rotation, Vec3F(1.f));
+}
+
+
+std::vector<Mat34F> Fighter::interpolate_bone_matrices(float blend) const
+{
+    auto blendPose = mArmature.blend_poses(previous.pose, current.pose, blend);
+    return mArmature.compute_ubo_data(blendPose);
 }

@@ -3,8 +3,6 @@
 // #define OPT_TEX_DIFFUSE
 // #define OPT_TEX_NORMAL
 // #define OPT_TEX_SPECULAR
-// #define OPT_COLOUR
-// #define OPT_BACK_FACES
 // #define OPT_SUB_SCATTER
 
 //============================================================================//
@@ -24,50 +22,48 @@ in vec3 N, T, B;
 //============================================================================//
 
 #ifdef OPT_TEX_DIFFUSE
-layout(binding=0) uniform sampler2D tex_diffuse;
+layout(binding=0) uniform sampler2D tex_Diffuse;
 #else
-layout(location=2) uniform vec3 u_diffuse;
+layout(location=2) uniform vec3 u_Diffuse;
 #endif
 
 #ifdef OPT_TEX_NORMAL
-layout(binding=1) uniform sampler2D tex_normal;
+layout(binding=1) uniform sampler2D tex_Normal;
 #endif
 
 #ifdef OPT_TEX_SPECULAR
-layout(binding=2) uniform sampler2D tex_specular;
+layout(binding=2) uniform sampler2D tex_Specular;
 #else
-layout(location=3) uniform vec3 u_specular;
-#endif
-
-#ifdef OPT_COLOUR
-layout(location=4) uniform vec3 u_colour;
+layout(location=3) uniform vec3 u_Specular;
 #endif
 
 //============================================================================//
 
-layout(location=0) out vec3 frag_colour;
+layout(location=0) out vec3 frag_Colour;
 
 //============================================================================//
 
-vec3 get_diffuse_value(vec3 diffuse, vec3 lightDir, vec3 normal)
+vec3 get_diffuse_value(vec3 colour, vec3 lightDir, vec3 normal)
 {
     #ifdef OPT_SUB_SCATTER
     const float wrap = 0.5f;
-    float factor = max((dot(-lightDir, normal) + wrap) / (1.f + wrap), 0.f);
+    float factor = (dot(-lightDir, normal) + wrap) / (1.f + wrap);
     #else
-    float factor = max(dot(-lightDir, normal), 0.f);
+    float factor = dot(-lightDir, normal);
     #endif
-    
-    return diffuse * factor;
+
+    return colour * max(factor, 0.f);
 }
 
-vec3 get_specular_value(vec3 specular, float gloss, vec3 lightDir, vec3 normal)
+vec3 get_specular_value(vec3 colour, float gloss, vec3 lightDir, vec3 normal)
 {
-    vec3 fromCam = normalize(-viewpos);
     vec3 reflection = reflect(lightDir, normal);
-    float base = max(dot(fromCam, reflection), 0.f);
-    float factor = pow(base, gloss * 100.f);
-    return specular * factor;
+    vec3 dirFromCam = normalize(-viewpos);
+
+    float factor = max(dot(dirFromCam, reflection), 0.f);
+    factor = pow(factor, gloss * 100.f);
+
+    return colour * factor;
 }
 
 //============================================================================//
@@ -75,38 +71,33 @@ vec3 get_specular_value(vec3 specular, float gloss, vec3 lightDir, vec3 normal)
 void main() 
 {
     #ifdef OPT_TEX_DIFFUSE
-    const vec3 diffuse = texture(tex_diffuse, texcrd).rgb;
+    const vec3 diffuse = texture(tex_Diffuse, texcrd).rgb;
     #else
-    const vec3 diffuse = u_diffuse;
+    const vec3 diffuse = u_Diffuse;
     #endif
+
+    //--------------------------------------------------------//
 
     #ifdef OPT_TEX_SPECULAR
-    const vec3 specular = texture(tex_specular, texcrd).rgb;
+    const vec3 specular = texture(tex_Specular, texcrd).rgb;
     #else
-    const vec3 specular = u_specular;
+    const vec3 specular = u_Specular;
     #endif
 
-    //========================================================//
+    //--------------------------------------------------------//
 
     #ifdef OPT_TEX_NORMAL
-    vec3 normal = normalize(texture(tex_normal, texcrd).rgb);
-    normal = normalize(T * normal.x + B * normal.y + N * normal.z);
+    const vec3 nm = normalize(texture(tex_Normal, texcrd).rgb);
+    const vec3 normal = normalize(T * nm.x + B * nm.y + N * nm.z);
     #else
     const vec3 normal = normalize(N);
     #endif
 
-    //========================================================//
+    //--------------------------------------------------------//
 
-    // calculate view space light direction
-    vec3 lightDir = mat3(CB.view_mat) * normalize(LB.sky_direction);
+    const vec3 lightDir = mat3(CB.viewMat) * normalize(LB.skyDirection);
 
-    frag_colour = diffuse * LB.ambi_colour;
-    frag_colour += get_diffuse_value(diffuse, lightDir, normal);
-    frag_colour += get_specular_value(specular, 0.5f, lightDir, normal);
-
-    //========================================================//
-
-    #ifdef OPT_COLOUR
-    frag_colour = mix(frag_colour, u_colour, 0.5f);
-    #endif
+    frag_Colour = diffuse * LB.ambiColour;
+    frag_Colour += get_diffuse_value(diffuse, lightDir, normal);
+    frag_Colour += get_specular_value(specular, 0.5f, lightDir, normal);
 }

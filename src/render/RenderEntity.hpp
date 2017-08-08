@@ -1,22 +1,18 @@
 #pragma once
 
-#include <sqee/setup.hpp>
-
-namespace sts {
-
-//====== Forward Declarations ================================================//
-
-class Entity; class Renderer;
+#include "render/Renderer.hpp"
 
 //============================================================================//
 
-class RenderEntity : sq::NonCopyable
+namespace sts {
+
+class RenderObject : sq::NonCopyable
 {
 public: //====================================================//
 
-    RenderEntity(const Entity& entity, const Renderer& renderer);
+    RenderObject(const Renderer& renderer);
 
-    virtual ~RenderEntity() = default;
+    virtual ~RenderObject() = default;
 
     //--------------------------------------------------------//
 
@@ -28,10 +24,7 @@ public: //====================================================//
 
 protected: //=================================================//
 
-    const Entity& entity;
     const Renderer& renderer;
 };
-
-//============================================================================//
 
 } // namespace sts
