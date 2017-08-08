@@ -4,10 +4,9 @@
 #include <sqee/gl/UniformBuffer.hpp>
 #include <sqee/gl/Program.hpp>
 
-#include <sqee/render/Armature.hpp>
 #include <sqee/render/Mesh.hpp>
 
-#include "render/RenderEntity.hpp"
+#include "render/RenderObject.hpp"
 
 #include "fighters/Tux_Fighter.hpp"
 

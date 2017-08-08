@@ -4,18 +4,18 @@
 {
   "0a":
   {
-    "origin": [ 0.0, 0.1, 1.0 ], "radius": 0.4,
+    "origin": [ 0.0, 0.1, 1.0 ], "radius": 0.5,
     "bone": -1, "group": 0,
     "knockAngle": 0.125, "knockBase": 6.0,
-    "damage": 8.0,
-    "flavour": "TANGY", "priority": "HIGH"
+    "damage": 3.0,
+    "flavour": "SOUR", "priority": "NORMAL"
   },
   "1a":
   {
     "origin": [ 0.0, 0.1, 1.5 ], "radius": 0.5,
     "bone": -1, "group": 1,
     "knockAngle": 0.125, "knockBase": 6.0,
-    "damage": 4.0,
+    "damage": 3.0,
     "flavour": "SOUR", "priority": "NORMAL"
   },
   "2a":
@@ -23,8 +23,8 @@
     "origin": [ 0.0, 0.1, 2.0 ], "radius": 0.5,
     "bone": -1, "group": 2,
     "knockAngle": 0.04, "knockBase": 12.0,
-    "damage": 4.0,
-    "flavour": "SOUR", "priority": "NORMAL"
+    "damage": 6.0,
+    "flavour": "TANGY", "priority": "HIGH"
   }
 }
 

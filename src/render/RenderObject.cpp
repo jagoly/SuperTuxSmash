@@ -1,4 +1,4 @@
-#include "render/RenderEntity.hpp"
+#include "render/RenderObject.hpp"
 
 using namespace sts;
 

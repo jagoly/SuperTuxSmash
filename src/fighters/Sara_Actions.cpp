@@ -9,6 +9,17 @@ namespace sts::actions {
 struct Sara_Base : public BaseAction<Sara_Fighter>
 {
     using BaseAction<Sara_Fighter>::BaseAction;
+
+    virtual void on_collide(HitBlob* blob, Fighter& other) override
+    {
+        other.apply_hit_basic(*blob);
+    }
+
+    virtual void on_finish() override
+    {
+        world.reset_all_hit_blob_groups(fighter);
+        world.disable_all_hit_blobs(fighter);
+    }
 };
 
 //----------------------------------------------------------------------------//
@@ -32,17 +43,6 @@ struct Sara_Neutral_First final : public Sara_Base
         return frame >= 14u;
     }
 
-    void on_collide(HitBlob* blob, Fighter& other) override
-    {
-        other.apply_hit_basic(*blob);
-    }
-
-    void on_finish() override
-    {
-        //remove_hit_blobs(blobs[0], blobs[1]);
-        reset_hit_blob_groups(0u);
-    }
-
     using Sara_Base::Sara_Base;
 };
 
@@ -59,25 +59,14 @@ struct Sara_Tilt_Down final : public Sara_Base
     bool on_tick(uint frame) override
     {
         if (frame ==  4u) world.enable_hit_blob(blobs["0a"]);
-        if (frame ==  6u) world.enable_hit_blob(blobs["1a"]);
-        if (frame == 10u) world.enable_hit_blob(blobs["2a"]);
+        if (frame ==  8u) world.enable_hit_blob(blobs["1a"]);
+        if (frame == 12u) world.enable_hit_blob(blobs["2a"]);
 
-        if (frame ==  6u) world.disable_hit_blob(blobs["0a"]);
-        if (frame == 10u) world.disable_hit_blob(blobs["1a"]);
+        if (frame ==  8u) world.disable_hit_blob(blobs["0a"]);
+        if (frame == 12u) world.disable_hit_blob(blobs["1a"]);
         if (frame == 16u) world.disable_hit_blob(blobs["2a"]);
 
         return frame >= 26u;
-    }
-
-    void on_collide(HitBlob* blob, Fighter& other) override
-    {
-        other.apply_hit_basic(*blob);
-    }
-
-    void on_finish() override
-    {
-        //remove_hit_blobs(blobs[0], blobs[1], blobs[2]);
-        reset_hit_blob_groups(0u, 1u, 2u);
     }
 
     using Sara_Base::Sara_Base;
@@ -95,31 +84,15 @@ struct Sara_Tilt_Forward final : public Sara_Base
 
     bool on_tick(uint frame) override
     {
-//        if (frame ==  4u) blobs[0] = add_hit_blob(0u, Flavour::Tangy, Priority::Normal);
-//        if (frame ==  7u) blobs[1] = add_hit_blob(1u, Flavour::Sour, Priority::Normal);
-//        if (frame ==  7u) blobs[2] = add_hit_blob(1u, Flavour::Sour, Priority::Normal);
+        if (frame == 4u) world.enable_hit_blob(blobs["0Aa"]);
+        if (frame == 7u) world.enable_hit_blob(blobs["0Ca"]);
+        if (frame == 7u) world.enable_hit_blob(blobs["0Cb"]);;
 
-//        if (frame ==  7u) remove_hit_blobs(blobs[0]);
-//        if (frame == 14u) remove_hit_blobs(blobs[1], blobs[2]);
-
-//        set_blob_sphere_relative(blobs[0], { 0.65f, 1.0f, 0.f }, 0.5f);
-//        set_blob_sphere_relative(blobs[1], { 0.8f, 0.8f, 0.f }, 0.55f);
-//        set_blob_sphere_relative(blobs[2], { 0.8f, 1.2f, 0.f }, 0.55f);
+        if (frame ==  7u) world.disable_hit_blob(blobs["0Aa"]);
+        if (frame == 14u) world.disable_hit_blob(blobs["0Ca"]);
+        if (frame == 14u) world.disable_hit_blob(blobs["0Cb"]);
 
         return frame >= 22u;
-    }
-
-    void on_collide(HitBlob* blob, Fighter& other) override
-    {
-//        if (blob == blobs[0]) std::cout << "sweet hit!" << std::endl;
-//        if (blob == blobs[1]) std::cout << "sour hit!"  << std::endl;
-//        if (blob == blobs[2]) std::cout << "sour hit!"  << std::endl;
-    }
-
-    void on_finish() override
-    {
-//        remove_hit_blobs(blobs[0], blobs[1], blobs[2]);
-//        reset_hit_blob_groups(0u, 1u);
     }
 
     using Sara_Base::Sara_Base;
@@ -137,31 +110,15 @@ struct Sara_Tilt_Up final : public Sara_Base
 
     bool on_tick(uint frame) override
     {
-//        if (frame ==  3u) blobs[0] = add_hit_blob(0u, Flavour::Tangy, Priority::Normal);
-//        if (frame ==  4u) blobs[1] = add_hit_blob(1u, Flavour::Sour, Priority::Normal);
-//        if (frame ==  6u) blobs[2] = add_hit_blob(1u, Flavour::Sweet, Priority::High);
+        if (frame == 4u) world.enable_hit_blob(blobs["0Aa"]);
+        if (frame == 7u) world.enable_hit_blob(blobs["0Ca"]);
+        if (frame == 7u) world.enable_hit_blob(blobs["0Cb"]);;
 
-//        if (frame ==  8u) remove_hit_blobs(blobs[0], blobs[2]);
-//        if (frame == 11u) remove_hit_blobs(blobs[1]);
-
-//        set_blob_sphere_relative(blobs[0], { 0.25f, 1.6f, 0.f }, 0.4f);
-//        set_blob_sphere_relative(blobs[1], { 0.12f, 2.0f, 0.f }, 0.6f);
-//        set_blob_sphere_relative(blobs[2], { 0.12f, 2.5f, 0.f }, 0.2f);
+        if (frame ==  7u) world.disable_hit_blob(blobs["0Aa"]);
+        if (frame == 13u) world.disable_hit_blob(blobs["0Ca"]);
+        if (frame == 13u) world.disable_hit_blob(blobs["0Cb"]);
 
         return frame >= 20u;
-    }
-
-    void on_collide(HitBlob* blob, Fighter& other) override
-    {
-//        if (blob == blobs[0]) std::cout << "tangy hit!" << std::endl;
-//        if (blob == blobs[1]) std::cout << "sour hit!"  << std::endl;
-//        if (blob == blobs[2]) std::cout << "sweet hit!" << std::endl;
-    }
-
-    void on_finish() override
-    {
-//        remove_hit_blobs(blobs[0], blobs[1], blobs[2]);
-//        reset_hit_blob_groups(0u, 1u);
     }
 
     using Sara_Base::Sara_Base;

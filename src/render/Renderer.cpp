@@ -1,4 +1,3 @@
-#include <sqee/misc/StringCast.hpp>
 #include <sqee/debug/Logging.hpp>
 #include <sqee/debug/Misc.hpp>
 
@@ -7,13 +6,11 @@
 #include <sqee/gl/Context.hpp>
 #include <sqee/gl/Drawing.hpp>
 
-#include <sqee/render/Mesh.hpp>
+#include "game/Blobs.hpp"
 
-#include "game/HitBlob.hpp"
+#include "render/RenderObject.hpp"
 
-#include "render/RenderEntity.hpp"
-
-#include "Renderer.hpp"
+#include "render/Renderer.hpp"
 
 using Context = sq::Context;
 namespace maths = sq::maths;

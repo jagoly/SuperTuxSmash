@@ -1,0 +1,31 @@
+{
+
+"blobs":
+{
+  "0Aa":
+  {
+    "origin": [ 0.0, 2.1, 0.3 ], "radius": 0.4,
+    "bone": -1, "group": 0,
+    "knockAngle": 0.0, "knockBase": 12.0,
+    "damage": 8.0,
+    "flavour": "TANGY", "priority": "HIGH"
+  },
+  "0Ca":
+  {
+    "origin": [ 0.0, 2.2, 0.0 ], "radius": 0.45,
+    "bone": -1, "group": 0,
+    "knockAngle": 0.0, "knockBase": 8.0,
+    "damage": 5.0,
+    "flavour": "SOUR", "priority": "NORMAL"
+  },
+  "0Cb":
+  {
+    "origin": [ 0.0, 2.2, 0.6 ], "radius": 0.45,
+    "bone": -1, "group": 0,
+    "knockAngle": 0.0, "knockBase": 8.0,
+    "damage": 5.0,
+    "flavour": "SOUR", "priority": "NORMAL"
+  }
+}
+
+}

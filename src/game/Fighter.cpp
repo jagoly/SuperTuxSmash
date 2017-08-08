@@ -1,11 +1,8 @@
 #include <sqee/assert.hpp>
 #include <sqee/debug/Logging.hpp>
-#include <sqee/misc/Json.hpp>
-#include <sqee/misc/Files.hpp>
-#include <sqee/maths/Functions.hpp>
 
-#include "game/HitBlob.hpp"
-#include "game/FightSystem.hpp"
+#include <sqee/misc/Json.hpp>
+#include <sqee/maths/Functions.hpp>
 
 #include "game/Fighter.hpp"
 

@@ -4,7 +4,7 @@
 
 #include <sqee/misc/PoolTools.hpp>
 
-#include "game/HitBlob.hpp"
+#include "game/Blobs.hpp"
 
 //============================================================================//
 
@@ -41,15 +41,19 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    /// Reset one of a fighter's hit blob groups.
-    void reset_hit_blob_group(Fighter& fighter, uint8_t group);
+    /// Reset all of a fighter's hit blob groups.
+    void reset_all_hit_blob_groups(Fighter& fighter);
 
-    /// Update the sphere of an active hit blob.
-    void update_hit_blob_sphere(HitBlob* blob, Vec3F origin, float radius);
+    /// Disable all of a fighter's hit blobs.
+    void disable_all_hit_blobs(Fighter& fighter);
 
     //--------------------------------------------------------//
 
+    /// Access the HitBlob Allocator.
     auto& get_hit_blob_allocator() { return mHitBlobAlloc; }
+
+    /// Access the HurtBlob Allocator.
+    auto& get_hurt_blob_allocator() { return mHurtBlobAlloc; }
 
     //--------------------------------------------------------//
 
@@ -67,7 +71,6 @@ private: //===================================================//
     //--------------------------------------------------------//
 
     std::array<std::array<uint32_t, 4>, 4> mHitBitsArray;
-    static_assert(sizeof(mHitBitsArray) == 64u);
 
     //--------------------------------------------------------//
 
@@ -77,7 +80,7 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
-    using Collision = std::pair<HitBlob*, HurtBlob*>;
+    struct Collision { HitBlob* hit; HurtBlob* hurt; };
 
     std::array<std::array<std::vector<Collision>, 4u>, 4u> mCollisions;
 

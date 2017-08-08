@@ -5,10 +5,9 @@
 
 #include "render/Renderer.hpp"
 
-#include "game/FightSystem.hpp"
+#include "game/FightWorld.hpp"
 #include "game/Stage.hpp"
 #include "game/Controller.hpp"
-#include "game/Fighter.hpp"
 
 #include "main/Options.hpp"
 

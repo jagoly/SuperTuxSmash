@@ -5,9 +5,8 @@
 #include <sqee/render/Armature.hpp>
 
 #include "game/Controller.hpp"
+#include "game/FightWorld.hpp"
 #include "game/Actions.hpp"
-
-#include "game/forward.hpp"
 
 //============================================================================//
 

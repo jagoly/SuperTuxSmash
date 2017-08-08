@@ -1,13 +1,11 @@
 #include <sqee/assert.hpp>
 #include <sqee/misc/Algorithms.hpp>
-
-#include <sqee/misc/StringCast.hpp>
-
 #include <sqee/maths/Culling.hpp>
 
 #include "game/Actions.hpp"
 #include "game/Fighter.hpp"
-#include "game/FightSystem.hpp"
+
+#include "game/FightWorld.hpp"
 
 namespace algo = sq::algo;
 namespace maths = sq::maths;
@@ -93,7 +91,7 @@ void FightWorld::tick()
             if (check_hit_bit(hit, hurt)) continue;
 
             // add the collision to the appropriate vector
-            mCollisions[hit->fighter->index][hurt->fighter->index].emplace_back(hit, hurt);
+            mCollisions[hit->fighter->index][hurt->fighter->index].push_back({hit, hurt});
         }
     }
 
@@ -195,12 +193,15 @@ void FightWorld::disable_hit_blob(HitBlob* blob)
 
 //============================================================================//
 
-void FightWorld::reset_hit_blob_group(Fighter& fighter, uint8_t group)
+void FightWorld::reset_all_hit_blob_groups(Fighter& fighter)
 {
-    mHitBitsArray[fighter.index][0] &= ~uint32_t(1u << group);
-    mHitBitsArray[fighter.index][1] &= ~uint32_t(1u << group);
-    mHitBitsArray[fighter.index][2] &= ~uint32_t(1u << group);
-    mHitBitsArray[fighter.index][3] &= ~uint32_t(1u << group);
+    mHitBitsArray[fighter.index].fill(uint32_t(0u));
+}
+
+void FightWorld::disable_all_hit_blobs(Fighter& fighter)
+{
+    for (auto it = mEnabledHitBlobs.rbegin(); it != mEnabledHitBlobs.rend(); ++it)
+        if ((*it)->fighter == &fighter) mEnabledHitBlobs.erase(it.base());
 }
 
 //============================================================================//

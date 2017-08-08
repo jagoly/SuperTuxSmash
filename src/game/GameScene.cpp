@@ -13,7 +13,7 @@ using namespace sts;
 //============================================================================//
 
 GameScene::GameScene(const sq::InputDevices& inputDevices, const Options& options)
-    : Scene(1.0 / 24.0), mInputDevices(inputDevices), mOptions(options)
+    : Scene(1.0 / 12.0), mInputDevices(inputDevices), mOptions(options)
 {
     mRenderer = std::make_unique<Renderer>(options);
 

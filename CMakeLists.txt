@@ -66,11 +66,11 @@ set(SOURCES
 
   "src/game/forward.hpp"
 
-  "src/game/FightSystem.hpp"
-  "src/game/FightSystem.cpp"
+  "src/game/FightWorld.hpp"
+  "src/game/FightWorld.cpp"
 
-  "src/game/HitBlob.hpp"
-  "src/game/HitBlob.cpp"
+  "src/game/Blobs.hpp"
+  "src/game/Blobs.cpp"
 
   "src/game/GameScene.hpp"
   "src/game/GameScene.cpp"
@@ -92,8 +92,8 @@ set(SOURCES
   "src/render/Renderer.hpp"
   "src/render/Renderer.cpp"
 
-  "src/render/RenderEntity.hpp"
-  "src/render/RenderEntity.cpp"
+  "src/render/RenderObject.hpp"
+  "src/render/RenderObject.cpp"
 
   #----------------------------------------------------------#
 

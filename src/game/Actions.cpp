@@ -3,7 +3,6 @@
 #include <sqee/misc/Files.hpp>
 #include <sqee/misc/Json.hpp>
 
-#include "game/FightSystem.hpp"
 #include "game/Actions.hpp"
 
 using json = nlohmann::json;
@@ -16,13 +15,6 @@ Action::Action(FightWorld& world, Fighter& fighter)
     , blobs(world.get_hit_blob_allocator()) {}
 
 Action::~Action() = default;
-
-//============================================================================//
-
-void Action::jump_to_frame(uint frame)
-{
-    mCurrentFrame = frame;
-}
 
 //============================================================================//
 
@@ -89,6 +81,7 @@ void Actions::tick_active_action()
         if (mActiveAction->on_tick(mActiveAction->mCurrentFrame))
         {
             mActiveAction->on_finish();
+
             mActiveType = Action::Type::None;
             mActiveAction = nullptr;
         }

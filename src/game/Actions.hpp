@@ -1,12 +1,8 @@
 #pragma once
 
-#include <sqee/builtins.hpp>
 #include <sqee/misc/PoolTools.hpp>
 
-#include "game/HitBlob.hpp"
-#include "game/FightSystem.hpp"
-
-#include "game/forward.hpp"
+#include "game/FightWorld.hpp"
 
 namespace sts {
 
@@ -40,7 +36,7 @@ public: //====================================================//
     //--------------------------------------------------------//
 
     /// Do stuff when action first starts.
-    virtual void on_start() {}
+    virtual void on_start() = 0;
 
     /// Return true when the action is finished.
     virtual bool on_tick(uint frame) = 0;
@@ -52,11 +48,6 @@ public: //====================================================//
     virtual void on_collide(HitBlob* blob, Fighter& other) = 0;
 
 protected: //=================================================//
-
-    /// Jump action to the specified frame.
-    void jump_to_frame(uint frame);
-
-    //--------------------------------------------------------//
 
     FightWorld& world;
     Fighter& fighter;
@@ -76,7 +67,7 @@ private: //===================================================//
 
 //============================================================================//
 
-class Actions final : public sq::NonCopyable
+class Actions final : sq::NonCopyable
 {
 public: //====================================================//
 
@@ -188,17 +179,6 @@ struct BaseAction : public Action
     BaseAction(FightWorld& world, ConcreteFighter& fighter) : Action(world, fighter) {}
 
     ConcreteFighter& get_fighter() { return static_cast<ConcreteFighter&>(fighter); }
-
-    //--------------------------------------------------------//
-
-    template <class... Args>
-    void reset_hit_blob_groups(const Args... groups)
-    {
-        static_assert(( std::is_convertible_v<Args, uint8_t> && ... ));
-        ( world.reset_hit_blob_group(fighter, uint8_t(groups)) , ... );
-    }
-
-    //--------------------------------------------------------//
 };
 
 //============================================================================//
