@@ -128,11 +128,11 @@ void Fighter::impl_initialise_armature(const string& path)
     t.crouch_jump       = { State::PreJump, 1u, &a.jump, &a.jumping_loop };
     t.crouch_stand      = { State::Neutral, 2u, &a.stand, &a.neutral_loop };
 
-    t.jumping_hop       = { State::Jumping, 0u, &a.airhop, &a.jumping_loop };
+    t.jumping_hop       = { State::Jumping, 1u, &a.airhop, &a.jumping_loop };
     t.jumping_fall      = { State::Falling, 8u, &a.falling_loop, nullptr };
 
-    t.falling_hop       = { State::Jumping, 0u, &a.airhop, &a.jumping_loop };
-    t.falling_land      = { State::Landing, 0u, &a.land, &a.neutral_loop };
+    t.falling_hop       = { State::Jumping, 1u, &a.airhop, &a.jumping_loop };
+    t.falling_land      = { State::Landing, 1u, &a.land, &a.neutral_loop };
 
     t.attack_to_neutral = { State::Neutral, 2u, &a.neutral_loop, nullptr };
     t.attack_to_crouch  = { State::Crouch,  2u, &a.crouch_loop, nullptr };
