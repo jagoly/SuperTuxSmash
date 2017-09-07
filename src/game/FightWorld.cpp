@@ -2,6 +2,7 @@
 #include <sqee/misc/Algorithms.hpp>
 #include <sqee/maths/Culling.hpp>
 
+#include "game/Stage.hpp"
 #include "game/Actions.hpp"
 #include "game/Fighter.hpp"
 
@@ -19,11 +20,11 @@ FightWorld::FightWorld() = default;
 
 void FightWorld::tick()
 {
+    mStage->tick();
+
     for (auto& fighter : mFighters)
-    {
         if (fighter != nullptr)
             fighter->tick();
-    }
 
 
     //== misc helper lambda functions ==================================//
@@ -152,6 +153,11 @@ void FightWorld::tick()
 
 //============================================================================//
 
+void FightWorld::set_stage(unique_ptr<Stage> stage)
+{
+    mStage = std::move(stage);
+}
+
 void FightWorld::add_fighter(unique_ptr<Fighter> fighter)
 {
     mFighters[fighter->index] = std::move(fighter);
@@ -206,17 +212,33 @@ void FightWorld::disable_all_hit_blobs(Fighter& fighter)
 
 //============================================================================//
 
-std::pair<Vec2F, Vec2F> FightWorld::compute_camera_view_bounds() const
+sq::maths::Sphere FightWorld::compute_camera_view_bounds() const
 {
-    Vec2F resultMin(+INFINITY), resultMax(-INFINITY);
+    Vec2F maxCentre = Vec2F();
+    float maxDistance = -INFINITY;
 
-    for (const auto& fighter : mFighters)
+    for (const auto& fighterA : mFighters)
     {
-        if (fighter == nullptr) continue;
+        if (fighterA == nullptr) continue;
 
-        resultMin = maths::min(resultMin, Vec2F(fighter->get_model_matrix()[3]));
-        resultMax = maths::max(resultMax, Vec2F(fighter->get_model_matrix()[3]));
+        const Vec2F originA = Vec2F(fighterA->get_model_matrix()[3]);
+
+        for (const auto& fighterB : mFighters)
+        {
+            if (fighterB == nullptr) continue;
+            if (fighterA == fighterB) continue;
+
+            const Vec2F originB = Vec2F(fighterB->get_model_matrix()[3]);
+
+            const float dist = maths::distance(originA, originB);
+
+            if (dist > maxDistance)
+            {
+                maxCentre = (originA + originB) * 0.5f;
+                maxDistance = dist;
+            }
+        }
     }
 
-    return { resultMin, resultMax };
+    return { Vec3F(maxCentre, 0.f), maxDistance * 0.5f };
 }

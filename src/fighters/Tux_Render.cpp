@@ -1,9 +1,6 @@
 #include <sqee/gl/Context.hpp>
 #include <sqee/maths/Functions.hpp>
 
-#include "render/Renderer.hpp"
-
-#include "fighters/Tux_Fighter.hpp"
 #include "fighters/Tux_Render.hpp"
 
 using Context = sq::Context;

@@ -7,6 +7,8 @@
 #include <sqee/gl/Textures.hpp>
 #include <sqee/gl/UniformBuffer.hpp>
 
+#include <sqee/maths/Volumes.hpp>
+
 #include <sqee/render/Mesh.hpp>
 
 #include "main/Options.hpp"
@@ -34,6 +36,8 @@ public: //====================================================//
     //--------------------------------------------------------//
 
     void set_camera_view_bounds(Vec2F min, Vec2F max);
+
+    void set_camera_view_bounds(sq::maths::Sphere bounds);
 
     void render_objects(float accum, float blend);
 
@@ -98,11 +102,8 @@ public: //====================================================//
 
 private: //===================================================//
 
-    Vec2F mPreviousViewBoundsMin;
-    Vec2F mPreviousViewBoundsMax;
-
-    Vec2F mCurrentViewBoundsMin;
-    Vec2F mCurrentViewBoundsMax;
+    sq::maths::Sphere mPreviousBounds;
+    sq::maths::Sphere mCurrentBounds;
 
     //--------------------------------------------------------//
 

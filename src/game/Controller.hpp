@@ -7,6 +7,15 @@
 
 //============================================================================//
 
+#define DISABLE_FLOAT_EQUALITY_WARNING \
+_Pragma("GCC diagnostic push") \
+_Pragma("GCC diagnostic ignored \"-Wfloat-equal\"")
+
+#define ENABLE_FLOAT_EQUALITY_WARNING \
+_Pragma("GCC diagnostic pop")
+
+//============================================================================//
+
 namespace sts {
 
 class Controller final : sq::NonCopyable
@@ -25,7 +34,10 @@ public: //====================================================//
         bool hold_attack = false;
         bool hold_jump = false;
 
-        bool activate_dash = false;
+        bool mash_neg_x = false;
+        bool mash_pos_x = false;
+        bool mash_neg_y = false;
+        bool mash_pos_y = false;
 
         Vec2F axis_move {};
     };
@@ -65,8 +77,10 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
-    uint mTimeSinceNotLeft = 0u;
-    uint mTimeSinceNotRight = 0u;
+    uint mTimeSinceNotNegX = 0u;
+    uint mTimeSinceNotPosX = 0u;
+    uint mTimeSinceNotNegY = 0u;
+    uint mTimeSinceNotPosY = 0u;
 
     Vec2F mPrevAxisMove;
 

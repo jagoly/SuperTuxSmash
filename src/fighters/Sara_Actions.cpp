@@ -10,6 +10,10 @@ struct Sara_Base : public BaseAction<Sara_Fighter>
 {
     using BaseAction<Sara_Fighter>::BaseAction;
 
+    virtual void on_start() override
+    {
+    }
+
     virtual void on_collide(HitBlob* blob, Fighter& other) override
     {
         other.apply_hit_basic(*blob);
@@ -26,12 +30,6 @@ struct Sara_Base : public BaseAction<Sara_Fighter>
 
 struct Sara_Neutral_First final : public Sara_Base
 {
-    void on_start() override
-    {
-        Sara_Fighter& fighter = get_fighter();
-        fighter.play_animation(fighter.ANIM_Action_Neutral_First);
-    }
-
     bool on_tick(uint frame) override
     {
         if (frame == 2u) world.enable_hit_blob(blobs["0a"]);
@@ -50,12 +48,6 @@ struct Sara_Neutral_First final : public Sara_Base
 
 struct Sara_Tilt_Down final : public Sara_Base
 {
-    void on_start() override
-    {
-        Sara_Fighter& fighter = get_fighter();
-        fighter.play_animation(fighter.ANIM_Action_Tilt_Down);
-    }
-
     bool on_tick(uint frame) override
     {
         if (frame ==  4u) world.enable_hit_blob(blobs["0a"]);
@@ -76,12 +68,6 @@ struct Sara_Tilt_Down final : public Sara_Base
 
 struct Sara_Tilt_Forward final : public Sara_Base
 {
-    void on_start() override
-    {
-        Sara_Fighter& fighter = get_fighter();
-        fighter.play_animation(fighter.ANIM_Action_Tilt_Forward);
-    }
-
     bool on_tick(uint frame) override
     {
         if (frame == 4u) world.enable_hit_blob(blobs["0Aa"]);
@@ -102,12 +88,6 @@ struct Sara_Tilt_Forward final : public Sara_Base
 
 struct Sara_Tilt_Up final : public Sara_Base
 {
-    void on_start() override
-    {
-        Sara_Fighter& fighter = get_fighter();
-        fighter.play_animation(fighter.ANIM_Action_Tilt_Up);
-    }
-
     bool on_tick(uint frame) override
     {
         if (frame == 4u) world.enable_hit_blob(blobs["0Aa"]);
@@ -119,6 +99,26 @@ struct Sara_Tilt_Up final : public Sara_Base
         if (frame == 13u) world.disable_hit_blob(blobs["0Cb"]);
 
         return frame >= 20u;
+    }
+
+    using Sara_Base::Sara_Base;
+};
+
+
+//----------------------------------------------------------------------------//
+
+struct Sara_Dash_Attack final : public Sara_Base
+{
+    bool on_tick(uint frame) override
+    {
+        if (frame < 24u)
+        {
+            // this is arbitary and bad, need to work out a better
+            // way to influence fighter movement from actions
+            fighter.mVelocity.x += float(fighter.facing) * 0.3f;
+        }
+
+        return frame >= 32u;
     }
 
     using Sara_Base::Sara_Base;
@@ -143,7 +143,7 @@ unique_ptr<sts::Actions> sts::create_actions(FightWorld& world, Sara_Fighter& fi
     actions->air_forward   = std::make_unique<DumbAction>(world, fighter, "Sara Air_Forward");
     actions->air_neutral   = std::make_unique<DumbAction>(world, fighter, "Sara Air_Neutral");
     actions->air_up        = std::make_unique<DumbAction>(world, fighter, "Sara Air_Up");
-    actions->dash_attack   = std::make_unique<DumbAction>(world, fighter, "Sara Dash_Attack");
+    actions->dash_attack   = std::make_unique < actions::Sara_Dash_Attack   > (world, fighter);
 
     actions->load_json("Sara");
 

@@ -74,23 +74,6 @@ void Actions::load_json(const string& fighterName)
 
 //============================================================================//
 
-void Actions::tick_active_action()
-{
-    if (mActiveAction != nullptr)
-    {
-        if (mActiveAction->on_tick(mActiveAction->mCurrentFrame))
-        {
-            mActiveAction->on_finish();
-
-            mActiveType = Action::Type::None;
-            mActiveAction = nullptr;
-        }
-        else ++mActiveAction->mCurrentFrame;
-    }
-}
-
-//============================================================================//
-
 void DumbAction::on_start() { sq::log_info(" start: " + message); }
 
 bool DumbAction::on_tick(uint frame) { return frame == 12u; }

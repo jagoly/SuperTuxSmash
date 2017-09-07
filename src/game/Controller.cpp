@@ -1,3 +1,5 @@
+#include <sqee/debug/Logging.hpp>
+
 #include <sqee/misc/Json.hpp>
 
 #include "Controller.hpp"
@@ -103,27 +105,65 @@ Controller::Input Controller::get_input()
     //--------------------------------------------------------//
 
     // must normalize when using key or button input
-    const float axisLength = maths::length(mInput.axis_move);
-    if (axisLength > 1.f) mInput.axis_move /= axisLength;
+    //const float axisLength = maths::length(mInput.axis_move);
+    //if (axisLength > 1.f) mInput.axis_move /= axisLength;
 
-    const auto remove_deadzone = [](float value)
+    //--------------------------------------------------------//
+
+    DISABLE_FLOAT_EQUALITY_WARNING;
+
+    //--------------------------------------------------------//
+
+    const auto remove_deadzone_and_discretise = [](float value) -> float
     {
-        if (std::abs(value) < 0.1f) return 0.f * value;
-        return (value - std::copysign(0.1f, value)) / 0.9f;
+        const float absValue = std::abs(value);
+
+        if (absValue < 0.2f) return std::copysign(0.f, value);
+        if (absValue > 0.7f) return std::copysign(1.f, value);
+
+        return std::copysign(0.5f, value);
     };
 
-    mInput.axis_move.x = remove_deadzone(mInput.axis_move.x);
-    mInput.axis_move.y = remove_deadzone(mInput.axis_move.y);
+    const auto clamp_difference = [](float previous, float target) -> float
+    {
+        if (previous == -0.5f) return maths::clamp(target, -1.0f, -0.0f);
+        if (previous == +0.5f) return maths::clamp(target, +0.0f, +1.0f);
+
+        if (previous == -1.0f) return maths::min(target, -0.5f);
+        if (previous == +1.0f) return maths::max(target, +0.5f);
+
+        return maths::clamp(target, -0.5f, +0.5f);
+    };
 
     //--------------------------------------------------------//
 
-    mInput.activate_dash |= (++mTimeSinceNotLeft < 4u && mInput.axis_move.x < -0.8f);
-    mInput.activate_dash |= (++mTimeSinceNotRight < 4u && mInput.axis_move.x > +0.8f);
+    mInput.axis_move.x = remove_deadzone_and_discretise(mInput.axis_move.x);
+    mInput.axis_move.y = remove_deadzone_and_discretise(mInput.axis_move.y);
 
-    if (mInput.axis_move.x > -0.2f) mTimeSinceNotLeft = 0u;
-    if (mInput.axis_move.x < +0.2f) mTimeSinceNotRight = 0u;
+    mInput.axis_move.x = clamp_difference(mPrevAxisMove.x, mInput.axis_move.x);
+    mInput.axis_move.y = clamp_difference(mPrevAxisMove.y, mInput.axis_move.y);
 
     //--------------------------------------------------------//
+
+    mInput.mash_neg_x = (++mTimeSinceNotNegX < 4u && mInput.axis_move.x == -1.f);
+    mInput.mash_pos_x = (++mTimeSinceNotPosX < 4u && mInput.axis_move.x == +1.f);
+    mInput.mash_neg_y = (++mTimeSinceNotNegY < 4u && mInput.axis_move.y == -1.f);
+    mInput.mash_pos_y = (++mTimeSinceNotPosY < 4u && mInput.axis_move.y == +1.f);
+
+    if (mInput.axis_move.x >= -0.f) mTimeSinceNotNegX = 0u;
+    if (mInput.axis_move.x <= +0.f) mTimeSinceNotPosX = 0u;
+    if (mInput.axis_move.y >= -0.f) mTimeSinceNotNegY = 0u;
+    if (mInput.axis_move.y <= +0.f) mTimeSinceNotPosY = 0u;
+
+    //--------------------------------------------------------//
+
+    ENABLE_FLOAT_EQUALITY_WARNING;
+
+    //--------------------------------------------------------//
+
+    //sq::log_info("%s", mInput.axis_move);
+
+    mPrevAxisMove = mInput.axis_move;
 
     Input result = mInput;
     mInput = Input();

@@ -37,11 +37,9 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
-    unique_ptr<Renderer> mRenderer;
-
     unique_ptr<FightWorld> mFightWorld;
 
-    unique_ptr<Stage> mStage;
+    unique_ptr<Renderer> mRenderer;
 
     std::array<unique_ptr<Controller>, 4> mControllers;
 

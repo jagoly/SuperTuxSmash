@@ -18,6 +18,8 @@ void SmashApp::initialise(std::vector<string> args)
 {
     mWindow = std::make_unique<sq::Window>("SuperTuxSmash", Vec2U(1280u, 720u));
 
+    mWindow->set_vsync_enabled(true);
+
     mInputDevices = std::make_unique<sq::InputDevices>(*mWindow);
 
     mDebugOverlay = std::make_unique<sq::DebugOverlay>();

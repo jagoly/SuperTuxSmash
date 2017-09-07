@@ -99,6 +99,8 @@ set(SOURCES
 
   "src/stages/TestZone_Stage.hpp"
   "src/stages/TestZone_Stage.cpp"
+  "src/stages/TestZone_Render.hpp"
+  "src/stages/TestZone_Render.cpp"
 
   #----------------------------------------------------------#
 

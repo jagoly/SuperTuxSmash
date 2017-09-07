@@ -10,7 +10,7 @@ class TestZone_Stage final : public Stage
 {
 public: //====================================================//
 
-    TestZone_Stage();
+    TestZone_Stage(FightWorld& world);
 
     //--------------------------------------------------------//
 

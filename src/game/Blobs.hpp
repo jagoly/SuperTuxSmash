@@ -112,12 +112,8 @@ struct alignas(16) HurtBlob final
 //============================================================================//
 
 static_assert(sizeof(HitBlob) == 96u);
-static_assert(std::is_trivially_destructible_v<HitBlob>);
-static_assert(std::is_trivially_copyable_v<HitBlob>);
 
 static_assert(sizeof(HurtBlob) == 80u);
-static_assert(std::is_trivially_destructible_v<HurtBlob>);
-static_assert(std::is_trivially_copyable_v<HurtBlob>);
 
 //============================================================================//
 

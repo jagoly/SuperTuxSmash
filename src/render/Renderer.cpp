@@ -126,11 +126,16 @@ void Renderer::add_object(unique_ptr<RenderObject> object)
 
 void Renderer::set_camera_view_bounds(Vec2F min, Vec2F max)
 {
-    mPreviousViewBoundsMin = mCurrentViewBoundsMin;
-    mPreviousViewBoundsMax = mCurrentViewBoundsMax;
+    mPreviousBounds = mCurrentBounds;
 
-    mCurrentViewBoundsMin = min;
-    mCurrentViewBoundsMax = max;
+    mCurrentBounds.origin = Vec3F((min + max) * 0.5f, 0.f);
+    mCurrentBounds.radius = maths::distance(min, max) * 0.5f;
+}
+
+void Renderer::set_camera_view_bounds(sq::maths::Sphere bounds)
+{
+    mPreviousBounds = mCurrentBounds;
+    mCurrentBounds = bounds;
 }
 
 //============================================================================//
@@ -158,26 +163,30 @@ void Renderer::render_objects(float elapsed, float blend)
 
     //-- Camera and Light can spin, for funzies --------------//
 
-    static Vec3F cameraPosition = { 0.f, +3.f, -6.f };
+    //static Vec3F cameraPosition = { 0.f, +3.f, -6.f };
     static Vec3F skyDirection = maths::normalize(Vec3F(0.f, -1.f, 0.5f));
 
     #ifdef SQEE_DEBUG
-    if (sqeeDebugToggle1) cameraPosition = maths::rotate_y(cameraPosition, 0.1f * elapsed);
+    //if (sqeeDebugToggle1) cameraPosition = maths::rotate_y(cameraPosition, 0.1f * elapsed);
     if (sqeeDebugToggle2) skyDirection = maths::rotate_y(skyDirection, 0.1f * elapsed);
     #endif
 
     //-- Update the Camera -----------------------------------//
 
-    const Vec3F cameraTarget = { 0.f, 1.f, 0.f };
+    const Vec3F blendOrigin = maths::mix(mPreviousBounds.origin, mCurrentBounds.origin, blend);
+    const float blendRadius = maths::mix(mPreviousBounds.radius, mCurrentBounds.radius, blend);
 
-    const Vec3F cameraDirection = maths::normalize(cameraTarget - cameraPosition);
+    const Vec3F cameraTarget = blendOrigin + Vec3F(0.f, 1.f, 0.f);
+    const float cameraDistance = maths::max((blendRadius + 0.5f) / std::tan(0.5f), 4.f);
+
+    const Vec3F cameraDirection = maths::normalize(Vec3F(0.f, -1.f, +3.f));
+    const Vec3F cameraPosition = cameraTarget - cameraDirection * cameraDistance;
+
 
     const Vec2F viewSize = Vec2F(options.Window_Size);
 
     camera.viewMatrix = maths::look_at_LH(cameraPosition, cameraTarget, Vec3F(0.f, 1.f, 0.f));
     camera.projMatrix = maths::perspective_LH(1.f, viewSize.x / viewSize.y, 0.2f, 200.f);
-
-    //camera.projMatrix[2].w *= -1.f;
 
     const Mat4F inverseViewMat = maths::inverse(camera.viewMatrix);
     const Mat4F inverseProjMat = maths::inverse(camera.projMatrix);
@@ -185,6 +194,7 @@ void Renderer::render_objects(float elapsed, float blend)
     camera.ubo.update_complete ( camera.viewMatrix, camera.projMatrix,
                                  inverseViewMat, inverseProjMat,
                                  cameraPosition, 0, cameraDirection, 0 );
+
 
     //-- Update the Lighting ---------------------------------//
 

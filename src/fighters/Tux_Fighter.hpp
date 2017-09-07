@@ -16,20 +16,7 @@ public: //====================================================//
 
     void tick() override;
 
-    //--------------------------------------------------------//
-
-    sq::Armature::Pose POSE_Stand;
-    sq::Armature::Pose POSE_Slide;
-
-    sq::Armature::Animation ANIM_Walk;
-
 private: //===================================================//
-
-    float mAnimTimeContinuous = 0.f;
-
-    bool mJumpStartDone = false;
-
-    //--------------------------------------------------------//
 
     friend class Tux_Render;
 };

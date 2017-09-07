@@ -62,6 +62,7 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
+    friend class Fighter;
     friend class Actions;
 };
 
@@ -73,46 +74,6 @@ public: //====================================================//
 
     /// Load JSON data for all actions.
     void load_json(const string& fighterName);
-
-    //--------------------------------------------------------//
-
-    void switch_active(Action::Type type)
-    {
-        if (mActiveAction != nullptr) mActiveAction->on_finish();
-
-        if (type == Action::Type::None)          mActiveAction = nullptr;
-        if (type == Action::Type::Neutral_First) mActiveAction = neutral_first.get();
-        if (type == Action::Type::Tilt_Down)     mActiveAction = tilt_down.get();
-        if (type == Action::Type::Tilt_Forward)  mActiveAction = tilt_forward.get();
-        if (type == Action::Type::Tilt_Up)       mActiveAction = tilt_up.get();
-        if (type == Action::Type::Air_Back)      mActiveAction = air_back.get();
-        if (type == Action::Type::Air_Down)      mActiveAction = air_down.get();
-        if (type == Action::Type::Air_Forward)   mActiveAction = air_forward.get();
-        if (type == Action::Type::Air_Neutral)   mActiveAction = air_neutral.get();
-        if (type == Action::Type::Air_Up)        mActiveAction = air_up.get();
-        if (type == Action::Type::Dash_Attack)   mActiveAction = dash_attack.get();
-
-        mActiveType = type;
-
-        mActiveAction->mCurrentFrame = 0u;
-        mActiveAction->on_start();
-    }
-
-    //--------------------------------------------------------//
-
-    /// Get the type of the active action.
-    auto active_type() const { return mActiveType; }
-
-    /// Get the active action.
-    auto active_action() const { return mActiveAction; }
-
-    //--------------------------------------------------------//
-
-    /// Tick the active action if not none.
-    void tick_active_action();
-
-    /// Update blobs of the active action if not none.
-    void update_active_action_blobs();
 
     //--------------------------------------------------------//
 
@@ -129,11 +90,6 @@ public: //====================================================//
     unique_ptr<Action> air_up;
 
     unique_ptr<Action> dash_attack;
-
-private: //===================================================//
-
-    Action::Type mActiveType = Action::Type::None;
-    Action* mActiveAction = nullptr;
 };
 
 //============================================================================//

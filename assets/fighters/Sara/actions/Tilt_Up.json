@@ -14,7 +14,7 @@
   {
     "origin": [ 0.0, 2.2, 0.0 ], "radius": 0.45,
     "bone": -1, "group": 0,
-    "knockAngle": 0.0, "knockBase": 8.0,
+    "knockAngle": 0.98, "knockBase": 8.0,
     "damage": 5.0,
     "flavour": "SOUR", "priority": "NORMAL"
   },
@@ -22,7 +22,7 @@
   {
     "origin": [ 0.0, 2.2, 0.6 ], "radius": 0.45,
     "bone": -1, "group": 0,
-    "knockAngle": 0.0, "knockBase": 8.0,
+    "knockAngle": 0.02, "knockBase": 8.0,
     "damage": 5.0,
     "flavour": "SOUR", "priority": "NORMAL"
   }

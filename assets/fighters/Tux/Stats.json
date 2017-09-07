@@ -3,10 +3,13 @@
 "walk_speed":     0.8,
 "dash_speed":     1.1,
 "air_speed":      1.1,
-"land_traction":  0.8,
-"air_traction":   0.9,
-"hop_height":     1.0,
-"jump_height":    1.0,
+"traction":       0.8,
+"air_mobility":   1.1,
+"air_friction":   0.9,
+"hop_height":     1.1,
+"jump_height":    1.2,
+"air_hop_height": 1.0,
+"gravity":        1.0,
 "fall_speed":     1.0
 
 }

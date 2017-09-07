@@ -16,15 +16,123 @@ class Fighter : sq::NonCopyable
 {
 public: //====================================================//
 
-    struct State {
+    using Armature = sq::Armature;
 
-        enum class Move { None, Walk, Dash, Air, Knock } move;
-        enum class Direction { Left = -1, Right = +1 } direction;
+    //--------------------------------------------------------//
 
-        bool helpless = false;
-        bool stunned = false;
+    struct Stats
+    {
+        float walk_speed      = 1.f;
+        float dash_speed      = 1.f;
+        float air_speed       = 1.f;
+        float traction        = 1.f;
+        float air_mobility    = 1.f;
+        float air_friction    = 1.f;
+        float hop_height      = 1.f;
+        float jump_height     = 1.f;
+        float air_hop_height  = 1.f;
+        float gravity         = 1.f;
+        float fall_speed      = 1.f;
+    };
 
-    } state;
+    //--------------------------------------------------------//
+
+    enum class State
+    {
+        Neutral,
+        Walking,
+        Dashing,
+        Brake,
+        Crouch,
+        Attack,
+        Landing,
+        PreJump,
+        Jumping,
+        Falling,
+        AirAttack,
+        Knocked,
+        Stunned,
+    };
+
+    enum class Facing
+    {
+        Left = -1,
+        Right = +1
+    };
+
+    State state = State::Neutral;
+    Facing facing = Facing::Right;
+
+    //--------------------------------------------------------//
+
+    struct Animations
+    {
+        Armature::Animation crouch_loop;
+        Armature::Animation dashing_loop;
+        Armature::Animation falling_loop;
+        Armature::Animation jumping_loop;
+        Armature::Animation neutral_loop;
+        Armature::Animation walking_loop;
+
+        Armature::Animation airhop;
+        Armature::Animation brake;
+        Armature::Animation crouch;
+        Armature::Animation jump;
+        Armature::Animation land;
+        Armature::Animation stand;
+
+        //Armature::Animation knocked;
+
+        Armature::Animation action_Neutral_First;
+
+        Armature::Animation action_Tilt_Down;
+        Armature::Animation action_Tilt_Forward;
+        Armature::Animation action_Tilt_Up;
+
+        Armature::Animation action_Air_Back;
+        Armature::Animation action_Air_Down;
+        Armature::Animation action_Air_Forward;
+        Armature::Animation action_Air_Neutral;
+        Armature::Animation action_Air_Up;
+
+        Armature::Animation action_Dash_Attack;
+    };
+
+    struct Transition
+    {
+        State newState; uint fadeFrames;
+        const Armature::Animation* animation;
+        const Armature::Animation* loop;
+    };
+
+    struct Transitions
+    {
+        Transition neutral_crouch;
+        Transition neutral_jump;
+        Transition neutral_walking;
+
+        Transition walking_crouch;
+        Transition walking_jump;
+        Transition walking_dashing;
+        Transition walking_neutral;
+
+        Transition dashing_jump;
+        Transition dashing_brake;
+
+        Transition crouch_jump;
+        Transition crouch_stand;
+
+        Transition jumping_hop;
+        Transition jumping_land;
+        Transition jumping_fall;
+
+        Transition falling_hop;
+        Transition falling_land;
+
+        Transition attack_to_neutral;
+        Transition attack_to_crouch;
+        Transition attack_to_falling;
+    };
 
     //--------------------------------------------------------//
 
@@ -38,34 +146,13 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    struct {
-
-        float walk_speed      = 1.f; // 5m/s
-        float dash_speed      = 1.f; // 8m/s
-        float air_speed       = 1.f; // 5m/s
-        float land_traction   = 1.f; // 0.5
-        float air_traction    = 1.f; // 0.2
-        float hop_height      = 1.f; // 2m
-        float jump_height     = 1.f; // 3m
-        float fall_speed      = 1.f; // 15m/s
-
-    } stats;
-
-    //--------------------------------------------------------//
-
-    /// Index of the fighter.
     const uint8_t index;
 
-    //--------------------------------------------------------//
+    Stats stats;
 
-    /// Update the armature pose.
-    void update_pose(const sq::Armature::Pose& pose);
+    Animations animations;
 
-    /// Update the pose from a continuous animation.
-    void update_pose(const sq::Armature::Animation& anim, float time);
-
-    /// Play an animation with discrete timing.
-    void play_animation(const sq::Armature::Animation& anim);
+    Transitions transitions;
 
     //--------------------------------------------------------//
 
@@ -75,7 +162,16 @@ public: //====================================================//
     //--------------------------------------------------------//
 
     /// Access the active animation, or nullptr.
-    const sq::Armature::Animation* get_animation() const { return mAnimation; }
+    const Armature::Animation* get_animation() const { return mAnimation; }
+
+    //--------------------------------------------------------//
+
+    /// Begin playing a different animation.
+    ///
+    /// @param animation The Animation to switch to.
+    /// @param fadeFrames Number of frames to cross-fade for.
+
+    void play_animation(const Armature::Animation& animation, uint fadeFrames);
 
     //--------------------------------------------------------//
 
@@ -91,11 +187,17 @@ public: //====================================================//
     /// Compute interpolated armature pose matrices.
     std::vector<Mat34F> interpolate_bone_matrices(float blend) const;
 
+    //--------------------------------------------------------//
+
+    // todo: make better interface for actions to use
+
+    Vec2F mVelocity = { 0.f, 0.f };
+
 protected: //=================================================//
 
     unique_ptr<Actions> mActions;
 
-    sq::Armature mArmature;
+    Armature mArmature;
 
     std::vector<HurtBlob*> mHurtBlobs;
 
@@ -108,7 +210,7 @@ protected: //=================================================//
     bool mAttackHeld = false;
     bool mJumpHeld = false;
 
-    Vec2F mVelocity = { 0.f, 0.f };
+    PhysicsDiamond mLocalDiamond, mWorldDiamond;
 
     //--------------------------------------------------------//
 
@@ -120,16 +222,35 @@ private: //===================================================//
 
     struct InterpolationData
     {
-        Vec2F position;
+        Vec2F position { 0.f, 1.f };
         sq::Armature::Pose pose;
     }
     previous, current;
 
     //--------------------------------------------------------//
 
-    const sq::Armature::Animation* mAnimation = nullptr;
+    uint mLandingLag = 0u;
+    uint mJumpDelay = 0u;
 
-    uint mAnimationTime = 0u;
+    //--------------------------------------------------------//
+
+    const Armature::Animation* mAnimation = nullptr;
+    const Armature::Animation* mNextAnimation = nullptr;
+
+    int mAnimTimeDiscrete = 0;
+    float mAnimTimeContinuous = 0.f;
+
+    Armature::Pose mFadeStartPose;
+
+    uint mFadeFrames = 0u;
+    uint mFadeProgress = 0u;
+
+    //--------------------------------------------------------//
+
+    Action::Type mActionType = Action::Type::None;
+    Action* mActiveAction = nullptr;
+
+    //--------------------------------------------------------//
 
     std::vector<Mat34F> mBoneMatrices;
 
@@ -145,10 +266,21 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
-    void impl_input_movement(Controller::Input input);
-    void impl_input_actions(Controller::Input input);
+    void impl_handle_input_movement(const Controller::Input& input);
+
+    void impl_handle_input_actions(const Controller::Input& input);
+
+    //--------------------------------------------------------//
+
+    void impl_state_transition(const Transition& transition);
+
+    void impl_switch_action(Action::Type actionType);
+
+    //--------------------------------------------------------//
 
     void impl_update_physics();
+
+    void impl_update_active_action();
 };
 
 //============================================================================//

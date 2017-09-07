@@ -10,6 +10,11 @@
 
 namespace sts {
 
+struct PhysicsDiamond
+{
+    Vec2F xNeg, xPos, yNeg, yPos;
+};
+
 class FightWorld final : sq::NonCopyable
 {
 public: //====================================================//
@@ -19,6 +24,9 @@ public: //====================================================//
     void tick();
 
     //--------------------------------------------------------//
+
+    /// Set the stage for them game.
+    void set_stage(unique_ptr<Stage> stage);
 
     /// Add a fighter to the game.
     void add_fighter(unique_ptr<Fighter> fighter);
@@ -49,6 +57,14 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
+    /// Access the stage.
+    Stage& get_stage() { return *mStage; }
+
+    /// Access the stage (const).
+    const Stage& get_stage() const { return *mStage; }
+
+    //--------------------------------------------------------//
+
     /// Access the HitBlob Allocator.
     auto& get_hit_blob_allocator() { return mHitBlobAlloc; }
 
@@ -62,9 +78,11 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    std::pair<Vec2F, Vec2F> compute_camera_view_bounds() const;
+    sq::maths::Sphere compute_camera_view_bounds() const;
 
 private: //===================================================//
+
+    unique_ptr<Stage> mStage;
 
     std::array<unique_ptr<Fighter>, 4> mFighters;
 
