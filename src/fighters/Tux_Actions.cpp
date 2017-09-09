@@ -31,6 +31,9 @@ unique_ptr<sts::Actions> sts::create_actions(FightWorld& world, Tux_Fighter& fig
     actions->air_neutral   = std::make_unique<DumbAction>(world, fighter, "Tux Air_Neutral");
     actions->air_up        = std::make_unique<DumbAction>(world, fighter, "Tux Air_Up");
     actions->dash_attack   = std::make_unique<DumbAction>(world, fighter, "Tux Dash_Attack");
+    actions->smash_down    = std::make_unique<DumbAction>(world, fighter, "Tux Smash_Down");
+    actions->smash_forward = std::make_unique<DumbAction>(world, fighter, "Tux Smash_Forward");
+    actions->smash_up      = std::make_unique<DumbAction>(world, fighter, "Tux Smash_Up");
 
     actions->load_json("Tux");
 

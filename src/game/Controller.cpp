@@ -145,23 +145,28 @@ Controller::Input Controller::get_input()
 
     //--------------------------------------------------------//
 
-    mInput.mash_neg_x = (++mTimeSinceNotNegX < 4u && mInput.axis_move.x == -1.f);
-    mInput.mash_pos_x = (++mTimeSinceNotPosX < 4u && mInput.axis_move.x == +1.f);
-    mInput.mash_neg_y = (++mTimeSinceNotNegY < 4u && mInput.axis_move.y == -1.f);
-    mInput.mash_pos_y = (++mTimeSinceNotPosY < 4u && mInput.axis_move.y == +1.f);
+    if (mInput.axis_move.x != 0.f && ++mTimeSinceZeroX <= 4u)
+    {
+        if (!mDoneMashX && mInput.axis_move.x == -1.f) mDoneMashX = (mInput.mash_axis_x = -1);
+        if (!mDoneMashX && mInput.axis_move.x == +1.f) mDoneMashX = (mInput.mash_axis_x = +1);
+        mInput.mod_axis_x = std::signbit(mInput.axis_move.x) ? -1 : +1;
+    }
 
-    if (mInput.axis_move.x >= -0.f) mTimeSinceNotNegX = 0u;
-    if (mInput.axis_move.x <= +0.f) mTimeSinceNotPosX = 0u;
-    if (mInput.axis_move.y >= -0.f) mTimeSinceNotNegY = 0u;
-    if (mInput.axis_move.y <= +0.f) mTimeSinceNotPosY = 0u;
+    if (mInput.axis_move.y != 0.f && ++mTimeSinceZeroY <= 4u)
+    {
+        if (!mDoneMashY && mInput.axis_move.y == -1.f) mDoneMashY = (mInput.mash_axis_y = -1);
+        if (!mDoneMashY && mInput.axis_move.y == +1.f) mDoneMashY = (mInput.mash_axis_y = +1);
+        mInput.mod_axis_y = std::signbit(mInput.axis_move.y) ? -1 : +1;
+    }
+
+    if (mInput.axis_move.x == 0.f) mDoneMashX = (mTimeSinceZeroX = 0u);
+    if (mInput.axis_move.y == 0.f) mDoneMashY = (mTimeSinceZeroY = 0u);
 
     //--------------------------------------------------------//
 
     ENABLE_FLOAT_EQUALITY_WARNING;
 
     //--------------------------------------------------------//
-
-    //sq::log_info("%s", mInput.axis_move);
 
     mPrevAxisMove = mInput.axis_move;
 

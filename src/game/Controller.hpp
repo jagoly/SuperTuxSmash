@@ -34,10 +34,11 @@ public: //====================================================//
         bool hold_attack = false;
         bool hold_jump = false;
 
-        bool mash_neg_x = false;
-        bool mash_pos_x = false;
-        bool mash_neg_y = false;
-        bool mash_pos_y = false;
+        int8_t mod_axis_x = 0;
+        int8_t mod_axis_y = 0;
+
+        int8_t mash_axis_x = 0;
+        int8_t mash_axis_y = 0;
 
         Vec2F axis_move {};
     };
@@ -77,12 +78,13 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
-    uint mTimeSinceNotNegX = 0u;
-    uint mTimeSinceNotPosX = 0u;
-    uint mTimeSinceNotNegY = 0u;
-    uint mTimeSinceNotPosY = 0u;
-
     Vec2F mPrevAxisMove;
+
+    uint mTimeSinceZeroX = 0u;
+    uint mTimeSinceZeroY = 0u;
+
+    bool mDoneMashX = false;
+    bool mDoneMashY = false;
 
     Input mInput;
 

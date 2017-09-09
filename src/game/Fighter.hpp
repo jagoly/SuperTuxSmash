@@ -16,7 +16,28 @@ class Fighter : sq::NonCopyable
 {
 public: //====================================================//
 
-    using Armature = sq::Armature;
+    enum class State
+    {
+        Neutral, Walking, Dashing, Brake, Crouch,
+        Charge, Attack, Landing, PreJump, Jumping,
+        Falling, AirAttack, Knocked, Stunned
+    };
+
+    enum class Facing
+    {
+        Left = -1, Right = +1
+    };
+
+    //--------------------------------------------------------//
+
+    using Animation = sq::Armature::Animation;
+
+    struct Transition
+    {
+        State newState; uint fadeFrames;
+        const Animation* animation;
+        const Animation* loop = nullptr;
+    };
 
     //--------------------------------------------------------//
 
@@ -37,73 +58,52 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    enum class State
-    {
-        Neutral,
-        Walking,
-        Dashing,
-        Brake,
-        Crouch,
-        Attack,
-        Landing,
-        PreJump,
-        Jumping,
-        Falling,
-        AirAttack,
-        Knocked,
-        Stunned,
-    };
-
-    enum class Facing
-    {
-        Left = -1,
-        Right = +1
-    };
-
-    State state = State::Neutral;
-    Facing facing = Facing::Right;
-
-    //--------------------------------------------------------//
-
     struct Animations
     {
-        Armature::Animation crouch_loop;
-        Armature::Animation dashing_loop;
-        Armature::Animation falling_loop;
-        Armature::Animation jumping_loop;
-        Armature::Animation neutral_loop;
-        Armature::Animation walking_loop;
+        Animation crouch_loop;
+        Animation dashing_loop;
+        Animation falling_loop;
+        Animation jumping_loop;
+        Animation neutral_loop;
+        Animation walking_loop;
 
-        Armature::Animation airhop;
-        Armature::Animation brake;
-        Armature::Animation crouch;
-        Armature::Animation jump;
-        Armature::Animation land;
-        Armature::Animation stand;
+        Animation airhop;
+        Animation brake;
+        Animation crouch;
+        Animation jump;
+        Animation land;
+        Animation stand;
 
-        //Armature::Animation knocked;
+        //Animation knocked;
 
-        Armature::Animation action_Neutral_First;
+        Animation action_neutral_first;
 
-        Armature::Animation action_Tilt_Down;
-        Armature::Animation action_Tilt_Forward;
-        Armature::Animation action_Tilt_Up;
+        Animation action_tilt_down;
+        Animation action_tilt_forward;
+        Animation action_tilt_up;
 
-        Armature::Animation action_Air_Back;
-        Armature::Animation action_Air_Down;
-        Armature::Animation action_Air_Forward;
-        Armature::Animation action_Air_Neutral;
-        Armature::Animation action_Air_Up;
+        Animation action_air_back;
+        Animation action_air_down;
+        Animation action_air_forward;
+        Animation action_air_neutral;
+        Animation action_air_up;
 
-        Armature::Animation action_Dash_Attack;
+        Animation action_dash_attack;
+
+        Animation action_smash_down_start;
+        Animation action_smash_forward_start;
+        Animation action_smash_up_start;
+
+        Animation action_smash_down_charge;
+        Animation action_smash_forward_charge;
+        Animation action_smash_up_charge;
+
+        Animation action_smash_down_attack;
+        Animation action_smash_forward_attack;
+        Animation action_smash_up_attack;
     };
 
-    struct Transition
-    {
-        State newState; uint fadeFrames;
-        const Armature::Animation* animation;
-        const Armature::Animation* loop;
-    };
+    //--------------------------------------------------------//
 
     struct Transitions
     {
@@ -129,6 +129,16 @@ public: //====================================================//
         Transition falling_hop;
         Transition falling_land;
 
+        Transition other_fall;
+
+        Transition smash_up_start;
+        Transition smash_forward_start;
+        Transition smash_down_start;
+
+        Transition smash_up_attack;
+        Transition smash_forward_attack;
+        Transition smash_down_attack;
+
         Transition attack_to_neutral;
         Transition attack_to_crouch;
         Transition attack_to_falling;
@@ -148,6 +158,10 @@ public: //====================================================//
 
     const uint8_t index;
 
+    State state = State::Neutral;
+
+    Facing facing = Facing::Right;
+
     Stats stats;
 
     Animations animations;
@@ -162,7 +176,7 @@ public: //====================================================//
     //--------------------------------------------------------//
 
     /// Access the active animation, or nullptr.
-    const Armature::Animation* get_animation() const { return mAnimation; }
+    const Animation* get_animation() const { return mAnimation; }
 
     //--------------------------------------------------------//
 
@@ -171,7 +185,7 @@ public: //====================================================//
     /// @param animation The Animation to switch to.
     /// @param fadeFrames Number of frames to cross-fade for.
 
-    void play_animation(const Armature::Animation& animation, uint fadeFrames);
+    void play_animation(const Animation& animation, uint fadeFrames);
 
     //--------------------------------------------------------//
 
@@ -197,7 +211,7 @@ protected: //=================================================//
 
     unique_ptr<Actions> mActions;
 
-    Armature mArmature;
+    sq::Armature mArmature;
 
     std::vector<HurtBlob*> mHurtBlobs;
 
@@ -234,13 +248,14 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
-    const Armature::Animation* mAnimation = nullptr;
-    const Armature::Animation* mNextAnimation = nullptr;
+    const sq::Armature::Animation* mAnimation = nullptr;
+    const sq::Armature::Animation* mNextAnimation = nullptr;
+    const sq::Armature::Pose* mStaticPose = nullptr;
 
     int mAnimTimeDiscrete = 0;
     float mAnimTimeContinuous = 0.f;
 
-    Armature::Pose mFadeStartPose;
+    sq::Armature::Pose mFadeStartPose;
 
     uint mFadeFrames = 0u;
     uint mFadeProgress = 0u;

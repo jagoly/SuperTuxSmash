@@ -24,6 +24,9 @@ public: //====================================================//
         Air_Forward,
         Air_Neutral,
         Air_Up,
+        Smash_Down,
+        Smash_Forward,
+        Smash_Up,
         Dash_Attack,
     };
 
@@ -90,6 +93,10 @@ public: //====================================================//
     unique_ptr<Action> air_up;
 
     unique_ptr<Action> dash_attack;
+
+    unique_ptr<Action> smash_down;
+    unique_ptr<Action> smash_forward;
+    unique_ptr<Action> smash_up;
 };
 
 //============================================================================//

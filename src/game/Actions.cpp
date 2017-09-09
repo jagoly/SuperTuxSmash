@@ -70,6 +70,9 @@ void Actions::load_json(const string& fighterName)
     load_single ( *air_neutral,   "Air_Neutral.json"   );
     load_single ( *air_up,        "Air_Up.json"        );
     load_single ( *dash_attack,   "Dash_Attack.json"   );
+    load_single ( *smash_down,    "Smash_Down.json"    );
+    load_single ( *smash_forward, "Smash_Forward.json" );
+    load_single ( *smash_up,      "Smash_Up.json"      );
 }
 
 //============================================================================//

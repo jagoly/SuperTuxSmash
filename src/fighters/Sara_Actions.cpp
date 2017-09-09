@@ -144,6 +144,9 @@ unique_ptr<sts::Actions> sts::create_actions(FightWorld& world, Sara_Fighter& fi
     actions->air_neutral   = std::make_unique<DumbAction>(world, fighter, "Sara Air_Neutral");
     actions->air_up        = std::make_unique<DumbAction>(world, fighter, "Sara Air_Up");
     actions->dash_attack   = std::make_unique < actions::Sara_Dash_Attack   > (world, fighter);
+    actions->smash_down    = std::make_unique<DumbAction>(world, fighter, "Sara Smash_Down");
+    actions->smash_forward = std::make_unique<DumbAction>(world, fighter, "Sara Smash_Forward");
+    actions->smash_up      = std::make_unique<DumbAction>(world, fighter, "Sara Smash_Up");
 
     actions->load_json("Sara");
 
