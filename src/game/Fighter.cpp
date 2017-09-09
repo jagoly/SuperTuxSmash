@@ -407,6 +407,8 @@ void Fighter::impl_handle_input_actions(const Controller::Input& input)
                 mActiveAction = mActions->smash_up.get();
             }
             else SQASSERT(false, "");
+
+            mActiveAction->on_start();
         }
 
         return;
@@ -526,8 +528,6 @@ void Fighter::impl_state_transition(const Transition& transition)
 void Fighter::impl_switch_action(Action::Type actionType)
 {
     SQASSERT(actionType != mActionType, "");
-
-    if (mActiveAction != nullptr) mActiveAction->on_finish();
 
     const Animations& anims = animations;
 
