@@ -460,7 +460,10 @@ void Fighter::impl_handle_input_actions(const Controller::Input& input)
 
     CASE ( Brake ) //=========================================//
     {
-        impl_switch_action(Action::Type::Dash_Attack);
+        if (input.mod_axis_y == +1)
+            impl_switch_action(Action::Type::Smash_Up);
+
+        else impl_switch_action(Action::Type::Dash_Attack);
     }
 
     CASE ( Crouch ) //========================================//
