@@ -1,146 +1,46 @@
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 3.4)
 project(SuperTuxSmash_Game)
 
 ################################################################################
 
-option(STS_LINUX "Build for Linux" FALSE)
-option(STS_WINDOWS "Build for Windows" FALSE)
-
-if (NOT STS_LINUX AND NOT STS_WINDOWS)
-    message(FATAL_ERROR "Must specify STS_[PLATFORM] (LINUX, WINDOWS)")
-endif ()
-
-if (STS_LINUX)
-    add_definitions(-DSTS_LINUX)
-elseif (STS_WINDOWS)
-    add_definitions(-DSTS_WINDOWS)
-endif ()
-
-################################################################################
-
-if (NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Release")
-endif ()
-
-if (CMAKE_BUILD_TYPE MATCHES "Debug")
-    add_definitions(-DSQEE_DEBUG)
-endif ()
-
-################################################################################
-
-#set(CMAKE_CXX_STANDARD 14)
-string(APPEND CMAKE_CXX_FLAGS " -std=c++17")
-
-################################################################################
-
-string(APPEND CMAKE_CXX_FLAGS " -Wall -Wextra")
-string(APPEND CMAKE_CXX_FLAGS " -Wno-unused-parameter -Wno-strict-aliasing")
-string(APPEND CMAKE_CXX_FLAGS " -Wno-comment -Wno-misleading-indentation")
-
-if (STS_LINUX)
-    string(APPEND CMAKE_CXX_FLAGS "")
-elseif (STS_WINDOWS)
-    string(APPEND CMAKE_CXX_FLAGS " -mwindows -Wa,-mbig-obj")
-endif ()
-
-################################################################################
-
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/build")
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules/")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/build")
+
+find_package(SQEE REQUIRED)
 
 ################################################################################
 
-set(SOURCES
+if (SQEE_GNU OR SQEE_CLANG)
 
-  "src/main.cpp"
+    string(APPEND CMAKE_CXX_FLAGS " -std=c++17 -Wall -Wextra")
 
-  #----------------------------------------------------------#
+    string(APPEND CMAKE_CXX_FLAGS " -Wno-unused-parameter -Wno-strict-aliasing")
+    string(APPEND CMAKE_CXX_FLAGS " -Wno-comment -Wno-misleading-indentation")
 
-  "src/main/Options.hpp"
-  "src/main/Options.cpp"
+    if (SQEE_WINDOWS)
+        string(APPEND CMAKE_CXX_FLAGS " -mwindows -Wa,-mbig-obj")
+    endif ()
 
-  "src/main/SmashApp.hpp"
-  "src/main/SmashApp.cpp"
+elseif (SQEE_MSVC)
 
-  #----------------------------------------------------------#
+    string(APPEND CMAKE_CXX_FLAGS " /std:c++17 /bigobj /W3 /wd4201")
 
-  "src/game/forward.hpp"
-
-  "src/game/FightWorld.hpp"
-  "src/game/FightWorld.cpp"
-
-  "src/game/Blobs.hpp"
-  "src/game/Blobs.cpp"
-
-  "src/game/GameScene.hpp"
-  "src/game/GameScene.cpp"
-
-  "src/game/Actions.hpp"
-  "src/game/Actions.cpp"
-
-  "src/game/Controller.hpp"
-  "src/game/Controller.cpp"
-
-  "src/game/Fighter.hpp"
-  "src/game/Fighter.cpp"
-
-  "src/game/Stage.hpp"
-  "src/game/Stage.cpp"
-
-  #----------------------------------------------------------#
-
-  "src/render/Renderer.hpp"
-  "src/render/Renderer.cpp"
-
-  "src/render/RenderObject.hpp"
-  "src/render/RenderObject.cpp"
-
-  #----------------------------------------------------------#
-
-  "src/stages/TestZone_Stage.hpp"
-  "src/stages/TestZone_Stage.cpp"
-  "src/stages/TestZone_Render.hpp"
-  "src/stages/TestZone_Render.cpp"
-
-  #----------------------------------------------------------#
-
-  "src/fighters/Sara_Actions.hpp"
-  "src/fighters/Sara_Actions.cpp"
-  "src/fighters/Sara_Fighter.hpp"
-  "src/fighters/Sara_Fighter.cpp"
-  "src/fighters/Sara_Render.hpp"
-  "src/fighters/Sara_Render.cpp"
-
-  "src/fighters/Tux_Actions.hpp"
-  "src/fighters/Tux_Actions.cpp"
-  "src/fighters/Tux_Fighter.hpp"
-  "src/fighters/Tux_Fighter.cpp"
-  "src/fighters/Tux_Render.hpp"
-  "src/fighters/Tux_Render.cpp"
-)
+endif ()
 
 ################################################################################
+
+include("cmake/sources.cmake")
 
 file(GLOB_RECURSE SHADERS "shaders/*.glsl")
 
 ################################################################################
 
-include_directories("${PROJECT_SOURCE_DIR}/src")
 add_executable(sts-game ${SOURCES} ${SHADERS})
 
-################################################################################
-
-find_package(SQEE REQUIRED)
-
 include_directories(${SQEE_INCLUDE_DIR})
+include_directories(${PROJECT_SOURCE_DIR}/src)
+
 target_link_libraries(sts-game ${SQEE_LIBRARY})
-
-################################################################################
-
-find_package(SFML 2.4 COMPONENTS audio window system REQUIRED)
-
-include_directories(${SFML_INCLUDE_DIR})
-target_link_libraries(sts-game ${SFML_LIBRARIES})
 
 ################################################################################
 
@@ -149,4 +49,3 @@ file(COPY "shaders" DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 
 file(COPY "player1.json" DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 file(COPY "player2.json" DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
-
