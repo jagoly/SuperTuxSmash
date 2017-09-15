@@ -27,6 +27,8 @@ void SmashApp::initialise(std::vector<string> args)
     mGameScene = std::make_unique<GameScene>(*mInputDevices, mOptions);
 
     mWindow->set_key_repeat(false);
+
+    refresh_options();
 }
 
 //============================================================================//
