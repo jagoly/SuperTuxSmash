@@ -1,6 +1,8 @@
 #include <sqee/debug/Logging.hpp>
 #include <sqee/debug/Misc.hpp>
 
+#include <sqee/redist/imgui/imgui.hpp>
+
 #include "SmashApp.hpp"
 
 using namespace sts;
@@ -24,6 +26,8 @@ void SmashApp::initialise(std::vector<string> args)
 
     mDebugOverlay = std::make_unique<sq::DebugOverlay>();
 
+    mGuiSystem = std::make_unique<sq::GuiSystem>(*mWindow, *mInputDevices);
+
     mGameScene = std::make_unique<GameScene>(*mInputDevices, mOptions);
 
     mWindow->set_key_repeat(false);
@@ -38,7 +42,12 @@ void SmashApp::update(double elapsed)
     //-- fetch and handle events -----------------------------//
 
     for (auto event : mWindow->fetch_events())
+    {
+        mGuiSystem->handle_event(event);
         handle_event(event);
+    }
+
+    mGuiSystem->begin_new_frame(elapsed);
 
     //-- update and render the game scene --------------------//
 
@@ -48,6 +57,11 @@ void SmashApp::update(double elapsed)
     //-- update and render the debug overlay -----------------//
 
     mDebugOverlay->update_and_render(elapsed);
+
+    ImGui::ShowUserGuide();
+    ImGui::ShowTestWindow();
+
+    mGuiSystem->render_gui();
 
     //-- drawing is done -------------------------------------//
 

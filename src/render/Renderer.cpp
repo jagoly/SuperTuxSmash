@@ -140,6 +140,8 @@ void Renderer::set_camera_view_bounds(sq::maths::Sphere bounds)
 
 //============================================================================//
 
+namespace { // anonymous
+
 struct StaticShit
 {
     StaticShit()
@@ -154,6 +156,8 @@ struct StaticShit
 
     sq::TextureCube TEX_Skybox { sq::Texture::Format::RGB8_UN };
 };
+
+} // anonymous namespace
 
 //============================================================================//
 
