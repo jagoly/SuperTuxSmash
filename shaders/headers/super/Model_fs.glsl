@@ -98,6 +98,6 @@ void main()
     const vec3 lightDir = mat3(CB.viewMat) * normalize(LB.skyDirection);
 
     frag_Colour = diffuse * LB.ambiColour;
-    frag_Colour += get_diffuse_value(diffuse, lightDir, normal);
-    frag_Colour += get_specular_value(specular, 0.5f, lightDir, normal);
+    frag_Colour += get_diffuse_value(diffuse, lightDir, normal) * LB.skyColour;
+    frag_Colour += get_specular_value(specular, 0.5f, lightDir, normal) * LB.skyColour;
 }

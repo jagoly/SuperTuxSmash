@@ -2,22 +2,68 @@
 
 "blobs":
 {
-  "0a":
+  "0:A":
   {
-    "origin": [ 0.0, 0.6, 0.65 ], "radius": 0.4,
-    "bone": -1, "group": 0,
-    "knockAngle": 0.125, "knockBase": 1.5,
+    "origin": [ 0.0, 0.6, 0.65 ],
+    "radius": 0.4,
+    "bone": -1,
+    "group": 0,
+    "knockAngle": 0.125,
+    "knockBase": 1.5,
     "damage": 5.0,
-    "flavour": "SOUR", "priority": "LOW"
+    "flavour": "SOUR",
+    "priority": "LOW"
   },
-  "0b":
+  "0:B":
   {
-    "origin": [ 0.0, 1.0, 0.7 ], "radius": 0.45,
-    "bone": -1, "group": 0,
-    "knockAngle": 0.125, "knockBase": 1.5,
+    "origin": [ 0.0, 1.0, 0.7 ],
+    "radius": 0.45,
+    "bone": -1,
+    "group": 0,
+    "knockAngle": 0.125,
+    "knockBase": 1.5,
     "damage": 5.0,
-    "flavour": "SOUR", "priority": "LOW"
+    "flavour": "SOUR",
+    "priority": "LOW"
   }
-}
+},
+
+"_blobs":
+[
+  [ "0:A", {
+    "origin": [ 0.0, 0.6, 0.65 ],
+    "radius": 0.4,
+    "bone": -1,
+    "knockAngle": 0.125,
+    "knockBase": 1.5,
+    "damage": 5.0,
+    "flavour": "SOUR",
+    "priority": "LOW"
+  }],
+  [ "0:B", {
+    "origin": [ 0.0, 1.0, 0.7 ],
+    "radius": 0.45,
+    "bone": -1,
+    "knockAngle": 0.125,
+    "knockBase": 1.5,
+    "damage": 5.0,
+    "flavour": "SOUR",
+    "priority": "LOW"
+  }]
+],
+
+"routines":
+{
+  
+},
+
+"timeline":
+[
+  [ 2,  [ "enable_blob 0:A" ] ],
+  [ 4,  [ "enable_blob 0:B" ] ],
+  [ 6,  [ "disable_blob 0:A" ] ],
+  [ 8,  [ "disable_blob 0:B" ] ],
+  [ 14, [ "finish_action" ] ]
+]
 
 }

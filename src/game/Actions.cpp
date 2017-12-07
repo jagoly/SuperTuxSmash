@@ -1,86 +1,73 @@
+#include <sqee/helpers.hpp>
+#include <sqee/misc/Parsing.hpp>
+
 #include <sqee/debug/Logging.hpp>
 
 #include <sqee/misc/Files.hpp>
 #include <sqee/misc/Json.hpp>
 
+#include "game/Fighter.hpp"
+#include "game/ActionBuilder.hpp"
+#include "game/ActionFuncs.hpp"
+
 #include "game/Actions.hpp"
 
 using json = nlohmann::json;
+using sq::literals::operator""_fmt_;
 using namespace sts;
 
 //============================================================================//
 
-Action::Action(FightWorld& world, Fighter& fighter)
-    : world(world), fighter(fighter)
-    , blobs(world.get_hit_blob_allocator()) {}
+Action::Action(FightWorld& world, Fighter& fighter, Type type)
+    : world(world), fighter(fighter), type(type)
+    , path("assets/fighters/%s/actions/%s.json"_fmt_(fighter.get_name(), enum_to_string(type)))
+    , blobs(world.get_hit_blob_allocator())
+{
+    ActionBuilder::load_from_json(*this);
+}
 
 Action::~Action() = default;
 
-//============================================================================//
+//----------------------------------------------------------------------------//
 
-void Actions::load_json(const string& fighterName)
+void Action::do_start()
 {
-    const string basePath = "assets/fighters/" + fighterName + "/actions/";
+    mTimelineIter = timeline.begin();
+    mCurrentFrame = 0u;
+    finished = false;
+}
 
-    //--------------------------------------------------------//
-
-    const auto load_single = [&](Action& action, const char* fileName)
+bool Action::do_tick()
+{
+    if (mTimelineIter != timeline.end() && mTimelineIter->frame == mCurrentFrame)
     {
-        // this is only temporary, all actions should have some json
-        if (sq::check_file_exists(basePath + fileName) == false) return;
+        for (auto& cmd : mTimelineIter->commands)
+            cmd.func(*this);
 
-        const auto root = sq::parse_json(basePath + fileName);
+        mTimelineIter = std::next(mTimelineIter);
+    }
 
-        for (auto blobIter : json::iterator_wrapper(root.at("blobs")))
-        {
-            HitBlob* blob = action.blobs.emplace(blobIter.key().c_str());
+    mCurrentFrame += 1u;
 
-            blob->fighter = &action.fighter;
-            blob->action = &action;
-
-            for (auto iter : json::iterator_wrapper(blobIter.value()))
-            {
-                const string key = iter.key();
-                const auto& value = iter.value();
-
-                if      (key == "origin")     blob->origin = { value[0], value[1], value[2] };
-                else if (key == "radius")     blob->radius = value;
-                else if (key == "bone")       blob->bone = value;
-                else if (key == "group")      blob->group = value;
-                else if (key == "knockAngle") blob->knockAngle = value;
-                else if (key == "knockBase")  blob->knockBase = value;
-                else if (key == "damage")     blob->damage = value;
-                else if (key == "flavour")    blob->set_flavour_from_str(value);
-                else if (key == "priority")   blob->set_priority_from_str(value);
-
-                else sq::log_warning("unhandled blob key '%s'", key);
-            }
-        }
-    };
-
-    //--------------------------------------------------------//
-
-    load_single ( *neutral_first, "Neutral_First.json" );
-    load_single ( *tilt_down,     "Tilt_Down.json"     );
-    load_single ( *tilt_forward,  "Tilt_Forward.json"  );
-    load_single ( *tilt_up,       "Tilt_Up.json"       );
-    load_single ( *air_back,      "Air_Back.json"      );
-    load_single ( *air_down,      "Air_Down.json"      );
-    load_single ( *air_forward,   "Air_Forward.json"   );
-    load_single ( *air_neutral,   "Air_Neutral.json"   );
-    load_single ( *air_up,        "Air_Up.json"        );
-    load_single ( *dash_attack,   "Dash_Attack.json"   );
-    load_single ( *smash_down,    "Smash_Down.json"    );
-    load_single ( *smash_forward, "Smash_Forward.json" );
-    load_single ( *smash_up,      "Smash_Up.json"      );
+    return finished;
 }
 
 //============================================================================//
 
-void DumbAction::on_start() { sq::log_info(" start: " + message); }
-
-bool DumbAction::on_tick(uint frame) { return frame == 12u; }
-
-void DumbAction::on_finish() { sq::log_info("finish: " + message); }
-
-void DumbAction::on_collide(HitBlob*, Fighter&) {}
+Actions::Actions(FightWorld& world, Fighter& fighter)
+{
+    neutral_first   = std::make_unique<Action>(world, fighter, Action::Type::Neutral_First);
+    tilt_down       = std::make_unique<Action>(world, fighter, Action::Type::Tilt_Down);
+    tilt_forward    = std::make_unique<Action>(world, fighter, Action::Type::Tilt_Forward);
+    tilt_up         = std::make_unique<Action>(world, fighter, Action::Type::Tilt_Up);
+    air_back        = std::make_unique<Action>(world, fighter, Action::Type::Air_Back);
+    air_down        = std::make_unique<Action>(world, fighter, Action::Type::Air_Down);
+    air_forward     = std::make_unique<Action>(world, fighter, Action::Type::Air_Forward);
+    air_neutral     = std::make_unique<Action>(world, fighter, Action::Type::Air_Neutral);
+    air_up          = std::make_unique<Action>(world, fighter, Action::Type::Air_Up);
+    dash_attack     = std::make_unique<Action>(world, fighter, Action::Type::Dash_Attack);
+    smash_down      = std::make_unique<Action>(world, fighter, Action::Type::Smash_Down);
+    smash_forward   = std::make_unique<Action>(world, fighter, Action::Type::Smash_Forward);
+    smash_up        = std::make_unique<Action>(world, fighter, Action::Type::Smash_Up);
+    special_neutral = std::make_unique<Action>(world, fighter, Action::Type::Special_Neutral);
+}

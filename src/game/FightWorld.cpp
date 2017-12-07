@@ -147,7 +147,16 @@ void FightWorld::tick()
 
     for (auto& [blob, other] : finalResultVec)
     {
-        blob->action->on_collide(blob, other);
+        //blob->action->on_collide(blob, other);
+        other.apply_hit_basic(*blob);
+    }
+
+    //--------------------------------------------------------//
+
+    for (auto& fighter : mFighters)
+    {
+        if (fighter == nullptr) continue;
+        mStage->check_boundary(*fighter);
     }
 }
 
@@ -212,33 +221,27 @@ void FightWorld::disable_all_hit_blobs(Fighter& fighter)
 
 //============================================================================//
 
-sq::maths::Sphere FightWorld::compute_camera_view_bounds() const
+SceneData FightWorld::compute_scene_data() const
 {
-    Vec2F maxCentre = Vec2F();
-    float maxDistance = -INFINITY;
+    SceneData result;
 
-    for (const auto& fighterA : mFighters)
+    result.view = { Vec2F(+INFINITY), Vec2F(-INFINITY) };
+
+    for (const auto& fighter : mFighters)
     {
-        if (fighterA == nullptr) continue;
+        if (fighter == nullptr) continue;
 
-        const Vec2F originA = Vec2F(fighterA->get_model_matrix()[3]);
+        const Vec2F origin = fighter->get_diamond().centre();
 
-        for (const auto& fighterB : mFighters)
-        {
-            if (fighterB == nullptr) continue;
-            if (fighterA == fighterB) continue;
-
-            const Vec2F originB = Vec2F(fighterB->get_model_matrix()[3]);
-
-            const float dist = maths::distance(originA, originB);
-
-            if (dist > maxDistance)
-            {
-                maxCentre = (originA + originB) * 0.5f;
-                maxDistance = dist;
-            }
-        }
+        result.view.min = maths::min(result.view.min, origin);
+        result.view.max = maths::max(result.view.max, origin);
     }
 
-    return { Vec3F(maxCentre, 0.f), maxDistance * 0.5f };
+    result.inner = { Vec2F(-14.f,  -6.f), Vec2F(+14.f, +14.f) };
+    result.outer = { Vec2F(-18.f, -10.f), Vec2F(+18.f, +18.f) };
+
+    result.view.min = maths::max(result.view.min, result.inner.min);
+    result.view.max = maths::min(result.view.max, result.inner.max);
+
+    return result;
 }

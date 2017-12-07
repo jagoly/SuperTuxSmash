@@ -1,8 +1,6 @@
 #include <sqee/gl/Context.hpp>
 #include <sqee/maths/Functions.hpp>
 
-#include "render/Renderer.hpp"
-
 #include "stages/TestZone_Render.hpp"
 
 using Context = sq::Context;
@@ -11,25 +9,14 @@ using namespace sts;
 
 //============================================================================//
 
-TestZone_Render::TestZone_Render(const Renderer& renderer, const TestZone_Stage& stage)
+TestZone_Render::TestZone_Render(Renderer& renderer, const TestZone_Stage& stage)
     : RenderObject(renderer), stage(stage)
 {
-    MESH_Mesh.load_from_file("stages/TestZone/Mesh", true);
+    ResourceCaches& cache = renderer.resources;
 
-    //--------------------------------------------------------//
+    MESH_Mesh = cache.meshes.acquire("stages/TestZone/meshes/Mesh");
 
-    const auto setup_texture = [](auto& texture, uint size, auto path)
-    {
-        texture.set_filter_mode(true);
-        texture.set_mipmaps_mode(true);
-        texture.allocate_storage(Vec2U(size));
-        texture.load_file(path);
-        texture.generate_auto_mipmaps();
-    };
-
-    setup_texture(TEX_Diff, 2048u, "stages/TestZone/Diffuse");
-
-    TEX_Diff.set_swizzle_mode('R', 'G', 'B', '1');
+    TEX_Diff = cache.textures.acquire("stages/TestZone/textures/Diffuse");
 
     //--------------------------------------------------------//
 
@@ -42,8 +29,8 @@ TestZone_Render::TestZone_Render(const Renderer& renderer, const TestZone_Stage&
 
 void TestZone_Render::integrate(float blend)
 {
-    mFinalMatrix = renderer.camera.projMatrix * renderer.camera.viewMatrix;
-    mNormalMatrix = maths::normal_matrix(renderer.camera.viewMatrix);
+    mFinalMatrix = renderer.get_camera().get_combo_matrix();
+    mNormalMatrix = maths::normal_matrix(renderer.get_camera().get_view_matrix());
 }
 
 //============================================================================//
@@ -59,12 +46,12 @@ void TestZone_Render::render_depth()
     context.set_state(Context::Depth_Compare::LessEqual);
     context.set_state(Context::Depth_Test::Replace);
 
-    context.bind_VertexArray(MESH_Mesh.get_vao());
+    context.bind_VertexArray(MESH_Mesh->get_vao());
 
     shaders.Depth_SimpleSolid.update(0, mFinalMatrix);
     context.bind_Program(shaders.Depth_SimpleSolid);
 
-    MESH_Mesh.draw_complete();
+    MESH_Mesh->draw_complete();
 }
 
 //============================================================================//
@@ -79,14 +66,14 @@ void TestZone_Render::render_main()
     context.set_state(Context::Depth_Compare::Equal);
     context.set_state(Context::Depth_Test::Keep);
 
-    context.bind_VertexArray(MESH_Mesh.get_vao());
+    context.bind_VertexArray(MESH_Mesh->get_vao());
 
-    context.bind_Texture(TEX_Diff, 0u);
+    context.bind_Texture(TEX_Diff.get(), 0u);
 
     PROG_Main.update(0, mFinalMatrix);
     PROG_Main.update(1, mNormalMatrix);
     PROG_Main.update(3, Vec3F(0.5f, 0.5f, 0.5f));
     context.bind_Program(PROG_Main);
 
-    MESH_Mesh.draw_complete();
+    MESH_Mesh->draw_complete();
 }

@@ -36,14 +36,25 @@ public: //====================================================//
 
     Vec2F transform_response(Vec2F origin, PhysicsDiamond diamond, Vec2F translation);
 
+    void check_boundary(Fighter& fighter);
+
+    //--------------------------------------------------------//
+
+    const auto& get_inner_boundary() const { return mInnerBoundary; }
+    const auto& get_outer_boundary() const { return mOuterBoundary; }
+
 protected: //=================================================//
+
+    struct { Vec2F min, max; } mInnerBoundary;
+    struct { Vec2F min, max; } mOuterBoundary;
+
+    //--------------------------------------------------------//
 
     std::vector<Platform> mPlatforms;
 
     std::vector<AlignedBlock> mAlignedBlocks;
 
     FightWorld& mFightWorld;
-
 };
 
 //============================================================================//

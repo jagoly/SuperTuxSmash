@@ -4,6 +4,9 @@
 
 #include <sqee/misc/PoolTools.hpp>
 
+#include "render/SceneData.hpp"
+
+#include "game/ParticleSet.hpp"
 #include "game/Blobs.hpp"
 
 //============================================================================//
@@ -13,6 +16,7 @@ namespace sts {
 struct PhysicsDiamond
 {
     Vec2F xNeg, xPos, yNeg, yPos;
+    Vec2F centre() const { return (xNeg+xPos+yNeg+yPos)*0.25f; }
 };
 
 class FightWorld final : sq::NonCopyable
@@ -25,7 +29,7 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    /// Set the stage for them game.
+    /// Set the stage for the game.
     void set_stage(unique_ptr<Stage> stage);
 
     /// Add a fighter to the game.
@@ -58,10 +62,31 @@ public: //====================================================//
     //--------------------------------------------------------//
 
     /// Access the stage.
-    Stage& get_stage() { return *mStage; }
+    Stage& get_stage() { SQASSERT(mStage, ""); return *mStage; }
 
     /// Access the stage (const).
-    const Stage& get_stage() const { return *mStage; }
+    const Stage& get_stage() const { SQASSERT(mStage, ""); return *mStage; }
+
+    /// Access a fighter by index, might be null.
+    Fighter* get_fighter(uint8_t index) { return mFighters[index].get(); }
+
+    /// Access a fighter by index, might be null (const).
+    const Fighter* get_fighter(uint8_t index) const { return mFighters[index].get(); }
+
+    //--------------------------------------------------------//
+
+    /// Acquire a vector of all added fighters.
+    std::vector<Fighter*> get_fighters()
+    {
+        std::vector<Fighter*> result;
+        result.reserve(4u);
+
+        for (auto& uptr : mFighters)
+            if (uptr != nullptr)
+                result.push_back(uptr.get());
+
+        return result;
+    }
 
     //--------------------------------------------------------//
 
@@ -78,7 +103,7 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    sq::maths::Sphere compute_camera_view_bounds() const;
+    SceneData compute_scene_data() const;
 
 private: //===================================================//
 

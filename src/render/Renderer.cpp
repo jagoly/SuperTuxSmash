@@ -1,13 +1,11 @@
 #include <sqee/debug/Logging.hpp>
-#include <sqee/debug/Misc.hpp>
-
-#include <sqee/maths/Functions.hpp>
 
 #include <sqee/gl/Context.hpp>
 #include <sqee/gl/Drawing.hpp>
 
-#include "game/Blobs.hpp"
-
+#include "render/DebugRender.hpp"
+#include "render/ParticleRender.hpp"
+#include "render/Camera.hpp"
 #include "render/RenderObject.hpp"
 
 #include "render/Renderer.hpp"
@@ -18,13 +16,10 @@ using namespace sts;
 
 //============================================================================//
 
+Renderer::~Renderer() = default;
+
 Renderer::Renderer(const Options& options) : context(sq::Context::get()), options(options)
 {
-    //-- Load Mesh Objects -----------------------------------//
-
-    meshes.Sphere.load_from_file("debug/Sphere", true);
-    meshes.Capsule.load_from_file("debug/Capsule", true);
-
     //-- Set Texture Paramaters ------------------------------//
 
     textures.Colour.set_filter_mode(true);
@@ -42,8 +37,14 @@ Renderer::Renderer(const Options& options) : context(sq::Context::get()), option
 
     //-- Create Uniform Buffers ------------------------------//
 
-    camera.ubo.create_and_allocate(288u);
     light.ubo.create_and_allocate(112u);
+
+    //--------------------------------------------------------//
+
+    mCamera = std::make_unique<Camera>(*this);
+
+    mDebugRender = std::make_unique<DebugRender>(*this);
+    mParticleRender = std::make_unique<ParticleRender>(*this);
 }
 
 //============================================================================//
@@ -97,12 +98,13 @@ void Renderer::refresh_options()
     processor.load_fragment(shaders.Depth_SimplePunch, "depth/Mask_fs");
     processor.load_fragment(shaders.Depth_SkellyPunch, "depth/Mask_fs");
 
+    processor.load_vertex(shaders.Particles, "particles/test_vs");
+    processor.load_fragment(shaders.Particles, "particles/test_fs");
+
     processor.load_vertex(shaders.Lighting_Skybox, "lighting/Skybox_vs");
-    processor.load_vertex(shaders.Debug_HitBlob, "debug/HitBlob_vs");
     processor.load_vertex(shaders.Composite, "FullScreen_vs");
 
     processor.load_fragment(shaders.Lighting_Skybox, "lighting/Skybox_fs");
-    processor.load_fragment(shaders.Debug_HitBlob, "debug/HitBlob_fs");
     processor.load_fragment(shaders.Composite, "Composite_fs");
 
     //-- Link Shader Program Stages --------------------------//
@@ -112,9 +114,15 @@ void Renderer::refresh_options()
     shaders.Depth_SimplePunch.link_program_stages();
     shaders.Depth_SkellyPunch.link_program_stages();
 
+    shaders.Particles.link_program_stages();
+
     shaders.Lighting_Skybox.link_program_stages();
-    shaders.Debug_HitBlob.link_program_stages();
     shaders.Composite.link_program_stages();
+
+    //--------------------------------------------------------//
+
+    mDebugRender->refresh_options();
+    mParticleRender->refresh_options();
 }
 
 //============================================================================//
@@ -124,18 +132,9 @@ void Renderer::add_object(unique_ptr<RenderObject> object)
     mRenderObjects.push_back(std::move(object));
 }
 
-void Renderer::set_camera_view_bounds(Vec2F min, Vec2F max)
+void Renderer::update_from_scene_data(const SceneData& sceneData)
 {
-    mPreviousBounds = mCurrentBounds;
-
-    mCurrentBounds.origin = Vec3F((min + max) * 0.5f, 0.f);
-    mCurrentBounds.radius = maths::distance(min, max) * 0.5f;
-}
-
-void Renderer::set_camera_view_bounds(sq::maths::Sphere bounds)
-{
-    mPreviousBounds = mCurrentBounds;
-    mCurrentBounds = bounds;
+    mCamera->update_from_scene_data(sceneData);
 }
 
 //============================================================================//
@@ -146,15 +145,10 @@ struct StaticShit
 {
     StaticShit()
     {
-        TEX_Skybox.set_filter_mode(true);
-        TEX_Skybox.set_mipmaps_mode(true);
-
-        TEX_Skybox.allocate_storage(2048u);
-        TEX_Skybox.load_directory("skybox");
-        TEX_Skybox.generate_auto_mipmaps();
+        TEX_Skybox.load_automatic("skybox");
     }
 
-    sq::TextureCube TEX_Skybox { sq::Texture::Format::RGB8_UN };
+    sq::TextureCube TEX_Skybox;
 };
 
 } // anonymous namespace
@@ -165,45 +159,15 @@ void Renderer::render_objects(float elapsed, float blend)
 {
     static StaticShit shit;
 
-    //-- Camera and Light can spin, for funzies --------------//
-
-    //static Vec3F cameraPosition = { 0.f, +3.f, -6.f };
-    static Vec3F skyDirection = maths::normalize(Vec3F(0.f, -1.f, 0.5f));
-
-    #ifdef SQEE_DEBUG
-    //if (sqeeDebugToggle1) cameraPosition = maths::rotate_y(cameraPosition, 0.1f * elapsed);
-    if (sqeeDebugToggle2) skyDirection = maths::rotate_y(skyDirection, 0.1f * elapsed);
-    #endif
-
     //-- Update the Camera -----------------------------------//
 
-    const Vec3F blendOrigin = maths::mix(mPreviousBounds.origin, mCurrentBounds.origin, blend);
-    const float blendRadius = maths::mix(mPreviousBounds.radius, mCurrentBounds.radius, blend);
-
-    const Vec3F cameraTarget = blendOrigin + Vec3F(0.f, 1.f, 0.f);
-    const float cameraDistance = maths::max((blendRadius + 0.5f) / std::tan(0.5f), 4.f);
-
-    const Vec3F cameraDirection = maths::normalize(Vec3F(0.f, -1.f, +3.f));
-    const Vec3F cameraPosition = cameraTarget - cameraDirection * cameraDistance;
-
-
-    const Vec2F viewSize = Vec2F(options.Window_Size);
-
-    camera.viewMatrix = maths::look_at_LH(cameraPosition, cameraTarget, Vec3F(0.f, 1.f, 0.f));
-    camera.projMatrix = maths::perspective_LH(1.f, viewSize.x / viewSize.y, 0.2f, 200.f);
-
-    const Mat4F inverseViewMat = maths::inverse(camera.viewMatrix);
-    const Mat4F inverseProjMat = maths::inverse(camera.projMatrix);
-
-    camera.ubo.update_complete ( camera.viewMatrix, camera.projMatrix,
-                                 inverseViewMat, inverseProjMat,
-                                 cameraPosition, 0, cameraDirection, 0 );
-
+    mCamera->intergrate(blend);
 
     //-- Update the Lighting ---------------------------------//
 
+    const Vec3F skyDirection = maths::normalize(Vec3F(0.f, -1.f, 0.5f));
     const Vec3F ambiColour = { 0.5f, 0.5f, 0.5f };
-    const Vec3F skyColour = { 0.5f, 0.5f, 0.5f };
+    const Vec3F skyColour = { 0.7f, 0.7f, 0.7f };
     const Mat4F skyMatrix = Mat4F();
 
     light.ubo.update_complete(ambiColour, 0, skyColour, 0, skyDirection, 0, skyMatrix);
@@ -217,7 +181,7 @@ void Renderer::render_objects(float elapsed, float blend)
 
     context.set_ViewPort(options.Window_Size);
 
-    context.bind_UniformBuffer(camera.ubo, 0u);
+    context.bind_UniformBuffer(mCamera->get_ubo(), 0u);
     context.bind_UniformBuffer(light.ubo, 1u);
 
     //-- Clear the FrameBuffer -------------------------------//
@@ -251,6 +215,26 @@ void Renderer::render_objects(float elapsed, float blend)
 
     for (const auto& object : mRenderObjects)
         object->render_main();
+
+    //-- Render Alpha Pass -----------------------------------//
+
+    context.bind_FrameBuffer(fbos.Main);
+
+    for (const auto& object : mRenderObjects)
+        object->render_alpha();
+}
+
+//============================================================================//
+
+void Renderer::render_particles(float accum, float blend)
+{
+    mParticleRender->swap_sets();
+
+    for (const auto& object : mRenderObjects)
+        for (const auto& set : object->get_particle_sets())
+            mParticleRender->integrate_set(blend, set);
+
+    mParticleRender->render_particles();
 }
 
 //============================================================================//
@@ -279,70 +263,10 @@ void Renderer::finish_rendering()
 
 void Renderer::render_blobs(const std::vector<HitBlob*>& blobs)
 {
-    context.bind_FrameBuffer(fbos.Main);
-
-    context.set_state(Context::Blend_Mode::Alpha);
-    context.set_state(Context::Cull_Face::Disable);
-    context.set_state(Context::Depth_Test::Disable);
-
-    context.bind_Program(shaders.Debug_HitBlob);
-
-    context.bind_VertexArray(meshes.Sphere.get_vao());
-
-    const Mat4F projViewMat = camera.projMatrix * camera.viewMatrix;
-
-    for (const HitBlob* blob : blobs)
-    {
-        const maths::Sphere& s = blob->sphere;
-
-        const Mat4F matrix = maths::transform(s.origin, Vec3F(s.radius));
-
-        shaders.Debug_HitBlob.update(0, projViewMat * matrix);
-        shaders.Debug_HitBlob.update(1, blob->get_debug_colour());
-
-        meshes.Sphere.draw_complete();
-    }
+    mDebugRender->render_blobs(blobs);
 }
-
-//============================================================================//
 
 void Renderer::render_blobs(const std::vector<HurtBlob*>& blobs)
 {
-    context.bind_FrameBuffer(fbos.Main);
-
-    context.set_state(Context::Blend_Mode::Alpha);
-    context.set_state(Context::Cull_Face::Disable);
-    context.set_state(Context::Depth_Test::Disable);
-
-    context.bind_Program(shaders.Debug_HitBlob);
-
-    context.bind_VertexArray(meshes.Capsule.get_vao());
-
-    const Mat4F projViewMat = camera.projMatrix * camera.viewMatrix;
-
-    for (const HurtBlob* blob : blobs)
-    {
-        const maths::Capsule& c = blob->capsule;
-
-        const Mat3F rotation = maths::basis_from_y(maths::normalize(c.originB - c.originA));
-
-        const Vec3F originM = (c.originA + c.originB) * 0.5f;
-        const float lengthM = maths::distance(c.originA, c.originB);
-
-        const Mat4F matrixA = maths::transform(c.originA, rotation, c.radius);
-        const Mat4F matrixB = maths::transform(c.originB, rotation, c.radius);
-
-        const Mat4F matrixM = maths::transform(originM, rotation, Vec3F(c.radius, lengthM, c.radius));
-
-        shaders.Debug_HitBlob.update(1, blob->get_debug_colour());
-
-        shaders.Debug_HitBlob.update(0, projViewMat * matrixA);
-        meshes.Capsule.draw_partial(0u);
-
-        shaders.Debug_HitBlob.update(0, projViewMat * matrixB);
-        meshes.Capsule.draw_partial(1u);
-
-        shaders.Debug_HitBlob.update(0, projViewMat * matrixM);
-        meshes.Capsule.draw_partial(2u);
-    }
+    mDebugRender->render_blobs(blobs);
 }

@@ -1,7 +1,7 @@
+#include <sqee/app/GuiSystem.hpp>
+
 #include <sqee/debug/Logging.hpp>
 #include <sqee/debug/Misc.hpp>
-
-#include <sqee/redist/imgui/imgui.hpp>
 
 #include "SmashApp.hpp"
 
@@ -21,16 +21,15 @@ void SmashApp::initialise(std::vector<string> args)
     mWindow = std::make_unique<sq::Window>("SuperTuxSmash", Vec2U(1280u, 720u));
 
     mWindow->set_vsync_enabled(true);
+    mWindow->set_key_repeat(false);
 
     mInputDevices = std::make_unique<sq::InputDevices>(*mWindow);
 
+    sq::GuiSystem::construct(*mWindow, *mInputDevices);
+
     mDebugOverlay = std::make_unique<sq::DebugOverlay>();
 
-    mGuiSystem = std::make_unique<sq::GuiSystem>(*mWindow, *mInputDevices);
-
     mGameScene = std::make_unique<GameScene>(*mInputDevices, mOptions);
-
-    mWindow->set_key_repeat(false);
 
     refresh_options();
 }
@@ -39,15 +38,17 @@ void SmashApp::initialise(std::vector<string> args)
 
 void SmashApp::update(double elapsed)
 {
+    auto& guiSystem = sq::GuiSystem::get();
+
     //-- fetch and handle events -----------------------------//
 
     for (auto event : mWindow->fetch_events())
     {
-        mGuiSystem->handle_event(event);
+        guiSystem.handle_event(event);
         handle_event(event);
     }
 
-    mGuiSystem->begin_new_frame(elapsed);
+    guiSystem.finish_handle_events();
 
     //-- update and render the game scene --------------------//
 
@@ -58,14 +59,21 @@ void SmashApp::update(double elapsed)
 
     mDebugOverlay->update_and_render(elapsed);
 
-    ImGui::ShowUserGuide();
-    ImGui::ShowTestWindow();
+    //-- draw and render imgui stuff -------------------------//
 
-    mGuiSystem->render_gui();
+    guiSystem.show_imgui_demo();
+
+    guiSystem.draw_widgets();
+
+    guiSystem.finish_scene_update(elapsed);
+
+    guiSystem.render_gui();
 
     //-- drawing is done -------------------------------------//
 
     mWindow->swap_buffers();
+
+    return;
 }
 
 //============================================================================//
@@ -109,12 +117,6 @@ void SmashApp::handle_event(sq::Event event)
         if (data.keyboard.key == Key::Menu)
         {
             mDebugOverlay->toggle_active();
-            return;
-        }
-
-        if (data.keyboard.key == Key::Escape)
-        {
-            mReturnCode = 0;
             return;
         }
     }

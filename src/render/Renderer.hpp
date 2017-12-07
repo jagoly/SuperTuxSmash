@@ -7,15 +7,17 @@
 #include <sqee/gl/Textures.hpp>
 #include <sqee/gl/UniformBuffer.hpp>
 
-#include <sqee/maths/Volumes.hpp>
-
 #include <sqee/render/Mesh.hpp>
 
 #include "main/Options.hpp"
+#include "render/ResourceCaches.hpp"
+#include "render/SceneData.hpp"
 
 //====== Forward Declarations ================================================//
 
-namespace sts { struct HitBlob; struct HurtBlob; class RenderObject; }
+namespace sts { struct HitBlob; struct HurtBlob; }
+namespace sts { class DebugRender; class ParticleRender; }
+namespace sts { class Camera; class RenderObject; }
 
 //============================================================================//
 
@@ -27,7 +29,17 @@ public: //====================================================//
 
     Renderer(const Options& options);
 
+    ~Renderer();
+
     void refresh_options();
+
+    //--------------------------------------------------------//
+
+    const Camera& get_camera() const { return *mCamera; }
+
+    //--------------------------------------------------------//
+
+    void update_from_scene_data(const SceneData& sceneData);
 
     //--------------------------------------------------------//
 
@@ -35,11 +47,9 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    void set_camera_view_bounds(Vec2F min, Vec2F max);
-
-    void set_camera_view_bounds(sq::maths::Sphere bounds);
-
     void render_objects(float accum, float blend);
+
+    void render_particles(float accum, float blend);
 
     void render_blobs(const std::vector<HitBlob*>& blobs);
 
@@ -78,40 +88,35 @@ public: //====================================================//
         sq::Program Depth_SimplePunch;
         sq::Program Depth_SkellyPunch;
 
+        sq::Program Particles;
+
         sq::Program Lighting_Skybox;
-        sq::Program Debug_HitBlob;
         sq::Program Composite;
 
     } shaders;
 
     //--------------------------------------------------------//
 
-    struct { sq::Mesh Sphere; sq::Mesh Capsule; } meshes;
-
-    //--------------------------------------------------------//
-
-    struct { sq::UniformBuffer ubo; Mat4F viewMatrix, projMatrix; } camera;
-
     struct { sq::UniformBuffer ubo; } light;
 
     //--------------------------------------------------------//
+
+    ResourceCaches resources;
 
     sq::PreProcessor processor;
 
     sq::Context& context;
 
+    const Options& options;
+
 private: //===================================================//
 
-    sq::maths::Sphere mPreviousBounds;
-    sq::maths::Sphere mCurrentBounds;
-
-    //--------------------------------------------------------//
+    unique_ptr<Camera> mCamera;
 
     std::vector<unique_ptr<RenderObject>> mRenderObjects;
 
-    //--------------------------------------------------------//
-
-    const Options& options;
+    unique_ptr<DebugRender> mDebugRender;
+    unique_ptr<ParticleRender> mParticleRender;
 };
 
 } // namespace sts

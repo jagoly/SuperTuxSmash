@@ -4,6 +4,9 @@ set(SOURCES
 
   "src/main.cpp"
 
+  "src/DebugGlobals.hpp"
+  "src/DebugGlobals.cpp"
+
   #----------------------------------------------------------#
 
   "src/main/Options.hpp"
@@ -25,6 +28,12 @@ set(SOURCES
   "src/game/GameScene.hpp"
   "src/game/GameScene.cpp"
 
+  "src/game/ActionBuilder.cpp"
+  "src/game/ActionBuilder.hpp"
+
+  "src/game/ActionFuncs.cpp"
+  "src/game/ActionFuncs.hpp"
+
   "src/game/Actions.hpp"
   "src/game/Actions.cpp"
 
@@ -37,13 +46,31 @@ set(SOURCES
   "src/game/Stage.hpp"
   "src/game/Stage.cpp"
 
+  "src/game/ParticleSet.hpp"
+  "src/game/ParticleSet.cpp"
+
   #----------------------------------------------------------#
+
+  "src/render/SceneData.hpp"
+  "src/render/SceneData.cpp"
+
+  "src/render/DebugRender.hpp"
+  "src/render/DebugRender.cpp"
+
+  "src/render/ParticleRender.hpp"
+  "src/render/ParticleRender.cpp"
+
+  "src/render/Camera.hpp"
+  "src/render/Camera.cpp"
 
   "src/render/Renderer.hpp"
   "src/render/Renderer.cpp"
 
   "src/render/RenderObject.hpp"
   "src/render/RenderObject.cpp"
+
+  "src/render/ResourceCaches.hpp"
+  "src/render/ResourceCaches.cpp"
 
   #----------------------------------------------------------#
 
@@ -54,15 +81,11 @@ set(SOURCES
 
   #----------------------------------------------------------#
 
-  "src/fighters/Sara_Actions.hpp"
-  "src/fighters/Sara_Actions.cpp"
   "src/fighters/Sara_Fighter.hpp"
   "src/fighters/Sara_Fighter.cpp"
   "src/fighters/Sara_Render.hpp"
   "src/fighters/Sara_Render.cpp"
 
-  "src/fighters/Tux_Actions.hpp"
-  "src/fighters/Tux_Actions.cpp"
   "src/fighters/Tux_Fighter.hpp"
   "src/fighters/Tux_Fighter.cpp"
   "src/fighters/Tux_Render.hpp"

@@ -1,5 +1,8 @@
 #pragma once
 
+#include <functional>
+
+#include <sqee/macros.hpp>
 #include <sqee/misc/PoolTools.hpp>
 
 #include "game/FightWorld.hpp"
@@ -8,7 +11,7 @@ namespace sts {
 
 //============================================================================//
 
-class Action : public sq::NonCopyable
+class Action : private sq::NonCopyable
 {
 public: //====================================================//
 
@@ -24,59 +27,77 @@ public: //====================================================//
         Air_Forward,
         Air_Neutral,
         Air_Up,
+        Dash_Attack,
         Smash_Down,
         Smash_Forward,
         Smash_Up,
-        Dash_Attack,
+        Special_Neutral,
     };
 
     //--------------------------------------------------------//
 
-    Action(FightWorld& world, Fighter& fighter);
+    Action(FightWorld& world, Fighter& fighter, Type type);
 
     virtual ~Action();
 
     //--------------------------------------------------------//
 
-    /// Do stuff when action first starts.
-    virtual void on_start() = 0;
+    void do_start();
 
-    /// Return true when the action is finished.
-    virtual bool on_tick(uint frame) = 0;
-
-    /// Do stuff when finished or cancelled.
-    virtual void on_finish() = 0;
-
-    /// Do stuff when a blob collides with a fighter.
-    virtual void on_collide(HitBlob* blob, Fighter& other) = 0;
+    bool do_tick();
 
 protected: //=================================================//
+
+    bool finished = false;
 
     FightWorld& world;
     Fighter& fighter;
 
-    sq::TinyPoolMap<HitBlob> blobs;
+    const Type type;
+    const string path;
+
+    //--------------------------------------------------------//
+
+    struct Command
+    {
+        string source;
+        std::function<void(Action& action)> func;
+    };
+
+    struct TimelineFrame
+    {
+        uint frame;
+        std::vector<Command> commands;
+    };
+
+    std::vector<TimelineFrame> timeline;
+
+    sq::TinyPoolMap<sq::TinyString<15>, HitBlob> blobs;
 
 private: //===================================================//
 
     uint mCurrentFrame = 0u;
 
-    char _padding[4];
+    std::vector<TimelineFrame>::iterator mTimelineIter;
 
     //--------------------------------------------------------//
 
     friend class Fighter;
     friend class Actions;
+
+    friend struct ActionBuilder;
+    friend struct ActionFuncs;
+
+    friend class ActionsEditor;
 };
 
 //============================================================================//
 
-class Actions final : sq::NonCopyable
+class Actions final : private sq::NonCopyable
 {
 public: //====================================================//
 
-    /// Load JSON data for all actions.
-    void load_json(const string& fighterName);
+    Actions(FightWorld& world, Fighter& fighter);
 
     //--------------------------------------------------------//
 
@@ -97,52 +118,45 @@ public: //====================================================//
     unique_ptr<Action> smash_down;
     unique_ptr<Action> smash_forward;
     unique_ptr<Action> smash_up;
-};
 
-//============================================================================//
+    unique_ptr<Action> special_neutral;
 
-class DumbAction final : public Action
-{
-public: //====================================================//
+    //--------------------------------------------------------//
 
-    DumbAction(FightWorld& world, Fighter& fighter, string message)
-        : Action(world, fighter), message(message) {}
+    unique_ptr<Action>& operator[](Action::Type type)
+    {
+        // this is soooo bad
+
+        SQASSERT(type != Action::Type::None, "");
+        return *std::next(&neutral_first, int(type));
+    }
 
 private: //===================================================//
 
-    void on_start() override;
-
-    bool on_tick(uint frame) override;
-
-    void on_collide(HitBlob*, Fighter&) override;
-
-    void on_finish() override;
-
-    //--------------------------------------------------------//
-
-    const string message;
+    Action* mActiveAction = nullptr;
 };
 
 //============================================================================//
 
-/// Helper base class for defining new actions.
-///
-/// @tparam ConcreteFighter Type of this action's fighter.
+SQEE_ENUM_TO_STRING_BLOCK_BEGIN(Action::Type)
 
-template <class ConcreteFighter>
-struct BaseAction : public Action
-{
-    //--------------------------------------------------------//
+SQEE_ENUM_TO_STRING_CASE(None)
+SQEE_ENUM_TO_STRING_CASE(Neutral_First)
+SQEE_ENUM_TO_STRING_CASE(Tilt_Down)
+SQEE_ENUM_TO_STRING_CASE(Tilt_Forward)
+SQEE_ENUM_TO_STRING_CASE(Tilt_Up)
+SQEE_ENUM_TO_STRING_CASE(Air_Back)
+SQEE_ENUM_TO_STRING_CASE(Air_Down)
+SQEE_ENUM_TO_STRING_CASE(Air_Forward)
+SQEE_ENUM_TO_STRING_CASE(Air_Neutral)
+SQEE_ENUM_TO_STRING_CASE(Air_Up)
+SQEE_ENUM_TO_STRING_CASE(Dash_Attack)
+SQEE_ENUM_TO_STRING_CASE(Smash_Down)
+SQEE_ENUM_TO_STRING_CASE(Smash_Forward)
+SQEE_ENUM_TO_STRING_CASE(Smash_Up)
+SQEE_ENUM_TO_STRING_CASE(Special_Neutral)
 
-    using Flavour = HitBlob::Flavour;
-    using Priority = HitBlob::Priority;
-
-    //--------------------------------------------------------//
-
-    BaseAction(FightWorld& world, ConcreteFighter& fighter) : Action(world, fighter) {}
-
-    ConcreteFighter& get_fighter() { return static_cast<ConcreteFighter&>(fighter); }
-};
+SQEE_ENUM_TO_STRING_BLOCK_END
 
 //============================================================================//
 

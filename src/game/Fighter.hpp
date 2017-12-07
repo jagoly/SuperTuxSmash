@@ -6,6 +6,7 @@
 
 #include "game/Controller.hpp"
 #include "game/FightWorld.hpp"
+#include "game/ParticleSet.hpp"
 #include "game/Actions.hpp"
 
 //============================================================================//
@@ -146,7 +147,7 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    Fighter(uint8_t index, FightWorld& world, Controller& controller, string path);
+    Fighter(uint8_t index, FightWorld& world, string_view name);
 
     virtual ~Fighter();
 
@@ -164,19 +165,35 @@ public: //====================================================//
 
     Stats stats;
 
-    Animations animations;
+    Animations animations; // todo: why public?
 
-    Transitions transitions;
+    Transitions transitions; // todo: why public?
+
+    //--------------------------------------------------------//
+
+    string_view get_name() const { return mName; }
+
+    //--------------------------------------------------------//
+
+    Controller* get_controller() { return mController; }
+
+    void set_controller(Controller* controller) { mController = controller; }
+
+    const Controller* get_controller() const { return mController; }
+
+    //--------------------------------------------------------//
+
+    sq::Armature& get_armature() { return mArmature; }
+
+    Actions& get_actions() { return *mActions; }
 
     //--------------------------------------------------------//
 
     /// Called when hit by a basic attack.
     void apply_hit_basic(const HitBlob& hit);
 
-    //--------------------------------------------------------//
-
-    /// Access the active animation, or nullptr.
-    const Animation* get_animation() const { return mAnimation; }
+    /// Called when passing the stage boundary.
+    void pass_boundary();
 
     //--------------------------------------------------------//
 
@@ -187,13 +204,21 @@ public: //====================================================//
 
     void play_animation(const Animation& animation, uint fadeFrames);
 
-    //--------------------------------------------------------//
+    //-- access data needed for world updates ----------------//
 
     /// Get current model matrix.
     const Mat4F& get_model_matrix() const { return mModelMatrix; }
 
     /// Get current armature pose matrices.
     const std::vector<Mat34F>& get_bone_matrices() const { return mBoneMatrices; }
+
+    /// Get current velocity.
+    const Vec2F& get_velocity() const { return mVelocity; }
+
+    /// Get world space physics diamond.
+    const PhysicsDiamond& get_diamond() const { return mWorldDiamond; }
+
+    //-- compute data needed for rendering -------------------//
 
     /// Compute interpolated model matrix.
     Mat4F interpolate_model_matrix(float blend) const;
@@ -219,8 +244,6 @@ protected: //=================================================//
 
     FightWorld& mFightWorld;
 
-    Controller& mController;
-
     bool mAttackHeld = false;
     bool mJumpHeld = false;
 
@@ -232,6 +255,10 @@ protected: //=================================================//
 
     void base_tick_animation();
 
+    //--------------------------------------------------------//
+
+    string_view mName;
+
 private: //===================================================//
 
     struct InterpolationData
@@ -242,6 +269,8 @@ private: //===================================================//
     previous, current;
 
     //--------------------------------------------------------//
+
+    Controller* mController = nullptr;
 
     uint mLandingLag = 0u;
     uint mJumpDelay = 0u;
@@ -271,7 +300,7 @@ private: //===================================================//
 
     Mat4F mModelMatrix;
 
-    //--------------------------------------------------------//
+    //-- init functions, called by constructor ---------------//
 
     void impl_initialise_armature(const string& path);
 
@@ -279,7 +308,7 @@ private: //===================================================//
 
     void impl_initialise_stats(const string& path);
 
-    //--------------------------------------------------------//
+    //-- should be the only places input is handled ----------//
 
     void impl_handle_input_movement(const Controller::Input& input);
 
@@ -296,7 +325,32 @@ private: //===================================================//
     void impl_update_physics();
 
     void impl_update_active_action();
+
+    //--------------------------------------------------------//
+
+    friend class GameScene;
+    friend class ActionsEditor;
+
+    //--------------------------------------------------------//
+
+    void impl_show_fighter_widget();
 };
+
+//============================================================================//
+
+#define ETSC SQEE_ENUM_TO_STRING_CASE
+
+SQEE_ENUM_TO_STRING_BLOCK_BEGIN(Fighter::State)
+ETSC(Neutral) ETSC(Walking) ETSC(Dashing) ETSC(Brake) ETSC(Crouch)
+ETSC(Charge) ETSC(Attack) ETSC(Landing) ETSC(PreJump) ETSC(Jumping)
+ETSC(Falling) ETSC(AirAttack) ETSC(Knocked) ETSC(Stunned)
+SQEE_ENUM_TO_STRING_BLOCK_END
+
+SQEE_ENUM_TO_STRING_BLOCK_BEGIN(Fighter::Facing)
+ETSC(Left) ETSC(Right)
+SQEE_ENUM_TO_STRING_BLOCK_END
+
+#undef ETSC
 
 //============================================================================//
 

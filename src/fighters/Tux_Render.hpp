@@ -18,7 +18,7 @@ class Tux_Render final : public RenderObject
 {
 public: //====================================================//
 
-    Tux_Render(const Renderer& renderer, const Tux_Fighter& fighter);
+    Tux_Render(Renderer& renderer, const Tux_Fighter& fighter);
 
     //--------------------------------------------------------//
 
@@ -28,11 +28,13 @@ public: //====================================================//
 
     void render_main() override;
 
+    void render_alpha() override {}
+
 private: //===================================================//
 
-    sq::Mesh MESH_Tux;
+    MeshHandle MESH_Tux;
 
-    sq::Texture2D TX_Tux_diff { sq::Texture::Format::RGB8_UN };
+    TextureHandle TX_Tux_diff;
 
     sq::Program PROG_Tux;
 

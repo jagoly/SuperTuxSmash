@@ -2,6 +2,8 @@
 
 #include <sqee/misc/Json.hpp>
 
+#include "DebugGlobals.hpp"
+
 #include "Controller.hpp"
 
 namespace maths = sq::maths;
@@ -9,10 +11,10 @@ using namespace sts;
 
 //============================================================================//
 
-Controller::Controller(uint8_t index, const sq::InputDevices& devices, string configPath)
-    : index(index), mDevices(devices)
+Controller::Controller(const sq::InputDevices& devices, string configPath)
+    : mDevices(devices)
 {
-    const auto root = sq::parse_json(configPath);
+    const auto root = sq::parse_json_from_file(configPath);
 
     config.gamepad_port  = static_cast<int>                (int(root.at("gamepad_port")));
     config.stick_move    = static_cast<sq::Gamepad_Stick>  (int(root.at("stick_move")));
@@ -104,12 +106,6 @@ Controller::Input Controller::get_input()
 
     //--------------------------------------------------------//
 
-    // must normalize when using key or button input
-    //const float axisLength = maths::length(mInput.axis_move);
-    //if (axisLength > 1.f) mInput.axis_move /= axisLength;
-
-    //--------------------------------------------------------//
-
     DISABLE_FLOAT_EQUALITY_WARNING;
 
     //--------------------------------------------------------//
@@ -172,6 +168,10 @@ Controller::Input Controller::get_input()
 
     Input result = mInput;
     mInput = Input();
+
+    #ifdef SQEE_DEBUG
+    if (dbg.disableInput) result = Input();
+    #endif
 
     return result;
 }

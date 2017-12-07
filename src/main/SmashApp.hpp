@@ -4,7 +4,6 @@
 #include <sqee/app/Window.hpp>
 #include <sqee/app/InputDevices.hpp>
 #include <sqee/app/DebugOverlay.hpp>
-#include <sqee/app/GuiSystem.hpp>
 
 #include "main/Options.hpp"
 
@@ -41,8 +40,6 @@ private: //===================================================//
     unique_ptr<sq::InputDevices> mInputDevices;
 
     unique_ptr<sq::DebugOverlay> mDebugOverlay;
-
-    unique_ptr<sq::GuiSystem> mGuiSystem;
 
     //--------------------------------------------------------//
 

@@ -1,31 +1,79 @@
 {
 
+"particleSets":
+{
+  "default":
+  {
+    "render": "basic",
+
+    "emmiters":
+    {
+      "early":
+      {
+        "relativeOrigin": true,
+        "origin": [ 0.0, 2.1,  0.0 ],
+        "minPosition": [ 0.0, -0.25, -1.0 ],
+        "maxPosition": [ 0.0, 0.25, 1.0 ],
+        "minStartRadius": 0.08,
+        "maxStartRadius": 0.16,
+        "minFinishRadius": 0.16,
+        "maxFinishRadius": 0.24,
+        "colour": [ 1.0, 0.4, 0.4 ],
+        "startOpacity": 1.0,
+        "finishOpacity": 0.0,
+        "minTime": 20,
+        "maxTime": 40
+      }
+    }
+  }
+},
+
 "blobs":
 {
-  "0Aa":
+  "0:A":
   {
-    "origin": [ 0.0, 2.1, 0.3 ], "radius": 0.4,
-    "bone": -1, "group": 0,
-    "knockAngle": 0.0, "knockBase": 12.0,
+    "origin": [ 0.0, 2.1, 0.3 ],
+    "radius": 0.4,
+    "bone": -1,
+    "group": 0,
+    "knockAngle": 0.0,
+    "knockBase": 12.0,
     "damage": 8.0,
-    "flavour": "TANGY", "priority": "HIGH"
+    "flavour": "TANGY",
+    "priority": "HIGH"
   },
-  "0Ca":
+  "0:BA":
   {
-    "origin": [ 0.0, 2.2, 0.0 ], "radius": 0.45,
-    "bone": -1, "group": 0,
-    "knockAngle": 0.98, "knockBase": 8.0,
+    "origin": [ 0.0, 2.2, 0.0 ],
+    "radius": 0.45,
+    "bone": -1,
+    "group": 0,
+    "knockAngle": 0.98,
+    "knockBase": 8.0,
     "damage": 5.0,
-    "flavour": "SOUR", "priority": "NORMAL"
+    "flavour": "SOUR",
+    "priority": "NORMAL"
   },
-  "0Cb":
+  "0:BB":
   {
-    "origin": [ 0.0, 2.2, 0.6 ], "radius": 0.45,
-    "bone": -1, "group": 0,
-    "knockAngle": 0.02, "knockBase": 8.0,
+    "origin": [ 0.0, 2.2, 0.6 ],
+    "radius": 0.45,
+    "bone": -1,
+    "group": 0,
+    "knockAngle": 0.02,
+    "knockBase": 8.0,
     "damage": 5.0,
-    "flavour": "SOUR", "priority": "NORMAL"
+    "flavour": "SOUR",
+    "priority": "NORMAL"
   }
-}
+},
+
+"timeline":
+[
+  [ 4,  [ "enable_blob 0:A", "emit_particles early 20" ] ],
+  [ 7,  [ "enable_blob 0:BA", "enable_blob 0:BB", "disable_blob 0:A" ] ],
+  [ 13, [ "disable_blob 0:BA", "disable_blob 0:BB" ] ],
+  [ 20, [ "finish_action" ] ]
+]
 
 }

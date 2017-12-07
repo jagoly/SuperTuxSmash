@@ -1,6 +1,7 @@
 #pragma once
 
 #include <sqee/builtins.hpp>
+#include <sqee/macros.hpp>
 
 #include <sqee/maths/Volumes.hpp>
 
@@ -114,6 +115,20 @@ struct alignas(16) HurtBlob final
 static_assert(sizeof(HitBlob) == 96u);
 
 static_assert(sizeof(HurtBlob) == 80u);
+
+//============================================================================//
+
+#define ETSC SQEE_ENUM_TO_STRING_CASE
+
+SQEE_ENUM_TO_STRING_BLOCK_BEGIN(HitBlob::Flavour)
+ETSC(Sour) ETSC(Tangy) ETSC(Sweet)
+SQEE_ENUM_TO_STRING_BLOCK_END
+
+SQEE_ENUM_TO_STRING_BLOCK_BEGIN(HitBlob::Priority)
+ETSC(Low) ETSC(Normal) ETSC(High) ETSC(Transcend)
+SQEE_ENUM_TO_STRING_BLOCK_END
+
+#undef ETSC
 
 //============================================================================//
 

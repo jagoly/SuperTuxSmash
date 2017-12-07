@@ -1,6 +1,7 @@
 #pragma once
 
 #include <sqee/app/Event.hpp>
+#include <sqee/app/GuiSystem.hpp>
 #include <sqee/app/Scene.hpp>
 
 #include "render/Renderer.hpp"
@@ -48,6 +49,14 @@ private: //===================================================//
     const sq::InputDevices& mInputDevices;
 
     const Options& mOptions;
+
+    //--------------------------------------------------------//
+
+    sq::GuiWidget mGeneralWidget;
+    sq::GuiWidget mFightersWidget;
+
+    void impl_show_general_window();
+    void impl_show_fighters_window();
 };
 
 } // namespace sts

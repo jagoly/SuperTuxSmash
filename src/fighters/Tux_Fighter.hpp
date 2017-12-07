@@ -10,7 +10,7 @@ class Tux_Fighter final : public Fighter
 {
 public: //====================================================//
 
-    Tux_Fighter(uint8_t index, FightWorld& world, Controller& controller);
+    Tux_Fighter(uint8_t index, FightWorld& world);
 
     //--------------------------------------------------------//
 

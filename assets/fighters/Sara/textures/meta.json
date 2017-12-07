@@ -1,0 +1,9 @@
+{
+
+"Hair_mask": { "format": "R8_UN",   "wrap": "RC", "swizzle": "000R", "filter": true, "mipmaps": true },
+"Hair_diff": { "format": "RGB8_UN", "wrap": "RC", "swizzle": "RGB1", "filter": true, "mipmaps": true },
+"Hair_norm": { "format": "RGB8_SN", "wrap": "RC", "swizzle": "RGB1", "filter": true, "mipmaps": true },
+"Main_diff": { "format": "RGB8_UN", "wrap": "CC", "swizzle": "RGB1", "filter": true, "mipmaps": true },
+"Main_spec": { "format": "R8_UN",   "wrap": "CC", "swizzle": "RRR1", "filter": true, "mipmaps": true }
+
+}

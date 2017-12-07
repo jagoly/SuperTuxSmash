@@ -1,0 +1,10 @@
+{
+  "format": "RG8_UN",
+  "wrap": "CC",
+  "swizzle": "RRRG",
+  "filter": true,
+  "mipmaps": false,
+  "width": 128,
+  "height": 128,
+  "layers": 24
+}

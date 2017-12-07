@@ -1,14 +1,13 @@
-#include "fighters/Tux_Actions.hpp"
 #include "fighters/Tux_Fighter.hpp"
 
 using namespace sts;
 
 //============================================================================//
 
-Tux_Fighter::Tux_Fighter(uint8_t index, FightWorld& world, Controller& controller)
-    : Fighter(index, world, controller, "assets/fighters/Tux/")
+Tux_Fighter::Tux_Fighter(uint8_t index, FightWorld& world)
+    : Fighter(index, world, "Tux")
 {
-    mActions = create_actions(mFightWorld, *this);
+    mActions = std::make_unique<Actions>(world, *this);
 
     //--------------------------------------------------------//
 

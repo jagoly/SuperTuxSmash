@@ -18,7 +18,7 @@ class TestZone_Render final : public RenderObject
 {
 public: //====================================================//
 
-    TestZone_Render(const Renderer& renderer, const TestZone_Stage& stage);
+    TestZone_Render(Renderer& renderer, const TestZone_Stage& stage);
 
     //--------------------------------------------------------//
 
@@ -28,11 +28,13 @@ public: //====================================================//
 
     void render_main() override;
 
+    void render_alpha() override {}
+
 private: //===================================================//
 
-    sq::Mesh MESH_Mesh;
+    MeshHandle MESH_Mesh;
 
-    sq::Texture2D TEX_Diff { sq::Texture::Format::RGB8_UN };
+    TextureHandle TEX_Diff;
 
     sq::Program PROG_Main;
 

@@ -17,6 +17,16 @@ if (SQEE_GNU OR SQEE_CLANG)
     string(APPEND CMAKE_CXX_FLAGS " -Wno-unused-parameter -Wno-strict-aliasing")
     string(APPEND CMAKE_CXX_FLAGS " -Wno-comment -Wno-misleading-indentation")
 
+    if (SQEE_GNU)
+        # todo: remove when warnings for structured bindings fixed
+        string(APPEND CMAKE_CXX_FLAGS " -Wno-unused-variable")
+    endif ()
+
+    if (SQEE_CLANG)
+        # todo: remove when no-misleading-indentation becomes supported
+        string(APPEND CMAKE_CXX_FLAGS " -Wno-unknown-warning-option")
+    endif ()
+
     if (SQEE_WINDOWS)
         string(APPEND CMAKE_CXX_FLAGS " -mwindows -Wa,-mbig-obj")
     endif ()

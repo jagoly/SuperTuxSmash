@@ -18,7 +18,7 @@ class Sara_Render final : public RenderObject
 {
 public: //====================================================//
 
-    Sara_Render(const Renderer& renderer, const Sara_Fighter& fighter);
+    Sara_Render(Renderer& renderer, const Sara_Fighter& fighter);
 
     //--------------------------------------------------------//
 
@@ -28,16 +28,20 @@ public: //====================================================//
 
     void render_main() override;
 
+    void render_alpha() override {}
+
+    ParticleSet::Refs get_particle_sets() override;
+
 private: //===================================================//
 
-    sq::Mesh MESH_Sara;
+    MeshHandle MESH_Sara;
 
-    sq::Texture2D TX_Main_diff { sq::Texture::Format::RGB8_UN };
-    sq::Texture2D TX_Main_spec { sq::Texture::Format::R8_UN };
+    TextureHandle TX_Main_diff;
+    TextureHandle TX_Main_spec;
 
-    sq::Texture2D TX_Hair_diff { sq::Texture::Format::RGB8_UN };
-    sq::Texture2D TX_Hair_norm { sq::Texture::Format::RGB8_SN };
-    sq::Texture2D TX_Hair_mask { sq::Texture::Format::R8_UN };
+    TextureHandle TX_Hair_mask;
+    TextureHandle TX_Hair_diff;
+    TextureHandle TX_Hair_norm;
 
     sq::Program PROG_Main;
     sq::Program PROG_Hair;

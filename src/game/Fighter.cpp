@@ -3,6 +3,8 @@
 
 #include <sqee/macros.hpp>
 
+#include <sqee/app/GuiWidgets.hpp>
+
 #include <sqee/misc/Files.hpp>
 #include <sqee/misc/Json.hpp>
 #include <sqee/maths/Functions.hpp>
@@ -11,6 +13,10 @@
 #include "game/Fighter.hpp"
 
 namespace maths = sq::maths;
+namespace gui = sq::gui;
+
+using sq::literals::operator""_fmt_;
+
 using namespace sts;
 
 //============================================================================//
@@ -39,9 +45,11 @@ static constexpr int   STS_JUMP_DELAY       = 5;
 
 //============================================================================//
 
-Fighter::Fighter(uint8_t index, FightWorld& world, Controller& controller, string path)
-    : index(index), mFightWorld(world), mController(controller)
+Fighter::Fighter(uint8_t index, FightWorld& world, string_view name)
+    : index(index), mFightWorld(world), mName(name)
 {
+    const string path = "assets/fighters/%s/"_fmt_(name);
+
     impl_initialise_armature(path);
     impl_initialise_hurt_blobs(path);
     impl_initialise_stats(path);
@@ -163,7 +171,7 @@ void Fighter::impl_initialise_armature(const string& path)
 
 void Fighter::impl_initialise_hurt_blobs(const string& path)
 {
-    for (const auto& item : sq::parse_json(path + "HurtBlobs.json"))
+    for (const auto& item : sq::parse_json_from_file(path + "HurtBlobs.json"))
     {
         mHurtBlobs.push_back(mFightWorld.create_hurt_blob(*this));
         HurtBlob& blob = *mHurtBlobs.back();
@@ -179,7 +187,7 @@ void Fighter::impl_initialise_hurt_blobs(const string& path)
 
 void Fighter::impl_initialise_stats(const string& path)
 {
-    const auto json = sq::parse_json(path + "Stats.json");
+    const auto json = sq::parse_json_from_file(path + "Stats.json");
 
     stats.walk_speed     = json.at("walk_speed");
     stats.dash_speed     = json.at("dash_speed");
@@ -408,7 +416,7 @@ void Fighter::impl_handle_input_actions(const Controller::Input& input)
             }
             else SQASSERT(false, "");
 
-            mActiveAction->on_start();
+            mActiveAction->do_start();
         }
 
         return;
@@ -593,7 +601,6 @@ void Fighter::impl_switch_action(Action::Type actionType)
 
     CASE ( None )
     {
-        mActiveAction->on_finish();
         mActiveAction = nullptr;
 
         SWITCH ( mActionType ) {
@@ -620,8 +627,7 @@ void Fighter::impl_switch_action(Action::Type actionType)
 
     if (mActiveAction != nullptr)
     {
-        mActiveAction->mCurrentFrame = 0u;
-        mActiveAction->on_start();
+        mActiveAction->do_start();
     }
 
     mActionType = actionType;
@@ -637,7 +643,6 @@ void Fighter::impl_update_physics()
     mWorldDiamond.xPos = mLocalDiamond.xPos + current.position;
     mWorldDiamond.yNeg = mLocalDiamond.yNeg + current.position;
     mWorldDiamond.yPos = mLocalDiamond.yPos + current.position;
-
 
     //-- apply friction --------------------------------------//
 
@@ -692,8 +697,6 @@ void Fighter::impl_update_physics()
 
     current.position = stage.transform_response(current.position, mWorldDiamond, mVelocity / 48.f);
 
-    //sq::log_info("velocity: %s\nposition: %s\n", mVelocity, current.position);
-
 
     //-- check if fallen or landed ---------------------------//
 
@@ -731,7 +734,7 @@ void Fighter::impl_update_physics()
         {
             if (maths::length(mVelocity) > 5.f)
             {
-                // do splat stuff
+                // todo: do splat stuff
             }
 
             mLandingLag = STS_LANDING_LAG;
@@ -759,11 +762,10 @@ void Fighter::impl_update_active_action()
 {
     if (mActiveAction != nullptr)
     {
-        if (mActiveAction->on_tick(mActiveAction->mCurrentFrame))
+        if (mActiveAction->do_tick() == true)
         {
             impl_switch_action(Action::Type::None);
         }
-        else ++mActiveAction->mCurrentFrame;
     }
 }
 
@@ -775,7 +777,9 @@ void Fighter::base_tick_fighter()
 
     //--------------------------------------------------------//
 
-    const auto input = mController.get_input();
+    SQASSERT(mController != nullptr, "");
+
+    const auto input = mController->get_input();
 
     impl_handle_input_movement(input);
 
@@ -881,6 +885,11 @@ void Fighter::apply_hit_basic(const HitBlob& hit)
     state = State::Knocked;
 }
 
+void Fighter::pass_boundary()
+{
+    current.position = Vec2F();
+}
+
 //============================================================================//
 
 Mat4F Fighter::interpolate_model_matrix(float blend) const
@@ -895,4 +904,59 @@ std::vector<Mat34F> Fighter::interpolate_bone_matrices(float blend) const
 {
     auto blendPose = mArmature.blend_poses(previous.pose, current.pose, blend);
     return mArmature.compute_ubo_data(blendPose);
+}
+
+//============================================================================//
+
+void Fighter::impl_show_fighter_widget()
+{
+    const auto widget = gui::scope_collapse("Fighter %d - %s"_fmt_(index, mName), {}, gui::FONT_BOLD);
+
+    if (widget.want_display() == false) return;
+
+    //--------------------------------------------------------//
+
+    WITH (gui::scope_framed_group())
+    {
+        const auto font = gui::scope_font(gui::FONT_MONO);
+
+        gui::display_text("Position: %s"_fmt_(current.position));
+        gui::display_text("Velocity: %s"_fmt_(mVelocity));
+
+        gui::display_text("state: %s"_fmt_(enum_to_string(state)));
+    }
+
+    //--------------------------------------------------------//
+
+    WITH_IF (gui::scope_collapse("Edit Stats", {}, gui::FONT_REGULAR))
+    {
+        const auto font = gui::scope_font(gui::FONT_MONO);
+
+        gui::input_float("walk_speed",     140.f, stats.walk_speed,     0.05f, 2);
+        gui::input_float("dash_speed",     140.f, stats.dash_speed,     0.05f, 2);
+        gui::input_float("air_speed",      140.f, stats.air_speed,      0.05f, 2);
+        gui::input_float("traction",       140.f, stats.traction,       0.05f, 2);
+        gui::input_float("air_mobility",   140.f, stats.air_mobility,   0.05f, 2);
+        gui::input_float("air_friction",   140.f, stats.air_friction,   0.05f, 2);
+        gui::input_float("hop_height",     140.f, stats.hop_height,     0.05f, 2);
+        gui::input_float("jump_height",    140.f, stats.jump_height,    0.05f, 2);
+        gui::input_float("air_hop_height", 140.f, stats.air_hop_height, 0.05f, 2);
+        gui::input_float("gravity",        140.f, stats.gravity,        0.05f, 2);
+        gui::input_float("fall_speed",     140.f, stats.fall_speed,     0.05f, 2);
+    }
+
+    //--------------------------------------------------------//
+
+    WITH (gui::scope_framed_group())
+    {
+        const auto font = gui::scope_font(gui::FONT_REGULAR);
+
+        if (gui::button_with_tooltip("RESET", "reset the fighter's position"))
+            current.position = { 0.f, 1.f };
+
+        imgui::SameLine();
+
+        if (gui::button_with_tooltip("BOUNCE", "make the fighter bounce"))
+            mVelocity.y = +10.f;
+    }
 }

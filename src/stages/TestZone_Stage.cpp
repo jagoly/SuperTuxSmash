@@ -1,3 +1,5 @@
+#include "game/Fighter.hpp"
+
 #include "stages/TestZone_Stage.hpp"
 
 using namespace sts;
@@ -6,6 +8,11 @@ using namespace sts;
 
 TestZone_Stage::TestZone_Stage(FightWorld& world) : Stage(world)
 {
+    mInnerBoundary = { {-14.f, -6.f}, {+14.f, +14.f} };
+    mOuterBoundary = { {-18.f, -10.f}, {+18.f, +18.f} };
+
+    //--------------------------------------------------------//
+
     mAlignedBlocks.push_back({{-8.f, -1.f}, {+8.f, 0.f}});
 
     mAlignedBlocks.push_back({{-0.5f, 6.5f}, {+0.5f, 7.5f}});

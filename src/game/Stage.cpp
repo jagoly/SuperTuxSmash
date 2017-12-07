@@ -1,5 +1,6 @@
 #include <sqee/maths/Culling.hpp>
 
+#include "game/Fighter.hpp"
 #include "game/Stage.hpp"
 
 namespace maths = sq::maths;
@@ -95,4 +96,17 @@ Vec2F Stage::transform_response(Vec2F origin, PhysicsDiamond diamond, Vec2F tran
     }
 
     return result;
+}
+
+//============================================================================//
+
+void Stage::check_boundary(Fighter& fighter)
+{
+    const Vec2F position = fighter.get_diamond().centre();
+
+    if ( position.x < mOuterBoundary.min.x || position.x > mOuterBoundary.max.x ||
+         position.y < mOuterBoundary.min.y || position.y > mOuterBoundary.max.y )
+    {
+        fighter.pass_boundary();
+    }
 }
