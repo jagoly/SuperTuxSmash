@@ -6,8 +6,7 @@
 #include <sqee/app/DebugOverlay.hpp>
 
 #include "main/Options.hpp"
-
-#include "game/GameScene.hpp"
+#include "main/GameScene.hpp"
 
 //============================================================================//
 

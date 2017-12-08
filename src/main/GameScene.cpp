@@ -13,7 +13,7 @@
 
 #include "game/ActionBuilder.hpp"
 
-#include "game/GameScene.hpp"
+#include "main/GameScene.hpp"
 
 namespace gui = sq::gui;
 using namespace sts;

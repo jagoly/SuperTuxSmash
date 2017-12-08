@@ -87,8 +87,6 @@ private: //===================================================//
 
     friend struct ActionBuilder;
     friend struct ActionFuncs;
-
-    friend class ActionsEditor;
 };
 
 //============================================================================//

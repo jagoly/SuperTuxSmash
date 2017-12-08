@@ -15,6 +15,9 @@ set(SOURCES
   "src/main/SmashApp.hpp"
   "src/main/SmashApp.cpp"
 
+  "src/main/GameScene.hpp"
+  "src/main/GameScene.cpp"
+
   #----------------------------------------------------------#
 
   "src/game/forward.hpp"
@@ -24,9 +27,6 @@ set(SOURCES
 
   "src/game/Blobs.hpp"
   "src/game/Blobs.cpp"
-
-  "src/game/GameScene.hpp"
-  "src/game/GameScene.cpp"
 
   "src/game/ActionBuilder.cpp"
   "src/game/ActionBuilder.hpp"
@@ -48,6 +48,9 @@ set(SOURCES
 
   "src/game/ParticleSet.hpp"
   "src/game/ParticleSet.cpp"
+
+  "src/game/private/PrivateFighter.hpp"
+  "src/game/private/PrivateFighter.cpp"
 
   #----------------------------------------------------------#
 
