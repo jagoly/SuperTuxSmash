@@ -21,8 +21,9 @@ public: //====================================================//
     enum class State
     {
         Neutral, Walking, Dashing, Brake, Crouch,
-        Charge, Attack, Landing, PreJump, Jumping,
-        Falling, AirAttack, Knocked, Stunned
+        Charge, Attack, Special, Landing, PreJump, Jumping,
+        Falling, AirAttack, AirSpecial, Knocked, Stunned,
+        Shield, Dodge, Evade, AirDodge
     };
 
     enum class Facing
@@ -34,17 +35,68 @@ public: //====================================================//
 
     struct Stats
     {
-        float walk_speed      = 1.f;
-        float dash_speed      = 1.f;
-        float air_speed       = 1.f;
-        float traction        = 1.f;
-        float air_mobility    = 1.f;
-        float air_friction    = 1.f;
-        float hop_height      = 1.f;
-        float jump_height     = 1.f;
-        float air_hop_height  = 1.f;
-        float gravity         = 1.f;
-        float fall_speed      = 1.f;
+        float walk_speed     = 1.f;
+        float dash_speed     = 1.f;
+        float air_speed      = 1.f;
+        float traction       = 1.f;
+        float air_mobility   = 1.f;
+        float air_friction   = 1.f;
+        float hop_height     = 1.f;
+        float jump_height    = 1.f;
+        float air_hop_height = 1.f;
+        float gravity        = 1.f;
+        float fall_speed     = 1.f;
+        float weight         = 1.f;
+        float evade_distance = 1.f;
+
+        uint dodge_finish     = 22u;
+        uint dodge_safe_start = 2u;
+        uint dodge_safe_end   = 14u;
+
+        uint evade_finish     = 24u;
+        uint evade_safe_start = 3u;
+        uint evade_safe_end   = 13u;
+
+        uint air_dodge_finish     = 26u;
+        uint air_dodge_safe_start = 2u;
+        uint air_dodge_safe_end   = 22u;
+    };
+
+    //--------------------------------------------------------//
+
+    struct Actions
+    {
+        unique_ptr<Action> neutral_first;
+
+        unique_ptr<Action> tilt_down;
+        unique_ptr<Action> tilt_forward;
+        unique_ptr<Action> tilt_up;
+
+        unique_ptr<Action> air_back;
+        unique_ptr<Action> air_down;
+        unique_ptr<Action> air_forward;
+        unique_ptr<Action> air_neutral;
+        unique_ptr<Action> air_up;
+
+        unique_ptr<Action> dash_attack;
+
+        unique_ptr<Action> smash_down;
+        unique_ptr<Action> smash_forward;
+        unique_ptr<Action> smash_up;
+
+        unique_ptr<Action> special_down;
+        unique_ptr<Action> special_forward;
+        unique_ptr<Action> special_neutral;
+        unique_ptr<Action> special_up;
+    };
+
+    //--------------------------------------------------------//
+
+    struct Status
+    {
+        float damage = 0.f;
+        bool intangible = false;
+        float shield = 0.f;
     };
 
     //--------------------------------------------------------//
@@ -61,11 +113,22 @@ public: //====================================================//
 
     const uint8_t index;
 
-    State state = State::Neutral;
-
-    Facing facing = Facing::Right;
-
     Stats stats;
+
+    Status status;
+
+    Actions actions;
+
+    //--------------------------------------------------------//
+
+    struct {
+
+        State state = State::Neutral;
+        Facing facing = Facing::Right;
+
+        Action* action = nullptr;
+
+    } current, previous;
 
     //--------------------------------------------------------//
 
@@ -80,7 +143,7 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    Actions& get_actions() { return *mActions; }
+    Action* get_action(Action::Type action);
 
     //--------------------------------------------------------//
 
@@ -118,9 +181,13 @@ public: //====================================================//
 
     Vec2F mVelocity = { 0.f, 0.f };
 
-protected: //=================================================//
+    //--------------------------------------------------------//
 
-    unique_ptr<Actions> mActions;
+    void debug_show_fighter_widget();
+
+    void debug_reload_actions();
+
+protected: //=================================================//
 
     std::vector<HurtBlob*> mHurtBlobs;
 
@@ -148,15 +215,37 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
-    void impl_show_fighter_widget();
-
-    //--------------------------------------------------------//
-
-    friend class GameScene;
-
     friend class PrivateFighter;
     unique_ptr<PrivateFighter> impl;
 };
+
+//============================================================================//
+
+inline Action* Fighter::get_action(Action::Type action)
+{
+    SWITCH (action) {
+        CASE (None)             return nullptr;
+        CASE (Neutral_First)    return actions.neutral_first.get();
+        CASE (Tilt_Down)        return actions.tilt_down.get();
+        CASE (Tilt_Forward)     return actions.tilt_forward.get();
+        CASE (Tilt_Up)          return actions.tilt_up.get();
+        CASE (Air_Back)         return actions.air_back.get();
+        CASE (Air_Down)         return actions.air_down.get();
+        CASE (Air_Forward)      return actions.air_forward.get();
+        CASE (Air_Neutral)      return actions.air_neutral.get();
+        CASE (Air_Up)           return actions.air_up.get();
+        CASE (Dash_Attack)      return actions.dash_attack.get();
+        CASE (Smash_Down)       return actions.smash_down.get();
+        CASE (Smash_Forward)    return actions.smash_forward.get();
+        CASE (Smash_Up)         return actions.smash_up.get();
+        CASE (Special_Down)     return actions.special_down.get();
+        CASE (Special_Forward)  return actions.special_forward.get();
+        CASE (Special_Neutral)  return actions.special_neutral.get();
+        CASE (Special_Up)       return actions.special_up.get();
+    } SWITCH_END;
+
+    return nullptr;
+}
 
 //============================================================================//
 
@@ -164,8 +253,9 @@ private: //===================================================//
 
 SQEE_ENUM_TO_STRING_BLOCK_BEGIN(Fighter::State)
 ETSC(Neutral) ETSC(Walking) ETSC(Dashing) ETSC(Brake) ETSC(Crouch)
-ETSC(Charge) ETSC(Attack) ETSC(Landing) ETSC(PreJump) ETSC(Jumping)
-ETSC(Falling) ETSC(AirAttack) ETSC(Knocked) ETSC(Stunned)
+ETSC(Charge) ETSC(Attack) ETSC(Special) ETSC(Landing) ETSC(PreJump) ETSC(Jumping)
+ETSC(Falling) ETSC(AirAttack) ETSC(AirSpecial) ETSC(Knocked) ETSC(Stunned)
+ETSC(Shield) ETSC(Dodge) ETSC(Evade) ETSC(AirDodge)
 SQEE_ENUM_TO_STRING_BLOCK_END
 
 SQEE_ENUM_TO_STRING_BLOCK_BEGIN(Fighter::Facing)

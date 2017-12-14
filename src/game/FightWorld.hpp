@@ -23,6 +23,13 @@ class FightWorld final : sq::NonCopyable
 {
 public: //====================================================//
 
+    struct FighterStatus
+    {
+        uint32_t damage = 0u;
+    };
+
+    //--------------------------------------------------------//
+
     FightWorld();
 
     void tick();

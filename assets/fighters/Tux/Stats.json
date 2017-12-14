@@ -10,6 +10,20 @@
 "jump_height":    1.2,
 "air_hop_height": 1.0,
 "gravity":        1.0,
-"fall_speed":     1.0
+"fall_speed":     1.0,
+"weight":         1.0,
+"evade_distance": 1.0,
+
+"dodge_finish":     22,
+"dodge_safe_start": 2,
+"dodge_safe_end":   14,
+
+"evade_finish":     24,
+"evade_safe_start": 3,
+"evade_safe_end":   13,
+
+"air_dodge_finish":     26,
+"air_dodge_safe_start": 2,
+"air_dodge_safe_end":   22
 
 }

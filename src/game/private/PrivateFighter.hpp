@@ -20,6 +20,7 @@ public: //====================================================//
     using State = Fighter::State;
     using Facing = Fighter::Facing;
     using Stats = Fighter::Stats;
+    using Status = Fighter::Status;
 
     //--------------------------------------------------------//
 
@@ -41,14 +42,21 @@ public: //====================================================//
         Animation falling_loop;
         Animation jumping_loop;
         Animation neutral_loop;
+        Animation shield_loop;
         Animation walking_loop;
 
-        Animation airhop;
-        Animation brake;
-        Animation crouch;
-        Animation jump;
-        Animation land;
-        Animation stand;
+        Animation airdodge; // dodge in the air
+        Animation airhop;   // begin an extra jump
+        Animation brake;    // finish dashing
+        Animation crouch;   // begin crouching
+        Animation divedash; // dash off an edge
+        Animation divewalk; // walk off an edge
+        Animation dodge;    // dodge on the ground
+        Animation evade;    // evade back or forward
+        Animation jump;     // begin a normal jump
+        Animation land;     // land on the ground
+        Animation stand;    // finish crouching
+        Animation unshield; // finish shielding
 
         //Animation knocked;
 
@@ -84,40 +92,44 @@ public: //====================================================//
     struct Transitions
     {
         Transition neutral_crouch;
-        Transition neutral_jump;
         Transition neutral_walking;
 
         Transition walking_crouch;
-        Transition walking_jump;
         Transition walking_dashing;
+        Transition walking_dive;
         Transition walking_neutral;
 
-        Transition dashing_jump;
         Transition dashing_brake;
+        Transition dashing_dive;
 
-        Transition crouch_jump;
         Transition crouch_stand;
 
+        Transition jumping_dodge;
+        Transition jumping_falling;
         Transition jumping_hop;
-        Transition jumping_land;
-        Transition jumping_fall;
 
+        Transition shield_dodge;
+        Transition shield_evade;
+        Transition shield_neutral;
+
+        Transition falling_dodge;
         Transition falling_hop;
-        Transition falling_land;
 
-        Transition other_fall;
+        Transition misc_jump;
+        Transition misc_land;
 
-        Transition smash_up_start;
-        Transition smash_forward_start;
+        Transition misc_crouch;
+        Transition misc_falling;
+        Transition misc_neutral;
+        Transition misc_shield;
+
         Transition smash_down_start;
+        Transition smash_forward_start;
+        Transition smash_up_start;
 
-        Transition smash_up_attack;
-        Transition smash_forward_attack;
         Transition smash_down_attack;
-
-        Transition attack_to_neutral;
-        Transition attack_to_crouch;
-        Transition attack_to_falling;
+        Transition smash_forward_attack;
+        Transition smash_up_attack;
     };
 
     //--------------------------------------------------------//
@@ -146,6 +158,8 @@ public: //====================================================//
 
     void initialise_stats(const string& path);
 
+    void initialise_actions(const string& path);
+
     //-- called by passthrough methods in Fighter ------------//
 
     void base_tick_fighter();
@@ -157,8 +171,7 @@ private: //===================================================//
     bool mAttackHeld = false;
     bool mJumpHeld = false;
 
-    uint mLandingLag = 0u;
-    uint mJumpDelay = 0u;
+    uint mStateProgress = 0u;
 
     //--------------------------------------------------------//
 
@@ -176,26 +189,17 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
-    Action::Type mActionType = Action::Type::None;
-    Action* mActiveAction = nullptr;
-
-    //-- should be the only places input is handled ----------//
-
     void handle_input_movement(const Controller::Input& input);
 
     void handle_input_actions(const Controller::Input& input);
+
+    void update_after_input();
 
     //--------------------------------------------------------//
 
     void state_transition(const Transition& transition);
 
     void switch_action(Action::Type actionType);
-
-    //--------------------------------------------------------//
-
-    void update_physics();
-
-    void update_active_action();
 
     //--------------------------------------------------------//
 

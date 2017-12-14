@@ -122,17 +122,7 @@ void GameScene::impl_show_general_window()
         if (gui::button_with_tooltip("reload actions", "reload actions from json"))
         {
             for (Fighter* fighter : mFightWorld->get_fighters())
-                for (int t = 0; t < 14; ++t)
-                    ActionBuilder::load_from_json(*fighter->get_actions()[Action::Type(t)]);
-
-            if (auto fighters = mFightWorld->get_fighters(); fighters.size() >= 2u)
-            {
-                auto controllerLast = fighters.back()->get_controller();
-                if (fighters.size() == 4u) fighters[3]->set_controller(fighters[2]->get_controller());
-                if (fighters.size() >= 3u) fighters[2]->set_controller(fighters[1]->get_controller());
-                fighters[1]->set_controller(fighters[0]->get_controller());
-                fighters[0]->set_controller(controllerLast);
-            }
+                fighter->debug_reload_actions();
         }
 
         imgui::SameLine();
@@ -169,6 +159,6 @@ void GameScene::impl_show_fighters_window()
     WITH (gui::scope_item_width(-FLT_EPSILON))
     {
         for (Fighter* fighter : mFightWorld->get_fighters())
-            fighter->impl_show_fighter_widget();
+            fighter->debug_show_fighter_widget();
     }
 }

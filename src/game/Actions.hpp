@@ -31,7 +31,10 @@ public: //====================================================//
         Smash_Down,
         Smash_Forward,
         Smash_Up,
+        Special_Down,
+        Special_Forward,
         Special_Neutral,
+        Special_Up
     };
 
     //--------------------------------------------------------//
@@ -39,6 +42,10 @@ public: //====================================================//
     Action(FightWorld& world, Fighter& fighter, Type type);
 
     virtual ~Action();
+
+    //--------------------------------------------------------//
+
+    Type get_type() const { return type; }
 
     //--------------------------------------------------------//
 
@@ -91,51 +98,6 @@ private: //===================================================//
 
 //============================================================================//
 
-class Actions final : private sq::NonCopyable
-{
-public: //====================================================//
-
-    Actions(FightWorld& world, Fighter& fighter);
-
-    //--------------------------------------------------------//
-
-    unique_ptr<Action> neutral_first;
-
-    unique_ptr<Action> tilt_down;
-    unique_ptr<Action> tilt_forward;
-    unique_ptr<Action> tilt_up;
-
-    unique_ptr<Action> air_back;
-    unique_ptr<Action> air_down;
-    unique_ptr<Action> air_forward;
-    unique_ptr<Action> air_neutral;
-    unique_ptr<Action> air_up;
-
-    unique_ptr<Action> dash_attack;
-
-    unique_ptr<Action> smash_down;
-    unique_ptr<Action> smash_forward;
-    unique_ptr<Action> smash_up;
-
-    unique_ptr<Action> special_neutral;
-
-    //--------------------------------------------------------//
-
-    unique_ptr<Action>& operator[](Action::Type type)
-    {
-        // this is soooo bad
-
-        SQASSERT(type != Action::Type::None, "");
-        return *std::next(&neutral_first, int(type));
-    }
-
-private: //===================================================//
-
-    Action* mActiveAction = nullptr;
-};
-
-//============================================================================//
-
 SQEE_ENUM_TO_STRING_BLOCK_BEGIN(Action::Type)
 
 SQEE_ENUM_TO_STRING_CASE(None)
@@ -152,7 +114,10 @@ SQEE_ENUM_TO_STRING_CASE(Dash_Attack)
 SQEE_ENUM_TO_STRING_CASE(Smash_Down)
 SQEE_ENUM_TO_STRING_CASE(Smash_Forward)
 SQEE_ENUM_TO_STRING_CASE(Smash_Up)
+SQEE_ENUM_TO_STRING_CASE(Special_Down)
+SQEE_ENUM_TO_STRING_CASE(Special_Forward)
 SQEE_ENUM_TO_STRING_CASE(Special_Neutral)
+SQEE_ENUM_TO_STRING_CASE(Special_Up)
 
 SQEE_ENUM_TO_STRING_BLOCK_END
 

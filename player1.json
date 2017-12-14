@@ -3,12 +3,14 @@
 "gamepad_port":   0,
 "stick_move":     0,
 "button_attack":  0,
-"button_jump":    4,
+"button_jump":    5,
+"button_shield":  4,
 "key_left":       68,
 "key_up":         69,
 "key_right":      70,
 "key_down":       71,
 "key_attack":     33,
-"key_jump":       35
+"key_jump":       35,
+"key_shield":     12
 
 }

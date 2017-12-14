@@ -7,10 +7,6 @@ using namespace sts;
 Tux_Fighter::Tux_Fighter(uint8_t index, FightWorld& world)
     : Fighter(index, world, "Tux")
 {
-    mActions = std::make_unique<Actions>(world, *this);
-
-    //--------------------------------------------------------//
-
     mLocalDiamond.xNeg = { -0.4f, 0.5f };
     mLocalDiamond.xPos = { +0.4f, 0.5f };
     mLocalDiamond.yNeg = { 0.f, 0.f };

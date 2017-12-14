@@ -20,12 +20,14 @@ Controller::Controller(const sq::InputDevices& devices, string configPath)
     config.stick_move    = static_cast<sq::Gamepad_Stick>  (int(root.at("stick_move")));
     config.button_attack = static_cast<sq::Gamepad_Button> (int(root.at("button_attack")));
     config.button_jump   = static_cast<sq::Gamepad_Button> (int(root.at("button_jump")));
+    config.button_shield = static_cast<sq::Gamepad_Button> (int(root.at("button_shield")));
     config.key_left      = static_cast<sq::Keyboard_Key>   (int(root.at("key_left")));
     config.key_up        = static_cast<sq::Keyboard_Key>   (int(root.at("key_up")));
     config.key_right     = static_cast<sq::Keyboard_Key>   (int(root.at("key_right")));
     config.key_down      = static_cast<sq::Keyboard_Key>   (int(root.at("key_down")));
     config.key_attack    = static_cast<sq::Keyboard_Key>   (int(root.at("key_attack")));
     config.key_jump      = static_cast<sq::Keyboard_Key>   (int(root.at("key_jump")));
+    config.key_shield    = static_cast<sq::Keyboard_Key>   (int(root.at("key_shield")));
 }
 
 //============================================================================//
@@ -40,6 +42,7 @@ void Controller::handle_event(sq::Event event)
 
             if (button == config.button_attack) mInput.press_attack = true;
             if (button == config.button_jump)   mInput.press_jump   = true;
+            if (button == config.button_shield) mInput.press_shield   = true;
         }
     }
 
@@ -49,6 +52,7 @@ void Controller::handle_event(sq::Event event)
 
         if (key == config.key_attack) mInput.press_attack = true;
         if (key == config.key_jump)   mInput.press_jump   = true;
+        if (key == config.key_shield) mInput.press_shield = true;
     }
 }
 
@@ -76,6 +80,10 @@ Controller::Input Controller::get_input()
         if (config.button_jump != Button::Unknown)
             if (mDevices.is_pressed(port, config.button_jump))
                 mInput.hold_jump = true;
+
+        if (config.button_shield != Button::Unknown)
+            if (mDevices.is_pressed(port, config.button_shield))
+                mInput.hold_shield = true;
     }
 
     //--------------------------------------------------------//
@@ -103,6 +111,10 @@ Controller::Input Controller::get_input()
     if (config.key_jump != Key::Unknown)
         if (mDevices.is_pressed(config.key_jump))
             mInput.hold_jump = true;
+
+    if (config.key_shield != Key::Unknown)
+        if (mDevices.is_pressed(config.key_shield))
+            mInput.hold_shield = true;
 
     //--------------------------------------------------------//
 

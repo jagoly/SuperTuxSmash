@@ -38,9 +38,11 @@ static constexpr float STS_AIR_HOP_HEIGHT   = 2.0f;  // air_hop_height
 static constexpr float STS_GRAVITY          = 0.5f;  // gravity
 static constexpr float STS_FALL_SPEED       = 12.0f; // fall_speed
 
+static constexpr float STS_EVADE_DISTANCE   = 2.0f;  // evade_distance
+
 static constexpr float STS_TICK_RATE        = 48.0f;
-static constexpr int   STS_LANDING_LAG      = 4;
-static constexpr int   STS_JUMP_DELAY       = 5;
+static constexpr uint  STS_LANDING_LAG      = 4u;
+static constexpr uint  STS_JUMP_DELAY       = 4u;
 
 //============================================================================//
 
@@ -79,14 +81,21 @@ void PrivateFighter::initialise_armature(const string& path)
     load_animation ( a.falling_loop, "FallingLoop" );
     load_animation ( a.jumping_loop, "JumpingLoop" );
     load_animation ( a.neutral_loop, "NeutralLoop" );
+    load_animation ( a.shield_loop,  "ShieldLoop"  );
     load_animation ( a.walking_loop, "WalkingLoop" );
 
-    load_animation ( a.airhop, "Airhop" );
-    load_animation ( a.brake,  "Brake"  );
-    load_animation ( a.crouch, "Crouch" );
-    load_animation ( a.jump,   "Jump"   );
-    load_animation ( a.land,   "Land"   );
-    load_animation ( a.stand,  "Stand"  );
+    load_animation ( a.airdodge, "Airdodge" );
+    load_animation ( a.airhop,   "Airhop"   );
+    load_animation ( a.brake,    "Brake"    );
+    load_animation ( a.crouch,   "Crouch"   );
+    load_animation ( a.divedash, "Divedash" );
+    load_animation ( a.divewalk, "Divewalk" );
+    load_animation ( a.dodge,    "Dodge"    );
+    load_animation ( a.evade,    "Evade"    );
+    load_animation ( a.jump,     "Jump"     );
+    load_animation ( a.land,     "Land"     );
+    load_animation ( a.stand,    "Stand"    );
+    load_animation ( a.unshield, "Unshield" );
 
     load_animation ( a.action_neutral_first, "actions/NeutralFirst" );
 
@@ -117,27 +126,36 @@ void PrivateFighter::initialise_armature(const string& path)
     //--------------------------------------------------------//
 
     t.neutral_crouch  = { State::Crouch,  2u, &a.crouch, &a.crouch_loop };
-    t.neutral_jump    = { State::PreJump, 1u, &a.jump, &a.jumping_loop };
     t.neutral_walking = { State::Walking, 4u, &a.walking_loop, nullptr };
 
     t.walking_crouch  = { State::Crouch,  2u, &a.crouch, &a.crouch_loop };
-    t.walking_jump    = { State::PreJump, 1u, &a.jump, &a.jumping_loop };
     t.walking_dashing = { State::Dashing, 4u, &a.dashing_loop, nullptr };
+    t.walking_dive    = { State::Falling, 2u, &a.divewalk, &a.falling_loop };
     t.walking_neutral = { State::Neutral, 4u, &a.neutral_loop, nullptr };
 
-    t.dashing_jump  = { State::PreJump, 1u, &a.jump, &a.jumping_loop };
     t.dashing_brake = { State::Brake,   2u, &a.brake, &a.neutral_loop };
+    t.dashing_dive  = { State::Falling, 2u, &a.divedash, &a.falling_loop };
 
-    t.crouch_jump  = { State::PreJump, 1u, &a.jump, &a.jumping_loop };
     t.crouch_stand = { State::Neutral, 2u, &a.stand, &a.neutral_loop };
 
-    t.jumping_hop  = { State::Jumping, 1u, &a.airhop, &a.jumping_loop };
-    t.jumping_fall = { State::Falling, 8u, &a.falling_loop, nullptr };
+    t.jumping_dodge   = { State::AirDodge, 1u, &a.airdodge, &a.falling_loop };
+    t.jumping_falling = { State::Falling,  8u, &a.falling_loop, nullptr };
+    t.jumping_hop     = { State::Jumping,  1u, &a.airhop, &a.jumping_loop };
 
-    t.falling_hop  = { State::Jumping, 1u, &a.airhop, &a.jumping_loop };
-    t.falling_land = { State::Landing, 1u, &a.land, &a.neutral_loop };
+    t.shield_dodge   = { State::Dodge,   1u, &a.dodge, &a.neutral_loop };
+    t.shield_evade   = { State::Evade,   1u, &a.evade, &a.neutral_loop };
+    t.shield_neutral = { State::Neutral, 1u, &a.unshield, &a.neutral_loop };
 
-    t.other_fall = { State::Falling, 4u, &a.falling_loop, nullptr };
+    t.falling_dodge = { State::AirDodge, 1u, &a.airdodge, &a.falling_loop };
+    t.falling_hop   = { State::Jumping,  1u, &a.airhop, &a.jumping_loop };
+
+    t.misc_jump = { State::PreJump, 1u, &a.jump, &a.jumping_loop };
+    t.misc_land = { State::Landing, 1u, &a.land, &a.neutral_loop };
+
+    t.misc_crouch  = { State::Crouch,  2u, &a.crouch_loop, nullptr };
+    t.misc_falling = { State::Falling, 2u, &a.falling_loop, nullptr };
+    t.misc_neutral = { State::Neutral, 2u, &a.neutral_loop, nullptr };
+    t.misc_shield  = { State::Shield,  2u, &a.shield_loop, nullptr };
 
     t.smash_down_start    = { State::Charge, 1u, &a.action_smash_down_start, &a.action_smash_down_charge };
     t.smash_forward_start = { State::Charge, 1u, &a.action_smash_forward_start, &a.action_smash_forward_charge };
@@ -146,10 +164,6 @@ void PrivateFighter::initialise_armature(const string& path)
     t.smash_down_attack    = { State::Attack, 1u, &a.action_smash_down_attack, nullptr };
     t.smash_forward_attack = { State::Attack, 1u, &a.action_smash_forward_attack, nullptr };
     t.smash_up_attack      = { State::Attack, 1u, &a.action_smash_up_attack, nullptr };
-
-    t.attack_to_neutral = { State::Neutral, 2u, &a.neutral_loop, nullptr };
-    t.attack_to_crouch  = { State::Crouch,  2u, &a.crouch_loop, nullptr };
-    t.attack_to_falling = { State::Falling, 2u, &a.falling_loop, nullptr };
 }
 
 //============================================================================//
@@ -191,6 +205,47 @@ void PrivateFighter::initialise_stats(const string& path)
     stats.air_hop_height = json.at("air_hop_height");
     stats.gravity        = json.at("gravity");
     stats.fall_speed     = json.at("fall_speed");
+    stats.evade_distance = json.at("evade_distance");
+
+    stats.dodge_finish     = json.at("dodge_finish");
+    stats.dodge_safe_start = json.at("dodge_safe_start");
+    stats.dodge_safe_end   = json.at("dodge_safe_end");
+
+    stats.evade_finish     = json.at("evade_finish");
+    stats.evade_safe_start = json.at("evade_safe_start");
+    stats.evade_safe_end   = json.at("evade_safe_end");
+
+    stats.air_dodge_finish     = json.at("air_dodge_finish");
+    stats.air_dodge_safe_start = json.at("air_dodge_safe_start");
+    stats.air_dodge_safe_end   = json.at("air_dodge_safe_end");
+}
+
+//============================================================================//
+
+void PrivateFighter::initialise_actions(const string& path)
+{
+    Fighter::Actions& actions = fighter.actions;
+    FightWorld& world = fighter.mFightWorld;
+
+    // todo: surely these ctors don't need all this crap
+
+    actions.neutral_first   = std::make_unique<Action>(world, fighter, Action::Type::Neutral_First);
+    actions.tilt_down       = std::make_unique<Action>(world, fighter, Action::Type::Tilt_Down);
+    actions.tilt_forward    = std::make_unique<Action>(world, fighter, Action::Type::Tilt_Forward);
+    actions.tilt_up         = std::make_unique<Action>(world, fighter, Action::Type::Tilt_Up);
+    actions.air_back        = std::make_unique<Action>(world, fighter, Action::Type::Air_Back);
+    actions.air_down        = std::make_unique<Action>(world, fighter, Action::Type::Air_Down);
+    actions.air_forward     = std::make_unique<Action>(world, fighter, Action::Type::Air_Forward);
+    actions.air_neutral     = std::make_unique<Action>(world, fighter, Action::Type::Air_Neutral);
+    actions.air_up          = std::make_unique<Action>(world, fighter, Action::Type::Air_Up);
+    actions.dash_attack     = std::make_unique<Action>(world, fighter, Action::Type::Dash_Attack);
+    actions.smash_down      = std::make_unique<Action>(world, fighter, Action::Type::Smash_Down);
+    actions.smash_forward   = std::make_unique<Action>(world, fighter, Action::Type::Smash_Forward);
+    actions.smash_up        = std::make_unique<Action>(world, fighter, Action::Type::Smash_Up);
+    actions.special_down    = std::make_unique<Action>(world, fighter, Action::Type::Special_Down);
+    actions.special_forward = std::make_unique<Action>(world, fighter, Action::Type::Special_Forward);
+    actions.special_neutral = std::make_unique<Action>(world, fighter, Action::Type::Special_Neutral);
+    actions.special_up      = std::make_unique<Action>(world, fighter, Action::Type::Special_Up);
 }
 
 //============================================================================//
@@ -199,8 +254,8 @@ void PrivateFighter::handle_input_movement(const Controller::Input& input)
 {
     const Stats& stats = fighter.stats;
 
-    State& state = fighter.state;
-    Facing& facing = fighter.facing;
+    State& state = fighter.current.state;
+    Facing& facing = fighter.current.facing;
     Vec2F& velocity = fighter.mVelocity;
 
     //--------------------------------------------------------//
@@ -208,8 +263,6 @@ void PrivateFighter::handle_input_movement(const Controller::Input& input)
     const auto start_jump = [&]()
     {
         mJumpHeld = true;
-
-        mJumpDelay = STS_JUMP_DELAY;
     };
 
     const auto start_air_hop = [&]()
@@ -229,13 +282,19 @@ void PrivateFighter::handle_input_movement(const Controller::Input& input)
     {
         SWITCH (state) {
             CASE ( Walking, Dashing ) start_jump(); // moving jump
-            CASE ( Neutral, Crouch, Brake ) start_jump(); // standing jump
+            CASE ( Neutral, Crouch, Brake, Shield ) start_jump(); // standing jump
             CASE ( Jumping, Falling ) start_air_hop(); // aerial jump
             CASE_DEFAULT {} // no jump allowed
         } SWITCH_END;
     }
 
-    if (state == State::Neutral)
+    else if (input.hold_shield == true)
+    {
+        if (state == State::Shield && input.mash_axis_x != 0)
+            facing = Facing(-input.mash_axis_x);
+    }
+
+    else if (state == State::Neutral)
     {
         if (input.axis_move.x < -0.0f) facing = Facing::Left;
         if (input.axis_move.x > +0.0f) facing = Facing::Right;
@@ -251,7 +310,10 @@ void PrivateFighter::handle_input_movement(const Controller::Input& input)
     CASE ( Neutral ) //=======================================//
     {
         if (input.press_jump == true)
-            state_transition(transitions.neutral_jump);
+            state_transition(transitions.misc_jump);
+
+        else if (input.hold_shield == true)
+            state_transition(transitions.misc_shield);
 
         else if (input.axis_move.y == -1.0f)
             state_transition(transitions.neutral_crouch);
@@ -263,7 +325,10 @@ void PrivateFighter::handle_input_movement(const Controller::Input& input)
     CASE ( Walking ) //=======================================//
     {
         if (input.press_jump == true)
-            state_transition(transitions.walking_jump);
+            state_transition(transitions.misc_jump);
+
+        else if (input.press_shield == true)
+            state_transition(transitions.misc_shield);
 
         else if (input.axis_move.y == -1.0f)
             state_transition(transitions.walking_crouch);
@@ -278,7 +343,10 @@ void PrivateFighter::handle_input_movement(const Controller::Input& input)
     CASE ( Dashing ) //=======================================//
     {
         if (input.press_jump == true)
-            state_transition(transitions.dashing_jump);
+            state_transition(transitions.misc_jump);
+
+        else if (input.press_shield == true)
+            state_transition(transitions.misc_shield);
 
         else if (input.axis_move.x == 0.0f)
             state_transition(transitions.dashing_brake);
@@ -287,41 +355,24 @@ void PrivateFighter::handle_input_movement(const Controller::Input& input)
     CASE ( Brake ) //=========================================//
     {
         if (input.press_jump == true)
-            state_transition(transitions.neutral_jump);
+            state_transition(transitions.misc_jump);
     }
 
     CASE ( Crouch ) //========================================//
     {
         if (input.press_jump == true)
-            state_transition(transitions.crouch_jump);
+            state_transition(transitions.misc_jump);
+
+        if (input.press_shield == true)
+            state_transition(transitions.misc_shield);
 
         else if (input.axis_move.y != -1.f)
             state_transition(transitions.crouch_stand);
     }
 
-    CASE ( Landing ) //=======================================//
-    {
-        if (--mLandingLag == 0u)
-        {
-            state = State::Neutral;
-        }
-    }
-
     CASE ( PreJump ) //=======================================//
     {
         mJumpHeld &= input.hold_jump;
-
-        if (--mJumpDelay == 0u)
-        {
-            const float hopHeight = stats.hop_height * STS_HOP_HEIGHT;
-            const float jumpHeight = stats.jump_height * STS_JUMP_HEIGHT;
-            const float gravity = stats.gravity * STS_GRAVITY;
-
-            if (mJumpHeld == true) velocity.y = std::sqrt(2.f * jumpHeight * gravity * STS_TICK_RATE);
-            if (mJumpHeld == false) velocity.y = std::sqrt(2.f * hopHeight * gravity * STS_TICK_RATE);
-
-            state = State::Jumping;
-        }
     }
 
     CASE ( Jumping ) //=======================================//
@@ -331,19 +382,42 @@ void PrivateFighter::handle_input_movement(const Controller::Input& input)
         if (input.press_jump == true)
             state_transition(transitions.jumping_hop);
 
-        else if (velocity.y <= 0.f)
-            state_transition(transitions.jumping_fall);
+        else if (input.press_shield == true)
+            state_transition(transitions.jumping_dodge);
     }
 
     CASE ( Falling ) //=======================================//
     {
         if (input.press_jump == true)
             state_transition(transitions.falling_hop);
+
+        else if (input.press_shield == true)
+            state_transition(transitions.falling_dodge);
     }
+
+    CASE ( Shield ) //========================================//
+    {
+        if (input.press_jump == true)
+            state_transition(transitions.misc_jump);
+
+        else if (input.hold_shield == false)
+            state_transition(transitions.shield_neutral);
+
+        else if (input.mash_axis_x != 0)
+            state_transition(transitions.shield_evade);
+
+        else if (input.mash_axis_y != 0)
+            state_transition(transitions.shield_dodge);
+    }
+
+    //== Nothing to do here ==================================//
+
+    CASE ( Attack, AirAttack, Special, AirSpecial ) {}
+    CASE ( Landing, Charge, Dodge, Evade, AirDodge ) {}
 
     //== Not Yet Implemented =================================//
 
-    CASE ( Charge, Attack, AirAttack, Knocked, Stunned ) {}
+    CASE ( Knocked, Stunned ) {}
 
     //--------------------------------------------------------//
 
@@ -352,8 +426,6 @@ void PrivateFighter::handle_input_movement(const Controller::Input& input)
     ENABLE_FLOAT_EQUALITY_WARNING;
 
     //-- add horizontal velocity -----------------------------//
-
-    // todo: this could definitely be cleaner...
 
     const float walkMobility = stats.traction * STS_WALK_MOBILITY;
     const float dashMobility = stats.traction * STS_DASH_MOBILITY;
@@ -382,53 +454,18 @@ void PrivateFighter::handle_input_movement(const Controller::Input& input)
     if (state == State::Dashing) apply_horizontal_move(dashMobility, dashTargetSpeed);
     if (state == State::Jumping) apply_horizontal_move(airMobility, airTargetSpeed);
     if (state == State::Falling) apply_horizontal_move(airMobility, airTargetSpeed);
+    if (state == State::AirAttack) apply_horizontal_move(airMobility, airTargetSpeed);
+    if (state == State::AirSpecial) apply_horizontal_move(airMobility, airTargetSpeed);
+    if (state == State::AirDodge) apply_horizontal_move(airMobility, airTargetSpeed);
 }
 
 //============================================================================//
 
 void PrivateFighter::handle_input_actions(const Controller::Input& input)
 {
-    if (mActiveAction != nullptr) return;
-
-    //--------------------------------------------------------//
-
-    State& state = fighter.state;
-    Facing& facing = fighter.facing;
-
-    Actions& actions = *fighter.mActions;
-
-    //--------------------------------------------------------//
-
-    if (state == State::Charge)
-    {
-        if (input.hold_attack == false) // todo: or max charge reached
-        {
-            if (mActionType == Action::Type::Smash_Down)
-            {
-                state_transition(transitions.smash_down_attack);
-                mActiveAction = actions.smash_down.get();
-            }
-            else if (mActionType == Action::Type::Smash_Forward)
-            {
-                state_transition(transitions.smash_forward_attack);
-                mActiveAction = actions.smash_forward.get();
-            }
-            else if (mActionType == Action::Type::Smash_Up)
-            {
-                state_transition(transitions.smash_up_attack);
-                mActiveAction = actions.smash_up.get();
-            }
-            else SQASSERT(false, "");
-
-            mActiveAction->do_start();
-        }
-
-        return;
-    }
-
-    //--------------------------------------------------------//
-
-    if (input.press_attack == false) return;
+    const State state = fighter.current.state;
+    const Facing facing = fighter.current.facing;
+    Action* const action = fighter.current.action;
 
     //--------------------------------------------------------//
 
@@ -440,6 +477,8 @@ void PrivateFighter::handle_input_actions(const Controller::Input& input)
 
     CASE ( Neutral ) //=======================================//
     {
+        if (input.press_attack == false) return;
+
         if      (input.mod_axis_y == -1) switch_action(Action::Type::Smash_Down);
         else if (input.mod_axis_y == +1) switch_action(Action::Type::Smash_Up);
 
@@ -451,6 +490,8 @@ void PrivateFighter::handle_input_actions(const Controller::Input& input)
 
     CASE ( Walking ) //=======================================//
     {
+        if (input.press_attack == false) return;
+
         // todo: work out correct priority here
 
         if (input.mod_axis_x != 0)
@@ -464,22 +505,26 @@ void PrivateFighter::handle_input_actions(const Controller::Input& input)
 
     CASE ( Dashing ) //=======================================//
     {
-        if (input.mod_axis_x != 0)
-            switch_action(Action::Type::Smash_Forward);
+        if (input.press_attack == false) return;
+
+        if (input.mod_axis_x != 0) switch_action(Action::Type::Smash_Forward);
 
         else switch_action(Action::Type::Dash_Attack);
     }
 
     CASE ( Brake ) //=========================================//
     {
-        if (input.mod_axis_y == +1)
-            switch_action(Action::Type::Smash_Up);
+        if (input.press_attack == false) return;
+
+        if (input.mod_axis_y == +1) switch_action(Action::Type::Smash_Up);
 
         else switch_action(Action::Type::Dash_Attack);
     }
 
     CASE ( Crouch ) //========================================//
     {
+        if (input.press_attack == false) return;
+
         if (input.mod_axis_y == -1) switch_action(Action::Type::Smash_Down);
 
         else switch_action(Action::Type::Tilt_Down);
@@ -487,6 +532,8 @@ void PrivateFighter::handle_input_actions(const Controller::Input& input)
 
     CASE ( Jumping, Falling ) //==============================//
     {
+        if (input.press_attack == false) return;
+
         // todo: work out correct priority here
 
         if (input.axis_move.x == 0.f && input.axis_move.y == 0.f)
@@ -506,20 +553,39 @@ void PrivateFighter::handle_input_actions(const Controller::Input& input)
         else switch_action(Action::Type::Air_Up);
     }
 
-    CASE ( Landing, PreJump ) //==============================//
+    CASE ( Charge ) //========================================//
     {
-        // can't do stuff afaik
+        if (input.hold_attack == false) // todo: or max charge reached
+        {
+            if (action == fighter.actions.smash_down.get())
+                state_transition(transitions.smash_down_attack);
+
+            else if (action == fighter.actions.smash_forward.get())
+                state_transition(transitions.smash_forward_attack);
+
+            else if (action == fighter.actions.smash_up.get())
+                state_transition(transitions.smash_up_attack);
+
+            else SQASSERT(false, "invalid charge action");
+
+            action->do_start();
+        }
     }
 
-    CASE ( Knocked, Stunned ) //==============================//
+    CASE ( Attack, AirAttack ) //=============================//
     {
-        // can't do stuff afaik
+        // will want to angle some attacks
     }
 
-    CASE ( Charge, Attack, AirAttack ) //=====================//
+    CASE ( Special, AirSpecial ) //===========================//
     {
-        SQASSERT(false, "this shouldn't happen...");
+        // will want to share most input data here
     }
+
+    //== Nothing to do here ==================================//
+
+    CASE ( PreJump, Landing, Knocked, Stunned ) {}
+    CASE ( Shield, Dodge, Evade, AirDodge ) {}
 
     //--------------------------------------------------------//
 
@@ -532,7 +598,9 @@ void PrivateFighter::handle_input_actions(const Controller::Input& input)
 
 void PrivateFighter::state_transition(const Transition& transition)
 {
-    fighter.state = transition.newState;
+    fighter.current.state = transition.newState;
+
+    mStateProgress = 0u;
 
     mAnimation = transition.animation;
     mNextAnimation = transition.loop;
@@ -551,11 +619,9 @@ void PrivateFighter::state_transition(const Transition& transition)
 
 void PrivateFighter::switch_action(Action::Type actionType)
 {
-    SQASSERT(actionType != mActionType, "");
+    Action* const newAction = fighter.get_action(actionType);
 
-    //--------------------------------------------------------//
-
-    Actions& actions = *fighter.mActions;
+    SQASSERT(newAction != fighter.current.action, "switch to same action");
 
     //--------------------------------------------------------//
 
@@ -563,77 +629,50 @@ void PrivateFighter::switch_action(Action::Type actionType)
 
     //--------------------------------------------------------//
 
-    CASE ( Neutral_First )
-    state_transition({ State::Attack, 1u, &animations.action_neutral_first });
-    mActiveAction = actions.neutral_first.get();
+    CASE ( Neutral_First ) state_transition({ State::Attack, 1u, &animations.action_neutral_first });
 
-    CASE ( Tilt_Down )
-    state_transition({ State::Attack, 1u, &animations.action_tilt_down });
-    mActiveAction = actions.tilt_down.get();
+    CASE ( Tilt_Down )    state_transition({ State::Attack, 1u, &animations.action_tilt_down });
+    CASE ( Tilt_Forward ) state_transition({ State::Attack, 1u, &animations.action_tilt_forward });
+    CASE ( Tilt_Up )      state_transition({ State::Attack, 1u, &animations.action_tilt_up });
 
-    CASE ( Tilt_Forward )
-    state_transition({ State::Attack, 1u, &animations.action_tilt_forward });
-    mActiveAction = actions.tilt_forward.get();
+    CASE ( Air_Back )    state_transition({ State::AirAttack, 1u, &animations.action_air_back });
+    CASE ( Air_Down )    state_transition({ State::AirAttack, 1u, &animations.action_air_down });
+    CASE ( Air_Forward ) state_transition({ State::AirAttack, 1u, &animations.action_air_forward });
+    CASE ( Air_Neutral ) state_transition({ State::AirAttack, 1u, &animations.action_air_neutral });
+    CASE ( Air_Up )      state_transition({ State::AirAttack, 1u, &animations.action_air_up });
 
-    CASE ( Tilt_Up )
-    state_transition({ State::Attack, 1u, &animations.action_tilt_up });
-    mActiveAction = actions.tilt_up.get();
+    CASE ( Dash_Attack ) state_transition({ State::Attack, 1u, &animations.action_dash_attack });
 
-    CASE ( Air_Back )
-    state_transition({ State::AirAttack, 1u, &animations.action_air_back });
-    mActiveAction = actions.air_back.get();
+    CASE ( Smash_Down )    state_transition(transitions.smash_down_start);
+    CASE ( Smash_Forward ) state_transition(transitions.smash_forward_start);
+    CASE ( Smash_Up )      state_transition(transitions.smash_up_start);
 
-    CASE ( Air_Down )
-    state_transition({ State::AirAttack, 1u, &animations.action_air_down });
-    mActiveAction = actions.air_down.get();
-
-    CASE ( Air_Forward )
-    state_transition({ State::AirAttack, 1u, &animations.action_air_forward });
-    mActiveAction = actions.air_forward.get();
-
-    CASE ( Air_Neutral )
-    state_transition({ State::AirAttack, 1u, &animations.action_air_neutral });
-    mActiveAction = actions.air_neutral.get();
-
-    CASE ( Air_Up )
-    state_transition({ State::AirAttack, 1u, &animations.action_air_up });
-    mActiveAction = actions.air_up.get();
-
-    CASE ( Dash_Attack )
-    state_transition({ State::Attack, 1u, &animations.action_dash_attack });
-    mActiveAction = actions.dash_attack.get();
-
-    CASE ( Smash_Down )
-    state_transition(transitions.smash_down_start);
-
-    CASE ( Smash_Forward )
-    state_transition(transitions.smash_forward_start);
-
-    CASE ( Smash_Up )
-    state_transition(transitions.smash_up_start);
-
-    CASE ( Special_Neutral )
-    {} // not sure
+    CASE ( Special_Down )    {} // not sure
+    CASE ( Special_Forward ) {} // not sure
+    CASE ( Special_Neutral ) {} // not sure
+    CASE ( Special_Up )      {} // not sure
 
     //--------------------------------------------------------//
 
     CASE ( None )
     {
-        mActiveAction = nullptr;
+        // we know here that current action is not nullptr
 
-        SWITCH ( mActionType ) {
+        // todo: this is a mess and is wrong
+
+        SWITCH ( fighter.current.action->get_type() ) {
 
         CASE ( Neutral_First, Tilt_Forward, Tilt_Up, Smash_Down, Smash_Forward, Smash_Up, Dash_Attack )
-        state_transition(transitions.attack_to_neutral);
+        state_transition(transitions.misc_neutral);
 
         CASE ( Tilt_Down )
-        state_transition(transitions.attack_to_crouch);
+        state_transition(transitions.misc_crouch);
 
         CASE ( Air_Back, Air_Down, Air_Forward, Air_Neutral, Air_Up )
-        state_transition(transitions.attack_to_falling);
+        state_transition(transitions.misc_falling);
 
-        CASE ( Special_Neutral )
-        state_transition(transitions.attack_to_neutral); // todo
+        CASE ( Special_Down, Special_Forward, Special_Neutral, Special_Up )
+        state_transition(transitions.misc_neutral); // todo
 
         CASE ( None ) SQASSERT(false, "switch from None to None");
 
@@ -646,23 +685,23 @@ void PrivateFighter::switch_action(Action::Type actionType)
 
     //--------------------------------------------------------//
 
-    if (mActiveAction != nullptr)
-    {
-        mActiveAction->do_start();
-    }
+    if (newAction != nullptr) newAction->do_start();
 
-    mActionType = actionType;
+    fighter.current.action = newAction;
 }
 
 //============================================================================//
 
-void PrivateFighter::update_physics()
+void PrivateFighter::update_after_input()
 {
     const Stats& stats = fighter.stats;
 
     Stage& stage = fighter.mFightWorld.get_stage();
 
-    State& state = fighter.state;
+    State& state = fighter.current.state;
+    Facing& facing = fighter.current.facing;
+
+    Status& status = fighter.status;
 
     Vec2F& velocity = fighter.mVelocity;
 
@@ -680,7 +719,7 @@ void PrivateFighter::update_physics()
 
     SWITCH ( state ) {
 
-    CASE ( Neutral, Walking, Dashing, Brake, Crouch, Charge, Attack, Landing )
+    CASE ( Neutral, Walking, Dashing, Brake, Crouch, Charge, Attack, Special, Landing, Shield, Dodge )
     {
         const float friction = stats.traction * STS_LAND_FRICTION;
 
@@ -688,7 +727,7 @@ void PrivateFighter::update_physics()
         if (velocity.x > +0.f) velocity.x = maths::max(velocity.x - friction, +0.f);
     }
 
-    CASE ( Jumping, Falling, AirAttack )
+    CASE ( Jumping, Falling, AirAttack, AirSpecial, AirDodge )
     {
         const float friction = stats.air_friction * STS_AIR_FRICTION;
 
@@ -696,23 +735,72 @@ void PrivateFighter::update_physics()
         if (velocity.x > +0.f) velocity.x = maths::max(velocity.x - friction, +0.f);
     }
 
-    CASE ( PreJump )
-    {
-        // apply no friction
-    }
-
-    CASE ( Knocked, Stunned ) {}
+    CASE ( Evade, PreJump, Knocked, Stunned ) {}
 
     } SWITCH_END;
 
+    //-- perform passive state updates -----------------------//
 
-    //--------------------------------------------------------//
+    constexpr auto in_range = [](uint value, uint min, uint max) { return value >= min && value < max; };
 
-    if (state == State::Brake && velocity.x == 0.f)
+    if (state == State::Evade)
     {
-        state = State::Neutral;
+        status.intangible = in_range(++mStateProgress, stats.evade_safe_start, stats.evade_safe_end);
+
+        if (mStateProgress <= stats.evade_finish)
+        {
+            const float distance = stats.evade_distance * STS_EVADE_DISTANCE;
+            const float speed = distance / float(stats.evade_finish);
+
+            velocity.x = speed * -float(facing) * 48.f;
+        }
+
+        else { state = State::Neutral; velocity.x = 0.f; }
     }
 
+    else if (state == State::Dodge)
+    {
+        status.intangible = in_range(++mStateProgress, stats.dodge_safe_start, stats.dodge_safe_end);
+        if (mStateProgress > stats.dodge_finish) state = State::Neutral;
+    }
+
+    else if (state == State::AirDodge)
+    {
+        status.intangible = in_range(++mStateProgress, stats.air_dodge_safe_start, stats.air_dodge_safe_end);
+        if (mStateProgress > stats.air_dodge_finish) state = State::Neutral;
+    }
+
+    else if (state == State::Landing)
+    {
+        if (++mStateProgress == STS_LANDING_LAG) state = State::Neutral;
+    }
+
+    else if (state == State::PreJump)
+    {
+        if (++mStateProgress == STS_JUMP_DELAY)
+        {
+            const float hopHeight = stats.hop_height * STS_HOP_HEIGHT;
+            const float jumpHeight = stats.jump_height * STS_JUMP_HEIGHT;
+            const float gravity = stats.gravity * STS_GRAVITY;
+
+            if (mJumpHeld == true) velocity.y = std::sqrt(2.f * jumpHeight * gravity * STS_TICK_RATE);
+            if (mJumpHeld == false) velocity.y = std::sqrt(2.f * hopHeight * gravity * STS_TICK_RATE);
+
+            state = State::Jumping;
+        }
+    }
+
+    else if (state == State::Jumping)
+    {
+        if (velocity.y <= 0.f)
+            state_transition(transitions.jumping_falling);
+    }
+
+    else if (state == State::Brake)
+    {
+        if (velocity.x == 0.f)
+            state = State::Neutral;
+    }
 
     //-- apply gravity ---------------------------------------//
 
@@ -720,63 +808,54 @@ void PrivateFighter::update_physics()
 
     velocity.y = maths::max(velocity.y, stats.fall_speed * -STS_FALL_SPEED);
 
-
     //-- update position -------------------------------------//
 
     const Vec2F targetPosition = current.position + velocity / 48.f;
 
     current.position = stage.transform_response(current.position, worldDiamond, velocity / 48.f);
 
+    //-- check if fallen or moved off an edge ----------------//
 
-    //-- check if fallen or landed ---------------------------//
-
-    SWITCH ( state ) {
-
-    CASE ( Neutral, Walking, Dashing, Brake, Crouch, Charge, Attack, Landing )
+    if (current.position.y <= targetPosition.y)
     {
-        if (current.position.y <= targetPosition.y)
+        SWITCH (state) {
+            CASE (Walking) { state_transition(transitions.walking_dive); }
+            CASE (Dashing) { state_transition(transitions.dashing_dive); }
+            CASE (Special) {} // todo
+            CASE (PreJump, Jumping, Falling, AirAttack, AirSpecial, AirDodge, Knocked) {}
+            CASE_DEFAULT { state_transition(transitions.misc_falling); }
+        } SWITCH_END;
+    }
+
+    //-- check if landed on the ground -----------------------//
+
+    if (current.position.y > targetPosition.y)
+    {
+        if (state == State::AirDodge) state_transition(transitions.misc_land);
+        else if (state == State::Jumping) state_transition(transitions.misc_land);
+        else if (state == State::Falling) state_transition(transitions.misc_land);
+
+        else if (state == State::AirAttack)
         {
-            state_transition(transitions.other_fall);
+            state_transition(transitions.misc_land);
+            switch_action(Action::Type::None);
         }
-    }
 
-    CASE ( PreJump )
-    {
-        // can't fall during pre-jump
-    }
-
-    CASE ( Jumping, Falling, AirAttack )
-    {
-        if (current.position.y > targetPosition.y)
+        else if (state == State::AirSpecial)
         {
-            if (state == State::AirAttack)
-                switch_action(Action::Type::None);
-
-            mLandingLag = STS_LANDING_LAG;
-
-            state_transition(transitions.falling_land);
+            // todo
         }
-    }
 
-    CASE ( Knocked )
-    {
-        if (current.position.y > targetPosition.y)
+        else if (state == State::Knocked)
         {
             if (maths::length(velocity) > 5.f)
             {
-                // todo: do splat stuff
+                // todo
             }
 
-            mLandingLag = STS_LANDING_LAG;
-
-            state_transition(transitions.falling_land);
+            state_transition(transitions.misc_land);
         }
     }
-
-    CASE ( Stunned ) {}
-
-    } SWITCH_END;
-
 
     //-- check if walls, ceiling, or floor reached -----------//
 
@@ -784,25 +863,21 @@ void PrivateFighter::update_physics()
     if (current.position.x < targetPosition.x) velocity.x = 0.f;
     if (current.position.y < targetPosition.y) velocity.y = 0.f;
     if (current.position.y > targetPosition.y) velocity.y = 0.f;
-}
 
-//============================================================================//
+    //-- update the active action ----------------------------//
 
-void PrivateFighter::update_active_action()
-{
-    if (mActiveAction != nullptr)
-    {
-        if (mActiveAction->do_tick() == true)
-        {
-            switch_action(Action::Type::None);
-        }
-    }
+    if (fighter.current.action != nullptr)
+        if (fighter.current.state != State::Charge)
+            if (fighter.current.action->do_tick() == true)
+                switch_action(Action::Type::None);
 }
 
 //============================================================================//
 
 void PrivateFighter::base_tick_fighter()
 {
+    fighter.previous = fighter.current;
+
     previous = current;
 
     //--------------------------------------------------------//
@@ -811,20 +886,18 @@ void PrivateFighter::base_tick_fighter()
 
     const auto input = controller->get_input();
 
+    //--------------------------------------------------------//
+
     handle_input_movement(input);
 
     handle_input_actions(input);
 
-    //--------------------------------------------------------//
-
-    update_physics();
-
-    update_active_action();
+    update_after_input();
 
     //--------------------------------------------------------//
 
     const Vec3F position ( current.position, 0.f );
-    const QuatF rotation ( 0.f, 0.25f * float(fighter.facing), 0.f );
+    const QuatF rotation ( 0.f, 0.25f * float(fighter.current.facing), 0.f );
 
     fighter.mModelMatrix = maths::transform(position, rotation, Vec3F(1.f));
 }

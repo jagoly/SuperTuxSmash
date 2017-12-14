@@ -51,23 +51,3 @@ bool Action::do_tick()
 
     return finished;
 }
-
-//============================================================================//
-
-Actions::Actions(FightWorld& world, Fighter& fighter)
-{
-    neutral_first   = std::make_unique<Action>(world, fighter, Action::Type::Neutral_First);
-    tilt_down       = std::make_unique<Action>(world, fighter, Action::Type::Tilt_Down);
-    tilt_forward    = std::make_unique<Action>(world, fighter, Action::Type::Tilt_Forward);
-    tilt_up         = std::make_unique<Action>(world, fighter, Action::Type::Tilt_Up);
-    air_back        = std::make_unique<Action>(world, fighter, Action::Type::Air_Back);
-    air_down        = std::make_unique<Action>(world, fighter, Action::Type::Air_Down);
-    air_forward     = std::make_unique<Action>(world, fighter, Action::Type::Air_Forward);
-    air_neutral     = std::make_unique<Action>(world, fighter, Action::Type::Air_Neutral);
-    air_up          = std::make_unique<Action>(world, fighter, Action::Type::Air_Up);
-    dash_attack     = std::make_unique<Action>(world, fighter, Action::Type::Dash_Attack);
-    smash_down      = std::make_unique<Action>(world, fighter, Action::Type::Smash_Down);
-    smash_forward   = std::make_unique<Action>(world, fighter, Action::Type::Smash_Forward);
-    smash_up        = std::make_unique<Action>(world, fighter, Action::Type::Smash_Up);
-    special_neutral = std::make_unique<Action>(world, fighter, Action::Type::Special_Neutral);
-}

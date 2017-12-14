@@ -22,7 +22,7 @@ void ActionFuncs::disable_blob(Action& action, PoolKey key)
 void ActionFuncs::add_velocity(Action& action, float fwd, float up)
 {
     Fighter& fighter = action.fighter;
-    fighter.mVelocity.x += float(fighter.facing) * fwd;
+    fighter.mVelocity.x += float(fighter.current.facing) * fwd;
     fighter.mVelocity.y += up;
 }
 

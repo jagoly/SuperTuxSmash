@@ -43,6 +43,9 @@ public: //====================================================//
         bool hold_attack = false;
         bool hold_jump = false;
 
+        bool press_shield = false;
+        bool hold_shield = false;
+
         int8_t mod_axis_x = 0;
         int8_t mod_axis_y = 0;
 
@@ -70,6 +73,7 @@ private: //===================================================//
 
         sq::Gamepad_Button button_attack = sq::Gamepad_Button::Unknown;
         sq::Gamepad_Button button_jump   = sq::Gamepad_Button::Unknown;
+        sq::Gamepad_Button button_shield = sq::Gamepad_Button::Unknown;
 
         sq::Keyboard_Key key_left  = sq::Keyboard_Key::Unknown;
         sq::Keyboard_Key key_up    = sq::Keyboard_Key::Unknown;
@@ -78,6 +82,7 @@ private: //===================================================//
 
         sq::Keyboard_Key key_attack = sq::Keyboard_Key::Unknown;
         sq::Keyboard_Key key_jump   = sq::Keyboard_Key::Unknown;
+        sq::Keyboard_Key key_shield = sq::Keyboard_Key::Unknown;
 
     } config;
 

@@ -178,6 +178,7 @@ void ActionBuilder::load_from_json(Action& action)
             else if (key == "group")      blob->group = value;
             else if (key == "knockAngle") blob->knockAngle = value;
             else if (key == "knockBase")  blob->knockBase = value;
+            else if (key == "knockScale") blob->knockScale = value;
             else if (key == "damage")     blob->damage = value;
             else if (key == "flavour")    blob->set_flavour_from_str(value);
             else if (key == "priority")   blob->set_priority_from_str(value);

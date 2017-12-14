@@ -10,6 +10,7 @@
     "group": 0,
     "knockAngle": 0.125,
     "knockBase": 12.0,
+    "knockScale": 1.0,
     "damage": 8.0,
     "flavour": "TANGY",
     "priority": "HIGH"
@@ -22,6 +23,7 @@
     "group": 0,
     "knockAngle": 0.125,
     "knockBase": 8.0,
+    "knockScale": 1.0,
     "damage": 5.0,
     "flavour": "SOUR",
     "priority": "NORMAL"
@@ -34,6 +36,7 @@
     "group": 0,
     "knockAngle": 0.125,
     "knockBase": 8.0,
+    "knockScale": 1.0,
     "damage": 5.0,
     "flavour": "SOUR",
     "priority": "NORMAL"
