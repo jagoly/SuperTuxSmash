@@ -7,10 +7,9 @@ using namespace sts;
 Sara_Fighter::Sara_Fighter(uint8_t index, FightWorld& world)
     : Fighter(index, world, "Sara")
 {
-    mLocalDiamond.xNeg = { -0.3f, 0.8f };
-    mLocalDiamond.xPos = { +0.3f, 0.8f };
-    mLocalDiamond.yNeg = { 0.f, 0.f };
-    mLocalDiamond.yPos = { 0.f, 1.4f };
+    mLocalDiamond.offsetTop = 1.4f;
+    mLocalDiamond.offsetMiddle = 0.8f;
+    mLocalDiamond.halfWidth = 0.3f;
 }
 
 //============================================================================//
@@ -25,7 +24,7 @@ void Sara_Fighter::tick()
 
     ParticleGeneratorDisc generator;
 
-    generator.emitPosition = Vec3F(get_diamond().yNeg, 0.f);
+    generator.emitPosition = Vec3F(get_diamond().origin(), 0.f);
     generator.emitVelocity = Vec3F(get_velocity().x * 0.2f, 0.f, 0.f);
     generator.direction = Vec3F(0.f, 1.f, 0.f);
     generator.scale = { 0.3f, 0.6f };

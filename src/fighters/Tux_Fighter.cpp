@@ -7,10 +7,9 @@ using namespace sts;
 Tux_Fighter::Tux_Fighter(uint8_t index, FightWorld& world)
     : Fighter(index, world, "Tux")
 {
-    mLocalDiamond.xNeg = { -0.4f, 0.5f };
-    mLocalDiamond.xPos = { +0.4f, 0.5f };
-    mLocalDiamond.yNeg = { 0.f, 0.f };
-    mLocalDiamond.yPos = { 0.f, 1.0f };
+    mLocalDiamond.offsetTop = 1.f;
+    mLocalDiamond.offsetMiddle = 0.5f;
+    mLocalDiamond.halfWidth = 0.4f;
 }
 
 //============================================================================//

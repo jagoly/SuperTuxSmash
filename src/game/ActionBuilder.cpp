@@ -83,6 +83,20 @@ BoundFunction impl_bind_params(Func func, const std::vector<string_view>& tokens
 
 //----------------------------------------------------------------------------//
 
+struct BlobTemplate
+{
+    uint8_t group;
+    HitBlob::Flavour flavour;
+    HitBlob::Priority priority;
+    char _padding[1];
+    float damage;
+    float knockAngle;
+    float knockBase;
+    float knockScale;
+};
+
+//----------------------------------------------------------------------------//
+
 } // anonymous namespace
 
 //============================================================================//
@@ -160,6 +174,34 @@ void ActionBuilder::load_from_json(Action& action)
 
     //--------------------------------------------------------//
 
+    std::map<string, BlobTemplate> templates;
+
+    //--------------------------------------------------------//
+
+    if (root.count("templates") != 0u)
+    for (auto iter : json::iterator_wrapper(root.at("templates")))
+    {
+        BlobTemplate& blobTemplate = templates[iter.key()];
+
+        for (auto iter : json::iterator_wrapper(iter.value()))
+        {
+            const string& key = iter.key();
+            const auto& value = iter.value();
+
+            if      (key == "group")      blobTemplate.group = value;
+            else if (key == "flavour")    blobTemplate.flavour = HitBlob::flavour_from_str(value);
+            else if (key == "priority")   blobTemplate.priority = HitBlob::priority_from_str(value);
+            else if (key == "damage")     blobTemplate.damage = value;
+            else if (key == "knockAngle") blobTemplate.knockAngle = value;
+            else if (key == "knockBase")  blobTemplate.knockBase = value;
+            else if (key == "knockScale") blobTemplate.knockScale = value;
+
+            else sq::log_warning("unhandled blob key '%s'", key);
+        }
+    }
+
+    //--------------------------------------------------------//
+
     for (auto blobIter : json::iterator_wrapper(root.at("blobs")))
     {
         HitBlob* blob = action.blobs.emplace(blobIter.key().c_str());
@@ -172,7 +214,20 @@ void ActionBuilder::load_from_json(Action& action)
             const string key = iter.key();
             const auto& value = iter.value();
 
-            if      (key == "origin")     blob->origin = { value[0], value[1], value[2] };
+            if (key == "template")
+            {
+                const BlobTemplate& blobTemplate = templates.at(value);
+
+                blob->group = blobTemplate.group;
+                blob->flavour = blobTemplate.flavour;
+                blob->priority = blobTemplate.priority;
+                blob->damage = blobTemplate.damage;
+                blob->knockAngle = blobTemplate.knockAngle;
+                blob->knockBase = blobTemplate.knockBase;
+                blob->knockScale = blobTemplate.knockScale;
+            }
+
+            else if (key == "origin")     blob->origin = { value[0], value[1], value[2] };
             else if (key == "radius")     blob->radius = value;
             else if (key == "bone")       blob->bone = value;
             else if (key == "group")      blob->group = value;

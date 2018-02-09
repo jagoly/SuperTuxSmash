@@ -43,6 +43,7 @@ public: //====================================================//
         Animation jumping_loop;
         Animation neutral_loop;
         Animation shield_loop;
+        Animation vertigo_loop;
         Animation walking_loop;
 
         Animation airdodge; // dodge in the air
@@ -167,6 +168,9 @@ public: //====================================================//
     void base_tick_animation();
 
 private: //===================================================//
+
+    int8_t mMoveAxisX = 0;
+    int8_t mMoveAxisY = 0;
 
     bool mAttackHeld = false;
     bool mJumpHeld = false;

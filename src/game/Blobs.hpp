@@ -43,33 +43,39 @@ struct alignas(16) HitBlob final
     Flavour flavour;    ///< Flavour of blob from sour (worst) to sweet (best).
     Priority priority;  ///< Priority of blob when colliding with other hit blobs.
 
-    char _paddingA[4];
-
     float damage;      ///< How much damage the blob will do when hit.
     float knockAngle;  ///< Angle of knockback in turns (0.0 == up, 0.25 == xdir, 0.5 == down)
     float knockBase;   ///< Base knockback to apply on collision.
     float knockScale;  ///< Scale the knockback based on current fighter damage.
 
-    char _paddingB[24];
+    char _padding[12];
 
     //--------------------------------------------------------//
 
-    void set_flavour_from_str(const string& str)
+    static Flavour flavour_from_str(const string& str)
     {
-        if      (str == "SOUR")  flavour = Flavour::Sour;
-        else if (str == "TANGY") flavour = Flavour::Tangy;
-        else if (str == "SWEET") flavour = Flavour::Sweet;
-        else throw std::invalid_argument("bad flavour");
+        if (str == "SOUR")  return Flavour::Sour;
+        if (str == "TANGY") return Flavour::Tangy;
+        if (str == "SWEET") return Flavour::Sweet;
+
+        throw std::invalid_argument("bad flavour");
     }
 
-    void set_priority_from_str(const string& str)
+    static Priority priority_from_str(const string& str)
     {
-        if      (str == "LOW")       priority = Priority::Low;
-        else if (str == "NORMAL")    priority = Priority::Normal;
-        else if (str == "HIGH")      priority = Priority::High;
-        else if (str == "TRANSCEND") priority = Priority::Transcend;
-        else throw std::invalid_argument("bad priority");
+        if (str == "LOW")       return Priority::Low;
+        if (str == "NORMAL")    return Priority::Normal;
+        if (str == "HIGH")      return Priority::High;
+        if (str == "TRANSCEND") return Priority::Transcend;
+
+        throw std::invalid_argument("bad priority");
     }
+
+    //--------------------------------------------------------//
+
+    void set_flavour_from_str(const string& str) { flavour = flavour_from_str(str); }
+
+    void set_priority_from_str(const string& str) { priority = priority_from_str(str); }
 
     //--------------------------------------------------------//
 
@@ -112,7 +118,7 @@ struct alignas(16) HurtBlob final
 
 //============================================================================//
 
-static_assert(sizeof(HitBlob) == 96u);
+static_assert(sizeof(HitBlob) == 80u);
 
 static_assert(sizeof(HurtBlob) == 80u);
 

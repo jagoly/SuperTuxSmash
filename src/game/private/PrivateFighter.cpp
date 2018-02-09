@@ -82,6 +82,7 @@ void PrivateFighter::initialise_armature(const string& path)
     load_animation ( a.jumping_loop, "JumpingLoop" );
     load_animation ( a.neutral_loop, "NeutralLoop" );
     load_animation ( a.shield_loop,  "ShieldLoop"  );
+    load_animation ( a.vertigo_loop, "VertigoLoop" );
     load_animation ( a.walking_loop, "WalkingLoop" );
 
     load_animation ( a.airdodge, "Airdodge" );
@@ -260,6 +261,11 @@ void PrivateFighter::handle_input_movement(const Controller::Input& input)
 
     //--------------------------------------------------------//
 
+    mMoveAxisX = input.int_axis.x;
+    mMoveAxisY = input.int_axis.y;
+
+    //--------------------------------------------------------//
+
     const auto start_jump = [&]()
     {
         mJumpHeld = true;
@@ -290,14 +296,14 @@ void PrivateFighter::handle_input_movement(const Controller::Input& input)
 
     else if (input.hold_shield == true)
     {
-        if (state == State::Shield && input.mash_axis_x != 0)
-            facing = Facing(-input.mash_axis_x);
+        if (state == State::Shield && input.mash_axis.x != 0)
+            facing = Facing(-input.mash_axis.x);
     }
 
     else if (state == State::Neutral)
     {
-        if (input.axis_move.x < -0.0f) facing = Facing::Left;
-        if (input.axis_move.x > +0.0f) facing = Facing::Right;
+        if (input.float_axis.x < -0.0f) facing = Facing::Left;
+        if (input.float_axis.x > +0.0f) facing = Facing::Right;
     }
 
 
@@ -315,10 +321,10 @@ void PrivateFighter::handle_input_movement(const Controller::Input& input)
         else if (input.hold_shield == true)
             state_transition(transitions.misc_shield);
 
-        else if (input.axis_move.y == -1.0f)
+        else if (input.float_axis.y == -1.0f)
             state_transition(transitions.neutral_crouch);
 
-        else if (input.axis_move.x != 0.0f)
+        else if (input.float_axis.x != 0.0f)
             state_transition(transitions.neutral_walking);
     }
 
@@ -330,13 +336,13 @@ void PrivateFighter::handle_input_movement(const Controller::Input& input)
         else if (input.press_shield == true)
             state_transition(transitions.misc_shield);
 
-        else if (input.axis_move.y == -1.0f)
+        else if (input.float_axis.y == -1.0f)
             state_transition(transitions.walking_crouch);
 
-        else if (input.axis_move.x == 0.0f)
+        else if (input.float_axis.x == 0.0f)
             state_transition(transitions.walking_neutral);
 
-        else if (input.mash_axis_x != 0)
+        else if (input.mash_axis.x != 0)
             state_transition(transitions.walking_dashing);
     }
 
@@ -348,7 +354,7 @@ void PrivateFighter::handle_input_movement(const Controller::Input& input)
         else if (input.press_shield == true)
             state_transition(transitions.misc_shield);
 
-        else if (input.axis_move.x == 0.0f)
+        else if (input.float_axis.x == 0.0f)
             state_transition(transitions.dashing_brake);
     }
 
@@ -366,7 +372,7 @@ void PrivateFighter::handle_input_movement(const Controller::Input& input)
         if (input.press_shield == true)
             state_transition(transitions.misc_shield);
 
-        else if (input.axis_move.y != -1.f)
+        else if (input.float_axis.y != -1.f)
             state_transition(transitions.crouch_stand);
     }
 
@@ -403,10 +409,10 @@ void PrivateFighter::handle_input_movement(const Controller::Input& input)
         else if (input.hold_shield == false)
             state_transition(transitions.shield_neutral);
 
-        else if (input.mash_axis_x != 0)
+        else if (input.mash_axis.x != 0)
             state_transition(transitions.shield_evade);
 
-        else if (input.mash_axis_y != 0)
+        else if (input.mash_axis.y != 0)
             state_transition(transitions.shield_dodge);
     }
 
@@ -438,15 +444,15 @@ void PrivateFighter::handle_input_movement(const Controller::Input& input)
     const float baseDashSpeed = stats.dash_speed * STS_DASH_SPEED;
     const float baseAirSpeed = stats.air_speed * STS_AIR_SPEED;
 
-    const float walkTargetSpeed = std::abs(input.axis_move.x) * baseWalkSpeed + landFriction;
-    const float dashTargetSpeed = std::abs(input.axis_move.x) * baseDashSpeed + landFriction;
-    const float airTargetSpeed = std::abs(input.axis_move.x) * baseAirSpeed + airFriction;
+    const float walkTargetSpeed = std::abs(input.float_axis.x) * baseWalkSpeed + landFriction;
+    const float dashTargetSpeed = std::abs(input.float_axis.x) * baseDashSpeed + landFriction;
+    const float airTargetSpeed = std::abs(input.float_axis.x) * baseAirSpeed + airFriction;
 
     const auto apply_horizontal_move = [&](float mobility, float targetSpeed)
     {
         if (std::abs(velocity.x) >= targetSpeed) return;
 
-        velocity.x += std::copysign(mobility, input.axis_move.x);
+        velocity.x += std::copysign(mobility, input.float_axis.x);
         velocity.x = maths::clamp_magnitude(velocity.x, targetSpeed);
     };
 
@@ -479,11 +485,11 @@ void PrivateFighter::handle_input_actions(const Controller::Input& input)
     {
         if (input.press_attack == false) return;
 
-        if      (input.mod_axis_y == -1) switch_action(Action::Type::Smash_Down);
-        else if (input.mod_axis_y == +1) switch_action(Action::Type::Smash_Up);
+        if      (input.mod_axis.y == -1) switch_action(Action::Type::Smash_Down);
+        else if (input.mod_axis.y == +1) switch_action(Action::Type::Smash_Up);
 
-        else if (input.axis_move.y < -0.f) switch_action(Action::Type::Tilt_Down);
-        else if (input.axis_move.y > +0.f) switch_action(Action::Type::Tilt_Up);
+        else if (input.float_axis.y < -0.f) switch_action(Action::Type::Tilt_Down);
+        else if (input.float_axis.y > +0.f) switch_action(Action::Type::Tilt_Up);
 
         else switch_action(Action::Type::Neutral_First);
     }
@@ -494,10 +500,10 @@ void PrivateFighter::handle_input_actions(const Controller::Input& input)
 
         // todo: work out correct priority here
 
-        if (input.mod_axis_x != 0)
+        if (input.mod_axis.x != 0)
             switch_action(Action::Type::Smash_Forward);
 
-        else if (input.axis_move.y > std::abs(input.axis_move.x))
+        else if (input.float_axis.y > std::abs(input.float_axis.x))
             switch_action(Action::Type::Tilt_Up);
 
         else switch_action(Action::Type::Tilt_Forward);
@@ -507,7 +513,7 @@ void PrivateFighter::handle_input_actions(const Controller::Input& input)
     {
         if (input.press_attack == false) return;
 
-        if (input.mod_axis_x != 0) switch_action(Action::Type::Smash_Forward);
+        if (input.mod_axis.x != 0) switch_action(Action::Type::Smash_Forward);
 
         else switch_action(Action::Type::Dash_Attack);
     }
@@ -516,7 +522,7 @@ void PrivateFighter::handle_input_actions(const Controller::Input& input)
     {
         if (input.press_attack == false) return;
 
-        if (input.mod_axis_y == +1) switch_action(Action::Type::Smash_Up);
+        if (input.mod_axis.y == +1) switch_action(Action::Type::Smash_Up);
 
         else switch_action(Action::Type::Dash_Attack);
     }
@@ -525,7 +531,7 @@ void PrivateFighter::handle_input_actions(const Controller::Input& input)
     {
         if (input.press_attack == false) return;
 
-        if (input.mod_axis_y == -1) switch_action(Action::Type::Smash_Down);
+        if (input.mod_axis.y == -1) switch_action(Action::Type::Smash_Down);
 
         else switch_action(Action::Type::Tilt_Down);
     }
@@ -536,18 +542,18 @@ void PrivateFighter::handle_input_actions(const Controller::Input& input)
 
         // todo: work out correct priority here
 
-        if (input.axis_move.x == 0.f && input.axis_move.y == 0.f)
+        if (input.float_axis.x == 0.f && input.float_axis.y == 0.f)
             switch_action(Action::Type::Air_Neutral);
 
-        else if (std::abs(input.axis_move.x) >= std::abs(input.axis_move.y))
+        else if (std::abs(input.float_axis.x) >= std::abs(input.float_axis.y))
         {
-            if (std::signbit(float(facing)) == std::signbit(input.axis_move.x))
+            if (std::signbit(float(facing)) == std::signbit(input.float_axis.x))
                 switch_action(Action::Type::Air_Forward);
 
             else switch_action(Action::Type::Air_Back);
         }
 
-        else if (std::signbit(input.axis_move.y) == true)
+        else if (std::signbit(input.float_axis.y) == true)
             switch_action(Action::Type::Air_Down);
 
         else switch_action(Action::Type::Air_Up);
@@ -710,10 +716,12 @@ void PrivateFighter::update_after_input()
 
     //-- update physics diamond to previous frame ------------//
 
-    worldDiamond.xNeg = localDiamond.xNeg + current.position;
-    worldDiamond.xPos = localDiamond.xPos + current.position;
-    worldDiamond.yNeg = localDiamond.yNeg + current.position;
-    worldDiamond.yPos = localDiamond.yPos + current.position;
+    worldDiamond.negX = current.position.x - localDiamond.halfWidth;
+    worldDiamond.posX = current.position.x + localDiamond.halfWidth;
+    worldDiamond.negY = current.position.y;
+    worldDiamond.posY = current.position.y + localDiamond.offsetTop;
+    worldDiamond.crossX = current.position.x;
+    worldDiamond.crossY = current.position.y + localDiamond.offsetMiddle;
 
     //-- apply friction --------------------------------------//
 
@@ -812,7 +820,17 @@ void PrivateFighter::update_after_input()
 
     const Vec2F targetPosition = current.position + velocity / 48.f;
 
-    current.position = stage.transform_response(current.position, worldDiamond, velocity / 48.f);
+    TransformResponse response = stage.transform_response(worldDiamond, velocity / 48.f);
+
+    if (response.type == TransformResponse::Type::EdgeStop && state != State::Evade)
+    {
+        if (state == State::Jumping || std::abs(mMoveAxisX) == 2) current.position = targetPosition;
+    }
+
+    else current.position = response.result;
+
+    if (fighter.index == 0u)
+        sq::log_only("current: %s\ntarget: %s\n", current.position, targetPosition);
 
     //-- check if fallen or moved off an edge ----------------//
 
@@ -859,8 +877,8 @@ void PrivateFighter::update_after_input()
 
     //-- check if walls, ceiling, or floor reached -----------//
 
-    if (current.position.x > targetPosition.x) velocity.x = 0.f;
-    if (current.position.x < targetPosition.x) velocity.x = 0.f;
+//    if (current.position.x > targetPosition.x) velocity.x = 0.f;
+//    if (current.position.x < targetPosition.x) velocity.x = 0.f;
     if (current.position.y < targetPosition.y) velocity.y = 0.f;
     if (current.position.y > targetPosition.y) velocity.y = 0.f;
 

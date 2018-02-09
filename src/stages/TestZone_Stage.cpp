@@ -17,6 +17,8 @@ TestZone_Stage::TestZone_Stage(FightWorld& world) : Stage(world)
 
     mAlignedBlocks.push_back({{-0.5f, 6.5f}, {+0.5f, 7.5f}});
 
+    mAlignedBlocks.push_back({{-5.f, 0.f}, {-4.f, 1.f}});
+
     mPlatforms.push_back({2.5f, -5.3f, -1.7f});
     mPlatforms.push_back({2.5f, +1.7f, +5.3f});
 

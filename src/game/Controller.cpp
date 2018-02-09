@@ -71,7 +71,7 @@ Controller::Input Controller::get_input()
         const int port = config.gamepad_port;
 
         if (config.stick_move != Stick::Unknown)
-            mInput.axis_move = mDevices.get_stick_pos(port, config.stick_move);
+            mInput.float_axis = mDevices.get_stick_pos(port, config.stick_move);
 
         if (config.button_attack != Button::Unknown)
             if (mDevices.is_pressed(port, config.button_attack))
@@ -90,19 +90,19 @@ Controller::Input Controller::get_input()
 
     if (config.key_left != Key::Unknown)
         if (mDevices.is_pressed(config.key_left))
-            mInput.axis_move.x -= 1.f;
+            mInput.float_axis.x -= 1.f;
 
     if (config.key_up != Key::Unknown)
         if (mDevices.is_pressed(config.key_up))
-            mInput.axis_move.y += 1.f;
+            mInput.float_axis.y += 1.f;
 
     if (config.key_right != Key::Unknown)
         if (mDevices.is_pressed(config.key_right))
-            mInput.axis_move.x += 1.f;
+            mInput.float_axis.x += 1.f;
 
     if (config.key_down != Key::Unknown)
         if (mDevices.is_pressed(config.key_down))
-            mInput.axis_move.y -= 1.f;
+            mInput.float_axis.y -= 1.f;
 
     if (config.key_attack != Key::Unknown)
         if (mDevices.is_pressed(config.key_attack))
@@ -145,30 +145,37 @@ Controller::Input Controller::get_input()
 
     //--------------------------------------------------------//
 
-    mInput.axis_move.x = remove_deadzone_and_discretise(mInput.axis_move.x);
-    mInput.axis_move.y = remove_deadzone_and_discretise(mInput.axis_move.y);
+    mInput.float_axis.x = remove_deadzone_and_discretise(mInput.float_axis.x);
+    mInput.float_axis.y = remove_deadzone_and_discretise(mInput.float_axis.y);
 
-    mInput.axis_move.x = clamp_difference(mPrevAxisMove.x, mInput.axis_move.x);
-    mInput.axis_move.y = clamp_difference(mPrevAxisMove.y, mInput.axis_move.y);
+    mInput.float_axis.x = clamp_difference(mPrevAxisMove.x, mInput.float_axis.x);
+    mInput.float_axis.y = clamp_difference(mPrevAxisMove.y, mInput.float_axis.y);
 
     //--------------------------------------------------------//
 
-    if (mInput.axis_move.x != 0.f && ++mTimeSinceZeroX <= 4u)
+    // todo: should really go from int to float
+
+    mInput.int_axis.x = int8_t(mInput.float_axis.x * 2.f);
+    mInput.int_axis.y = int8_t(mInput.float_axis.y * 2.f);
+
+    //--------------------------------------------------------//
+
+    if (mInput.float_axis.x != 0.f && ++mTimeSinceZeroX <= 4u)
     {
-        if (!mDoneMashX && mInput.axis_move.x == -1.f) mDoneMashX = (mInput.mash_axis_x = -1);
-        if (!mDoneMashX && mInput.axis_move.x == +1.f) mDoneMashX = (mInput.mash_axis_x = +1);
-        mInput.mod_axis_x = std::signbit(mInput.axis_move.x) ? -1 : +1;
+        if (!mDoneMashX && mInput.float_axis.x == -1.f) mDoneMashX = (mInput.mash_axis.x = -1);
+        if (!mDoneMashX && mInput.float_axis.x == +1.f) mDoneMashX = (mInput.mash_axis.x = +1);
+        mInput.mod_axis.x = std::signbit(mInput.float_axis.x) ? -1 : +1;
     }
 
-    if (mInput.axis_move.y != 0.f && ++mTimeSinceZeroY <= 4u)
+    if (mInput.float_axis.y != 0.f && ++mTimeSinceZeroY <= 4u)
     {
-        if (!mDoneMashY && mInput.axis_move.y == -1.f) mDoneMashY = (mInput.mash_axis_y = -1);
-        if (!mDoneMashY && mInput.axis_move.y == +1.f) mDoneMashY = (mInput.mash_axis_y = +1);
-        mInput.mod_axis_y = std::signbit(mInput.axis_move.y) ? -1 : +1;
+        if (!mDoneMashY && mInput.float_axis.y == -1.f) mDoneMashY = (mInput.mash_axis.y = -1);
+        if (!mDoneMashY && mInput.float_axis.y == +1.f) mDoneMashY = (mInput.mash_axis.y = +1);
+        mInput.mod_axis.y = std::signbit(mInput.float_axis.y) ? -1 : +1;
     }
 
-    if (mInput.axis_move.x == 0.f) mDoneMashX = (mTimeSinceZeroX = 0u);
-    if (mInput.axis_move.y == 0.f) mDoneMashY = (mTimeSinceZeroY = 0u);
+    if (mInput.float_axis.x == 0.f) mDoneMashX = (mTimeSinceZeroX = 0u);
+    if (mInput.float_axis.y == 0.f) mDoneMashY = (mTimeSinceZeroY = 0u);
 
     //--------------------------------------------------------//
 
@@ -176,7 +183,7 @@ Controller::Input Controller::get_input()
 
     //--------------------------------------------------------//
 
-    mPrevAxisMove = mInput.axis_move;
+    mPrevAxisMove = mInput.float_axis;
 
     Input result = mInput;
     mInput = Input();

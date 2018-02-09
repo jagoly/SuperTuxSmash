@@ -12,90 +12,95 @@ Stage::Stage(FightWorld& world) : mFightWorld(world) {}
 
 //============================================================================//
 
-Vec2F Stage::transform_response(Vec2F origin, PhysicsDiamond diamond, Vec2F translation)
+TransformResponse Stage::transform_response(WorldDiamond diamond, Vec2F translation)
 {
-    const PhysicsDiamond targetDiamond
-    {
-        diamond.xNeg + translation, diamond.xPos + translation,
-        diamond.yNeg + translation, diamond.yPos + translation
-    };
-
-    const Vec2F target = origin + translation;
+    const WorldDiamond targetDiamond = diamond.translated(translation);
+    const Vec2F target = targetDiamond.origin();
 
     //--------------------------------------------------------//
 
-    Vec2F result = target;
+    TransformResponse response;
+    response.result = target;
+
+    Vec2F& result = response.result;
+
+    //--------------------------------------------------------//
 
     for (const auto& block : mAlignedBlocks)
     {
-        const bool originSideNegX = diamond.xNeg.x >= block.maximum.x;
-        const bool originSideNegY = diamond.yNeg.y >= block.maximum.y;
-        const bool originSidePosX = diamond.xPos.x <= block.minimum.x;
-        const bool originSidePosY = diamond.yPos.y <= block.minimum.y;
+        const bool originNegX = diamond.negX >= block.maximum.x; // left is right of right
+        const bool originNegY = diamond.negY >= block.maximum.y; // bottom is above top
+        const bool originPosX = diamond.posX <= block.minimum.x; // right is left of left
+        const bool originPosY = diamond.posY <= block.minimum.y; // top is below bottom
 
-        const bool targetSideNegX = targetDiamond.xNeg.x >= block.maximum.x;
-        const bool targetSideNegY = targetDiamond.yNeg.y >= block.maximum.y;
-        const bool targetSidePosX = targetDiamond.xPos.x <= block.minimum.x;
-        const bool targetSidePosY = targetDiamond.yPos.y <= block.minimum.y;
+        const bool targetNegX = targetDiamond.negX >= block.maximum.x; // left is right of right
+        const bool targetNegY = targetDiamond.negY >= block.maximum.y; // bottom is above top
+        const bool targetPosX = targetDiamond.posX <= block.minimum.x; // right is left of left
+        const bool targetPosY = targetDiamond.posY <= block.minimum.y; // top is below bottom
 
-        SQASSERT(!(originSideNegX && originSidePosX), "");
-        SQASSERT(!(originSideNegY && originSidePosY), "");
-        SQASSERT(!(targetSideNegX && targetSidePosX), "");
-        SQASSERT(!(targetSideNegY && targetSidePosY), "");
+        const bool crossInX = targetDiamond.crossX >= block.minimum.x && targetDiamond.crossX <= block.maximum.x;
+        const bool crossInY = targetDiamond.crossY >= block.minimum.y && targetDiamond.crossY <= block.maximum.y;
 
-        if (originSideNegY && !targetSideNegY)
+        SQASSERT(!(originNegX && originPosX), "");
+        SQASSERT(!(originNegY && originPosY), "");
+        SQASSERT(!(targetNegX && targetPosX), "");
+        SQASSERT(!(targetNegY && targetPosY), "");
+
+        if (crossInX && originNegY && !targetNegY) // test bottom into floor
         {
-            if (targetDiamond.yNeg.x >= block.minimum.x && targetDiamond.yNeg.x <= block.maximum.x)
-            {
-                const float offset = origin.y - diamond.yNeg.y;
-                result.y = maths::max(result.y, target.y, block.maximum.y + offset);
-            }
+            result.y = maths::max(result.y, block.maximum.y);
         }
 
-        if (originSidePosY && !targetSidePosY)
+        if (crossInX && originPosY && !targetPosY) // test top into ceiling
         {
-            if (targetDiamond.yPos.x >= block.minimum.x && targetDiamond.yPos.x <= block.maximum.x)
-            {
-                const float offset = origin.y - diamond.yPos.y;
-                result.y = maths::min(result.y, target.y, block.minimum.y + offset);
-            }
+            result.y = maths::min(result.y, block.minimum.y + (diamond.negY - diamond.posY));
         }
 
-        if (originSideNegX && !targetSideNegX)
+        if (crossInY && originNegX && !targetNegX) // test left into wall
         {
-            if (targetDiamond.xNeg.y >= block.minimum.y && targetDiamond.xNeg.y <= block.maximum.y)
-            {
-                const float offset = origin.x - diamond.xNeg.x;
-                result.x = maths::max(result.x, target.x, block.maximum.x + offset);
-            }
+            result.x = maths::max(result.x, block.maximum.x + (diamond.crossX - diamond.negX));
         }
 
-        if (originSidePosY && !targetSidePosY)
+        if (crossInY && originPosX && !targetPosX) // test right into wall
         {
-            if (targetDiamond.xPos.y >= block.minimum.y && targetDiamond.xPos.y <= block.maximum.y)
-            {
-                const float offset = origin.x - diamond.xPos.x;
-                result.x = maths::min(result.x, target.x, block.minimum.x + offset);
-            }
+            result.x = maths::min(result.x, block.minimum.x + (diamond.crossX - diamond.posX));
         }
     }
+
+    //--------------------------------------------------------//
 
     for (const auto& platform : mPlatforms)
     {
-        const bool originSideNegY = diamond.yNeg.y >= platform.originY;
-        const bool targetSideNegY = targetDiamond.yNeg.y >= platform.originY;
+        const bool originNegY = diamond.negY >= platform.originY;
+        const bool targetNegY = targetDiamond.negY >= platform.originY;
 
-        if (originSideNegY && !targetSideNegY)
+        if (diamond.negY == platform.originY)
         {
-            if (targetDiamond.yNeg.x >= platform.minX && targetDiamond.yNeg.x <= platform.maxX)
+            if (diamond.crossX > platform.minX && targetDiamond.crossX < platform.minX)
             {
-                const float offset = origin.y - diamond.yNeg.y;
-                result.y = maths::max(result.y, target.y, platform.originY + offset);
+                result = { platform.minX + 0.001f, platform.originY };
+                response.type = TransformResponse::Type::EdgeStop;
+            }
+
+            if (diamond.crossX < platform.maxX && targetDiamond.crossX > platform.maxX)
+            {
+                result = { platform.maxX - 0.001f, platform.originY };
+                response.type = TransformResponse::Type::EdgeStop;
+            }
+        }
+
+        if (originNegY && !targetNegY)
+        {
+            if (targetDiamond.crossX >= platform.minX && targetDiamond.crossX <= platform.maxX)
+            {
+                result.y = maths::max(result.y, target.y, platform.originY);
             }
         }
     }
 
-    return result;
+    //--------------------------------------------------------//
+
+    return response;
 }
 
 //============================================================================//

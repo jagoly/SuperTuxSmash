@@ -1,46 +1,23 @@
 #pragma once
 
-#include <sqee/assert.hpp>
 #include <sqee/builtins.hpp>
+
+#include <sqee/misc/PoolTools.hpp>
 
 #include "render/SceneData.hpp"
 
+#include "game/ParticleSet.hpp"
 #include "game/Blobs.hpp"
+
+//============================================================================//
 
 namespace sts {
 
-//============================================================================//
-
-struct LocalDiamond { float offsetTop, offsetMiddle, halfWidth; };
-
-struct WorldDiamond
-{
-    float negX, posX, negY, posY, crossX, crossY;
-
-    Vec2F neg_x() const { return { negX, crossY }; }
-    Vec2F pos_x() const { return { posX, crossY }; }
-    Vec2F neg_y() const { return { crossX, negY }; }
-    Vec2F pos_y() const { return { crossX, posY }; }
-
-    Vec2F origin() const { return { crossX, negY }; }
-    Vec2F centre() const { return { crossX, crossY }; }
-
-    WorldDiamond translated(Vec2F vec) const
-    {
-        return { negX + vec.x, posX + vec.x, negY + vec.y, posY + vec.y,
-                 crossX + vec.x, crossY + vec.y };
-    }
-};
-
-//============================================================================//
-
-class FightWorld final : sq::NonCopyable
+class PrivateWorld final : sq::NonCopyable
 {
 public: //====================================================//
 
-    FightWorld();
-
-    ~FightWorld();
+    PrivateWorld(FightWorld& world) : world(world) {}
 
     //--------------------------------------------------------//
 
@@ -109,21 +86,17 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    /// Access the HitBlob Allocator.
-    sq::PoolAllocator<HitBlob>& get_hit_blob_allocator();
-
-    /// Access the HurtBlob Allocator.
-    sq::PoolAllocator<HurtBlob>& get_hurt_blob_allocator();
-
-    /// Access the enabled HitBlobs.
-    const std::vector<HitBlob*>& get_hit_blobs() const;
-
-    /// Access the enabled HurtBlobs.
-    const std::vector<HurtBlob*>& get_hurt_blobs() const;
+    SceneData compute_scene_data() const;
 
     //--------------------------------------------------------//
 
-    SceneData compute_scene_data() const;
+    sq::PoolAllocator<HitBlob> hitBlobAlloc { 1024u };
+    sq::PoolAllocator<HurtBlob> hurtBlobAlloc { 128u };
+
+    std::vector<HitBlob*> enabledHitBlobs;
+    std::vector<HurtBlob*> enabledHurtBlobs;
+
+    std::array<std::array<uint32_t, 4>, 4> hitBitsArray;
 
 private: //===================================================//
 
@@ -133,10 +106,13 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
-    friend class PrivateWorld;
-    unique_ptr<PrivateWorld> impl;
-};
+    struct Collision { HitBlob* hit; HurtBlob* hurt; };
 
-//============================================================================//
+    std::array<std::array<std::vector<Collision>, 4u>, 4u> mCollisions;
+
+    //--------------------------------------------------------//
+
+    FightWorld& world;
+};
 
 } // namespace sts

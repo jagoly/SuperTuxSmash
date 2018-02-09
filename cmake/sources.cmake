@@ -52,6 +52,9 @@ set(SOURCES
   "src/game/private/PrivateFighter.hpp"
   "src/game/private/PrivateFighter.cpp"
 
+  "src/game/private/PrivateWorld.hpp"
+  "src/game/private/PrivateWorld.cpp"
+
   #----------------------------------------------------------#
 
   "src/render/SceneData.hpp"

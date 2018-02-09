@@ -1,53 +1,41 @@
 {
 
-"blobs":
+"templates":
 {
-  "0:A":
+  "sour":
   {
-    "origin": [ 0.0, 1.0, 0.8 ],
-    "radius": 0.5,
-    "bone": -1,
     "group": 0,
+    "flavour": "SOUR",
+    "priority": "NORMAL",
+    "damage": 5.0,
+    "knockAngle": 0.125,
+    "knockBase": 8.0,
+    "knockScale": 1.0
+  },
+  
+  "tangy":
+  {
+    "group": 0,
+    "flavour": "TANGY",
+    "priority": "HIGH",
+    "damage": 8.0,
     "knockAngle": 0.125,
     "knockBase": 12.0,
-    "knockScale": 1.0,
-    "damage": 8.0,
-    "flavour": "TANGY",
-    "priority": "HIGH"
-  },
-  "0:BA":
-  {
-    "origin": [ 0.0, 0.8, 1.0 ],
-    "radius": 0.55,
-    "bone": -1,
-    "group": 0,
-    "knockAngle": 0.125,
-    "knockBase": 8.0,
-    "knockScale": 1.0,
-    "damage": 5.0,
-    "flavour": "SOUR",
-    "priority": "NORMAL"
-  },
-  "0:BB":
-  {
-    "origin": [ 0.0, 1.2, 1.0 ],
-    "radius": 0.55,
-    "bone": -1,
-    "group": 0,
-    "knockAngle": 0.125,
-    "knockBase": 8.0,
-    "knockScale": 1.0,
-    "damage": 5.0,
-    "flavour": "SOUR",
-    "priority": "NORMAL"
+    "knockScale": 1.0
   }
+},
+
+"blobs":
+{
+  "A": { "template": "tangy", "origin": [ 0.0, 1.0, 0.7 ], "radius": 0.3, "bone": -1 },
+  "B": { "template": "sour", "origin": [ 0.0, 0.8, 1.0 ], "radius": 0.55, "bone": -1 },
+  "C": { "template": "sour", "origin": [ 0.0, 1.2, 1.0 ], "radius": 0.55, "bone": -1 }
 },
 
 "timeline":
 [
-  [ 4,  [ "enable_blob 0:A" ] ],
-  [ 7,  [ "enable_blob 0:BA", "enable_blob 0:BB", "disable_blob 0:A" ] ],
-  [ 14, [ "disable_blob 0:BA", "disable_blob 0:BB" ] ],
+  [ 5,  [ "enable_blob A", "enable_blob B", "enable_blob C" ] ],
+  [ 14, [ "disable_blob A", "disable_blob B", "disable_blob C" ] ],
   [ 22, [ "finish_action" ] ]
 ]
 

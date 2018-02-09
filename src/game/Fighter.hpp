@@ -7,11 +7,6 @@
 
 namespace sts {
 
-//====== Forward Declarations ================================================//
-
-class PrivateFighter;
-class Controller;
-
 //============================================================================//
 
 class Fighter : sq::NonCopyable
@@ -165,7 +160,7 @@ public: //====================================================//
     const Vec2F& get_velocity() const { return mVelocity; }
 
     /// Get world space physics diamond.
-    const PhysicsDiamond& get_diamond() const { return mWorldDiamond; }
+    const WorldDiamond& get_diamond() const { return mWorldDiamond; }
 
     //-- compute data needed for rendering -------------------//
 
@@ -195,7 +190,8 @@ protected: //=================================================//
 
     FightWorld& mFightWorld;
 
-    PhysicsDiamond mLocalDiamond, mWorldDiamond;
+    LocalDiamond mLocalDiamond;
+    WorldDiamond mWorldDiamond;
 
     //--------------------------------------------------------//
 

@@ -22,6 +22,20 @@ struct AlignedBlock
 
 //============================================================================//
 
+struct TransformResponse
+{
+    enum class Type { Simple, Slope, EdgeStop };
+
+    Type type = Type::Simple;
+    Vec2F result;
+
+    enum class Floor { None, Platform, Solid, Slope, EdgeStop };
+
+    Floor floor = Floor::None;
+};
+
+//============================================================================//
+
 class Stage : sq::NonCopyable
 {
 public: //====================================================//
@@ -34,7 +48,7 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    Vec2F transform_response(Vec2F origin, PhysicsDiamond diamond, Vec2F translation);
+    TransformResponse transform_response(WorldDiamond diamond, Vec2F translation);
 
     void check_boundary(Fighter& fighter);
 
@@ -53,6 +67,8 @@ protected: //=================================================//
     std::vector<Platform> mPlatforms;
 
     std::vector<AlignedBlock> mAlignedBlocks;
+
+    //--------------------------------------------------------//
 
     FightWorld& mFightWorld;
 };

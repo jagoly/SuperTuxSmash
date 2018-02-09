@@ -46,13 +46,11 @@ public: //====================================================//
         bool press_shield = false;
         bool hold_shield = false;
 
-        int8_t mod_axis_x = 0;
-        int8_t mod_axis_y = 0;
+        Vec2F float_axis {};
 
-        int8_t mash_axis_x = 0;
-        int8_t mash_axis_y = 0;
-
-        Vec2F axis_move {};
+        struct { int8_t x=0, y=0; } int_axis;
+        struct { int8_t x=0, y=0; } mash_axis;
+        struct { int8_t x=0, y=0; } mod_axis;
     };
 
     //--------------------------------------------------------//
