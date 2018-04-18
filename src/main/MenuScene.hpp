@@ -4,12 +4,6 @@
 #include <sqee/app/GuiSystem.hpp>
 #include <sqee/app/Scene.hpp>
 
-#include "render/Renderer.hpp"
-
-#include "game/FightWorld.hpp"
-#include "game/Stage.hpp"
-#include "game/Controller.hpp"
-
 #include "main/Options.hpp"
 #include "main/SmashApp.hpp"
 
@@ -17,13 +11,13 @@
 
 namespace sts {
 
-class GameScene final : public sq::Scene
+class MenuScene final : public sq::Scene
 {
 public: //====================================================//
 
-    GameScene(SmashApp& smashApp, GameSetup setup);
+    MenuScene(SmashApp& smashApp);
 
-    ~GameScene() override;
+    ~MenuScene() override;
 
     //--------------------------------------------------------//
 
@@ -39,25 +33,31 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
-    unique_ptr<FightWorld> mFightWorld;
-
-    unique_ptr<Renderer> mRenderer;
-
-    std::array<unique_ptr<Controller>, 4> mControllers;
+    SmashApp& mSmashApp;
 
     //--------------------------------------------------------//
 
-    const sq::InputDevices& mInputDevices;
+    sq::GuiWidget mMainWidget;
 
-    const Options& mOptions;
+    void impl_show_main_window();
 
     //--------------------------------------------------------//
 
-    sq::GuiWidget mGeneralWidget;
-    sq::GuiWidget mFightersWidget;
+    bool mStartGamePressed;
 
-    void impl_show_general_window();
-    void impl_show_fighters_window();
+    //--------------------------------------------------------//
+
+    struct {
+
+        struct {
+            FighterEnum fighter {-1};
+        } players[4];
+
+        StageEnum stage {-1};
+
+    } state;
+
+    GameSetup setup;
 };
 
 } // namespace sts

@@ -127,17 +127,15 @@ void Fighter::debug_show_fighter_widget()
         gui::input_float("fall_speed",     140.f, stats.fall_speed,     0.05f, 2);
         gui::input_float("evade_distance", 140.f, stats.evade_distance, 0.05f, 2);
 
-        imgui::Separator();
-
-        gui::input_int("dodge_finish",         140.f, stats.dodge_finish,         1);
-        gui::input_int("dodge_safe_start",     140.f, stats.dodge_safe_start,     1);
-        gui::input_int("dodge_safe_end",       140.f, stats.dodge_safe_end,       1);
-        gui::input_int("evade_finish",         140.f, stats.evade_finish,         1);
-        gui::input_int("evade_safe_start",     140.f, stats.evade_safe_start,     1);
-        gui::input_int("evade_safe_end",       140.f, stats.evade_safe_end,       1);
-        gui::input_int("air_dodge_finish",     140.f, stats.air_dodge_finish,     1);
-        gui::input_int("air_dodge_safe_start", 140.f, stats.air_dodge_safe_start, 1);
-        gui::input_int("air_dodge_safe_end",   140.f, stats.air_dodge_safe_end,   1);
+        gui::input_int("dodge_finish",         160.f, stats.dodge_finish,         1);
+        gui::input_int("dodge_safe_start",     160.f, stats.dodge_safe_start,     1);
+        gui::input_int("dodge_safe_end",       160.f, stats.dodge_safe_end,       1);
+        gui::input_int("evade_finish",         160.f, stats.evade_finish,         1);
+        gui::input_int("evade_safe_start",     160.f, stats.evade_safe_start,     1);
+        gui::input_int("evade_safe_end",       160.f, stats.evade_safe_end,       1);
+        gui::input_int("air_dodge_finish",     160.f, stats.air_dodge_finish,     1);
+        gui::input_int("air_dodge_safe_start", 160.f, stats.air_dodge_safe_start, 1);
+        gui::input_int("air_dodge_safe_end",   160.f, stats.air_dodge_safe_end,   1);
     }
 
     //--------------------------------------------------------//

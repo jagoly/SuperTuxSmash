@@ -123,6 +123,7 @@ public: //====================================================//
         Transition misc_falling;
         Transition misc_neutral;
         Transition misc_shield;
+        Transition misc_vertigo;
 
         Transition smash_down_start;
         Transition smash_forward_start;

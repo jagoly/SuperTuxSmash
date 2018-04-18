@@ -3,6 +3,9 @@
 #include <sqee/debug/Logging.hpp>
 #include <sqee/debug/Misc.hpp>
 
+#include "main/MenuScene.hpp"
+#include "main/GameScene.hpp"
+
 #include "SmashApp.hpp"
 
 using namespace sts;
@@ -29,9 +32,9 @@ void SmashApp::initialise(std::vector<string> args)
 
     mDebugOverlay = std::make_unique<sq::DebugOverlay>();
 
-    mGameScene = std::make_unique<GameScene>(*mInputDevices, mOptions);
+    //--------------------------------------------------------//
 
-    refresh_options();
+    return_to_main_menu();
 }
 
 //============================================================================//
@@ -50,10 +53,10 @@ void SmashApp::update(double elapsed)
 
     guiSystem.finish_handle_events();
 
-    //-- update and render the game scene --------------------//
+    //-- update and render the active scene ------------------//
 
-    if (mGameScene != nullptr)
-        mGameScene->update_and_render(elapsed);
+    if (mActiveScene != nullptr)
+        mActiveScene->update_and_render(elapsed);
 
     //-- update and render the debug overlay -----------------//
 
@@ -74,15 +77,6 @@ void SmashApp::update(double elapsed)
     mWindow->swap_buffers();
 
     return;
-}
-
-//============================================================================//
-
-void SmashApp::refresh_options()
-{
-    mOptions.Window_Size = mWindow->get_window_size();
-
-    if (mGameScene != nullptr) mGameScene->refresh_options();
 }
 
 //============================================================================//
@@ -117,6 +111,12 @@ void SmashApp::handle_event(sq::Event event)
         if (data.keyboard.key == Key::Menu)
         {
             mDebugOverlay->toggle_active();
+            return;
+        }
+
+        if (data.keyboard.key == Key::Escape)
+        {
+            return_to_main_menu();
             return;
         }
     }
@@ -189,6 +189,31 @@ void SmashApp::handle_event(sq::Event event)
 
     //--------------------------------------------------------//
 
-    if (mGameScene != nullptr)
-        mGameScene->handle_event(event);
+    if (mActiveScene != nullptr)
+        mActiveScene->handle_event(event);
+}
+
+//============================================================================//
+
+void SmashApp::refresh_options()
+{
+    mOptions.Window_Size = mWindow->get_window_size();
+
+    if (mActiveScene != nullptr)
+        mActiveScene->refresh_options();
+}
+
+
+//============================================================================//
+
+void SmashApp::start_game(GameSetup setup)
+{
+    mActiveScene = std::make_unique<GameScene>(*this, setup);
+    refresh_options();
+}
+
+void SmashApp::return_to_main_menu()
+{
+    mActiveScene = std::make_unique<MenuScene>(*this);
+    refresh_options();
 }

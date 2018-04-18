@@ -4,6 +4,8 @@ set(SOURCES
 
   "src/main.cpp"
 
+  "src/enumerations.hpp"
+
   "src/DebugGlobals.hpp"
   "src/DebugGlobals.cpp"
 
@@ -12,8 +14,14 @@ set(SOURCES
   "src/main/Options.hpp"
   "src/main/Options.cpp"
 
+  "src/main/GameSetup.hpp"
+  "src/main/GameSetup.cpp"
+
   "src/main/SmashApp.hpp"
   "src/main/SmashApp.cpp"
+
+  "src/main/MenuScene.hpp"
+  "src/main/MenuScene.cpp"
 
   "src/main/GameScene.hpp"
   "src/main/GameScene.cpp"

@@ -1,0 +1,16 @@
+{
+
+"gamepad_port":   -1,
+"stick_move":     -1,
+"button_attack":  -1,
+"button_jump":    -1,
+"button_shield":  -1,
+"key_left":       -1,
+"key_up":         -1,
+"key_right":      -1,
+"key_down":       -1,
+"key_attack":     -1,
+"key_jump":       -1,
+"key_shield":     -1
+
+}

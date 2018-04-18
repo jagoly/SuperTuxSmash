@@ -12,17 +12,17 @@ Stage::Stage(FightWorld& world) : mFightWorld(world) {}
 
 //============================================================================//
 
-TransformResponse Stage::transform_response(WorldDiamond diamond, Vec2F translation)
+MoveAttempt Stage::attempt_move(WorldDiamond diamond, Vec2F translation)
 {
     const WorldDiamond targetDiamond = diamond.translated(translation);
     const Vec2F target = targetDiamond.origin();
 
     //--------------------------------------------------------//
 
-    TransformResponse response;
-    response.result = target;
+    MoveAttempt attempt;
+    attempt.result = target;
 
-    Vec2F& result = response.result;
+    Vec2F& result = attempt.result;
 
     //--------------------------------------------------------//
 
@@ -49,6 +49,7 @@ TransformResponse Stage::transform_response(WorldDiamond diamond, Vec2F translat
         if (crossInX && originNegY && !targetNegY) // test bottom into floor
         {
             result.y = maths::max(result.y, block.maximum.y);
+            attempt.floor = MoveAttempt::Floor::Solid;
         }
 
         if (crossInX && originPosY && !targetPosY) // test top into ceiling
@@ -76,16 +77,18 @@ TransformResponse Stage::transform_response(WorldDiamond diamond, Vec2F translat
 
         if (diamond.negY == platform.originY)
         {
-            if (diamond.crossX > platform.minX && targetDiamond.crossX < platform.minX)
+            if (diamond.crossX >= platform.minX && targetDiamond.crossX <= platform.minX)
             {
-                result = { platform.minX + 0.001f, platform.originY };
-                response.type = TransformResponse::Type::EdgeStop;
+                result = { platform.minX, platform.originY };
+                attempt.type = MoveAttempt::Type::EdgeStop;
+                attempt.edge = -1;
             }
 
-            if (diamond.crossX < platform.maxX && targetDiamond.crossX > platform.maxX)
+            if (diamond.crossX <= platform.maxX && targetDiamond.crossX >= platform.maxX)
             {
-                result = { platform.maxX - 0.001f, platform.originY };
-                response.type = TransformResponse::Type::EdgeStop;
+                result = { platform.maxX, platform.originY };
+                attempt.type = MoveAttempt::Type::EdgeStop;
+                attempt.edge = +1;
             }
         }
 
@@ -94,13 +97,14 @@ TransformResponse Stage::transform_response(WorldDiamond diamond, Vec2F translat
             if (targetDiamond.crossX >= platform.minX && targetDiamond.crossX <= platform.maxX)
             {
                 result.y = maths::max(result.y, target.y, platform.originY);
+                attempt.floor = MoveAttempt::Floor::Platform;
             }
         }
     }
 
     //--------------------------------------------------------//
 
-    return response;
+    return attempt;
 }
 
 //============================================================================//

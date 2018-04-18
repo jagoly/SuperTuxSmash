@@ -6,7 +6,7 @@
 #include <sqee/app/DebugOverlay.hpp>
 
 #include "main/Options.hpp"
-#include "main/GameScene.hpp"
+#include "main/GameSetup.hpp"
 
 //============================================================================//
 
@@ -18,7 +18,21 @@ public: //====================================================//
 
     SmashApp();
 
-    ~SmashApp();
+    ~SmashApp() override;
+
+    //--------------------------------------------------------//
+
+    void start_game(GameSetup setup);
+
+    void return_to_main_menu();
+
+    //--------------------------------------------------------//
+
+    sq::Window& get_window() { return *mWindow; }
+    sq::InputDevices& get_input_devices() { return *mInputDevices; }
+    sq::DebugOverlay& get_debug_overlay() { return *mDebugOverlay; }
+
+    Options& get_options() { return mOptions; }
 
 private: //===================================================//
 
@@ -35,16 +49,14 @@ private: //===================================================//
     //--------------------------------------------------------//
 
     unique_ptr<sq::Window> mWindow;
-
     unique_ptr<sq::InputDevices> mInputDevices;
-
     unique_ptr<sq::DebugOverlay> mDebugOverlay;
-
-    //--------------------------------------------------------//
 
     Options mOptions;
 
-    unique_ptr<GameScene> mGameScene;
+    //--------------------------------------------------------//
+
+    unique_ptr<sq::Scene> mActiveScene;
 };
 
 } // namespace sts

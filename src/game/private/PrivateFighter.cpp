@@ -157,6 +157,7 @@ void PrivateFighter::initialise_armature(const string& path)
     t.misc_falling = { State::Falling, 2u, &a.falling_loop, nullptr };
     t.misc_neutral = { State::Neutral, 2u, &a.neutral_loop, nullptr };
     t.misc_shield  = { State::Shield,  2u, &a.shield_loop, nullptr };
+    t.misc_vertigo = { State::Neutral, 2u, &a.vertigo_loop, nullptr };
 
     t.smash_down_start    = { State::Charge, 1u, &a.action_smash_down_start, &a.action_smash_down_charge };
     t.smash_forward_start = { State::Charge, 1u, &a.action_smash_forward_start, &a.action_smash_forward_charge };
@@ -810,6 +811,11 @@ void PrivateFighter::update_after_input()
             state = State::Neutral;
     }
 
+    else if (state == State::Knocked)
+    {
+
+    }
+
     //-- apply gravity ---------------------------------------//
 
     velocity.y -= stats.gravity * STS_GRAVITY;
@@ -820,17 +826,18 @@ void PrivateFighter::update_after_input()
 
     const Vec2F targetPosition = current.position + velocity / 48.f;
 
-    TransformResponse response = stage.transform_response(worldDiamond, velocity / 48.f);
+    MoveAttempt moveAttempt = stage.attempt_move(worldDiamond, velocity / 48.f);
 
-    if (response.type == TransformResponse::Type::EdgeStop && state != State::Evade)
+    if (moveAttempt.edge != 0)
     {
-        if (state == State::Jumping || std::abs(mMoveAxisX) == 2) current.position = targetPosition;
+        if (state == State::Evade || state == State::Attack || state == State::Special)
+            current.position = moveAttempt.result;
+
+        else if (state == State::Knocked || state == State::Jumping || std::abs(mMoveAxisX) == 2)
+            current.position = targetPosition;
     }
 
-    else current.position = response.result;
-
-    if (fighter.index == 0u)
-        sq::log_only("current: %s\ntarget: %s\n", current.position, targetPosition);
+    else current.position = moveAttempt.result;
 
     //-- check if fallen or moved off an edge ----------------//
 
@@ -877,10 +884,19 @@ void PrivateFighter::update_after_input()
 
     //-- check if walls, ceiling, or floor reached -----------//
 
-//    if (current.position.x > targetPosition.x) velocity.x = 0.f;
-//    if (current.position.x < targetPosition.x) velocity.x = 0.f;
+    if (current.position.x > targetPosition.x || current.position.x < targetPosition.x)
+    {
+        state_transition(transitions.misc_neutral);
+        velocity.x = 0.f;
+    }
+
     if (current.position.y < targetPosition.y) velocity.y = 0.f;
     if (current.position.y > targetPosition.y) velocity.y = 0.f;
+
+    //--------------------------------------------------------//
+
+    if (state == State::Neutral && velocity.x == 0.f && moveAttempt.edge == int8_t(facing))
+        state_transition(transitions.misc_vertigo);
 
     //-- update the active action ----------------------------//
 

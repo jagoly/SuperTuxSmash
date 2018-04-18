@@ -22,16 +22,19 @@ struct AlignedBlock
 
 //============================================================================//
 
-struct TransformResponse
+struct MoveAttempt
 {
     enum class Type { Simple, Slope, EdgeStop };
 
     Type type = Type::Simple;
     Vec2F result;
 
-    enum class Floor { None, Platform, Solid, Slope, EdgeStop };
+    enum class Floor { None, Platform, Solid, Slope };
 
     Floor floor = Floor::None;
+
+    // non-zero if platform edge reached
+    int8_t edge = 0;
 };
 
 //============================================================================//
@@ -48,7 +51,7 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    TransformResponse transform_response(WorldDiamond diamond, Vec2F translation);
+    MoveAttempt attempt_move(WorldDiamond diamond, Vec2F translation);
 
     void check_boundary(Fighter& fighter);
 
@@ -72,6 +75,20 @@ protected: //=================================================//
 
     FightWorld& mFightWorld;
 };
+
+//============================================================================//
+
+#define ETSC SQEE_ENUM_TO_STRING_CASE
+
+SQEE_ENUM_TO_STRING_BLOCK_BEGIN(MoveAttempt::Type)
+ETSC(Simple) ETSC(Slope) ETSC(EdgeStop)
+SQEE_ENUM_TO_STRING_BLOCK_END
+
+SQEE_ENUM_TO_STRING_BLOCK_BEGIN(MoveAttempt::Floor)
+ETSC(None) ETSC(Platform) ETSC(Solid) ETSC(Slope)
+SQEE_ENUM_TO_STRING_BLOCK_END
+
+#undef ETSC
 
 //============================================================================//
 

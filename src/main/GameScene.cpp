@@ -20,42 +20,70 @@ using namespace sts;
 
 //============================================================================//
 
-GameScene::GameScene(const sq::InputDevices& inputDevices, const Options& options)
-    : Scene(1.0 / 48.0), mInputDevices(inputDevices), mOptions(options)
+GameScene::GameScene(SmashApp& smashApp, GameSetup setup) : Scene(1.0 / 48.0)
+  , mInputDevices(smashApp.get_input_devices()), mOptions(smashApp.get_options())
 {
     mGeneralWidget.func = [this]() { impl_show_general_window(); };
     mFightersWidget.func = [this]() { impl_show_fighters_window(); };
 
-    //mGeneralWidget.add_to_system(sq::GuiSystem::get());
-    //mFightersWidget.add_to_system(sq::GuiSystem::get());
-
     //--------------------------------------------------------//
 
     mFightWorld = std::make_unique<FightWorld>();
-
-    mRenderer = std::make_unique<Renderer>(options);
+    mRenderer = std::make_unique<Renderer>(mOptions);
 
     //--------------------------------------------------------//
 
     mControllers[0] = std::make_unique<Controller>(mInputDevices, "player1.json");
     mControllers[1] = std::make_unique<Controller>(mInputDevices, "player2.json");
+    mControllers[2] = std::make_unique<Controller>(mInputDevices, "player3.json");
+    mControllers[3] = std::make_unique<Controller>(mInputDevices, "player4.json");
 
-    auto stage = std::make_unique<TestZone_Stage>(*mFightWorld);
-    auto renderStage = std::make_unique<TestZone_Render>(*mRenderer, *stage);
+    //--------------------------------------------------------//
+
+    unique_ptr<Stage> stage;
+    unique_ptr<RenderObject> renderStage;
+
+    SWITCH (setup.stage)
+    {
+        CASE (TestZone)
+        stage = std::make_unique<TestZone_Stage>(*mFightWorld);
+        renderStage = std::make_unique<TestZone_Render>(*mRenderer, static_cast<TestZone_Stage&>(*stage));
+
+        CASE_DEFAULT SQASSERT(false, "bad stage setup");
+    }
+    SWITCH_END;
+
     mFightWorld->set_stage(std::move(stage));
     mRenderer->add_object(std::move(renderStage));
 
-    auto fighterA = std::make_unique<Sara_Fighter>(0u, *mFightWorld);
-    fighterA->set_controller(mControllers[0].get());
-    auto renderFighterA = std::make_unique<Sara_Render>(*mRenderer, *fighterA);
-    mFightWorld->add_fighter(std::move(fighterA));
-    mRenderer->add_object(std::move(renderFighterA));
+    //--------------------------------------------------------//
 
-    auto fighterB = std::make_unique<Tux_Fighter>(1u, *mFightWorld);
-    fighterB->set_controller(mControllers[1].get());
-    auto renderFighterB = std::make_unique<Tux_Render>(*mRenderer, *fighterB);
-    mFightWorld->add_fighter(std::move(fighterB));
-    mRenderer->add_object(std::move(renderFighterB));
+    for (uint8_t index = 0u; index < 4u; ++index)
+    {
+        if (setup.players[index].enabled == false) continue;
+
+        unique_ptr<Fighter> fighter;
+        unique_ptr<RenderObject> renderFighter;
+
+        SWITCH (setup.players[index].fighter)
+        {
+            CASE (Sara)
+            fighter = std::make_unique<Sara_Fighter>(index, *mFightWorld);
+            renderFighter = std::make_unique<Sara_Render>(*mRenderer, static_cast<Sara_Fighter&>(*fighter));
+
+            CASE (Tux)
+            fighter = std::make_unique<Tux_Fighter>(index, *mFightWorld);
+            renderFighter = std::make_unique<Tux_Render>(*mRenderer, static_cast<Tux_Fighter&>(*fighter));
+
+            CASE_DEFAULT SQASSERT(false, "bad fighter setup");
+        }
+        SWITCH_END;
+
+        fighter->set_controller(mControllers[index].get());
+
+        mFightWorld->add_fighter(std::move(fighter));
+        mRenderer->add_object(std::move(renderFighter));
+    }
 }
 
 GameScene::~GameScene() = default;
