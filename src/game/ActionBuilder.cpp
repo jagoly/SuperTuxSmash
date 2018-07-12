@@ -78,7 +78,7 @@ BoundFunction impl_bind_params(Func func, const std::vector<string_view>& tokens
 
     // this isn't a good use of exceptions, I'll refactor this later
     try { return std::bind(func, std::placeholders::_1, impl_extract_param<Types, Index>(tokens)...); }
-    catch (std::bad_optional_access) { return BoundFunction(); }
+    catch (std::bad_optional_access&) { return BoundFunction(); }
 }
 
 //----------------------------------------------------------------------------//
@@ -123,10 +123,11 @@ optional<Action::Command> ActionBuilder::build_command(Action& action, string_vi
     #define ASSIGN_BOUND_FUNCTION(Name, ...) result.func = impl_bind_params \
     ( &ActionFuncs::Name, tokens, TypePack<__VA_ARGS__ >(), std::index_sequence_for<__VA_ARGS__>() )
 
-    if (tokens[0] == "enable_blob")   ASSIGN_BOUND_FUNCTION(enable_blob, PoolKey);
-    if (tokens[0] == "disable_blob")  ASSIGN_BOUND_FUNCTION(disable_blob, PoolKey);
-    if (tokens[0] == "add_velocity")  ASSIGN_BOUND_FUNCTION(add_velocity, float, float);
-    if (tokens[0] == "finish_action") ASSIGN_BOUND_FUNCTION(finish_action);
+    if (tokens[0] == "enable_blob")    ASSIGN_BOUND_FUNCTION(enable_blob, PoolKey);
+    if (tokens[0] == "disable_blob")   ASSIGN_BOUND_FUNCTION(disable_blob, PoolKey);
+    if (tokens[0] == "add_velocity")   ASSIGN_BOUND_FUNCTION(add_velocity, float, float);
+    if (tokens[0] == "finish_action")  ASSIGN_BOUND_FUNCTION(finish_action);
+    if (tokens[0] == "emit_particles") ASSIGN_BOUND_FUNCTION(emit_particles, PoolKey, uint);
 
     #undef ASSIGN_BOUND_FUNCTION
 
@@ -179,37 +180,50 @@ void ActionBuilder::load_from_json(Action& action)
     //--------------------------------------------------------//
 
     if (root.count("templates") != 0u)
-    for (auto iter : json::iterator_wrapper(root.at("templates")))
     {
-        BlobTemplate& blobTemplate = templates[iter.key()];
-
-        for (auto iter : json::iterator_wrapper(iter.value()))
+        for (auto iter : root.at("templates").items())
         {
-            const string& key = iter.key();
-            const auto& value = iter.value();
+            BlobTemplate& blobTemplate = templates[iter.key()];
 
-            if      (key == "group")      blobTemplate.group = value;
-            else if (key == "flavour")    blobTemplate.flavour = HitBlob::flavour_from_str(value);
-            else if (key == "priority")   blobTemplate.priority = HitBlob::priority_from_str(value);
-            else if (key == "damage")     blobTemplate.damage = value;
-            else if (key == "knockAngle") blobTemplate.knockAngle = value;
-            else if (key == "knockBase")  blobTemplate.knockBase = value;
-            else if (key == "knockScale") blobTemplate.knockScale = value;
+            for (auto iter : iter.value().items())
+            {
+                const string& key = iter.key();
+                const auto& value = iter.value();
 
-            else sq::log_warning("unhandled blob key '%s'", key);
+                if      (key == "group")      blobTemplate.group = value;
+                else if (key == "flavour")    blobTemplate.flavour = HitBlob::flavour_from_str(value);
+                else if (key == "priority")   blobTemplate.priority = HitBlob::priority_from_str(value);
+                else if (key == "damage")     blobTemplate.damage = value;
+                else if (key == "knockAngle") blobTemplate.knockAngle = value;
+                else if (key == "knockBase")  blobTemplate.knockBase = value;
+                else if (key == "knockScale") blobTemplate.knockScale = value;
+
+                else sq::log_warning("unhandled blob key '%s'", key);
+            }
         }
     }
 
     //--------------------------------------------------------//
 
-    for (auto blobIter : json::iterator_wrapper(root.at("blobs")))
+    if (root.count("emitters") != 0)
+    {
+        for (auto iter : root.at("emitters").items())
+        {
+            auto& emitter = action.emitters[iter.key()];
+            emitter.load_from_json(iter.value());
+        }
+    }
+
+    //--------------------------------------------------------//
+
+    for (auto blobIter : root.at("blobs").items())
     {
         HitBlob* blob = action.blobs.emplace(blobIter.key().c_str());
 
         blob->fighter = &action.fighter;
         blob->action = &action;
 
-        for (auto iter : json::iterator_wrapper(blobIter.value()))
+        for (auto iter : blobIter.value().items())
         {
             const string key = iter.key();
             const auto& value = iter.value();
@@ -262,15 +276,13 @@ void ActionBuilder::load_from_json(Action& action)
         }
 
         // todo: add some more sanity checking
-
         if (when.is_number_unsigned())
         {
-            frameMap[when] = std::move(commands);
+            std::vector<Action::Command>& frame = frameMap[when];
+            frame.insert(frame.begin(), commands.begin(), commands.end());
         }
         else if (when.is_string())
         {
-            std::vector<uint> frames;
-
             const auto ranges = sq::tokenise_string_view(when.get_ref<const string&>(), ',');
 
             for (const auto& range : ranges)
@@ -283,7 +295,10 @@ void ActionBuilder::load_from_json(Action& action)
                     const uint end = sq::sv_to_u(range.substr(sep + 1u));
 
                     for (uint i = begin; i < end; ++i)
-                        frameMap[i] = commands;
+                    {
+                        std::vector<Action::Command>& frame = frameMap[i];
+                        frame.insert(frame.begin(), commands.begin(), commands.end());
+                    }
                 }
             }
         }

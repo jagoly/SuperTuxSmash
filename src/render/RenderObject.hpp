@@ -29,7 +29,7 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    virtual ParticleSet::Refs get_particle_sets() { return {}; }
+    //virtual ParticleSet::Refs get_particle_sets() { return {}; }
 
 protected: //=================================================//
 

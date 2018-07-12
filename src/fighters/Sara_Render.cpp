@@ -55,10 +55,10 @@ void Sara_Render::integrate(float blend)
 
 //============================================================================//
 
-ParticleSet::Refs Sara_Render::get_particle_sets()
-{
-    return {{ fighter.mParticleSet }};
-}
+//ParticleSet::Refs Sara_Render::get_particle_sets()
+//{
+//    return {{ fighter.mParticleSet }};
+//}
 
 //============================================================================//
 

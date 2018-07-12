@@ -18,6 +18,7 @@
 namespace sts { struct HitBlob; struct HurtBlob; }
 namespace sts { class DebugRender; class ParticleRender; }
 namespace sts { class Camera; class RenderObject; }
+namespace sts { class ParticleSet; }
 
 //============================================================================//
 
@@ -49,11 +50,13 @@ public: //====================================================//
 
     void render_objects(float accum, float blend);
 
-    void render_particles(float accum, float blend);
+    void render_particles(const ParticleSet& particleSet, float accum, float blend);
 
     void render_blobs(const std::vector<HitBlob*>& blobs);
 
     void render_blobs(const std::vector<HurtBlob*>& blobs);
+
+    void render_particles(const ParticleSet& particleSet);
 
     void finish_rendering();
 

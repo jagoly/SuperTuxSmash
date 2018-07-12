@@ -44,6 +44,8 @@ void FightWorld::tick()
         if (fighter == nullptr) continue;
         mStage->check_boundary(*fighter);
     }
+
+    mParticleSet.update_and_clean();
 }
 
 //============================================================================//

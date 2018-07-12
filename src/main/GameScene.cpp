@@ -123,7 +123,7 @@ void GameScene::render(double elapsed)
     const float blend = float(mAccumulation / mTickTime);
 
     mRenderer->render_objects(accum, blend);
-    mRenderer->render_particles(accum, blend);
+    mRenderer->render_particles(mFightWorld->get_particle_set(), accum, blend);
 
     if (dbg.renderBlobs == true)
     {
@@ -138,55 +138,51 @@ void GameScene::render(double elapsed)
 
 void GameScene::impl_show_general_window()
 {
-    constexpr auto flags = gui::Window::AutoSize | gui::Window::NoMove;
-    const auto window = gui::scope_window("General Debug", {300, 0}, {300, 200}, {+20, +20}, flags);
-
-    if (window.want_display() == false) return;
+    if (!gui::begin_window("General Debug", {300, 0}, {300, 200}, {+20, +20})) return;
 
     //--------------------------------------------------------//
 
-    WITH (gui::scope_framed_group())
+    if (gui::button_with_tooltip("reload actions", "reload actions from json"))
     {
-        if (gui::button_with_tooltip("reload actions", "reload actions from json"))
-        {
-            for (Fighter* fighter : mFightWorld->get_fighters())
-                fighter->debug_reload_actions();
-        }
-
-        imgui::SameLine();
-
-        if (gui::button_with_tooltip("swap control", "cycle the controllers"))
-        {
-            if (auto fighters = mFightWorld->get_fighters(); fighters.size() >= 2u)
-            {
-                auto controllerLast = fighters.back()->get_controller();
-                if (fighters.size() == 4u) fighters[3]->set_controller(fighters[2]->get_controller());
-                if (fighters.size() >= 3u) fighters[2]->set_controller(fighters[1]->get_controller());
-                fighters[1]->set_controller(fighters[0]->get_controller());
-                fighters[0]->set_controller(controllerLast);
-            }
-        }
-
-        imgui::Checkbox("disable input", &dbg.disableInput);
-        imgui::SameLine();
-        imgui::Checkbox("render blobs", &dbg.renderBlobs);
+        for (Fighter* fighter : mFightWorld->get_fighters())
+            fighter->debug_reload_actions();
     }
+
+    imgui::SameLine();
+
+    if (gui::button_with_tooltip("swap control", "cycle the controllers"))
+    {
+        if (auto fighters = mFightWorld->get_fighters(); fighters.size() >= 2u)
+        {
+            auto controllerLast = fighters.back()->get_controller();
+            if (fighters.size() == 4u) fighters[3]->set_controller(fighters[2]->get_controller());
+            if (fighters.size() >= 3u) fighters[2]->set_controller(fighters[1]->get_controller());
+            fighters[1]->set_controller(fighters[0]->get_controller());
+            fighters[0]->set_controller(controllerLast);
+        }
+    }
+
+    imgui::Checkbox("disable input", &dbg.disableInput);
+    imgui::SameLine();
+    imgui::Checkbox("render blobs", &dbg.renderBlobs);
+
+    //--------------------------------------------------------//
+
+    gui::end_window();
 }
 
 //============================================================================//
 
 void GameScene::impl_show_fighters_window()
 {
-    constexpr auto flags = gui::Window::AutoSize | gui::Window::NoMove;
-    const auto window = gui::scope_window("Fighter Debug", {380, 0}, {380, -40}, {-20, +20}, flags);
-
-    if (window.want_display() == false) return;
+    if (!gui::begin_window("Fighter Debug", {380, 0}, {380, -40}, {-20, +20})) return;
 
     //--------------------------------------------------------//
 
-    WITH (gui::scope_item_width(-FLT_EPSILON))
-    {
-        for (Fighter* fighter : mFightWorld->get_fighters())
-            fighter->debug_show_fighter_widget();
-    }
+    for (Fighter* fighter : mFightWorld->get_fighters())
+        fighter->debug_show_fighter_widget();
+
+    //--------------------------------------------------------//
+
+    gui::end_window();
 }

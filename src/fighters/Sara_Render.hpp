@@ -30,7 +30,7 @@ public: //====================================================//
 
     void render_alpha() override {}
 
-    ParticleSet::Refs get_particle_sets() override;
+    //ParticleSet::Refs get_particle_sets() override;
 
 private: //===================================================//
 

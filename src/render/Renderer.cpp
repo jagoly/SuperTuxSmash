@@ -226,13 +226,11 @@ void Renderer::render_objects(float elapsed, float blend)
 
 //============================================================================//
 
-void Renderer::render_particles(float accum, float blend)
+void Renderer::render_particles(const ParticleSet& particleSet, float accum, float blend)
 {
     mParticleRender->swap_sets();
 
-    for (const auto& object : mRenderObjects)
-        for (const auto& set : object->get_particle_sets())
-            mParticleRender->integrate_set(blend, set);
+    mParticleRender->integrate_set(blend, particleSet);
 
     mParticleRender->render_particles();
 }

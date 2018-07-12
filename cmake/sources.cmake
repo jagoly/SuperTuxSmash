@@ -57,6 +57,9 @@ set(SOURCES
   "src/game/ParticleSet.hpp"
   "src/game/ParticleSet.cpp"
 
+  "src/game/ParticleEmitter.hpp"
+  "src/game/ParticleEmitter.cpp"
+
   "src/game/private/PrivateFighter.hpp"
   "src/game/private/PrivateFighter.cpp"
 

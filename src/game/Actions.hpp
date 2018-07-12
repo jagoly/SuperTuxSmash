@@ -6,6 +6,7 @@
 #include <sqee/misc/PoolTools.hpp>
 
 #include "game/FightWorld.hpp"
+#include "game/ParticleEmitter.hpp"
 
 namespace sts {
 
@@ -80,6 +81,8 @@ protected: //=================================================//
     std::vector<TimelineFrame> timeline;
 
     sq::TinyPoolMap<sq::TinyString<15>, HitBlob> blobs;
+
+    std::map<sq::TinyString<15>, ParticleEmitter> emitters;
 
 private: //===================================================//
 

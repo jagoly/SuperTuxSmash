@@ -91,13 +91,10 @@ std::vector<Mat34F> Fighter::interpolate_bone_matrices(float blend) const
 
 void Fighter::debug_show_fighter_widget()
 {
-    const auto widget = gui::scope_collapse("Fighter %d - %s"_fmt_(index, mName), {}, gui::FONT_BOLD);
-
-    if (widget.want_display() == false) return;
+    if (!gui::begin_collapse("Fighter %d - %s"_fmt_(index, mName))) return;
 
     //--------------------------------------------------------//
 
-    WITH (gui::scope_framed_group())
     {
         const auto font = gui::scope_font(gui::FONT_MONO);
 
@@ -106,13 +103,16 @@ void Fighter::debug_show_fighter_widget()
         gui::display_text("Damage: %0.f%%"_fmt_(status.damage));
 
         gui::display_text("state: %s"_fmt_(enum_to_string(current.state)));
+        gui::display_text("action: %s"_fmt_(current.action ? enum_to_string(current.action->get_type()) : "None"));
     }
 
     //--------------------------------------------------------//
 
-    WITH_IF (gui::scope_collapse("Edit Stats", {}, gui::FONT_REGULAR))
+    if (gui::begin_collapse("Edit Stats"))
     {
+        const auto unindent = gui::scope_unindent();
         const auto font = gui::scope_font(gui::FONT_MONO);
+        const auto width = gui::scope_item_width(-FLT_EPSILON);
 
         gui::input_float("walk_speed",     140.f, stats.walk_speed,     0.05f, 2);
         gui::input_float("dash_speed",     140.f, stats.dash_speed,     0.05f, 2);
@@ -127,20 +127,21 @@ void Fighter::debug_show_fighter_widget()
         gui::input_float("fall_speed",     140.f, stats.fall_speed,     0.05f, 2);
         gui::input_float("evade_distance", 140.f, stats.evade_distance, 0.05f, 2);
 
-        gui::input_int("dodge_finish",         160.f, stats.dodge_finish,         1);
-        gui::input_int("dodge_safe_start",     160.f, stats.dodge_safe_start,     1);
-        gui::input_int("dodge_safe_end",       160.f, stats.dodge_safe_end,       1);
-        gui::input_int("evade_finish",         160.f, stats.evade_finish,         1);
-        gui::input_int("evade_safe_start",     160.f, stats.evade_safe_start,     1);
-        gui::input_int("evade_safe_end",       160.f, stats.evade_safe_end,       1);
-        gui::input_int("air_dodge_finish",     160.f, stats.air_dodge_finish,     1);
-        gui::input_int("air_dodge_safe_start", 160.f, stats.air_dodge_safe_start, 1);
-        gui::input_int("air_dodge_safe_end",   160.f, stats.air_dodge_safe_end,   1);
+        gui::input_int("dodge_finish",         170.f, stats.dodge_finish);
+        gui::input_int("dodge_safe_start",     170.f, stats.dodge_safe_start);
+        gui::input_int("dodge_safe_end",       170.f, stats.dodge_safe_end);
+        gui::input_int("evade_finish",         170.f, stats.evade_finish);
+        gui::input_int("evade_safe_start",     170.f, stats.evade_safe_start);
+        gui::input_int("evade_safe_end",       170.f, stats.evade_safe_end);
+        gui::input_int("air_dodge_finish",     170.f, stats.air_dodge_finish);
+        gui::input_int("air_dodge_safe_start", 170.f, stats.air_dodge_safe_start);
+        gui::input_int("air_dodge_safe_end",   170.f, stats.air_dodge_safe_end);
+
+        gui::end_collapse();
     }
 
     //--------------------------------------------------------//
 
-    WITH (gui::scope_framed_group())
     {
         const auto font = gui::scope_font(gui::FONT_REGULAR);
 
@@ -152,6 +153,8 @@ void Fighter::debug_show_fighter_widget()
         if (gui::button_with_tooltip("BOUNCE", "make the fighter bounce"))
             mVelocity.y = +10.f;
     }
+
+    gui::end_collapse();
 }
 
 //============================================================================//

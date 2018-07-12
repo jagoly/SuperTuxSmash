@@ -20,6 +20,8 @@ struct ActionFuncs final
     static void add_velocity(Action& action, float fwd, float up);
 
     static void finish_action(Action& action);
+
+    static void emit_particles(Action& action, PoolKey key, uint count);
 };
 
 //============================================================================//

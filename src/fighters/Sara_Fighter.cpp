@@ -22,15 +22,22 @@ void Sara_Fighter::tick()
 
     //--------------------------------------------------------//
 
-    ParticleGeneratorDisc generator;
+    ParticleEmitter emitter;
 
-    generator.emitPosition = Vec3F(get_diamond().origin(), 0.f);
-    generator.emitVelocity = Vec3F(get_velocity().x * 0.2f, 0.f, 0.f);
-    generator.direction = Vec3F(0.f, 1.f, 0.f);
-    generator.scale = { 0.3f, 0.6f };
-    generator.lifetime = { 16u, 24u };
-    generator.incline = { -0.01f, 0.04f };
-    generator.speed = { 1.1f, 1.8f };
+    emitter.shape = ParticleEmitter::DiscShape();
+
+    emitter.emitPosition = Vec3F(get_diamond().origin(), 0.f);
+    emitter.emitVelocity = Vec3F(get_velocity().x * 0.2f, 0.f, 0.f);
+    emitter.direction = Vec3F(0.f, 1.f, 0.f);
+
+    emitter.lifetime = { 16u, 24u };
+    emitter.scale = { 0.3f, 0.6f };
+
+    emitter.radius = { 0.5f, 1.0f };
+    emitter.opacity = { 0.4f, 0.0f };
+
+    emitter.disc().incline = { -0.01f, 0.04f };
+    emitter.disc().speed = { 1.1f, 1.8f };
 
 //    ParticleGeneratorColumn generator;
 
@@ -42,13 +49,17 @@ void Sara_Fighter::tick()
 //    generator.deviation = { 1.3f, 1.5f };
 //    generator.speed = { 1.5f, 3.5f };
 
-    mParticleSet.texturePath = "particles/WhitePuff";
-    mParticleSet.friction = 0.02f;
-    mParticleSet.radius = { 0.5f, 1.f };
-    mParticleSet.opacity = { 0.4f, 0.f };
+    auto& partilcles = mFightWorld.get_particle_set();
+
+    partilcles.texturePath = "particles/WhitePuff";
+
+    //mParticleSet.texturePath = "particles/WhitePuff";
+    //mParticleSet.friction = 0.02f;
+    //mParticleSet.radius = { 0.5f, 1.f };
+    //mParticleSet.opacity = { 0.4f, 0.f };
 
     if (current.state == State::Landing && previous.state != State::Landing)
-        generator.generate(mParticleSet, 40u);
+        emitter.generate(partilcles, 40u);
 
-    mParticleSet.update_and_clean();
+    //partilcles.update_and_clean();
 }

@@ -6,6 +6,7 @@
 #include "render/SceneData.hpp"
 
 #include "game/Blobs.hpp"
+#include "game/ParticleSet.hpp"
 
 namespace sts {
 
@@ -123,6 +124,11 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
+    /// Access the ParticleSystem.
+    ParticleSet& get_particle_set() { return mParticleSet; }
+
+    //--------------------------------------------------------//
+
     SceneData compute_scene_data() const;
 
 private: //===================================================//
@@ -130,6 +136,8 @@ private: //===================================================//
     unique_ptr<Stage> mStage;
 
     std::array<unique_ptr<Fighter>, 4> mFighters;
+
+    ParticleSet mParticleSet;
 
     //--------------------------------------------------------//
 

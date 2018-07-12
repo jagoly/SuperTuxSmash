@@ -56,16 +56,9 @@ void MenuScene::render(double elapsed)
 
 void MenuScene::impl_show_main_window()
 {
-    const Vec2F windowSize = Vec2F(400.f, mSmashApp.get_options().Window_Size.y - 40u);
-    constexpr auto flags = gui::Window::NoMove;
+    string strBuf; strBuf.reserve(50);
 
-    const auto window = gui::scope_window("Welcome to SuperTuxSmash", windowSize, windowSize, {20.f, 20.f}, flags);
-
-    if (window.want_display() == false) return;
-
-    //--------------------------------------------------------//
-
-    auto width = gui::scope_item_width(-FLT_EPSILON);
+    if (!gui::begin_window("Welcome to SuperTuxSmash", {400, 0}, {400, -40}, {20.f, 20.f})) return;
 
     //--------------------------------------------------------//
 
@@ -80,14 +73,16 @@ void MenuScene::impl_show_main_window()
 
     for (uint8_t index = 0u; index < 4u; ++index)
     {
-        auto collapse = gui::scope_collapse("Player %d"_fmt_(index+1), {});
+        setup.players[index].enabled = gui::begin_collapse("Player %d"_fmt_(index+1));
 
-        if ((setup.players[index].enabled = collapse.want_display()))
+        if (setup.players[index].enabled == true)
         {
             int8_t& ref = reinterpret_cast<int8_t&>(setup.players[index].fighter);
             const auto getter = [](int8_t i) { return enum_to_string(FighterEnum(i)); };
 
             gui::input_combo("Fighter", 100.f, ref, getter, int8_t(FighterEnum::Count));
+
+            gui::end_collapse();
         }
     }
 
@@ -102,4 +97,8 @@ void MenuScene::impl_show_main_window()
 
         mSmashApp.start_game(any ? setup : GameSetup::get_defaults());
     }
+
+    //--------------------------------------------------------//
+
+    gui::end_window();
 }

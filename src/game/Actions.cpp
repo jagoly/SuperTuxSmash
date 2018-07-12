@@ -41,6 +41,12 @@ bool Action::do_tick()
 {
     if (mTimelineIter != timeline.end() && mTimelineIter->frame == mCurrentFrame)
     {
+        for (auto& [key, emitter] : emitters)
+        {
+            emitter.emitPosition = Vec3F(fighter.get_diamond().origin(), 0.f);
+            emitter.emitVelocity = Vec3F(fighter.get_velocity().x * 0.2f, 0.f, 0.f);
+        }
+
         for (auto& cmd : mTimelineIter->commands)
             cmd.func(*this);
 

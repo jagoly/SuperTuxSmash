@@ -45,7 +45,7 @@ void ParticleRender::integrate_set(float blend, const ParticleSet& set)
     info.texture = renderer.resources.texarrays.acquire(set.texturePath);
     info.startIndex = uint16_t(mVertices.size());
     info.vertexCount = set.get_count();
-    info.averageDepth = set.compute_vertices(blend, info.texture->get_size().z, mVertices);
+    set.compute_vertices(blend, info.texture->get_size().z, mVertices);
 }
 
 //============================================================================//

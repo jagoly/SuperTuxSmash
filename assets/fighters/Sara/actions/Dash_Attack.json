@@ -4,29 +4,30 @@
 {
 },
 
-"generators":
+"emitters":
 {
   "BeginDash":
   {
-    "generator": "Disc",
-    "centre": [ 0.0, 0.0, 0.0 ],
+    "shape": "disc",
+    "direction": "0.0 1.0 0.0",
+    "minLifetime": 12,
+    "maxLifetime": 18,
+    "minScale": 0.3,
+    "maxScale": 0.6,
+    "startRadius": 0.5,
+    "endRadius": 1.0,
+    "startOpacity": 0.4,
+    "endOpacity": 0.0,
     "minIncline": -0.01,
-    "maxIncline": 0.08,
-    "startOffset": 0.01,
-    "minFinishOffset": 0.2,
-    "maxFinishOffset": 0.3,
-    "startRadius": 0.06, 
-    "finishRadius": 0.12,
-    "colour": [ 0.6, 0.6, 0.6 ],
-    "startOpacity": 0.5,
-    "finishOpacity": 0.0,
-    "minLifetime": 24, 
-    "maxLifetime": 36
+    "maxIncline": 0.04,
+    "minSpeed": 1.1,
+    "maxSpeed": 1.8
   }
 },
 
 "timeline":
 [
+  [ "0-12", [ "emit_particles BeginDash 5" ] ],
   [ "0-20", [ "add_velocity 0.2 0.0" ] ],
   [ 32, [ "finish_action" ] ]
 ]

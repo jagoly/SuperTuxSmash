@@ -20,7 +20,7 @@ public: //====================================================//
 
 private: //===================================================//
 
-    ParticleSet mParticleSet;
+    //ParticleSet mParticleSet;
 
     friend class Sara_Render;
 };

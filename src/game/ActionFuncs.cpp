@@ -35,3 +35,9 @@ void ActionFuncs::finish_action(Action& action)
 };
 
 //----------------------------------------------------------------------------//
+
+void ActionFuncs::emit_particles(Action& action, PoolKey key, uint count)
+{
+
+    action.emitters[key].generate(action.world.get_particle_set(), count);
+}
