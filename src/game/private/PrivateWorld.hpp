@@ -6,8 +6,9 @@
 
 #include "render/SceneData.hpp"
 
-#include "game/ParticleSet.hpp"
 #include "game/Blobs.hpp"
+#include "game/ParticleSystem.hpp"
+#include "game/ParticleEmitter.hpp"
 
 //============================================================================//
 
@@ -92,6 +93,8 @@ public: //====================================================//
 
     sq::PoolAllocator<HitBlob> hitBlobAlloc { 1024u };
     sq::PoolAllocator<HurtBlob> hurtBlobAlloc { 128u };
+
+    sq::PoolAllocator<ParticleEmitter> emitterAlloc { 1024u };
 
     std::vector<HitBlob*> enabledHitBlobs;
     std::vector<HurtBlob*> enabledHurtBlobs;

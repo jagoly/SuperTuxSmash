@@ -10,6 +10,7 @@
 
 #include "game/Actions.hpp"
 #include "game/ActionFuncs.hpp"
+#include "game/Fighter.hpp"
 
 #include "game/ActionBuilder.hpp"
 
@@ -209,8 +210,18 @@ void ActionBuilder::load_from_json(Action& action)
     {
         for (auto iter : root.at("emitters").items())
         {
-            auto& emitter = action.emitters[iter.key()];
-            emitter.load_from_json(iter.value());
+            ParticleEmitter* emitter = action.emitters.emplace(iter.key());
+            emitter->load_from_json(action.world.get_particle_system(), iter.value());
+
+            if (auto bone = iter.value().find("bone"); bone != iter.value().end())
+            {
+                if (bone->is_string())
+                {
+                    emitter->bone = int8_t(action.fighter.get_armature().get_bone_index(*bone));
+                    if (emitter->bone == -1) sq::log_warning("invalid bone '%s'", *bone);
+                }
+                else emitter->bone = *bone;
+            }
         }
     }
 
@@ -222,6 +233,9 @@ void ActionBuilder::load_from_json(Action& action)
 
         blob->fighter = &action.fighter;
         blob->action = &action;
+
+        if (blobIter.value().count("bone") && (blobIter.value().count("origin") || blobIter.value().count("radius")))
+            sq::log_warning("blob with origin/radius may not attach to a bone");
 
         for (auto iter : blobIter.value().items())
         {
@@ -241,9 +255,18 @@ void ActionBuilder::load_from_json(Action& action)
                 blob->knockScale = blobTemplate.knockScale;
             }
 
+            else if (key == "bone")
+            {
+                if (value.is_string())
+                {
+                    blob->bone = int8_t(action.fighter.get_armature().get_bone_index(value));
+                    if (blob->bone == -1) sq::log_warning("invalid bone '%s'", value);
+                }
+                else blob->bone = value;
+            }
+
             else if (key == "origin")     blob->origin = { value[0], value[1], value[2] };
             else if (key == "radius")     blob->radius = value;
-            else if (key == "bone")       blob->bone = value;
             else if (key == "group")      blob->group = value;
             else if (key == "knockAngle") blob->knockAngle = value;
             else if (key == "knockBase")  blob->knockBase = value;

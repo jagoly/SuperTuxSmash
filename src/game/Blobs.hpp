@@ -34,7 +34,7 @@ struct alignas(16) HitBlob final
 
     sq::maths::Sphere sphere;  ///< Blob sphere after transform.
 
-    int8_t bone;  ///< Index of the bone to attach to.
+    int8_t bone = -1;  ///< Index of the bone to attach to. (optional)
 
     //--------------------------------------------------------//
 

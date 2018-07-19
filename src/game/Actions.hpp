@@ -82,7 +82,7 @@ protected: //=================================================//
 
     sq::TinyPoolMap<sq::TinyString<15>, HitBlob> blobs;
 
-    std::map<sq::TinyString<15>, ParticleEmitter> emitters;
+    sq::TinyPoolMap<sq::TinyString<15>, ParticleEmitter> emitters;
 
 private: //===================================================//
 

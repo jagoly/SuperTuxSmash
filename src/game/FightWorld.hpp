@@ -6,7 +6,8 @@
 #include "render/SceneData.hpp"
 
 #include "game/Blobs.hpp"
-#include "game/ParticleSet.hpp"
+#include "game/ParticleSystem.hpp"
+#include "game/ParticleEmitter.hpp"
 
 namespace sts {
 
@@ -122,10 +123,13 @@ public: //====================================================//
     /// Access the enabled HurtBlobs.
     const std::vector<HurtBlob*>& get_hurt_blobs() const;
 
+    /// Access the Emitter Allocator.
+    sq::PoolAllocator<ParticleEmitter>& get_emitter_allocator();
+
     //--------------------------------------------------------//
 
     /// Access the ParticleSystem.
-    ParticleSet& get_particle_set() { return mParticleSet; }
+    ParticleSystem& get_particle_system() { return mParticleSystem; }
 
     //--------------------------------------------------------//
 
@@ -137,7 +141,7 @@ private: //===================================================//
 
     std::array<unique_ptr<Fighter>, 4> mFighters;
 
-    ParticleSet mParticleSet;
+    ParticleSystem mParticleSystem;
 
     //--------------------------------------------------------//
 

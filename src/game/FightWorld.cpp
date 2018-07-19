@@ -45,7 +45,7 @@ void FightWorld::tick()
         mStage->check_boundary(*fighter);
     }
 
-    mParticleSet.update_and_clean();
+    mParticleSystem.update_and_clean();
 }
 
 //============================================================================//
@@ -69,6 +69,8 @@ sq::PoolAllocator<HurtBlob>& FightWorld::get_hurt_blob_allocator() { return impl
 const std::vector<HitBlob*>& FightWorld::get_hit_blobs() const { return impl->enabledHitBlobs; }
 
 const std::vector<HurtBlob*>& FightWorld::get_hurt_blobs() const { return impl->enabledHurtBlobs; }
+
+sq::PoolAllocator<ParticleEmitter>& FightWorld::get_emitter_allocator() { return impl->emitterAlloc; }
 
 //============================================================================//
 

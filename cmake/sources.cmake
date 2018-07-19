@@ -54,8 +54,8 @@ set(SOURCES
   "src/game/Stage.hpp"
   "src/game/Stage.cpp"
 
-  "src/game/ParticleSet.hpp"
-  "src/game/ParticleSet.cpp"
+  "src/game/ParticleSystem.hpp"
+  "src/game/ParticleSystem.cpp"
 
   "src/game/ParticleEmitter.hpp"
   "src/game/ParticleEmitter.cpp"

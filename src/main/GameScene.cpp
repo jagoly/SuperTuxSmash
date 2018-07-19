@@ -123,7 +123,7 @@ void GameScene::render(double elapsed)
     const float blend = float(mAccumulation / mTickTime);
 
     mRenderer->render_objects(accum, blend);
-    mRenderer->render_particles(mFightWorld->get_particle_set(), accum, blend);
+    mRenderer->render_particles(mFightWorld->get_particle_system(), accum, blend);
 
     if (dbg.renderBlobs == true)
     {

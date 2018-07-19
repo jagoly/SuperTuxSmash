@@ -3,7 +3,7 @@
 #include <sqee/builtins.hpp>
 #include <sqee/maths/Vectors.hpp>
 
-#include "game/ParticleSet.hpp"
+#include "game/ParticleSystem.hpp"
 
 #include "render/Renderer.hpp"
 
@@ -23,7 +23,7 @@ public: //====================================================//
 
     void swap_sets();
 
-    void integrate_set(float blend, const ParticleSet& set);
+    void integrate_set(float blend, const ParticleSystem& system);
 
     void render_particles();
 
@@ -31,7 +31,7 @@ private: //===================================================//
 
     struct ParticleSetInfo
     {
-        TexArrayHandle texture;
+        //TexArrayHandle texture;
         uint16_t startIndex;
         uint16_t vertexCount;
         float averageDepth;
@@ -43,6 +43,8 @@ private: //===================================================//
     std::vector<ParticleVertex> mVertices;
 
     //--------------------------------------------------------//
+
+    sq::TextureArray2D mTexture;
 
     sq::FixedBuffer mVertexBuffer;
     sq::VertexArray mVertexArray;

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <variant>
-
 #include <sqee/builtins.hpp>
 #include <sqee/maths/Vectors.hpp>
 #include <sqee/misc/Json.hpp>
@@ -22,8 +20,8 @@ struct ParticleData
     float startOpacity;
     float endOpacity;
     float friction;
-    uint8_t index;
-    char _padding[3];
+    uint16_t sprite;
+    char _padding[2];
 };
 
 struct ParticleVertex
@@ -31,12 +29,12 @@ struct ParticleVertex
     Vec3F position;
     float radius;
     float opacity;
-    float index;
+    float sprite;
 };
 
 //============================================================================//
 
-class ParticleSet final : sq::NonCopyable
+class ParticleSystem final : sq::NonCopyable
 {
 public: //====================================================//
 
@@ -44,14 +42,23 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    string texturePath;
+    ParticleSystem();
+
+    //--------------------------------------------------------//
+
+    struct SpriteRange { uint16_t first, last; };
+    std::map<string, SpriteRange> sprites;
+
+    //--------------------------------------------------------//
 
     void update_and_clean();
 
     // returns the approx average depth for sorting
-    void compute_vertices(float blend, uint maxIndex, VertexVec& vertices) const;
+    void compute_vertices(float blend, VertexVec& vertices) const;
 
-    uint16_t get_count() const { return uint16_t(mParticles.size()); }
+    const std::vector<ParticleData>& get_particles() const { return mParticles; }
+
+    //uint16_t get_count() const { return uint16_t(mParticles.size()); }
 
 private: //===================================================//
 

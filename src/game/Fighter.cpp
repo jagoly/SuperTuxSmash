@@ -37,6 +37,10 @@ Fighter::~Fighter() = default;
 
 //============================================================================//
 
+const sq::Armature& Fighter::get_armature() const { return impl->armature; };
+
+//============================================================================//
+
 void Fighter::set_controller(Controller* controller) { impl->controller = controller; }
 
 Controller* Fighter::get_controller() { return impl->controller; }

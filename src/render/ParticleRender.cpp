@@ -19,6 +19,8 @@ ParticleRender::ParticleRender(Renderer& renderer) : renderer(renderer)
     mVertexArray.add_float_attribute(1u, 1u, gl::FLOAT, false, 12u);
     mVertexArray.add_float_attribute(2u, 1u, gl::FLOAT, false, 16u);
     mVertexArray.add_float_attribute(3u, 1u, gl::FLOAT, false, 20u);
+
+    mTexture.load_automatic("particles/Basic128");
 }
 
 //============================================================================//
@@ -38,14 +40,14 @@ void ParticleRender::swap_sets()
     mVertices.clear();
 }
 
-void ParticleRender::integrate_set(float blend, const ParticleSet& set)
+void ParticleRender::integrate_set(float blend, const ParticleSystem& system)
 {
     auto& info = mParticleSetInfo.emplace_back();
 
-    info.texture = renderer.resources.texarrays.acquire(set.texturePath);
+    //info.texture = renderer.resources.texarrays.acquire(system.texturePath);
     info.startIndex = uint16_t(mVertices.size());
-    info.vertexCount = set.get_count();
-    set.compute_vertices(blend, info.texture->get_size().z, mVertices);
+    info.vertexCount = uint16_t(system.get_particles().size());
+    system.compute_vertices(blend, mVertices);
 }
 
 //============================================================================//
@@ -71,11 +73,13 @@ void ParticleRender::render_particles()
     context.set_state(Context::Depth_Test::Keep);
     context.set_state(Context::Depth_Compare::LessEqual);
 
+    context.bind_Texture(mTexture, 0u);
+
     for (const ParticleSetInfo& info : mParticleSetInfo)
     {
         if (info.vertexCount == 0u) continue;
 
-        context.bind_Texture(info.texture.get(), 0u);
+        //context.bind_Texture(info.texture.get(), 0u);
         gl::DrawArrays(gl::POINTS, info.startIndex, info.vertexCount);
     }
 }

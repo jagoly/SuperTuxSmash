@@ -6,18 +6,20 @@
 
 #include "game/ParticleEmitter.hpp"
 
-#include <sqee/debug/Misc.hpp>
-
 namespace maths = sq::maths;
 using namespace sts;
 
 //============================================================================//
 
-void ParticleEmitter::generate(ParticleSet& set, uint count)
+void ParticleEmitter::generate(ParticleSystem& system, uint count)
 {
+    const size_t genStart = system.mParticles.size();
+
+    //--------------------------------------------------------//
+
     static std::mt19937 gen(1337);
 
-    maths::RandomScalar<uint8_t>  randIndex    { 0u, 63u };
+    maths::RandomScalar<uint16_t> randSprite   { sprite.min, sprite.max };
     maths::RandomScalar<uint16_t> randLifetime { lifetime.min, lifetime.max };
     maths::RandomScalar<float>    randScale    { scale.min, scale.max };
 
@@ -25,7 +27,7 @@ void ParticleEmitter::generate(ParticleSet& set, uint count)
 
     for (uint i = 0u; i < count; ++i)
     {
-        auto& p = set.mParticles.emplace_back();
+        auto& p = system.mParticles.emplace_back();
 
         p.previousPos = emitPosition;
         p.currentPos = emitPosition;
@@ -40,7 +42,9 @@ void ParticleEmitter::generate(ParticleSet& set, uint count)
         p.startOpacity = opacity.start;
         p.endOpacity = opacity.end;
 
-        p.index = randIndex(gen);
+        p.sprite = randSprite(gen);
+
+        p.friction = 0.1f;
     }
 
     //--------------------------------------------------------//
@@ -51,11 +55,34 @@ void ParticleEmitter::generate(ParticleSet& set, uint count)
         maths::RandomScalar<float> randIncline { disc->incline.min, disc->incline.max };
         maths::RandomScalar<float> randSpeed   { disc->speed.min, disc->speed.max };
 
-        for (auto& p : set.mParticles)
+        for (size_t i = genStart; i < genStart + count; ++i)
         {
+            ParticleData& p = system.mParticles[i];
+
             p.velocity = maths::rotate_x(Vec3F(0.f, 0.f, -1.f), randIncline(gen));
             p.velocity = maths::rotate_y(p.velocity, randAngle(gen));
             p.velocity = emitVelocity + basis * p.velocity * randSpeed(gen);
+        }
+    }
+
+    //--------------------------------------------------------//
+
+    if (auto ball = std::get_if<BallShape>(&shape))
+    {
+        maths::RandomVector<3, float> randVector { Vec3F(-1.f), Vec3F(1.f) };
+        maths::RandomScalar<float> randSpeed { ball->speed.min, ball->speed.max };
+
+        for (size_t i = genStart; i < genStart + count; ++i)
+        {
+            ParticleData& p = system.mParticles[i];
+
+            while (true)
+            {
+                p.velocity = randVector(gen);
+                /*if (maths::length_squared(p.velocity) < 1.0f) */break;
+            }
+
+            p.velocity =  p.velocity * randSpeed(gen);
         }
     }
 }
@@ -90,9 +117,10 @@ void ParticleEmitter::generate(ParticleSet& set, uint count)
 
 //============================================================================//
 
-void ParticleEmitter::load_from_json(const sq::JsonValue& json)
+void ParticleEmitter::load_from_json(ParticleSystem& system, const sq::JsonValue& json)
 {
     direction = json.at("direction");
+    origin = json.at("origin");
 
     lifetime.min = json.at("minLifetime");
     lifetime.max = json.at("maxLifetime");
@@ -105,6 +133,9 @@ void ParticleEmitter::load_from_json(const sq::JsonValue& json)
 
     opacity.start = json.at("startOpacity");
     opacity.end = json.at("endOpacity");
+
+    const auto& spriteRange = system.sprites.at(json.at("sprite"));
+    sprite.min = spriteRange.first; sprite.max = spriteRange.last;
 
     const string& shapeName = json.at("shape");
 
@@ -122,6 +153,14 @@ void ParticleEmitter::load_from_json(const sq::JsonValue& json)
     else if (shapeName == "column")
     {
 
+    }
+
+    else if (shapeName == "ball")
+    {
+        BallShape& ref = shape.emplace<BallShape>();
+
+        ref.speed.min = json.at("minSpeed");
+        ref.speed.max = json.at("maxSpeed");
     }
 
     else SQASSERT(false, "");

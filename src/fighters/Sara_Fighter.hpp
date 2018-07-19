@@ -1,7 +1,5 @@
 #pragma once
 
-#include "game/ParticleSet.hpp"
-
 #include "game/Fighter.hpp"
 
 //============================================================================//
@@ -19,8 +17,6 @@ public: //====================================================//
     void tick() override;
 
 private: //===================================================//
-
-    //ParticleSet mParticleSet;
 
     friend class Sara_Render;
 };

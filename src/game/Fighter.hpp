@@ -2,6 +2,8 @@
 
 #include <sqee/builtins.hpp>
 
+#include <sqee/render/Armature.hpp>
+
 #include "game/FightWorld.hpp"
 #include "game/Actions.hpp"
 
@@ -128,6 +130,8 @@ public: //====================================================//
     //--------------------------------------------------------//
 
     string_view get_name() const { return mName; }
+
+    const sq::Armature& get_armature() const;
 
     //--------------------------------------------------------//
 

@@ -4,16 +4,25 @@
 #include <sqee/maths/Functions.hpp>
 #include <sqee/maths/Random.hpp>
 
-#include "game/ParticleSet.hpp"
-
-#include <sqee/debug/Misc.hpp>
+#include "game/ParticleSystem.hpp"
 
 namespace maths = sq::maths;
 using namespace sts;
 
 //============================================================================//
 
-void ParticleSet::update_and_clean()
+ParticleSystem::ParticleSystem()
+{
+    sprites =
+    {
+        { "Smoke", { 0, 15 } },
+        { "Sparkle", { 16, 19 } }
+    };
+}
+
+//============================================================================//
+
+void ParticleSystem::update_and_clean()
 {
     //mVerticesX.clear();
     //mVerticesX.reserve(mParticles.size());
@@ -40,19 +49,24 @@ void ParticleSet::update_and_clean()
 //        mAverageDepth += vertex.position.z;
 //    }
 
-    for (ParticleData& p : mParticles)
+    const auto lambda = [](std::vector<ParticleData>& particles)
     {
-        p.previousPos = p.currentPos;
-        p.currentPos += p.velocity / 48.f;
-        p.velocity -= maths::normalize(p.velocity) * p.friction;
-    }
+        for (ParticleData& p : particles)
+        {
+            p.previousPos = p.currentPos;
+            p.currentPos += p.velocity / 48.f;
+            p.velocity -= maths::normalize(p.velocity) * p.friction;
+        }
 
-    const auto predicate = [](ParticleData& p) { return ++p.progress == p.lifetime; };
-    const auto end = std::remove_if(mParticles.begin(), mParticles.end(), predicate);
-    mParticles.erase(end, mParticles.end());
+        const auto predicate = [](ParticleData& p) { return ++p.progress == p.lifetime; };
+        const auto end = std::remove_if(particles.begin(), particles.end(), predicate);
+        particles.erase(end, particles.end());
+    };
+
+    lambda(mParticles);
 }
 
-void ParticleSet::compute_vertices(float blend, uint maxIndex, VertexVec& vertices) const
+void ParticleSystem::compute_vertices(float blend, VertexVec& vertices) const
 {
     for (const ParticleData& p : mParticles)
     {
@@ -63,8 +77,7 @@ void ParticleSet::compute_vertices(float blend, uint maxIndex, VertexVec& vertic
         vertex.radius = maths::mix(p.startRadius, p.endRadius, factor);
         vertex.opacity = maths::mix(p.startOpacity, p.endOpacity, factor);
 
-        // this might be very slow! really we want the size of the texture earlier...
-        vertex.index = float(p.index % maxIndex);
+        vertex.sprite = float(p.sprite);
     }
 
 //    float averageDepth = 0.f;
