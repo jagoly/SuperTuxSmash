@@ -1,6 +1,6 @@
 #pragma once
 
-#include <sqee/builtins.hpp>
+#include <sqee/misc/Builtins.hpp>
 
 #include <sqee/misc/PoolTools.hpp>
 
@@ -27,10 +27,10 @@ public: //====================================================//
     //--------------------------------------------------------//
 
     /// Set the stage for the game.
-    void set_stage(unique_ptr<Stage> stage);
+    void set_stage(UniquePtr<Stage> stage);
 
     /// Add a fighter to the game.
-    void add_fighter(unique_ptr<Fighter> fighter);
+    void add_fighter(UniquePtr<Fighter> fighter);
 
     //--------------------------------------------------------//
 
@@ -73,9 +73,9 @@ public: //====================================================//
     //--------------------------------------------------------//
 
     /// Acquire a vector of all added fighters.
-    std::vector<Fighter*> get_fighters()
+    Vector<Fighter*> get_fighters()
     {
-        std::vector<Fighter*> result;
+        Vector<Fighter*> result;
         result.reserve(4u);
 
         for (auto& uptr : mFighters)
@@ -96,22 +96,22 @@ public: //====================================================//
 
     sq::PoolAllocator<ParticleEmitter> emitterAlloc { 1024u };
 
-    std::vector<HitBlob*> enabledHitBlobs;
-    std::vector<HurtBlob*> enabledHurtBlobs;
+    Vector<HitBlob*> enabledHitBlobs;
+    Vector<HurtBlob*> enabledHurtBlobs;
 
-    std::array<std::array<uint32_t, 4>, 4> hitBitsArray;
+    Array<Array<uint32_t, 4>, 4> hitBitsArray;
 
 private: //===================================================//
 
-    unique_ptr<Stage> mStage;
+    UniquePtr<Stage> mStage;
 
-    std::array<unique_ptr<Fighter>, 4> mFighters;
+    Array<UniquePtr<Fighter>, 4> mFighters;
 
     //--------------------------------------------------------//
 
     struct Collision { HitBlob* hit; HurtBlob* hurt; };
 
-    std::array<std::array<std::vector<Collision>, 4u>, 4u> mCollisions;
+    Array<Array<Vector<Collision>, 4u>, 4u> mCollisions;
 
     //--------------------------------------------------------//
 

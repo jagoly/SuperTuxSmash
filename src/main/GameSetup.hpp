@@ -1,6 +1,6 @@
 #pragma once
 
-#include <sqee/builtins.hpp>
+#include <sqee/misc/Builtins.hpp>
 
 #include "enumerations.hpp"
 
@@ -18,7 +18,7 @@ struct GameSetup
         FighterEnum fighter {-1};
     };
 
-    std::array<Player, 4> players;
+    Array<Player, 4> players;
 
     StageEnum stage {-1};
 

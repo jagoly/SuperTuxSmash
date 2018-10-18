@@ -11,7 +11,7 @@ using namespace sts;
 
 //============================================================================//
 
-Controller::Controller(const sq::InputDevices& devices, string configPath)
+Controller::Controller(const sq::InputDevices& devices, String configPath)
     : mDevices(devices)
 {
     const auto root = sq::parse_json_from_file(configPath);

@@ -109,7 +109,7 @@
 
 ////============================================================================//
 
-//void Renderer::render_blobs(const std::vector<HitBlob*>& blobs)
+//void Renderer::render_blobs(const Vector<HitBlob*>& blobs)
 //{
 //    context.bind_FrameBuffer(fbos.Main);
 
@@ -138,7 +138,7 @@
 
 ////============================================================================//
 
-//void Renderer::render_blobs(const std::vector<HurtBlob*>& blobs)
+//void Renderer::render_blobs(const Vector<HurtBlob*>& blobs)
 //{
 //    context.bind_FrameBuffer(fbos.Main);
 

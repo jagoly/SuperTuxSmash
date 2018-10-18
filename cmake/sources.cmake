@@ -89,6 +89,11 @@ set(SOURCES
   "src/render/ResourceCaches.hpp"
   "src/render/ResourceCaches.cpp"
 
+  "src/render/Material.hpp"
+  "src/render/Material.cpp"
+
+  "src/render/UniformBlocks.hpp"
+
   #----------------------------------------------------------#
 
   "src/stages/TestZone_Stage.hpp"

@@ -154,13 +154,13 @@ public: //====================================================//
 
     //-- init functions, called by constructor ---------------//
 
-    void initialise_armature(const string& path);
+    void initialise_armature(const String& path);
 
-    void initialise_hurt_blobs(const string& path);
+    void initialise_hurt_blobs(const String& path);
 
-    void initialise_stats(const string& path);
+    void initialise_stats(const String& path);
 
-    void initialise_actions(const string& path);
+    void initialise_actions(const String& path);
 
     //-- called by passthrough methods in Fighter ------------//
 

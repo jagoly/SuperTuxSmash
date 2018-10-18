@@ -1,6 +1,6 @@
 #pragma once
 
-#include <sqee/builtins.hpp>
+#include <sqee/misc/Builtins.hpp>
 
 #include <sqee/render/Armature.hpp>
 
@@ -63,28 +63,28 @@ public: //====================================================//
 
     struct Actions
     {
-        unique_ptr<Action> neutral_first;
+        UniquePtr<Action> neutral_first;
 
-        unique_ptr<Action> tilt_down;
-        unique_ptr<Action> tilt_forward;
-        unique_ptr<Action> tilt_up;
+        UniquePtr<Action> tilt_down;
+        UniquePtr<Action> tilt_forward;
+        UniquePtr<Action> tilt_up;
 
-        unique_ptr<Action> air_back;
-        unique_ptr<Action> air_down;
-        unique_ptr<Action> air_forward;
-        unique_ptr<Action> air_neutral;
-        unique_ptr<Action> air_up;
+        UniquePtr<Action> air_back;
+        UniquePtr<Action> air_down;
+        UniquePtr<Action> air_forward;
+        UniquePtr<Action> air_neutral;
+        UniquePtr<Action> air_up;
 
-        unique_ptr<Action> dash_attack;
+        UniquePtr<Action> dash_attack;
 
-        unique_ptr<Action> smash_down;
-        unique_ptr<Action> smash_forward;
-        unique_ptr<Action> smash_up;
+        UniquePtr<Action> smash_down;
+        UniquePtr<Action> smash_forward;
+        UniquePtr<Action> smash_up;
 
-        unique_ptr<Action> special_down;
-        unique_ptr<Action> special_forward;
-        unique_ptr<Action> special_neutral;
-        unique_ptr<Action> special_up;
+        UniquePtr<Action> special_down;
+        UniquePtr<Action> special_forward;
+        UniquePtr<Action> special_neutral;
+        UniquePtr<Action> special_up;
     };
 
     //--------------------------------------------------------//
@@ -98,7 +98,7 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    Fighter(uint8_t index, FightWorld& world, string_view name);
+    Fighter(uint8_t index, FightWorld& world, StringView name);
 
     virtual ~Fighter();
 
@@ -129,7 +129,7 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    string_view get_name() const { return mName; }
+    StringView get_name() const { return mName; }
 
     const sq::Armature& get_armature() const;
 
@@ -158,7 +158,7 @@ public: //====================================================//
     const Mat4F& get_model_matrix() const { return mModelMatrix; }
 
     /// Get current armature pose matrices.
-    const std::vector<Mat34F>& get_bone_matrices() const { return mBoneMatrices; }
+    const Vector<Mat34F>& get_bone_matrices() const { return mBoneMatrices; }
 
     /// Get current velocity.
     const Vec2F& get_velocity() const { return mVelocity; }
@@ -172,7 +172,7 @@ public: //====================================================//
     Mat4F interpolate_model_matrix(float blend) const;
 
     /// Compute interpolated armature pose matrices.
-    std::vector<Mat34F> interpolate_bone_matrices(float blend) const;
+    void interpolate_bone_matrices(float blend, Mat34F* out, size_t len) const;
 
     //--------------------------------------------------------//
 
@@ -188,7 +188,7 @@ public: //====================================================//
 
 protected: //=================================================//
 
-    std::vector<HurtBlob*> mHurtBlobs;
+    Vector<HurtBlob*> mHurtBlobs;
 
     //--------------------------------------------------------//
 
@@ -205,18 +205,18 @@ protected: //=================================================//
 
     //--------------------------------------------------------//
 
-    string_view mName;
+    StringView mName;
 
 private: //===================================================//
 
-    std::vector<Mat34F> mBoneMatrices;
+    Vector<Mat34F> mBoneMatrices;
 
     Mat4F mModelMatrix;
 
     //--------------------------------------------------------//
 
     friend class PrivateFighter;
-    unique_ptr<PrivateFighter> impl;
+    UniquePtr<PrivateFighter> impl;
 };
 
 //============================================================================//
@@ -224,7 +224,6 @@ private: //===================================================//
 inline Action* Fighter::get_action(Action::Type action)
 {
     SWITCH (action) {
-        CASE (None)             return nullptr;
         CASE (Neutral_First)    return actions.neutral_first.get();
         CASE (Tilt_Down)        return actions.tilt_down.get();
         CASE (Tilt_Forward)     return actions.tilt_forward.get();
@@ -242,27 +241,17 @@ inline Action* Fighter::get_action(Action::Type action)
         CASE (Special_Forward)  return actions.special_forward.get();
         CASE (Special_Neutral)  return actions.special_neutral.get();
         CASE (Special_Up)       return actions.special_up.get();
+        CASE_DEFAULT            return nullptr;
     } SWITCH_END;
-
-    return nullptr;
 }
 
 //============================================================================//
 
-#define ETSC SQEE_ENUM_TO_STRING_CASE
-
-SQEE_ENUM_TO_STRING_BLOCK_BEGIN(Fighter::State)
-ETSC(Neutral) ETSC(Walking) ETSC(Dashing) ETSC(Brake) ETSC(Crouch)
-ETSC(Charge) ETSC(Attack) ETSC(Special) ETSC(Landing) ETSC(PreJump) ETSC(Jumping)
-ETSC(Falling) ETSC(AirAttack) ETSC(AirSpecial) ETSC(Knocked) ETSC(Stunned)
-ETSC(Shield) ETSC(Dodge) ETSC(Evade) ETSC(AirDodge)
-SQEE_ENUM_TO_STRING_BLOCK_END
-
-SQEE_ENUM_TO_STRING_BLOCK_BEGIN(Fighter::Facing)
-ETSC(Left) ETSC(Right)
-SQEE_ENUM_TO_STRING_BLOCK_END
-
-#undef ETSC
+SQEE_ENUM_TO_STRING(Fighter::State,
+                    Neutral, Walking, Dashing, Brake, Crouch,
+                    Charge, Attack, Special, Landing, PreJump, Jumping,
+                    Falling, AirAttack, AirSpecial, Knocked, Stunned,
+                    Shield, Dodge, Evade, AirDodge)
 
 //============================================================================//
 

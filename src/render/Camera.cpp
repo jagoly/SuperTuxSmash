@@ -14,16 +14,16 @@ using namespace sts;
 
 //============================================================================//
 
-Camera::Camera(Renderer& renderer) : renderer(renderer)
+Camera::Camera(const Renderer& renderer) : renderer(renderer)
 {
     //-- Create Uniform Buffers ------------------------------//
 
-    mCameraUbo.create_and_allocate(288u);
+    mUbo.create_and_allocate(sizeof(CameraBlock));
 }
 
 //============================================================================//
 
-void Camera::update_from_scene_data(const SceneData& sceneData)
+void StandardCamera::update_from_scene_data(const SceneData& sceneData)
 {
     mPreviousView = mCurrentView;
     mPreviousBounds = mCurrentBounds;
@@ -45,15 +45,15 @@ void Camera::update_from_scene_data(const SceneData& sceneData)
     mCurrentBounds = { sceneData.outer.min, sceneData.outer.max };
 }
 
-//============================================================================//
+//----------------------------------------------------------------------------//
 
-void Camera::intergrate(float blend)
+void StandardCamera::intergrate(float blend)
 {
     const float aspect = float(renderer.options.Window_Size.x) / float(renderer.options.Window_Size.y);
 
-    const Vec3F cameraDirection = maths::normalize(Vec3F(0.f, -0.f, +4.f));
+    mBlock.direction = maths::normalize(Vec3F(0.f, -0.f, +4.f));
 
-    mProjMatrix = maths::perspective_LH(1.f, aspect, 0.2f, 200.f);
+    mBlock.projMat = maths::perspective_LH(1.f, aspect, 0.2f, 200.f);
 
     const Vec2F minView = maths::mix(mPreviousView.min, mCurrentView.min, blend);
     const Vec2F maxView = maths::mix(mPreviousView.max, mCurrentView.max, blend);
@@ -67,35 +67,95 @@ void Camera::intergrate(float blend)
         return maths::max(distanceX, distanceY); }();
 
     Vec3F cameraTarget = Vec3F((minView + maxView) * 0.5f, 0.f);
-    Vec3F cameraPosition = cameraTarget - cameraDirection * cameraDistance;
+    mBlock.position = cameraTarget - mBlock.direction * cameraDistance;
 
-    mViewMatrix = maths::look_at_LH(cameraPosition, cameraTarget, Vec3F(0.f, 1.f, 0.f));
+    mBlock.viewMat = maths::look_at_LH(mBlock.position, cameraTarget, Vec3F(0.f, 1.f, 0.f));
 
     const float screenLeft = [&]() {
         Vec4F worldPos = Vec4F(minBounds.x, cameraTarget.y, 0.f, 1.f);
-        Vec4F screenPos = mProjMatrix * (mViewMatrix * worldPos);
+        Vec4F screenPos = mBlock.projMat * (mBlock.viewMat * worldPos);
         return (screenPos.x / screenPos.w + 1.f) * screenPos.w; }();
 
     const float screenRight = [&]() {
         Vec4F worldPos = Vec4F(maxBounds.x, cameraTarget.y, 0.f, 1.f);
-        Vec4F screenPos = mProjMatrix * (mViewMatrix * worldPos);
+        Vec4F screenPos = mBlock.projMat * (mBlock.viewMat * worldPos);
         return (screenPos.x / screenPos.w - 1.f) * screenPos.w; }();
 
     if (screenLeft > 0.f && screenRight < 0.f) {}
     else if (screenLeft > 0.f) { cameraTarget.x += screenLeft; }
     else if (screenRight < 0.f) { cameraTarget.x += screenRight; }
 
-    cameraPosition = cameraTarget - cameraDirection * cameraDistance;
+    mBlock.position = cameraTarget - mBlock.direction * cameraDistance;
 
-    mViewMatrix = maths::look_at_LH(cameraPosition, cameraTarget, Vec3F(0.f, 1.f, 0.f));
+    mBlock.viewMat = maths::look_at_LH(mBlock.position, cameraTarget, Vec3F(0.f, 1.f, 0.f));
 
     //--------------------------------------------------------//
 
-    mInvViewMatrix = maths::inverse(mViewMatrix);
-    mInvProjMatrix = maths::inverse(mProjMatrix);
+    mBlock.invViewMat = maths::inverse(mBlock.viewMat);
+    mBlock.invProjMat = maths::inverse(mBlock.projMat);
 
-    mComboMatrix = mProjMatrix * mViewMatrix;
+    mUbo.update(0u, mBlock);
 
-    mCameraUbo.update_complete ( mViewMatrix, mProjMatrix, mInvViewMatrix, mInvProjMatrix,
-                                 cameraPosition, 0, cameraDirection, 0 );
+    //--------------------------------------------------------//
+
+    mComboMatrix = mBlock.projMat * mBlock.viewMat;
+}
+
+//============================================================================//
+
+void EditorCamera::update_from_scroll(float delta)
+{
+    mZoom -= delta / 4.f;
+    mZoom = maths::clamp(mZoom, 1.f, 8.f);
+}
+
+void EditorCamera::update_from_mouse(bool left, bool right, Vec2F position)
+{
+    if (left && !right)
+    {
+        mYaw -= (position.x - mPrevMousePosition.x) / 600.f;
+        mPitch += (position.y - mPrevMousePosition.y) / 800.f;
+        mYaw = maths::clamp(mYaw, -0.2f, 0.2f);
+        mPitch = maths::clamp(mPitch, -0.05f, 0.2f);
+    }
+
+    if (right && !left)
+    {
+        mCentre.x -= (position.x - mPrevMousePosition.x) / 250.f;
+        mCentre.y -= (position.y - mPrevMousePosition.y) / 250.f;
+        mCentre.x = maths::clamp(mCentre.x, -3.f, 3.f);
+        mCentre.y = maths::clamp(mCentre.y, -1.f, 3.f);
+    }
+
+    mPrevMousePosition = position;
+}
+
+//----------------------------------------------------------------------------//
+
+void EditorCamera::intergrate(float blend [[maybe_unused]])
+{
+    const float aspect = float(renderer.options.Window_Size.x) / float(renderer.options.Window_Size.y);
+
+    mBlock.projMat = maths::perspective_LH(1.f, aspect, 0.2f, 200.f);
+
+    const Mat3F rotation = maths::rotation({1.f, 0.f, 0.f}, mPitch) * maths::rotation({0.f, 1.f, 0.f}, mYaw);
+
+    mBlock.position = rotation * Vec3F(0.f, 0.f, -mZoom);
+    mBlock.position.x -= mCentre.x;
+    mBlock.position.y -= mCentre.y;
+
+    mBlock.direction = maths::normalize(rotation * Vec3F(0.f, 0.f, 1.f));
+
+    mBlock.viewMat = maths::translate(maths::transform(Vec3F(0.f, 0.f, mZoom), rotation), Vec3F(-mCentre, 0.f));
+
+    //--------------------------------------------------------//
+
+    mBlock.invViewMat = maths::inverse(mBlock.viewMat);
+    mBlock.invProjMat = maths::inverse(mBlock.projMat);
+
+    mUbo.update(0u, mBlock);
+
+    //--------------------------------------------------------//
+
+    mComboMatrix = mBlock.projMat * mBlock.viewMat;
 }

@@ -1,6 +1,7 @@
 #pragma once
 
-#include <sqee/builtins.hpp>
+#include <sqee/misc/Builtins.hpp>
+#include <sqee/maths/Builtins.hpp>
 
 #include "game/FightWorld.hpp"
 
@@ -67,9 +68,9 @@ protected: //=================================================//
 
     //--------------------------------------------------------//
 
-    std::vector<Platform> mPlatforms;
+    Vector<Platform> mPlatforms;
 
-    std::vector<AlignedBlock> mAlignedBlocks;
+    Vector<AlignedBlock> mAlignedBlocks;
 
     //--------------------------------------------------------//
 
@@ -78,17 +79,9 @@ protected: //=================================================//
 
 //============================================================================//
 
-#define ETSC SQEE_ENUM_TO_STRING_CASE
+SQEE_ENUM_TO_STRING(MoveAttempt::Type, Simple, Slope, EdgeStop)
 
-SQEE_ENUM_TO_STRING_BLOCK_BEGIN(MoveAttempt::Type)
-ETSC(Simple) ETSC(Slope) ETSC(EdgeStop)
-SQEE_ENUM_TO_STRING_BLOCK_END
-
-SQEE_ENUM_TO_STRING_BLOCK_BEGIN(MoveAttempt::Floor)
-ETSC(None) ETSC(Platform) ETSC(Solid) ETSC(Slope)
-SQEE_ENUM_TO_STRING_BLOCK_END
-
-#undef ETSC
+SQEE_ENUM_TO_STRING(MoveAttempt::Floor, None, Platform, Solid, Slope)
 
 //============================================================================//
 

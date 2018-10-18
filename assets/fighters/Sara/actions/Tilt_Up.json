@@ -6,40 +6,40 @@
   {
     "origin": [ 0.0, 2.1, 0.3 ],
     "radius": 0.4,
-    "bone": -1,
+    "bone": null,
     "group": 0,
     "knockAngle": 0.0,
     "knockBase": 12.0,
     "knockScale": 1.0,
     "damage": 8.0,
-    "flavour": "TANGY",
-    "priority": "HIGH"
+    "flavour": "Tangy",
+    "priority": "High"
   },
   "0:BA":
   {
     "origin": [ 0.0, 2.2, 0.0 ],
     "radius": 0.45,
-    "bone": -1,
+    "bone": null,
     "group": 0,
     "knockAngle": 0.98,
     "knockBase": 8.0,
     "knockScale": 1.0,
     "damage": 5.0,
-    "flavour": "SOUR",
-    "priority": "NORMAL"
+    "flavour": "Sour",
+    "priority": "Normal"
   },
   "0:BB":
   {
     "origin": [ 0.0, 2.2, 0.6 ],
     "radius": 0.45,
-    "bone": -1,
+    "bone": null,
     "group": 0,
     "knockAngle": 0.02,
     "knockBase": 8.0,
     "knockScale": 1.0,
     "damage": 5.0,
-    "flavour": "SOUR",
-    "priority": "NORMAL"
+    "flavour": "Sour",
+    "priority": "Normal"
   }
 },
 
@@ -49,8 +49,9 @@
   {
     "shape": "disc",
     "sprite": "Sparkle",
-    "direction": "0.0 1.0 0.0",
-    "origin": "0.0 1.8 0.3",
+    "direction": [ 0.0, 1.0, 0.0 ],
+    "origin": [ 0.0, 1.8, 0.3 ],
+    "bone": null,
     "minLifetime": 12,
     "maxLifetime": 18,
     "minScale": 0.3,
@@ -68,8 +69,9 @@
   {
     "shape": "disc",
     "sprite": "Sparkle",
-    "direction": "-0.4 1.0 0.0",
-    "origin": "0.0 1.9 0.1",
+    "direction": [ -0.4, 1.0, 0.0 ],
+    "origin": [ 0.0, 1.9, 0.1 ],
+    "bone": null,
     "minLifetime": 12,
     "maxLifetime": 18,
     "minScale": 0.4,
@@ -87,8 +89,9 @@
   {
     "shape": "disc",
     "sprite": "Sparkle",
-    "direction": "0.4 1.0 0.0",
-    "origin": "0.0 1.9 0.5",
+    "direction": [ 0.4, 1.0, 0.0 ],
+    "origin": [ 0.0, 1.9, 0.5 ],
+    "bone": null,
     "minLifetime": 12,
     "maxLifetime": 18,
     "minScale": 0.4,
@@ -104,12 +107,18 @@
   }
 },
 
-"timeline":
+"commands":
 [
-  [ 4,  [ "enable_blob 0:A", "emit_particles tangy 20" ] ],
-  [ 7,  [ "emit_particles sourA 16", "emit_particles sourB 16", "enable_blob 0:BA", "enable_blob 0:BB", "disable_blob 0:A" ] ],
-  [ 13, [ "disable_blob 0:BA", "disable_blob 0:BB" ] ],
-  [ 20, [ "finish_action" ] ]
+  [ [ 4 ], "enable_blob 0:A" ],
+  [ [ 4 ], "emit_particles tangy 20" ],
+  [ [ 7 ], "emit_particles sourA 16" ],
+  [ [ 7 ], "emit_particles sourB 16" ],
+  [ [ 7 ], "enable_blob 0:BA" ],
+  [ [ 7 ], "enable_blob 0:BB" ],
+  [ [ 7 ], "disable_blob 0:A" ],
+  [ [ 13 ], "disable_blob 0:BA" ],
+  [ [ 13 ], "disable_blob 0:BB" ],
+  [ [ 20 ], "finish_action" ]
 ]
 
 }

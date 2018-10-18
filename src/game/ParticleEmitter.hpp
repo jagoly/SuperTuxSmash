@@ -2,19 +2,21 @@
 
 #include <variant>
 
-#include <sqee/builtins.hpp>
-#include <sqee/maths/Vectors.hpp>
 #include <sqee/misc/Json.hpp>
 
+#include "game/forward.hpp"
 #include "game/ParticleSystem.hpp"
 
 namespace sts {
 
 //============================================================================//
 
-struct ParticleEmitter final : sq::NonCopyable
+struct ParticleEmitter final
 {
     Vec3F origin; ///< Relative origin of the emitter.
+
+    Fighter* fighter; ///< The fighter who owns this emitter.
+    Action* action;   ///< The action that created this emitter.
 
     int8_t bone = -1; ///< Index of the bone to attach to.
 
@@ -25,7 +27,8 @@ struct ParticleEmitter final : sq::NonCopyable
 
     Vec3F direction; ///< Direction of the generated shape.
 
-    struct { uint16_t min, max; } sprite;   ///< Random sprite.
+    TinyString sprite; ///< Sprite to use.
+
     struct { uint16_t min, max; } lifetime; ///< Random lifetime.
     struct { float    min, max; } scale;    ///< Random radius scale.
 
@@ -61,7 +64,10 @@ struct ParticleEmitter final : sq::NonCopyable
     /// Generate count particles into a system.
     void generate(ParticleSystem& system, uint count);
 
-    void load_from_json(ParticleSystem& system, const sq::JsonValue& json);
+    //-- serialisation methods -------------------------------//
+
+    void from_json(const JsonValue& json);
+    void to_json(JsonValue& json) const;
 };
 
 //============================================================================//

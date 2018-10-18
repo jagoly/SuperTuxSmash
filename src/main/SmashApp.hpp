@@ -24,6 +24,8 @@ public: //====================================================//
 
     void start_game(GameSetup setup);
 
+    void start_action_editor();
+
     void return_to_main_menu();
 
     //--------------------------------------------------------//
@@ -36,7 +38,7 @@ public: //====================================================//
 
 private: //===================================================//
 
-    void initialise(std::vector<string> args) override;
+    void initialise(Vector<String> args) override;
 
     void update(double elapsed) override;
 
@@ -48,15 +50,15 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
-    unique_ptr<sq::Window> mWindow;
-    unique_ptr<sq::InputDevices> mInputDevices;
-    unique_ptr<sq::DebugOverlay> mDebugOverlay;
+    UniquePtr<sq::Window> mWindow;
+    UniquePtr<sq::InputDevices> mInputDevices;
+    UniquePtr<sq::DebugOverlay> mDebugOverlay;
 
     Options mOptions;
 
     //--------------------------------------------------------//
 
-    unique_ptr<sq::Scene> mActiveScene;
+    UniquePtr<sq::Scene> mActiveScene;
 };
 
 } // namespace sts

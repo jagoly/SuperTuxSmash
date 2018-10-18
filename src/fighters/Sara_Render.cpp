@@ -12,31 +12,31 @@ using namespace sts;
 Sara_Render::Sara_Render(Renderer& renderer, const Sara_Fighter& fighter)
     : RenderObject(renderer), fighter(fighter)
 {
-    mUbo.create_and_allocate(3840u);
+    mUbo.create_and_allocate(sizeof(Sara_Render::mCharacterBlock));
 
     //--------------------------------------------------------//
 
     ResourceCaches& cache = renderer.resources;
 
-    MESH_Sara = cache.meshes.acquire("fighters/Sara/meshes/Mesh");
+    MESH_Sara = cache.meshes.acquire("assets/fighters/Sara/meshes/Mesh");
 
-    TX_Main_diff = cache.textures.acquire("fighters/Sara/textures/Main_diff");
-    TX_Main_spec = cache.textures.acquire("fighters/Sara/textures/Main_spec");
+    TX_Main_diff = cache.textures.acquire("assets/fighters/Sara/textures/Main_diff");
+    TX_Main_spec = cache.textures.acquire("assets/fighters/Sara/textures/Main_spec");
 
-    TX_Hair_mask = cache.textures.acquire("fighters/Sara/textures/Hair_mask");
-    TX_Hair_diff = cache.textures.acquire("fighters/Sara/textures/Hair_diff");
-    TX_Hair_norm = cache.textures.acquire("fighters/Sara/textures/Hair_norm");
+    TX_Hair_mask = cache.textures.acquire("assets/fighters/Sara/textures/Hair_mask");
+    TX_Hair_diff = cache.textures.acquire("assets/fighters/Sara/textures/Hair_diff");
+    TX_Hair_norm = cache.textures.acquire("assets/fighters/Sara/textures/Hair_norm");
+    TX_Hair_spec = cache.textures.acquire("assets/fighters/Sara/textures/Hair_spec");
 
-    //--------------------------------------------------------//
+    sq::ProgramKey programKey;
+    programKey.vertexPath = "fighters/BasicFighter_vs";
+    programKey.fragmentPath = "fighters/BasicFighter_fs";
 
-    renderer.processor.load_vertex(PROG_Main, "fighters/Sara/Sara_vs");
-    renderer.processor.load_vertex(PROG_Hair, "fighters/Sara/Sara_vs");
+    programKey.fragmentDefines = "";
+    PROG_Main = cache.programs.acquire(programKey);
 
-    renderer.processor.load_fragment(PROG_Main, "fighters/Sara/Main_fs");
-    renderer.processor.load_fragment(PROG_Hair, "fighters/Sara/Hair_fs");
-
-    PROG_Main.link_program_stages();
-    PROG_Hair.link_program_stages();
+    programKey.fragmentDefines = "#define OPT_TEX_NORMAL";
+    PROG_Hair = cache.programs.acquire(programKey);
 }
 
 //============================================================================//
@@ -45,20 +45,14 @@ void Sara_Render::integrate(float blend)
 {
     const Mat4F modelMatrix = fighter.interpolate_model_matrix(blend);
 
-    mFinalMatrix = renderer.get_camera().get_combo_matrix() * modelMatrix;
-    mNormalMatrix = maths::normal_matrix(renderer.get_camera().get_view_matrix() * modelMatrix);
+    mCharacterBlock.matrix = renderer.get_camera().get_combo_matrix() * modelMatrix;
+    mCharacterBlock.normMat = Mat34F(maths::normal_matrix(renderer.get_camera().get_view_matrix() * modelMatrix));
 
-    const auto& boneMatrices = fighter.interpolate_bone_matrices(blend);
+    auto& bones = mCharacterBlock.bones;
+    fighter.interpolate_bone_matrices(blend, bones.data(), bones.size());
 
-    mUbo.update(0u, uint(boneMatrices.size()) * 48u, boneMatrices.data());
+    mUbo.update(0u, mCharacterBlock);
 }
-
-//============================================================================//
-
-//ParticleSet::Refs Sara_Render::get_particle_sets()
-//{
-//    return {{ fighter.mParticleSet }};
-//}
 
 //============================================================================//
 
@@ -75,14 +69,12 @@ void Sara_Render::render_depth()
     context.bind_UniformBuffer(mUbo, 2u);
 
         context.set_state(Context::Cull_Face::Back);
-        shaders.Depth_SkellySolid.update(0, mFinalMatrix);
-        context.bind_Program(shaders.Depth_SkellySolid);
+        context.bind_Program(shaders.Depth_FighterSolid);
         MESH_Sara->draw_partial(0u);
 
         context.set_state(Context::Cull_Face::Disable);
         context.bind_Texture(TX_Hair_mask.get(), 0u);
-        shaders.Depth_SkellyPunch.update(0, mFinalMatrix);
-        context.bind_Program(shaders.Depth_SkellyPunch);
+        context.bind_Program(shaders.Depth_FighterPunch);
         MESH_Sara->draw_partial(1u);
 }
 
@@ -102,17 +94,13 @@ void Sara_Render::render_main()
         context.set_state(Context::Cull_Face::Back);
         context.bind_Texture(TX_Main_diff.get(), 0u);
         context.bind_Texture(TX_Main_spec.get(), 2u);
-        PROG_Main.update(0, mFinalMatrix);
-        PROG_Main.update(1, mNormalMatrix);
-        context.bind_Program(PROG_Main);
+        context.bind_Program(PROG_Main.get());
         MESH_Sara->draw_partial(0u);
 
         context.set_state(Context::Cull_Face::Disable);
         context.bind_Texture(TX_Hair_diff.get(), 0u);
         context.bind_Texture(TX_Hair_norm.get(), 1u);
-        PROG_Hair.update(0, mFinalMatrix);
-        PROG_Hair.update(1, mNormalMatrix);
-        PROG_Hair.update(3, Vec3F(0.35f, 0.35f, 0.25f));
-        context.bind_Program(PROG_Hair);
+        context.bind_Texture(TX_Hair_spec.get(), 2u);
+        context.bind_Program(PROG_Hair.get());
         MESH_Sara->draw_partial(1u);
 }

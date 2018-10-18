@@ -10,8 +10,9 @@
   {
     "shape": "disc",
     "sprite": "Smoke",
-    "direction": "0.0 1.0 0.0",
-    "origin": "0.0 0.0 0.0",
+    "direction": [ 0.0, 1.0, 0.0 ],
+    "origin": [ 0.0, 0.0, 0.0 ],
+    "bone": null,
     "minLifetime": 12,
     "maxLifetime": 18,
     "minScale": 0.3,
@@ -27,11 +28,11 @@
   }
 },
 
-"timeline":
+"commands":
 [
-  [ "0-12", [ "emit_particles BeginDash 5" ] ],
-  [ "0-20", [ "add_velocity 0.2 0.0" ] ],
-  [ 32, [ "finish_action" ] ]
+  [ [0,1,2,3,4,5,6,7,8,9,10,11], "emit_particles BeginDash 5" ],
+  [ [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19], "add_velocity 0.2 0.0" ],
+  [ [32], "finish_action" ]
 ]
 
 }

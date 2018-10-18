@@ -1,7 +1,8 @@
 #pragma once
 
-#include <sqee/builtins.hpp>
-#include <sqee/maths/Vectors.hpp>
+#include <sqee/misc/Builtins.hpp>
+#include <sqee/maths/Builtins.hpp>
+
 #include <sqee/misc/Json.hpp>
 
 namespace sts {
@@ -38,7 +39,7 @@ class ParticleSystem final : sq::NonCopyable
 {
 public: //====================================================//
 
-    using VertexVec = std::vector<ParticleVertex>;
+    using VertexVec = Vector<ParticleVertex>;
 
     //--------------------------------------------------------//
 
@@ -47,7 +48,7 @@ public: //====================================================//
     //--------------------------------------------------------//
 
     struct SpriteRange { uint16_t first, last; };
-    std::map<string, SpriteRange> sprites;
+    std::map<String, SpriteRange> sprites;
 
     //--------------------------------------------------------//
 
@@ -56,13 +57,11 @@ public: //====================================================//
     // returns the approx average depth for sorting
     void compute_vertices(float blend, VertexVec& vertices) const;
 
-    const std::vector<ParticleData>& get_particles() const { return mParticles; }
-
-    //uint16_t get_count() const { return uint16_t(mParticles.size()); }
+    const Vector<ParticleData>& get_particles() const { return mParticles; }
 
 private: //===================================================//
 
-    std::vector<ParticleData> mParticles;
+    Vector<ParticleData> mParticles;
 
     //--------------------------------------------------------//
 

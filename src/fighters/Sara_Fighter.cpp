@@ -39,7 +39,8 @@ void Sara_Fighter::tick()
     emitter.disc().incline = { -0.01f, 0.04f };
     emitter.disc().speed = { 1.2f, 2.2f };
 
-    emitter.sprite = { 0u, 15u };
+    //emitter.sprite = { 0u, 15u };
+    emitter.sprite = "Smoke";
 
 //    ParticleGeneratorColumn generator;
 

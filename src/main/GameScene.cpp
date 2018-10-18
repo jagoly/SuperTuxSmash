@@ -15,39 +15,40 @@
 
 #include "main/GameScene.hpp"
 
-namespace gui = sq::gui;
 using namespace sts;
 
 //============================================================================//
 
-GameScene::GameScene(SmashApp& smashApp, GameSetup setup) : Scene(1.0 / 48.0)
-  , mInputDevices(smashApp.get_input_devices()), mOptions(smashApp.get_options())
+GameScene::GameScene(SmashApp& smashApp, GameSetup setup)
+    : Scene(1.0 / 48.0), mSmashApp(smashApp)
 {
     mGeneralWidget.func = [this]() { impl_show_general_window(); };
     mFightersWidget.func = [this]() { impl_show_fighters_window(); };
 
     //--------------------------------------------------------//
 
-    mFightWorld = std::make_unique<FightWorld>();
-    mRenderer = std::make_unique<Renderer>(mOptions);
+    mFightWorld = std::make_unique<FightWorld>(GameMode::Standard);
+    mRenderer = std::make_unique<Renderer>(GameMode::Standard, mSmashApp.get_options());
 
     //--------------------------------------------------------//
 
-    mControllers[0] = std::make_unique<Controller>(mInputDevices, "player1.json");
-    mControllers[1] = std::make_unique<Controller>(mInputDevices, "player2.json");
-    mControllers[2] = std::make_unique<Controller>(mInputDevices, "player3.json");
-    mControllers[3] = std::make_unique<Controller>(mInputDevices, "player4.json");
+    mControllers[0] = std::make_unique<Controller>(mSmashApp.get_input_devices(), "player1.json");
+    mControllers[1] = std::make_unique<Controller>(mSmashApp.get_input_devices(), "player2.json");
+    mControllers[2] = std::make_unique<Controller>(mSmashApp.get_input_devices(), "player3.json");
+    mControllers[3] = std::make_unique<Controller>(mSmashApp.get_input_devices(), "player4.json");
 
     //--------------------------------------------------------//
 
-    unique_ptr<Stage> stage;
-    unique_ptr<RenderObject> renderStage;
+    UniquePtr<Stage> stage;
+    UniquePtr<RenderObject> renderStage;
 
     SWITCH (setup.stage)
     {
         CASE (TestZone)
-        stage = std::make_unique<TestZone_Stage>(*mFightWorld);
-        renderStage = std::make_unique<TestZone_Render>(*mRenderer, static_cast<TestZone_Stage&>(*stage));
+        {
+            stage = std::make_unique<TestZone_Stage>(*mFightWorld);
+            renderStage = std::make_unique<TestZone_Render>(*mRenderer, static_cast<TestZone_Stage&>(*stage));
+        }
 
         CASE_DEFAULT SQASSERT(false, "bad stage setup");
     }
@@ -62,18 +63,22 @@ GameScene::GameScene(SmashApp& smashApp, GameSetup setup) : Scene(1.0 / 48.0)
     {
         if (setup.players[index].enabled == false) continue;
 
-        unique_ptr<Fighter> fighter;
-        unique_ptr<RenderObject> renderFighter;
+        UniquePtr<Fighter> fighter;
+        UniquePtr<RenderObject> renderFighter;
 
         SWITCH (setup.players[index].fighter)
         {
             CASE (Sara)
-            fighter = std::make_unique<Sara_Fighter>(index, *mFightWorld);
-            renderFighter = std::make_unique<Sara_Render>(*mRenderer, static_cast<Sara_Fighter&>(*fighter));
+            {
+                fighter = std::make_unique<Sara_Fighter>(index, *mFightWorld);
+                renderFighter = std::make_unique<Sara_Render>(*mRenderer, static_cast<Sara_Fighter&>(*fighter));
+            }
 
             CASE (Tux)
-            fighter = std::make_unique<Tux_Fighter>(index, *mFightWorld);
-            renderFighter = std::make_unique<Tux_Render>(*mRenderer, static_cast<Tux_Fighter&>(*fighter));
+            {
+                fighter = std::make_unique<Tux_Fighter>(index, *mFightWorld);
+                renderFighter = std::make_unique<Tux_Render>(*mRenderer, static_cast<Tux_Fighter&>(*fighter));
+            }
 
             CASE_DEFAULT SQASSERT(false, "bad fighter setup");
         }
@@ -112,7 +117,9 @@ void GameScene::update()
 {
     mFightWorld->tick();
 
-    mRenderer->update_from_scene_data(mFightWorld->compute_scene_data());
+    auto& camera = static_cast<StandardCamera&>(mRenderer->get_camera());
+
+    camera.update_from_scene_data(mFightWorld->compute_scene_data());
 }
 
 //============================================================================//
@@ -138,51 +145,59 @@ void GameScene::render(double elapsed)
 
 void GameScene::impl_show_general_window()
 {
-    if (!gui::begin_window("General Debug", {300, 0}, {300, 200}, {+20, +20})) return;
+    const ImGuiWindowFlags flags = ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove;
+    ImGui::SetNextWindowSizeConstraints({300, 0}, {300, 200});
+    ImGui::SetNextWindowPos({20, 20});
 
-    //--------------------------------------------------------//
-
-    if (gui::button_with_tooltip("reload actions", "reload actions from json"))
+    if (ImGui::Begin("General Debug", nullptr, flags))
     {
-        for (Fighter* fighter : mFightWorld->get_fighters())
-            fighter->debug_reload_actions();
-    }
+        //--------------------------------------------------------//
 
-    imgui::SameLine();
-
-    if (gui::button_with_tooltip("swap control", "cycle the controllers"))
-    {
-        if (auto fighters = mFightWorld->get_fighters(); fighters.size() >= 2u)
+        if (ImGui::Button("reload actions"))
         {
-            auto controllerLast = fighters.back()->get_controller();
-            if (fighters.size() == 4u) fighters[3]->set_controller(fighters[2]->get_controller());
-            if (fighters.size() >= 3u) fighters[2]->set_controller(fighters[1]->get_controller());
-            fighters[1]->set_controller(fighters[0]->get_controller());
-            fighters[0]->set_controller(controllerLast);
+            for (Fighter* fighter : mFightWorld->get_fighters())
+                fighter->debug_reload_actions();
         }
+        ImGui::HoverTooltip("reload action from json");
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("swap control"))
+        {
+            if (auto fighters = mFightWorld->get_fighters(); fighters.size() >= 2u)
+            {
+                auto controllerLast = fighters.back()->get_controller();
+                if (fighters.size() == 4u) fighters[3]->set_controller(fighters[2]->get_controller());
+                if (fighters.size() >= 3u) fighters[2]->set_controller(fighters[1]->get_controller());
+                fighters[1]->set_controller(fighters[0]->get_controller());
+                fighters[0]->set_controller(controllerLast);
+            }
+        }
+        ImGui::HoverTooltip("cycle the controllers");
+
+        ImGui::Checkbox("disable input", &dbg.disableInput);
+        ImGui::SameLine();
+        ImGui::Checkbox("render blobs", &dbg.renderBlobs);
     }
 
-    imgui::Checkbox("disable input", &dbg.disableInput);
-    imgui::SameLine();
-    imgui::Checkbox("render blobs", &dbg.renderBlobs);
-
-    //--------------------------------------------------------//
-
-    gui::end_window();
+    ImGui::End();
 }
 
 //============================================================================//
 
 void GameScene::impl_show_fighters_window()
 {
-    if (!gui::begin_window("Fighter Debug", {380, 0}, {380, -40}, {-20, +20})) return;
+    const ImGuiWindowFlags flags = ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove;
+    ImGui::SetNextWindowSizeConstraints({380, 0}, {380, ImGui::FromScreenBottom(20+20)});
+    ImGui::SetNextWindowPos({ImGui::FromScreenRight(380+20), 20});
 
-    //--------------------------------------------------------//
+    if (ImGui::Begin("Fighter Debug", nullptr, flags))
+    {
+        //--------------------------------------------------------//
 
-    for (Fighter* fighter : mFightWorld->get_fighters())
-        fighter->debug_show_fighter_widget();
+        for (Fighter* fighter : mFightWorld->get_fighters())
+            fighter->debug_show_fighter_widget();
+    }
 
-    //--------------------------------------------------------//
-
-    gui::end_window();
+    ImGui::End();
 }

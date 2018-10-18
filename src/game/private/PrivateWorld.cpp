@@ -1,4 +1,4 @@
-#include <sqee/assert.hpp>
+#include <sqee/debug/Assert.hpp>
 #include <sqee/misc/Algorithms.hpp>
 #include <sqee/maths/Culling.hpp>
 
@@ -96,10 +96,10 @@ void PrivateWorld::tick()
         Fighter& other;
     };
 
-    std::vector<FinalResult> finalResultVec;
+    Vector<FinalResult> finalResultVec;
 
-    std::array<HitBlob*, 32> bestHitBlobs {};
-    std::array<HurtBlob*, 32> bestHurtBlobs {};
+    Array<HitBlob*, 32> bestHitBlobs {};
+    Array<HurtBlob*, 32> bestHurtBlobs {};
 
     for (auto& collisionsArr : mCollisions)
     {

@@ -1,42 +1,61 @@
 {
 
-"templates":
+"blobs":
 {
-  "sour":
-  {
+  "A": 
+  { 
+    "origin": [ 0.0, 1.0, 0.7 ],
+    "radius": 0.3,
+    "bone": null,
     "group": 0,
-    "flavour": "SOUR",
-    "priority": "NORMAL",
-    "damage": 5.0,
-    "knockAngle": 0.125,
-    "knockBase": 8.0,
-    "knockScale": 1.0
-  },
-  
-  "tangy":
-  {
-    "group": 0,
-    "flavour": "TANGY",
-    "priority": "HIGH",
     "damage": 8.0,
     "knockAngle": 0.125,
     "knockBase": 12.0,
-    "knockScale": 1.0
+    "knockScale": 1.0,
+    "flavour": "Tangy",
+    "priority": "High"
+  },
+  "B":
+  {
+    "origin": [ 0.0, 0.8, 1.0 ],
+    "radius": 0.55,
+    "bone": null,
+    "group": 0,
+    "damage": 5.0,
+    "knockAngle": 0.125,
+    "knockBase": 8.0,
+    "knockScale": 1.0,
+    "flavour": "Sour",
+    "priority": "Normal"
+  },
+  "C": 
+  {
+    "origin": [ 0.0, 1.2, 1.0 ],
+    "radius": 0.55,
+    "bone": null,
+    "group": 0,
+    "damage": 5.0,
+    "knockAngle": 0.125,
+    "knockBase": 8.0,
+    "knockScale": 1.0,
+    "flavour": "Sour",
+    "priority": "Normal"
   }
 },
 
-"blobs":
+"emitters":
 {
-  "A": { "template": "tangy", "origin": [ 0.0, 1.0, 0.7 ], "radius": 0.3, "bone": -1 },
-  "B": { "template": "sour", "origin": [ 0.0, 0.8, 1.0 ], "radius": 0.55, "bone": -1 },
-  "C": { "template": "sour", "origin": [ 0.0, 1.2, 1.0 ], "radius": 0.55, "bone": -1 }
 },
 
-"timeline":
+"commands":
 [
-  [ 5,  [ "enable_blob A", "enable_blob B", "enable_blob C" ] ],
-  [ 14, [ "disable_blob A", "disable_blob B", "disable_blob C" ] ],
-  [ 22, [ "finish_action" ] ]
+  [ [ 5 ], "enable_blob A" ],
+  [ [ 5 ], "enable_blob B" ],
+  [ [ 5 ], "enable_blob C" ],
+  [ [ 14 ], "disable_blob A" ],
+  [ [ 14 ], "disable_blob B" ],
+  [ [ 14 ], "disable_blob C" ],
+  [ [ 22 ], "finish_action" ]
 ]
 
 }

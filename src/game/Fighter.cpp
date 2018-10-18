@@ -1,4 +1,4 @@
-#include <sqee/assert.hpp>
+#include <sqee/debug/Assert.hpp>
 #include <sqee/debug/Logging.hpp>
 
 #include <sqee/app/GuiWidgets.hpp>
@@ -12,7 +12,6 @@
 #include "game/Fighter.hpp"
 
 namespace maths = sq::maths;
-namespace gui = sq::gui;
 
 using sq::literals::operator""_fmt_;
 
@@ -20,12 +19,12 @@ using namespace sts;
 
 //============================================================================//
 
-Fighter::Fighter(uint8_t index, FightWorld& world, string_view name)
+Fighter::Fighter(uint8_t index, FightWorld& world, StringView name)
     : index(index), mFightWorld(world), mName(name)
 {
     impl = std::make_unique<PrivateFighter>(*this);
 
-    const string path = sq::build_path("assets/fighters", name);
+    const String path = sq::build_path("assets/fighters", name);
 
     impl->initialise_armature(path);
     impl->initialise_hurt_blobs(path);
@@ -85,86 +84,94 @@ Mat4F Fighter::interpolate_model_matrix(float blend) const
     return maths::transform(Vec3F(position, 0.f), rotation, Vec3F(1.f));
 }
 
-std::vector<Mat34F> Fighter::interpolate_bone_matrices(float blend) const
+void Fighter::interpolate_bone_matrices(float blend, Mat34F* out, size_t len) const
 {
     auto blendPose = impl->armature.blend_poses(impl->previous.pose, impl->current.pose, blend);
-    return impl->armature.compute_ubo_data(blendPose);
+    impl->armature.compute_ubo_data(blendPose, out, uint(len));
 }
 
 //============================================================================//
 
 void Fighter::debug_show_fighter_widget()
 {
-    if (!gui::begin_collapse("Fighter %d - %s"_fmt_(index, mName))) return;
+    const String label = "Fighter %d - %s"_fmt_(index, mName);
+    if (ImGui::CollapsingHeader(label.c_str()) == false) return;
 
     //--------------------------------------------------------//
 
     {
-        const auto font = gui::scope_font(gui::FONT_MONO);
+        const ImGui::ScopeFont font = ImGui::FONT_MONO;
 
-        gui::display_text("Position: %s"_fmt_(impl->current.position));
-        gui::display_text("Velocity: %s"_fmt_(mVelocity));
-        gui::display_text("Damage: %0.f%%"_fmt_(status.damage));
+        ImGui::Text("Position: %s"_fmt_(impl->current.position));
 
-        gui::display_text("state: %s"_fmt_(enum_to_string(current.state)));
-        gui::display_text("action: %s"_fmt_(current.action ? enum_to_string(current.action->get_type()) : "None"));
+        ImGui::Text("Position: %s"_fmt_(impl->current.position));
+        ImGui::Text("Velocity: %s"_fmt_(mVelocity));
+        ImGui::Text("Damage: %0.f%%"_fmt_(status.damage));
+
+        ImGui::Text("state: %s"_fmt_(enum_to_string(current.state)));
+        ImGui::Text("action: %s"_fmt_(current.action ? enum_to_string(current.action->get_type()) : "None"));
+    }
+
+    if (ImGui::CollapsingHeader("Edit Stats"))
+    {
+        const ImGui::ScopeFont font = ImGui::FONT_MONO;
+        const ImGui::ScopeItemWidth width = 160.f;
+
+        ImGui::InputValue("walk_speed",     &stats.walk_speed,     0.05f, '2');
+        ImGui::InputValue("dash_speed",     &stats.dash_speed,     0.05f, '2');
+        ImGui::InputValue("air_speed",      &stats.air_speed,      0.05f, '2');
+        ImGui::InputValue("traction",       &stats.traction,       0.05f, '2');
+        ImGui::InputValue("air_mobility",   &stats.air_mobility,   0.05f, '2');
+        ImGui::InputValue("air_friction",   &stats.air_friction,   0.05f, '2');
+        ImGui::InputValue("hop_height",     &stats.hop_height,     0.05f, '2');
+        ImGui::InputValue("jump_height",    &stats.jump_height,    0.05f, '2');
+        ImGui::InputValue("air_hop_height", &stats.air_hop_height, 0.05f, '2');
+        ImGui::InputValue("gravity",        &stats.gravity,        0.05f, '2');
+        ImGui::InputValue("fall_speed",     &stats.fall_speed,     0.05f, '2');
+        ImGui::InputValue("evade_distance", &stats.evade_distance, 0.05f, '2');
+
+        ImGui::Separator();
+
+        ImGui::InputValue("dodge_finish",         &stats.dodge_finish,         1);
+        ImGui::InputValue("dodge_safe_start",     &stats.dodge_safe_start,     1);
+        ImGui::InputValue("dodge_safe_end",       &stats.dodge_safe_end,       1);
+        ImGui::InputValue("evade_finish",         &stats.evade_finish,         1);
+        ImGui::InputValue("evade_safe_start",     &stats.evade_safe_start,     1);
+        ImGui::InputValue("evade_safe_end",       &stats.evade_safe_end,       1);
+        ImGui::InputValue("air_dodge_finish",     &stats.air_dodge_finish,     1);
+        ImGui::InputValue("air_dodge_safe_start", &stats.air_dodge_safe_start, 1);
+        ImGui::InputValue("air_dodge_safe_end",   &stats.air_dodge_safe_end,   1);
+
+        ImGui::Separator();
     }
 
     //--------------------------------------------------------//
 
-    if (gui::begin_collapse("Edit Stats"))
     {
-        const auto unindent = gui::scope_unindent();
-        const auto font = gui::scope_font(gui::FONT_MONO);
-        const auto width = gui::scope_item_width(-FLT_EPSILON);
+        const ImGui::ScopeFont font = ImGui::FONT_REGULAR;
 
-        gui::input_float("walk_speed",     140.f, stats.walk_speed,     0.05f, 2);
-        gui::input_float("dash_speed",     140.f, stats.dash_speed,     0.05f, 2);
-        gui::input_float("air_speed",      140.f, stats.air_speed,      0.05f, 2);
-        gui::input_float("traction",       140.f, stats.traction,       0.05f, 2);
-        gui::input_float("air_mobility",   140.f, stats.air_mobility,   0.05f, 2);
-        gui::input_float("air_friction",   140.f, stats.air_friction,   0.05f, 2);
-        gui::input_float("hop_height",     140.f, stats.hop_height,     0.05f, 2);
-        gui::input_float("jump_height",    140.f, stats.jump_height,    0.05f, 2);
-        gui::input_float("air_hop_height", 140.f, stats.air_hop_height, 0.05f, 2);
-        gui::input_float("gravity",        140.f, stats.gravity,        0.05f, 2);
-        gui::input_float("fall_speed",     140.f, stats.fall_speed,     0.05f, 2);
-        gui::input_float("evade_distance", 140.f, stats.evade_distance, 0.05f, 2);
-
-        gui::input_int("dodge_finish",         170.f, stats.dodge_finish);
-        gui::input_int("dodge_safe_start",     170.f, stats.dodge_safe_start);
-        gui::input_int("dodge_safe_end",       170.f, stats.dodge_safe_end);
-        gui::input_int("evade_finish",         170.f, stats.evade_finish);
-        gui::input_int("evade_safe_start",     170.f, stats.evade_safe_start);
-        gui::input_int("evade_safe_end",       170.f, stats.evade_safe_end);
-        gui::input_int("air_dodge_finish",     170.f, stats.air_dodge_finish);
-        gui::input_int("air_dodge_safe_start", 170.f, stats.air_dodge_safe_start);
-        gui::input_int("air_dodge_safe_end",   170.f, stats.air_dodge_safe_end);
-
-        gui::end_collapse();
-    }
-
-    //--------------------------------------------------------//
-
-    {
-        const auto font = gui::scope_font(gui::FONT_REGULAR);
-
-        if (gui::button_with_tooltip("RESET", "reset the fighter's position"))
+        if (ImGui::Button("RESET"))
+        {
             impl->current.position = { 0.f, 1.f };
+        }
+        ImGui::HoverTooltip("reset the fighter's position");
 
-        imgui::SameLine();
+        ImGui::SameLine();
 
-        if (gui::button_with_tooltip("BOUNCE", "make the fighter bounce"))
+        if (ImGui::Button("BOUNCE"))
+        {
             mVelocity.y = +10.f;
+        }
+        ImGui::HoverTooltip("make the fighter bounce");
     }
-
-    gui::end_collapse();
 }
 
 //============================================================================//
 
 void Fighter::debug_reload_actions()
 {
+    actions.neutral_first->blobs.clear();
+
     ActionBuilder::load_from_json(*actions.neutral_first);
 
     ActionBuilder::load_from_json(*actions.tilt_down);

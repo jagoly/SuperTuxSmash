@@ -30,7 +30,6 @@ void ActionFuncs::add_velocity(Action& action, float fwd, float up)
 
 void ActionFuncs::finish_action(Action& action)
 {
-    action.world.reset_all_hit_blob_groups(action.fighter);
     action.finished = true;
 };
 

@@ -1,55 +1,91 @@
 #pragma once
 
 #include "render/Renderer.hpp"
+#include "render/UniformBlocks.hpp"
 
 //============================================================================//
 
 namespace sts {
 
-class Camera final : sq::NonCopyable
+class Camera : sq::NonCopyable
 {
 public: //====================================================//
 
-    Camera(Renderer& renderer);
+    Camera(const Renderer& renderer);
+    virtual ~Camera() = default;
 
     //--------------------------------------------------------//
 
-    void update_from_scene_data(const SceneData& sceneData);
-
-    void intergrate(float blend);
+    virtual void intergrate(float blend) = 0;
 
     //--------------------------------------------------------//
 
-    const sq::UniformBuffer& get_ubo() const { return mCameraUbo; }
+    const sq::UniformBuffer& get_ubo() const { return mUbo; }
 
-    const Mat4F& get_view_matrix() const { return mProjMatrix; }
-    const Mat4F& get_proj_matrix() const { return mProjMatrix; }
+    const Mat4F& get_view_matrix() const { return mBlock.viewMat; }
+    const Mat4F& get_proj_matrix() const { return mBlock.projMat; }
 
-    const Mat4F& get_inv_view_matrix() const { return mInvViewMatrix; }
-    const Mat4F& get_inv_proj_matrix() const { return mInvProjMatrix; }
+    const Mat4F& get_inv_view_matrix() const { return mBlock.invViewMat; }
+    const Mat4F& get_inv_proj_matrix() const { return mBlock.invProjMat; }
 
     const Mat4F& get_combo_matrix() const { return mComboMatrix; }
 
-private: //===================================================//
+protected: //=================================================//
 
-    sq::UniformBuffer mCameraUbo;
+    CameraBlock mBlock;
+    sq::UniformBuffer mUbo;
 
-    Mat4F mViewMatrix, mProjMatrix;
-    Mat4F mInvViewMatrix, mInvProjMatrix;
     Mat4F mComboMatrix;
 
-    //--------------------------------------------------------//
+    const Renderer& renderer;
+};
+
+//============================================================================//
+
+class StandardCamera final : public Camera
+{
+public: //====================================================//
+
+    using Camera::Camera;
+
+    void update_from_scene_data(const SceneData& sceneData);
+
+    void intergrate(float blend) override;
+
+private: //===================================================//
 
     struct MinMax { Vec2F min, max; };
 
-    std::array<MinMax, 16u> mViewHistory;
+    Array<MinMax, 16u> mViewHistory;
 
     MinMax mPreviousView, mCurrentView;
     MinMax mPreviousBounds, mCurrentBounds;
-
-    //--------------------------------------------------------//
-
-    Renderer& renderer;
 };
+
+//============================================================================//
+
+class EditorCamera final : public Camera
+{
+public: //====================================================//
+
+    using Camera::Camera;
+
+    void update_from_scroll(float delta);
+
+    void update_from_mouse(bool left, bool right, Vec2F position);
+
+    void intergrate(float blend) override;
+
+private: //===================================================//
+
+    Vec2F mPrevMousePosition;
+
+    float mYaw = 0.f;
+    float mPitch = 0.f;
+    float mZoom = 4.f;
+    Vec2F mCentre = { 0.f, 1.f };
+};
+
+//============================================================================//
 
 } // namespace sts

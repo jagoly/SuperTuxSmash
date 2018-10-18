@@ -1,6 +1,7 @@
 #include <algorithm>
 
 #include <sqee/gl/Context.hpp>
+#include <sqee/redist/gl_loader.hpp>
 
 #include "render/ParticleRender.hpp"
 
@@ -20,7 +21,7 @@ ParticleRender::ParticleRender(Renderer& renderer) : renderer(renderer)
     mVertexArray.add_float_attribute(2u, 1u, gl::FLOAT, false, 16u);
     mVertexArray.add_float_attribute(3u, 1u, gl::FLOAT, false, 20u);
 
-    mTexture.load_automatic("particles/Basic128");
+    mTexture.load_automatic("assets/particles/Basic128");
 }
 
 //============================================================================//

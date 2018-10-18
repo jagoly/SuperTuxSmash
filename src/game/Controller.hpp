@@ -1,6 +1,6 @@
 #pragma once
 
-#include <sqee/builtins.hpp>
+#include <sqee/misc/Builtins.hpp>
 
 #include <sqee/app/InputDevices.hpp>
 #include <sqee/app/Event.hpp>
@@ -31,7 +31,7 @@ class Controller final : sq::NonCopyable
 {
 public: //====================================================//
 
-    Controller(const sq::InputDevices& devices, string configPath);
+    Controller(const sq::InputDevices& devices, String configPath);
 
     //--------------------------------------------------------//
 

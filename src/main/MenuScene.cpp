@@ -7,13 +7,14 @@
 
 #include "main/MenuScene.hpp"
 
-namespace gui = sq::gui;
 using sq::literals::operator""_fmt_;
+
 using namespace sts;
 
 //============================================================================//
 
-MenuScene::MenuScene(SmashApp& smashApp) : Scene(1.0 / 60.0), mSmashApp(smashApp)
+MenuScene::MenuScene(SmashApp& smashApp)
+    : Scene(1.0 / 60.0), mSmashApp(smashApp)
 {
     mMainWidget.func = [this]() { impl_show_main_window(); };
 }
@@ -56,49 +57,62 @@ void MenuScene::render(double elapsed)
 
 void MenuScene::impl_show_main_window()
 {
-    string strBuf; strBuf.reserve(50);
+    const ImGuiWindowFlags flags = ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove;
+    ImGui::SetNextWindowSizeConstraints({400, 0}, {400, -40});
+    ImGui::SetNextWindowPos({20, 20});
 
-    if (!gui::begin_window("Welcome to SuperTuxSmash", {400, 0}, {400, -40}, {20.f, 20.f})) return;
-
-    //--------------------------------------------------------//
-
+    if (ImGui::Begin("Welcome to SuperTuxSmash", nullptr, flags))
     {
-        int8_t& ref = reinterpret_cast<int8_t&>(setup.stage);
-        const auto getter = [](int8_t i) { return enum_to_string(StageEnum(i)); };
+        //--------------------------------------------------------//
 
-        gui::input_combo("Stage", 100.f, ref, getter, int8_t(StageEnum::Count));
-    }
-
-    //--------------------------------------------------------//
-
-    for (uint8_t index = 0u; index < 4u; ++index)
-    {
-        setup.players[index].enabled = gui::begin_collapse("Player %d"_fmt_(index+1));
-
-        if (setup.players[index].enabled == true)
+        if (ImGui::BeginCombo("Stage", enum_to_string(setup.stage)))
         {
-            int8_t& ref = reinterpret_cast<int8_t&>(setup.players[index].fighter);
-            const auto getter = [](int8_t i) { return enum_to_string(FighterEnum(i)); };
+            for (int i = 0; i < int(StageEnum::Count); ++i)
+                if (ImGui::Selectable(enum_to_string(StageEnum(i))))
+                    setup.stage = StageEnum(i);
 
-            gui::input_combo("Fighter", 100.f, ref, getter, int8_t(FighterEnum::Count));
+            ImGui::EndCombo();
+        }
 
-            gui::end_collapse();
+        //--------------------------------------------------------//
+
+        for (uint index = 0u; index < 4u; ++index)
+        {
+            auto& player = setup.players[index];
+
+            const String label = "Player %d"_fmt_(index+1);
+            if (ImGui::CollapsingHeader(label.c_str()))
+            {
+                const String label = "Fighter##%d"_fmt_(index);
+                if (ImGui::BeginCombo(label.c_str(), enum_to_string(player.fighter)))
+                {
+                    for (int i = 0; i < int(FighterEnum::Count); ++i)
+                        if (ImGui::Selectable(enum_to_string(FighterEnum(i))))
+                            player.fighter = FighterEnum(i);
+
+                    ImGui::EndCombo();
+                }
+                player.enabled = (player.fighter != FighterEnum::Null);
+            }
+        }
+
+        //--------------------------------------------------------//
+
+        if (ImGui::Button("Start Game"))
+        {
+            const auto predicate = [](const auto& player) { return player.enabled; };
+            const bool any = std::any_of(setup.players.begin(), setup.players.end(), predicate);
+
+            mSmashApp.start_game(any ? setup : GameSetup::get_defaults());
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("Start Action Editor"))
+        {
+            mSmashApp.start_action_editor();
         }
     }
 
-    //--------------------------------------------------------//
-
-    if (imgui::Button("Start Game") == true)
-    {
-        bool any = false;
-
-        for (uint8_t index = 0u; index < 4u; ++index)
-            any |= setup.players[index].enabled;
-
-        mSmashApp.start_game(any ? setup : GameSetup::get_defaults());
-    }
-
-    //--------------------------------------------------------//
-
-    gui::end_window();
+    ImGui::End();
 }

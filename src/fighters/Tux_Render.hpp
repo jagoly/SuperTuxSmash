@@ -1,13 +1,8 @@
 #pragma once
 
-#include <sqee/gl/Textures.hpp>
 #include <sqee/gl/UniformBuffer.hpp>
-#include <sqee/gl/Program.hpp>
-
-#include <sqee/render/Mesh.hpp>
 
 #include "render/RenderObject.hpp"
-
 #include "fighters/Tux_Fighter.hpp"
 
 //============================================================================//
@@ -35,15 +30,15 @@ private: //===================================================//
     MeshHandle MESH_Tux;
 
     TextureHandle TX_Tux_diff;
+    TextureHandle TX_Tux_spec;
 
-    sq::Program PROG_Tux;
+    ProgramHandle PROG_Tux;
 
     //--------------------------------------------------------//
 
-    sq::UniformBuffer mUbo;
+    CharacterBlock<21> mCharacterBlock;
 
-    Mat4F mFinalMatrix;
-    Mat3F mNormalMatrix;
+    sq::UniformBuffer mUbo;
 
     //--------------------------------------------------------//
 

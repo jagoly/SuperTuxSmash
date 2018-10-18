@@ -6,37 +6,41 @@
   {
     "origin": [ 0.0, 0.6, 0.65 ],
     "radius": 0.4,
-    "bone": -1,
+    "bone": null,
     "group": 0,
     "knockAngle": 0.125,
     "knockBase": 1.5,
     "knockScale": 0.0,
     "damage": 3.0,
-    "flavour": "SOUR",
-    "priority": "LOW"
+    "flavour": "Sour",
+    "priority": "Low"
   },
   "0:B":
   {
     "origin": [ 0.0, 1.0, 0.7 ],
     "radius": 0.45,
-    "bone": -1,
+    "bone": null,
     "group": 0,
     "knockAngle": 0.125,
     "knockBase": 1.5,
     "knockScale": 0.0,
     "damage": 3.0,
-    "flavour": "SOUR",
-    "priority": "LOW"
+    "flavour": "Sour",
+    "priority": "Low"
   }
 },
 
-"timeline":
+"emitters":
+{
+},
+
+"commands":
 [
-  [ 2,  [ "enable_blob 0:A" ] ],
-  [ 4,  [ "enable_blob 0:B" ] ],
-  [ 6,  [ "disable_blob 0:A" ] ],
-  [ 8,  [ "disable_blob 0:B" ] ],
-  [ 14, [ "finish_action" ] ]
+  [ [ 2 ], "enable_blob 0:A" ],
+  [ [ 4 ], "enable_blob 0:B" ],
+  [ [ 6 ], "disable_blob 0:A" ],
+  [ [ 8 ], "disable_blob 0:B" ],
+  [ [ 14 ], "finish_action" ]
 ]
 
 }

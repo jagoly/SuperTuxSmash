@@ -1,13 +1,8 @@
 #pragma once
 
-#include <sqee/gl/Textures.hpp>
 #include <sqee/gl/UniformBuffer.hpp>
-#include <sqee/gl/Program.hpp>
-
-#include <sqee/render/Mesh.hpp>
 
 #include "render/RenderObject.hpp"
-
 #include "fighters/Sara_Fighter.hpp"
 
 //============================================================================//
@@ -30,8 +25,6 @@ public: //====================================================//
 
     void render_alpha() override {}
 
-    //ParticleSet::Refs get_particle_sets() override;
-
 private: //===================================================//
 
     MeshHandle MESH_Sara;
@@ -42,16 +35,16 @@ private: //===================================================//
     TextureHandle TX_Hair_mask;
     TextureHandle TX_Hair_diff;
     TextureHandle TX_Hair_norm;
+    TextureHandle TX_Hair_spec;
 
-    sq::Program PROG_Main;
-    sq::Program PROG_Hair;
+    ProgramHandle PROG_Main;
+    ProgramHandle PROG_Hair;
 
     //--------------------------------------------------------//
 
-    sq::UniformBuffer mUbo;
+    CharacterBlock<64> mCharacterBlock;
 
-    Mat4F mFinalMatrix;
-    Mat3F mNormalMatrix;
+    sq::UniformBuffer mUbo;
 
     //--------------------------------------------------------//
 

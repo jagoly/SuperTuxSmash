@@ -1,13 +1,15 @@
 #pragma once
 
-#include <sqee/assert.hpp>
-#include <sqee/builtins.hpp>
+#include <sqee/debug/Assert.hpp>
+#include <sqee/misc/Builtins.hpp>
 
 #include "render/SceneData.hpp"
 
 #include "game/Blobs.hpp"
 #include "game/ParticleSystem.hpp"
 #include "game/ParticleEmitter.hpp"
+
+#include "enumerations.hpp"
 
 namespace sts {
 
@@ -40,7 +42,7 @@ class FightWorld final : sq::NonCopyable
 {
 public: //====================================================//
 
-    FightWorld();
+    FightWorld(GameMode gameMode);
 
     ~FightWorld();
 
@@ -50,11 +52,16 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
+    /// Get the mode of the active game.
+    GameMode get_game_mode() const { return mGameMode; }
+
+    //--------------------------------------------------------//
+
     /// Set the stage for the game.
-    void set_stage(unique_ptr<Stage> stage);
+    void set_stage(UniquePtr<Stage> stage);
 
     /// Add a fighter to the game.
-    void add_fighter(unique_ptr<Fighter> fighter);
+    void add_fighter(UniquePtr<Fighter> fighter);
 
     //--------------------------------------------------------//
 
@@ -97,9 +104,9 @@ public: //====================================================//
     //--------------------------------------------------------//
 
     /// Acquire a vector of all added fighters.
-    std::vector<Fighter*> get_fighters()
+    Vector<Fighter*> get_fighters()
     {
-        std::vector<Fighter*> result;
+        Vector<Fighter*> result;
         result.reserve(4u);
 
         for (auto& uptr : mFighters)
@@ -118,10 +125,10 @@ public: //====================================================//
     sq::PoolAllocator<HurtBlob>& get_hurt_blob_allocator();
 
     /// Access the enabled HitBlobs.
-    const std::vector<HitBlob*>& get_hit_blobs() const;
+    const Vector<HitBlob*>& get_hit_blobs() const;
 
     /// Access the enabled HurtBlobs.
-    const std::vector<HurtBlob*>& get_hurt_blobs() const;
+    const Vector<HurtBlob*>& get_hurt_blobs() const;
 
     /// Access the Emitter Allocator.
     sq::PoolAllocator<ParticleEmitter>& get_emitter_allocator();
@@ -137,16 +144,18 @@ public: //====================================================//
 
 private: //===================================================//
 
-    unique_ptr<Stage> mStage;
+    const GameMode mGameMode;
 
-    std::array<unique_ptr<Fighter>, 4> mFighters;
+    UniquePtr<Stage> mStage;
+
+    Array<UniquePtr<Fighter>, 4> mFighters;
 
     ParticleSystem mParticleSystem;
 
     //--------------------------------------------------------//
 
     friend class PrivateWorld;
-    unique_ptr<PrivateWorld> impl;
+    UniquePtr<PrivateWorld> impl;
 };
 
 //============================================================================//

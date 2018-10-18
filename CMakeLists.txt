@@ -1,63 +1,73 @@
-cmake_minimum_required(VERSION 3.4)
+cmake_minimum_required(VERSION 3.10)
 project(SuperTuxSmash_Game)
 
 ################################################################################
 
-set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules/")
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/build")
+option(SQEE_BUILD_ROOT "The build directory for the SQEE Library")
 
-find_package(SQEE REQUIRED)
+if (NOT SQEE_BUILD_ROOT)
+    message(FATAL_ERROR "You must specify the build directory for SQEE")
+endif ()
+
+################################################################################
+
+set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules/")
+
+################################################################################
+
+file(GLOB_RECURSE HEADERS "${PROJECT_SOURCE_DIR}/src/*.hpp")
+file(GLOB_RECURSE SOURCES "${PROJECT_SOURCE_DIR}/src/*.cpp")
+
+add_executable(sts-game ${HEADERS} ${SOURCES})
+
+target_include_directories(sts-game PRIVATE "${PROJECT_SOURCE_DIR}/src")
+
+set_property(TARGET sts-game PROPERTY CXX_STANDARD 17)
+set_property(TARGET sts-game PROPERTY CXX_STANDARD_REQUIRED True)
+
+set_property(TARGET sts-game PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+
+################################################################################
+
+include("${SQEE_BUILD_ROOT}/sqee-exports.cmake")
+
+target_compile_definitions(sts-game PRIVATE SQEE_GLOBAL_BUILTINS)
+
+target_link_libraries(sts-game sqee)
 
 ################################################################################
 
 if (SQEE_GNU OR SQEE_CLANG)
 
-    string(APPEND CMAKE_CXX_FLAGS " -std=c++17 -Wall -Wextra")
-
-    string(APPEND CMAKE_CXX_FLAGS " -Wno-unused-parameter -Wno-strict-aliasing")
-    string(APPEND CMAKE_CXX_FLAGS " -Wno-comment -Wno-misleading-indentation")
-
-    if (SQEE_GNU)
-        # todo: remove when warnings for structured bindings fixed
-        string(APPEND CMAKE_CXX_FLAGS " -Wno-unused-variable")
-    endif ()
-
-    if (SQEE_CLANG)
-        # todo: remove when no-misleading-indentation becomes supported
-        string(APPEND CMAKE_CXX_FLAGS " -Wno-unknown-warning-option")
-    endif ()
+    target_compile_options(sts-game PRIVATE -Wall -Wextra)
+    #target_compile_options(sts-game PRIVATE -Wno-unused-parameter -Wno-strict-aliasing)
+    #target_compile_options(sts-game PRIVATE -Wno-comment -Wno-misleading-indentation)
 
     if (SQEE_WINDOWS)
-        string(APPEND CMAKE_CXX_FLAGS " -mwindows -Wa,-mbig-obj")
+        # todo: actually test this
+        target_compile_options(sts-game PRIVATE -mwindows -Wa,-mbig-obj)
     endif ()
 
 elseif (SQEE_MSVC)
 
-    string(APPEND CMAKE_CXX_FLAGS " /std:c++17 /bigobj /W3 /wd4201")
+    target_compile_options(sts-game PRIVATE /bigobj /W3)
+    #target_compile_options(sts-game PRIVATE /wd4201)
 
 endif ()
 
 ################################################################################
 
-include("cmake/sources.cmake")
+add_custom_command(TARGET sts-game POST_BUILD COMMAND ${CMAKE_COMMAND} -E create_symlink
+    "${PROJECT_SOURCE_DIR}/assets" "${CMAKE_BINARY_DIR}/assets")
 
-file(GLOB_RECURSE SHADERS "shaders/*.glsl")
+add_custom_command(TARGET sts-game POST_BUILD COMMAND ${CMAKE_COMMAND} -E create_symlink
+    "${PROJECT_SOURCE_DIR}/shaders" "${CMAKE_BINARY_DIR}/shaders")
 
-################################################################################
-
-add_executable(sts-game ${SOURCES} ${SHADERS})
-
-include_directories(${SQEE_INCLUDE_DIR})
-include_directories(${PROJECT_SOURCE_DIR}/src)
-
-target_link_libraries(sts-game ${SQEE_LIBRARY})
-
-################################################################################
-
-file(COPY "assets" DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
-file(COPY "shaders" DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
-
-file(COPY "player1.json" DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
-file(COPY "player2.json" DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
-file(COPY "player3.json" DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
-file(COPY "player4.json" DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+add_custom_command(TARGET sts-game POST_BUILD COMMAND ${CMAKE_COMMAND} -E create_symlink
+    "${PROJECT_SOURCE_DIR}/player1.json" "${CMAKE_BINARY_DIR}/player1.json")
+add_custom_command(TARGET sts-game POST_BUILD COMMAND ${CMAKE_COMMAND} -E create_symlink
+    "${PROJECT_SOURCE_DIR}/player2.json" "${CMAKE_BINARY_DIR}/player2.json")
+add_custom_command(TARGET sts-game POST_BUILD COMMAND ${CMAKE_COMMAND} -E create_symlink
+    "${PROJECT_SOURCE_DIR}/player3.json" "${CMAKE_BINARY_DIR}/player3.json")
+add_custom_command(TARGET sts-game POST_BUILD COMMAND ${CMAKE_COMMAND} -E create_symlink
+    "${PROJECT_SOURCE_DIR}/player4.json" "${CMAKE_BINARY_DIR}/player4.json")

@@ -1,6 +1,6 @@
 #include <algorithm>
 
-#include <sqee/assert.hpp>
+#include <sqee/debug/Assert.hpp>
 #include <sqee/maths/Functions.hpp>
 #include <sqee/maths/Random.hpp>
 
@@ -49,7 +49,7 @@ void ParticleSystem::update_and_clean()
 //        mAverageDepth += vertex.position.z;
 //    }
 
-    const auto lambda = [](std::vector<ParticleData>& particles)
+    const auto lambda = [](Vector<ParticleData>& particles)
     {
         for (ParticleData& p : particles)
         {

@@ -4,7 +4,7 @@
 
 #include headers/blocks/Camera
 
-layout(std140, binding=0) uniform CAMERABLOCK { CameraBlock CB; };
+layout(std140, binding=0) uniform CAMERA { CameraBlock CB; };
 
 //============================================================================//
 

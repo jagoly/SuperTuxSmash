@@ -6,37 +6,40 @@
   {
     "origin": [ 0.0, 0.1, 1.0 ], 
     "radius": 0.5,
+    "bone": null,
     "group": 0,
     "knockAngle": 0.125,
     "knockBase": 6.0,
     "knockScale": 0.0,
     "damage": 3.0,
-    "flavour": "SOUR",
-    "priority": "NORMAL"
+    "flavour": "Sour",
+    "priority": "Normal"
   },
   "1:A":
   {
     "origin": [ 0.0, 0.1, 1.5 ],
     "radius": 0.5,
+    "bone": null,
     "group": 1,
     "knockAngle": 0.125,
     "knockBase": 6.0,
     "knockScale": 0.0,
     "damage": 3.0,
-    "flavour": "SOUR",
-    "priority": "NORMAL"
+    "flavour": "Sour",
+    "priority": "Normal"
   },
   "2:A":
   {
     "origin": [ 0.0, 0.1, 2.0 ],
     "radius": 0.5,
+    "bone": null,
     "group": 2,
     "knockAngle": 0.04,
     "knockBase": 10.0,
     "knockScale": 1.0,
     "damage": 6.0,
-    "flavour": "TANGY",
-    "priority": "HIGH"
+    "flavour": "Tangy",
+    "priority": "High"
   }
 },
 
@@ -46,8 +49,9 @@
   {
     "shape": "ball",
     "sprite": "Sparkle",
-    "direction": "0.0 1.0 0.0",
-    "origin": "0.0 0.1 1.0",
+    "direction": [ 0.0, 1.0, 0.0 ],
+    "origin": [ 0.0, 0.1, 1.0 ],
+    "bone": null,
     "minLifetime": 16,
     "maxLifetime": 18,
     "minScale": 0.3,
@@ -63,8 +67,9 @@
   {
     "shape": "ball",
     "sprite": "Sparkle",
-    "direction": "0.0 1.0 0.0",
-    "origin": "0.0 0.1 1.5",
+    "direction": [ 0.0, 1.0, 0.0 ],
+    "origin": [ 0.0, 0.1, 1.5 ],
+    "bone": null,
     "minLifetime": 16,
     "maxLifetime": 18,
     "minScale": 0.3,
@@ -80,8 +85,9 @@
   {
     "shape": "ball",
     "sprite": "Sparkle",
-    "direction": "0.0 1.0 0.0",
-    "origin": "0.0 0.1 2.0",
+    "direction": [ 0.0, 1.0, 0.0 ],
+    "origin": [ 0.0, 0.1, 2.0 ],
+    "bone": null,
     "minLifetime": 16,
     "maxLifetime": 18,
     "minScale": 0.5,
@@ -95,14 +101,18 @@
   }
 },
 
-
-"timeline":
+"commands":
 [
-  [ 4,  [ "emit_particles Puff0 40", "enable_blob 0:A" ] ],
-  [ 8,  [ "emit_particles Puff1 40", "enable_blob 1:A", "disable_blob 0:A" ] ],
-  [ 12, [ "emit_particles Puff2 40", "enable_blob 2:A", "disable_blob 1:A" ] ],
-  [ 16, [ "disable_blob 2:A" ] ],
-  [ 26, [ "finish_action" ] ]
+  [ [ 4 ], "emit_particles Puff0 40" ],
+  [ [ 4 ], "enable_blob 0:A" ],
+  [ [ 8 ], "emit_particles Puff1 40" ],
+  [ [ 8 ], "enable_blob 1:A" ],
+  [ [ 8 ], "disable_blob 0:A" ],
+  [ [ 12 ], "emit_particles Puff2 40" ],
+  [ [ 12 ], "enable_blob 2:A" ],
+  [ [ 12 ], "disable_blob 1:A" ],
+  [ [ 16 ], "disable_blob 2:A" ],
+  [ [ 26 ], "finish_action" ]
 ]
 
 }

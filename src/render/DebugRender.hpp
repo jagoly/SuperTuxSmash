@@ -16,9 +16,9 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    void render_blobs(const std::vector<HitBlob*>& blobs);
+    void render_blobs(const Vector<HitBlob*>& blobs);
 
-    void render_blobs(const std::vector<HurtBlob*>& blobs);
+    void render_blobs(const Vector<HurtBlob*>& blobs);
 
 private: //===================================================//
 

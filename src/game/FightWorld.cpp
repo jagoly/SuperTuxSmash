@@ -1,4 +1,4 @@
-#include <sqee/assert.hpp>
+#include <sqee/debug/Assert.hpp>
 #include <sqee/misc/Algorithms.hpp>
 #include <sqee/maths/Culling.hpp>
 
@@ -16,7 +16,8 @@ using namespace sts;
 
 //============================================================================//
 
-FightWorld::FightWorld()
+FightWorld::FightWorld(GameMode gameMode)
+    : mGameMode(gameMode)
 {
     impl = std::make_unique<PrivateWorld>(*this);
 }
@@ -30,19 +31,17 @@ void FightWorld::tick()
     mStage->tick();
 
     for (auto& fighter : mFighters)
+    {
         if (fighter != nullptr)
             fighter->tick();
-
-    //--------------------------------------------------------//
+    }
 
     impl->tick();
 
-    //--------------------------------------------------------//
-
     for (auto& fighter : mFighters)
     {
-        if (fighter == nullptr) continue;
-        mStage->check_boundary(*fighter);
+        if (fighter != nullptr)
+            mStage->check_boundary(*fighter);
     }
 
     mParticleSystem.update_and_clean();
@@ -50,12 +49,12 @@ void FightWorld::tick()
 
 //============================================================================//
 
-void FightWorld::set_stage(unique_ptr<Stage> stage)
+void FightWorld::set_stage(UniquePtr<Stage> stage)
 {
     mStage = std::move(stage);
 }
 
-void FightWorld::add_fighter(unique_ptr<Fighter> fighter)
+void FightWorld::add_fighter(UniquePtr<Fighter> fighter)
 {
     mFighters[fighter->index] = std::move(fighter);
 }
@@ -66,9 +65,9 @@ sq::PoolAllocator<HitBlob>& FightWorld::get_hit_blob_allocator() { return impl->
 
 sq::PoolAllocator<HurtBlob>& FightWorld::get_hurt_blob_allocator() { return impl->hurtBlobAlloc; }
 
-const std::vector<HitBlob*>& FightWorld::get_hit_blobs() const { return impl->enabledHitBlobs; }
+const Vector<HitBlob*>& FightWorld::get_hit_blobs() const { return impl->enabledHitBlobs; }
 
-const std::vector<HurtBlob*>& FightWorld::get_hurt_blobs() const { return impl->enabledHurtBlobs; }
+const Vector<HurtBlob*>& FightWorld::get_hurt_blobs() const { return impl->enabledHurtBlobs; }
 
 sq::PoolAllocator<ParticleEmitter>& FightWorld::get_emitter_allocator() { return impl->emitterAlloc; }
 

@@ -6,6 +6,8 @@
 #include "main/MenuScene.hpp"
 #include "main/GameScene.hpp"
 
+#include "editor/ActionEditor.hpp"
+
 #include "SmashApp.hpp"
 
 using namespace sts;
@@ -19,7 +21,7 @@ SmashApp::~SmashApp() = default;
 
 //============================================================================//
 
-void SmashApp::initialise(std::vector<string> args)
+void SmashApp::initialise(Vector<String> args)
 {
     mWindow = std::make_unique<sq::Window>("SuperTuxSmash", Vec2U(1280u, 720u));
 
@@ -47,7 +49,7 @@ void SmashApp::update(double elapsed)
 
     for (auto event : mWindow->fetch_events())
     {
-        guiSystem.handle_event(event);
+        if (guiSystem.handle_event(event)) continue;
         handle_event(event);
     }
 
@@ -75,8 +77,6 @@ void SmashApp::update(double elapsed)
     //-- drawing is done -------------------------------------//
 
     mWindow->swap_buffers();
-
-    return;
 }
 
 //============================================================================//
@@ -123,7 +123,7 @@ void SmashApp::handle_event(sq::Event event)
 
     //--------------------------------------------------------//
 
-    auto notify = [this](uint value, const string& message, std::vector<string> options)
+    auto notify = [this](uint value, const String& message, Vector<String> options)
     { this->mDebugOverlay->notify(message + options[value]); };
 
     if (type == Type::Keyboard_Press)
@@ -203,12 +203,17 @@ void SmashApp::refresh_options()
         mActiveScene->refresh_options();
 }
 
-
 //============================================================================//
 
 void SmashApp::start_game(GameSetup setup)
 {
     mActiveScene = std::make_unique<GameScene>(*this, setup);
+    refresh_options();
+}
+
+void SmashApp::start_action_editor()
+{
+    mActiveScene = std::make_unique<ActionEditor>(*this);
     refresh_options();
 }
 

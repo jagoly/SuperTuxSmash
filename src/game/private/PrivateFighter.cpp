@@ -1,4 +1,4 @@
-#include <sqee/assert.hpp>
+#include <sqee/debug/Assert.hpp>
 #include <sqee/debug/Logging.hpp>
 
 #include <sqee/macros.hpp>
@@ -46,7 +46,7 @@ static constexpr uint  STS_JUMP_DELAY       = 4u;
 
 //============================================================================//
 
-void PrivateFighter::initialise_armature(const string& path)
+void PrivateFighter::initialise_armature(const String& path)
 {
     armature.load_bones(path + "/Bones.txt", true);
     armature.load_rest_pose(path + "/RestPose.txt");
@@ -57,7 +57,7 @@ void PrivateFighter::initialise_armature(const string& path)
 
     const auto load_animation = [&](sq::Armature::Animation& anim, const char* name)
     {
-        const string filePath = sq::build_path(path, "anims", name) + ".txt";
+        const String filePath = sq::build_path(path, "anims", name) + ".txt";
 
         if (sq::check_file_exists(filePath) == false)
         {
@@ -170,7 +170,7 @@ void PrivateFighter::initialise_armature(const string& path)
 
 //============================================================================//
 
-void PrivateFighter::initialise_hurt_blobs(const string& path)
+void PrivateFighter::initialise_hurt_blobs(const String& path)
 {
     auto& hurtBlobs = fighter.mHurtBlobs;
     auto& fightWorld = fighter.mFightWorld;
@@ -179,18 +179,18 @@ void PrivateFighter::initialise_hurt_blobs(const string& path)
 
     for (const auto& item : sq::parse_json_from_file(path + "/HurtBlobs.json"))
     {
-        auto& blob = *hurtBlobs.emplace_back(fightWorld.create_hurt_blob(fighter));
+        HurtBlob* blob = hurtBlobs.emplace_back(fightWorld.create_hurt_blob(fighter));
 
-        blob.bone = int8_t(item[0]);
-        blob.originA = Vec3F(item[1], item[2], item[3]);
-        blob.originB = Vec3F(item[4], item[5], item[6]);
-        blob.radius = float(item[7]);
+        try { blob->from_json(item); }
+        catch (const std::exception& e) {
+            sq::log_warning("problem loading hurt blobs: %s", e.what());
+        }
     }
 }
 
 //============================================================================//
 
-void PrivateFighter::initialise_stats(const string& path)
+void PrivateFighter::initialise_stats(const String& path)
 {
     Fighter::Stats& stats = fighter.stats;
 
@@ -224,7 +224,7 @@ void PrivateFighter::initialise_stats(const string& path)
 
 //============================================================================//
 
-void PrivateFighter::initialise_actions(const string& path)
+void PrivateFighter::initialise_actions(const String& path)
 {
     Fighter::Actions& actions = fighter.actions;
     FightWorld& world = fighter.mFightWorld;
@@ -661,7 +661,7 @@ void PrivateFighter::switch_action(Action::Type actionType)
 
     //--------------------------------------------------------//
 
-    CASE ( None )
+    CASE_DEFAULT
     {
         // we know here that current action is not nullptr
 
@@ -681,7 +681,7 @@ void PrivateFighter::switch_action(Action::Type actionType)
         CASE ( Special_Down, Special_Forward, Special_Neutral, Special_Up )
         state_transition(transitions.misc_neutral); // todo
 
-        CASE ( None ) SQASSERT(false, "switch from None to None");
+        CASE_DEFAULT SQASSERT(false, "switch from None to None");
 
         } SWITCH_END;
     }
@@ -692,9 +692,12 @@ void PrivateFighter::switch_action(Action::Type actionType)
 
     //--------------------------------------------------------//
 
-    if (newAction != nullptr) newAction->do_start();
+    if (fighter.current.action) fighter.current.action->do_finish();
 
     fighter.current.action = newAction;
+
+    if (fighter.current.action) fighter.current.action->do_start();
+
 }
 
 //============================================================================//
@@ -886,7 +889,8 @@ void PrivateFighter::update_after_input()
 
     if (current.position.x > targetPosition.x || current.position.x < targetPosition.x)
     {
-        state_transition(transitions.misc_neutral);
+        if (state == State::Walking || state == State::Dashing)
+            state_transition(transitions.misc_neutral);
         velocity.x = 0.f;
     }
 
@@ -916,15 +920,23 @@ void PrivateFighter::base_tick_fighter()
 
     //--------------------------------------------------------//
 
-    SQASSERT(controller != nullptr, "");
+    if (fighter.mFightWorld.get_game_mode() == GameMode::Editor)
+    {
+        const auto input = Controller::Input();
 
-    const auto input = controller->get_input();
+        handle_input_movement(input);
+        handle_input_actions(input);
+    }
+    else
+    {
+        SQASSERT(controller != nullptr, "");
+        const auto input = controller->get_input();
+
+        handle_input_movement(input);
+        handle_input_actions(input);
+    }
 
     //--------------------------------------------------------//
-
-    handle_input_movement(input);
-
-    handle_input_actions(input);
 
     update_after_input();
 

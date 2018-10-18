@@ -13,6 +13,8 @@
 #include "render/ResourceCaches.hpp"
 #include "render/SceneData.hpp"
 
+#include "enumerations.hpp"
+
 //====== Forward Declarations ================================================//
 
 namespace sts { struct HitBlob; struct HurtBlob; }
@@ -28,7 +30,7 @@ class Renderer final : sq::NonCopyable
 {
 public: //====================================================//
 
-    Renderer(const Options& options);
+    Renderer(GameMode gameMode, const Options& options);
 
     ~Renderer();
 
@@ -36,15 +38,13 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
+    Camera& get_camera() { return *mCamera; }
+
     const Camera& get_camera() const { return *mCamera; }
 
     //--------------------------------------------------------//
 
-    void update_from_scene_data(const SceneData& sceneData);
-
-    //--------------------------------------------------------//
-
-    void add_object(unique_ptr<RenderObject> object);
+    void add_object(UniquePtr<RenderObject> object);
 
     //--------------------------------------------------------//
 
@@ -52,9 +52,9 @@ public: //====================================================//
 
     void render_particles(const ParticleSystem& system, float accum, float blend);
 
-    void render_blobs(const std::vector<HitBlob*>& blobs);
+    void render_blobs(const Vector<HitBlob*>& blobs);
 
-    void render_blobs(const std::vector<HurtBlob*>& blobs);
+    void render_blobs(const Vector<HurtBlob*>& blobs);
 
     void finish_rendering();
 
@@ -84,10 +84,11 @@ public: //====================================================//
 
     struct {
 
-        sq::Program Depth_SimpleSolid;
-        sq::Program Depth_SkellySolid;
-        sq::Program Depth_SimplePunch;
-        sq::Program Depth_SkellyPunch;
+        sq::Program Depth_StaticSolid;
+        sq::Program Depth_StaticPunch;
+
+        sq::Program Depth_FighterSolid;
+        sq::Program Depth_FighterPunch;
 
         sq::Program Particles;
 
@@ -110,14 +111,16 @@ public: //====================================================//
 
     const Options& options;
 
+    const GameMode gameMode;
+
 private: //===================================================//
 
-    unique_ptr<Camera> mCamera;
+    UniquePtr<Camera> mCamera;
 
-    std::vector<unique_ptr<RenderObject>> mRenderObjects;
+    Vector<UniquePtr<RenderObject>> mRenderObjects;
 
-    unique_ptr<DebugRender> mDebugRender;
-    unique_ptr<ParticleRender> mParticleRender;
+    UniquePtr<DebugRender> mDebugRender;
+    UniquePtr<ParticleRender> mParticleRender;
 };
 
 } // namespace sts

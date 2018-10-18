@@ -26,7 +26,7 @@ namespace { // anonymous
 
 using BoundFunction = std::function<void(Action& action)>;
 
-thread_local std::vector<string> gErrorLog;
+thread_local Vector<String> gErrorLog;
 
 template <class... Args>
 void impl_log_error(const char* fmt, const Args&... args)
@@ -34,13 +34,13 @@ void impl_log_error(const char* fmt, const Args&... args)
 
 //----------------------------------------------------------------------------//
 
-template <class Type> optional<Type> impl_convert_param(string_view token);
+template <class Type> Optional<Type> impl_convert_param(StringView token);
 
-template <> optional<int> impl_convert_param(string_view token) { return sq::safe_sv_to_i(token); }
-template <> optional<uint> impl_convert_param(string_view token) { return sq::safe_sv_to_u(token); }
-template <> optional<float> impl_convert_param(string_view token) { return sq::safe_sv_to_f(token); }
+template <> Optional<int> impl_convert_param(StringView token) { return sq::safe_sv_to_i(token); }
+template <> Optional<uint> impl_convert_param(StringView token) { return sq::safe_sv_to_u(token); }
+template <> Optional<float> impl_convert_param(StringView token) { return sq::safe_sv_to_f(token); }
 
-template <> optional<PoolKey> impl_convert_param(string_view token)
+template <> Optional<PoolKey> impl_convert_param(StringView token)
 { return token.size() <= 15u ? std::make_optional<PoolKey>(token) : std::nullopt; }
 
 //----------------------------------------------------------------------------//
@@ -57,44 +57,30 @@ using TypePackElement = std::tuple_element_t<Index, typename Types::Tuple>;
 //----------------------------------------------------------------------------//
 
 template <class Types, size_t Index> inline
-auto impl_extract_param(const std::vector<string_view>& tokens)
+auto impl_extract_param(const Vector<StringView>& tokens)
 {
     using Type = TypePackElement<Types, Index>;
-    const string_view& token = tokens[Index + 1];
+    const StringView& token = tokens[Index + 1];
 
-    const optional<Type> opt = impl_convert_param<Type>(token);
+    const Optional<Type> opt = impl_convert_param<Type>(token);
     if (!opt.has_value()) impl_log_error("invalid paramater %d: '%s'", Index, token);
 
     return opt.value();
 }
 
 template <class Func, class Types, size_t... Index> inline
-BoundFunction impl_bind_params(Func func, const std::vector<string_view>& tokens, Types, std::index_sequence<Index...>)
+BoundFunction impl_bind_params(Func func, const Vector<StringView>& tokens, Types, std::index_sequence<Index...>)
 {
     if (tokens.size() != Types::Size + 1)
     {
         impl_log_error("wrong number of paramaters for command");
-        return BoundFunction();
+        return nullptr;
     }
 
     // this isn't a good use of exceptions, I'll refactor this later
     try { return std::bind(func, std::placeholders::_1, impl_extract_param<Types, Index>(tokens)...); }
-    catch (std::bad_optional_access&) { return BoundFunction(); }
+    catch (std::bad_optional_access&) { return nullptr; }
 }
-
-//----------------------------------------------------------------------------//
-
-struct BlobTemplate
-{
-    uint8_t group;
-    HitBlob::Flavour flavour;
-    HitBlob::Priority priority;
-    char _padding[1];
-    float damage;
-    float knockAngle;
-    float knockBase;
-    float knockScale;
-};
 
 //----------------------------------------------------------------------------//
 
@@ -102,26 +88,21 @@ struct BlobTemplate
 
 //============================================================================//
 
-optional<Action::Command> ActionBuilder::build_command(Action& action, string_view source)
+std::function<void(Action& action)> ActionBuilder::build_command(Action& action, StringView source)
 {
     const auto tokens = sq::tokenise_string_view(source, ' ');
 
     if (tokens.empty() == true)
     {
         impl_log_error("source is empty");
-        return std::nullopt;
+        return nullptr;
     }
 
-    //--------------------------------------------------------//
-
-    Action::Command result;
+    BoundFunction result;
 
     //--------------------------------------------------------//
 
-    // todo: replace assertions with warnings so that I can easily
-    //       edit actions at runtime and hotload them
-
-    #define ASSIGN_BOUND_FUNCTION(Name, ...) result.func = impl_bind_params \
+    #define ASSIGN_BOUND_FUNCTION(Name, ...) result = impl_bind_params \
     ( &ActionFuncs::Name, tokens, TypePack<__VA_ARGS__ >(), std::index_sequence_for<__VA_ARGS__>() )
 
     if (tokens[0] == "enable_blob")    ASSIGN_BOUND_FUNCTION(enable_blob, PoolKey);
@@ -134,15 +115,13 @@ optional<Action::Command> ActionBuilder::build_command(Action& action, string_vi
 
     //--------------------------------------------------------//
 
-    if (result.func == nullptr)
+    if (result == nullptr)
     {
         impl_log_error("unknown function: %s", tokens[0]);
-        return std::nullopt;
+        return nullptr;
     }
 
     //--------------------------------------------------------//
-
-    result.source = std::move(source);
 
     return result;
 }
@@ -152,18 +131,19 @@ optional<Action::Command> ActionBuilder::build_command(Action& action, string_vi
 void ActionBuilder::load_from_json(Action& action)
 {
     action.blobs.clear(); // destroy existing blobs
-    action.timeline.clear(); // clear existing commands
+    action.emitters.clear(); // destroy existing emitters
+    action.commands.clear(); // clear existing commands
 
     // use a dummy action for actions I haven't written yet
     if (sq::check_file_exists(action.path) == false)
     {
         sq::log_warning("missing action '%s'", action.path);
 
-        action.timeline.push_back({12u, {}});
-        auto& command = action.timeline.back().commands.emplace_back();
+        auto& command = action.commands.emplace_back();
 
-        command.source = "finish_action";
+        command.frames = { 12u };
         command.func = &ActionFuncs::finish_action;
+        command.source = "finish_action";
 
         return;
     }
@@ -176,162 +156,54 @@ void ActionBuilder::load_from_json(Action& action)
 
     //--------------------------------------------------------//
 
-    std::map<string, BlobTemplate> templates;
-
-    //--------------------------------------------------------//
-
-    if (root.count("templates") != 0u)
+    for (auto iter : root.at("blobs").items())
     {
-        for (auto iter : root.at("templates").items())
-        {
-            BlobTemplate& blobTemplate = templates[iter.key()];
-
-            for (auto iter : iter.value().items())
-            {
-                const string& key = iter.key();
-                const auto& value = iter.value();
-
-                if      (key == "group")      blobTemplate.group = value;
-                else if (key == "flavour")    blobTemplate.flavour = HitBlob::flavour_from_str(value);
-                else if (key == "priority")   blobTemplate.priority = HitBlob::priority_from_str(value);
-                else if (key == "damage")     blobTemplate.damage = value;
-                else if (key == "knockAngle") blobTemplate.knockAngle = value;
-                else if (key == "knockBase")  blobTemplate.knockBase = value;
-                else if (key == "knockScale") blobTemplate.knockScale = value;
-
-                else sq::log_warning("unhandled blob key '%s'", key);
-            }
-        }
-    }
-
-    //--------------------------------------------------------//
-
-    if (root.count("emitters") != 0)
-    {
-        for (auto iter : root.at("emitters").items())
-        {
-            ParticleEmitter* emitter = action.emitters.emplace(iter.key());
-            emitter->load_from_json(action.world.get_particle_system(), iter.value());
-
-            if (auto bone = iter.value().find("bone"); bone != iter.value().end())
-            {
-                if (bone->is_string())
-                {
-                    emitter->bone = int8_t(action.fighter.get_armature().get_bone_index(*bone));
-                    if (emitter->bone == -1) sq::log_warning("invalid bone '%s'", *bone);
-                }
-                else emitter->bone = *bone;
-            }
-        }
-    }
-
-    //--------------------------------------------------------//
-
-    for (auto blobIter : root.at("blobs").items())
-    {
-        HitBlob* blob = action.blobs.emplace(blobIter.key().c_str());
+        HitBlob* blob = action.blobs.emplace(iter.key());
 
         blob->fighter = &action.fighter;
         blob->action = &action;
 
-        if (blobIter.value().count("bone") && (blobIter.value().count("origin") || blobIter.value().count("radius")))
-            sq::log_warning("blob with origin/radius may not attach to a bone");
-
-        for (auto iter : blobIter.value().items())
-        {
-            const string key = iter.key();
-            const auto& value = iter.value();
-
-            if (key == "template")
-            {
-                const BlobTemplate& blobTemplate = templates.at(value);
-
-                blob->group = blobTemplate.group;
-                blob->flavour = blobTemplate.flavour;
-                blob->priority = blobTemplate.priority;
-                blob->damage = blobTemplate.damage;
-                blob->knockAngle = blobTemplate.knockAngle;
-                blob->knockBase = blobTemplate.knockBase;
-                blob->knockScale = blobTemplate.knockScale;
-            }
-
-            else if (key == "bone")
-            {
-                if (value.is_string())
-                {
-                    blob->bone = int8_t(action.fighter.get_armature().get_bone_index(value));
-                    if (blob->bone == -1) sq::log_warning("invalid bone '%s'", value);
-                }
-                else blob->bone = value;
-            }
-
-            else if (key == "origin")     blob->origin = { value[0], value[1], value[2] };
-            else if (key == "radius")     blob->radius = value;
-            else if (key == "group")      blob->group = value;
-            else if (key == "knockAngle") blob->knockAngle = value;
-            else if (key == "knockBase")  blob->knockBase = value;
-            else if (key == "knockScale") blob->knockScale = value;
-            else if (key == "damage")     blob->damage = value;
-            else if (key == "flavour")    blob->set_flavour_from_str(value);
-            else if (key == "priority")   blob->set_priority_from_str(value);
-
-            else sq::log_warning("unhandled blob key '%s'", key);
+        try { blob->from_json(iter.value()); }
+        catch (const std::exception& e) {
+            impl_log_error("blob '%s': %s", iter.key(), e.what());
         }
     }
 
     //--------------------------------------------------------//
 
-    std::map<uint, std::vector<Action::Command>> frameMap;
-
-    for (const auto& jsonTimeline : root.at("timeline"))
+    for (auto iter : root.at("emitters").items())
     {
-        const auto& when = jsonTimeline[0];
-        const auto& commandStrings = jsonTimeline[1];
+        ParticleEmitter* emitter = action.emitters.emplace(iter.key());
 
-        std::vector<Action::Command> commands;
-        commands.reserve(commandStrings.size());
+        emitter->fighter = &action.fighter;
+        emitter->action = &action;
 
-        for (const string& source : commandStrings)
-        {
-            auto command = ActionBuilder::build_command(action, source);
-            if (command.has_value()) commands.push_back(std::move(*command));
-            else impl_log_error("error building command: %s", source);
+        try { emitter->from_json(iter.value()); }
+        catch (const std::exception& e) {
+            impl_log_error("emitter '%s': %s", iter.key(), e.what());
         }
-
-        // todo: add some more sanity checking
-        if (when.is_number_unsigned())
-        {
-            std::vector<Action::Command>& frame = frameMap[when];
-            frame.insert(frame.begin(), commands.begin(), commands.end());
-        }
-        else if (when.is_string())
-        {
-            const auto ranges = sq::tokenise_string_view(when.get_ref<const string&>(), ',');
-
-            for (const auto& range : ranges)
-            {
-                SQASSERT(range.find_first_not_of("0123456789- ") == string::npos, "");
-
-                if (const size_t sep = range.find('-'); sep != string::npos)
-                {
-                    const uint begin = sq::sv_to_u(range.substr(0u, sep));
-                    const uint end = sq::sv_to_u(range.substr(sep + 1u));
-
-                    for (uint i = begin; i < end; ++i)
-                    {
-                        std::vector<Action::Command>& frame = frameMap[i];
-                        frame.insert(frame.begin(), commands.begin(), commands.end());
-                    }
-                }
-            }
-        }
-        else SQASSERT(false, "invalid frame or range");
     }
 
-    // std::map is already ordered by keys
-    for (const auto& item : frameMap)
+    //--------------------------------------------------------//
+
+    for (const auto& item : root.at("commands"))
     {
-        action.timeline.push_back({item.first, std::move(item.second)});
+        if (!item.is_array() || item.size() != 2u)
+        {
+            impl_log_error("invalid command: %s", item.dump());
+            continue;
+        }
+
+        Action::Command& command = action.commands.emplace_back();
+
+        try { item.front().get_to(command.frames); }
+        catch (const std::exception& e) {
+            impl_log_error("invalid command frames: %s", e.what());
+        }
+
+        command.source = item.back();
+
+        command.func = ActionBuilder::build_command(action, command.source);
     }
 
     //--------------------------------------------------------//
@@ -341,4 +213,41 @@ void ActionBuilder::load_from_json(Action& action)
         sq::log_warning_block("errors in action '%s'"_fmt_(action.path), gErrorLog);
         gErrorLog.clear();
     }
+}
+
+//----------------------------------------------------------------------------//
+
+JsonValue ActionBuilder::serialise_as_json(const Action& action)
+{
+    JsonValue result;
+
+    auto& resultEmitters = result["emitters"];
+    auto& resultBlobs = result["blobs"];
+    auto& resultCommands = result["commands"];
+
+    //--------------------------------------------------------//
+
+    for (auto& [key, emitter] : action.emitters)
+    {
+        emitter->to_json(resultEmitters[key]);
+    }
+
+    //--------------------------------------------------------//
+
+    for (auto& [key, blob] : action.blobs)
+    {
+        blob->to_json(resultBlobs[key]);
+    }
+
+    //--------------------------------------------------------//
+
+    for (const auto& command : action.commands)
+    {
+        resultCommands.emplace_back();
+
+        resultCommands.back().push_back(command.frames);
+        resultCommands.back().push_back(command.source);
+    }
+
+    return result;
 }

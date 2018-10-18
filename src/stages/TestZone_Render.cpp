@@ -14,14 +14,16 @@ TestZone_Render::TestZone_Render(Renderer& renderer, const TestZone_Stage& stage
 {
     ResourceCaches& cache = renderer.resources;
 
-    MESH_Mesh = cache.meshes.acquire("stages/TestZone/meshes/Mesh");
+    MESH_Mesh = cache.meshes.acquire("assets/stages/TestZone/meshes/Mesh");
 
-    TEX_Diff = cache.textures.acquire("stages/TestZone/textures/Diffuse");
+    TEX_Diff = cache.textures.acquire("assets/stages/TestZone/textures/Diffuse");
 
     //--------------------------------------------------------//
 
-    renderer.processor.load_vertex(PROG_Main, "stages/TestZone/Main_vs");
-    renderer.processor.load_fragment(PROG_Main, "stages/TestZone/Main_fs");
+    const String fragmentDefines = "#define OPT_TEX_DIFFUSE";
+
+    renderer.processor.load_vertex(PROG_Main, "stages/StaticMesh_vs");
+    renderer.processor.load_fragment(PROG_Main, "BasicModel_fs", fragmentDefines);
     PROG_Main.link_program_stages();
 }
 
@@ -48,8 +50,8 @@ void TestZone_Render::render_depth()
 
     context.bind_VertexArray(MESH_Mesh->get_vao());
 
-    shaders.Depth_SimpleSolid.update(0, mFinalMatrix);
-    context.bind_Program(shaders.Depth_SimpleSolid);
+    shaders.Depth_StaticSolid.update(0, mFinalMatrix);
+    context.bind_Program(shaders.Depth_StaticSolid);
 
     MESH_Mesh->draw_complete();
 }

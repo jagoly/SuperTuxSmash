@@ -16,8 +16,8 @@ DebugRender::DebugRender(Renderer& renderer) : renderer(renderer)
 {
     //-- Load Mesh Objects -----------------------------------//
 
-    mSphereMesh.load_from_file("debug/Sphere", true);
-    mCapsuleMesh.load_from_file("debug/Capsule", true);
+    mSphereMesh.load_from_file("assets/debug/Sphere.sqm", true);
+    mCapsuleMesh.load_from_file("assets/debug/Capsule.sqm", true);
 }
 
 //============================================================================//
@@ -38,7 +38,7 @@ void DebugRender::refresh_options()
 
 //============================================================================//
 
-void DebugRender::render_blobs(const std::vector<HitBlob*>& blobs)
+void DebugRender::render_blobs(const Vector<HitBlob*>& blobs)
 {
     auto& context = renderer.context;
 
@@ -73,7 +73,7 @@ void DebugRender::render_blobs(const std::vector<HitBlob*>& blobs)
 
 //============================================================================//
 
-void DebugRender::render_blobs(const std::vector<HurtBlob*>& blobs)
+void DebugRender::render_blobs(const Vector<HurtBlob*>& blobs)
 {
     auto& context = renderer.context;
 

@@ -12,21 +12,21 @@ using namespace sts;
 Tux_Render::Tux_Render(Renderer& renderer, const Tux_Fighter& fighter)
     : RenderObject(renderer), fighter(fighter)
 {
-    mUbo.create_and_allocate(3840u);
+    mUbo.create_and_allocate(sizeof(Tux_Render::mCharacterBlock));
 
     //--------------------------------------------------------//
 
     ResourceCaches& cache = renderer.resources;
 
-    MESH_Tux = cache.meshes.acquire("fighters/Tux/meshes/Mesh");
+    MESH_Tux = cache.meshes.acquire("assets/fighters/Tux/meshes/Mesh");
 
-    TX_Tux_diff = cache.textures.acquire("fighters/Tux/textures/Tux_diff");
+    TX_Tux_diff = cache.textures.acquire("assets/fighters/Tux/textures/Tux_diff");
+    TX_Tux_spec = cache.textures.acquire("assets/fighters/Tux/textures/Tux_spec");
 
-    //--------------------------------------------------------//
-
-    renderer.processor.load_vertex(PROG_Tux, "fighters/Tux/Tux_vs");
-    renderer.processor.load_fragment(PROG_Tux, "fighters/Tux/Tux_fs");
-    PROG_Tux.link_program_stages();
+    sq::ProgramKey programKey;
+    programKey.vertexPath = "fighters/BasicFighter_vs";
+    programKey.fragmentPath = "fighters/BasicFighter_fs";
+    PROG_Tux = cache.programs.acquire(programKey);
 }
 
 //============================================================================//
@@ -35,12 +35,13 @@ void Tux_Render::integrate(float blend)
 {
     const Mat4F modelMatrix = fighter.interpolate_model_matrix(blend);
 
-    mFinalMatrix = renderer.get_camera().get_combo_matrix() * modelMatrix;
-    mNormalMatrix = maths::normal_matrix(renderer.get_camera().get_view_matrix() * modelMatrix);
+    mCharacterBlock.matrix = renderer.get_camera().get_combo_matrix() * modelMatrix;
+    mCharacterBlock.normMat = Mat34F(maths::normal_matrix(renderer.get_camera().get_view_matrix() * modelMatrix));
 
-    const auto& boneMatrices = fighter.interpolate_bone_matrices(blend);
+    auto& bones = mCharacterBlock.bones;
+    fighter.interpolate_bone_matrices(blend, bones.data(), bones.size());
 
-    mUbo.update(0u, uint(boneMatrices.size()) * 48u, boneMatrices.data());
+    mUbo.update(0u, mCharacterBlock);
 }
 
 //============================================================================//
@@ -59,8 +60,7 @@ void Tux_Render::render_depth()
     context.bind_VertexArray(MESH_Tux->get_vao());
     context.bind_UniformBuffer(mUbo, 2u);
 
-    shaders.Depth_SkellySolid.update(0, mFinalMatrix);
-    context.bind_Program(shaders.Depth_SkellySolid);
+    context.bind_Program(shaders.Depth_FighterSolid);
 
     MESH_Tux->draw_complete();
 }
@@ -81,11 +81,9 @@ void Tux_Render::render_main()
     context.bind_UniformBuffer(mUbo, 2u);
 
     context.bind_Texture(TX_Tux_diff.get(), 0u);
-    PROG_Tux.update(3, Vec3F(0.4f, 0.4f, 0.4f));
+    context.bind_Texture(TX_Tux_spec.get(), 2u);
 
-    PROG_Tux.update(0, mFinalMatrix);
-    PROG_Tux.update(1, mNormalMatrix);
-    context.bind_Program(PROG_Tux);
+    context.bind_Program(PROG_Tux.get());
 
     MESH_Tux->draw_complete();
 }

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <sqee/builtins.hpp>
-#include <sqee/maths/Vectors.hpp>
+#include <sqee/misc/Builtins.hpp>
+#include <sqee/maths/Builtins.hpp>
 
 #include "game/ParticleSystem.hpp"
 
@@ -37,10 +37,10 @@ private: //===================================================//
         float averageDepth;
     };
 
-    std::vector<ParticleSetInfo> mParticleSetInfo;
-    std::vector<ParticleSetInfo> mParticleSetInfoKeep;
+    Vector<ParticleSetInfo> mParticleSetInfo;
+    Vector<ParticleSetInfo> mParticleSetInfoKeep;
 
-    std::vector<ParticleVertex> mVertices;
+    Vector<ParticleVertex> mVertices;
 
     //--------------------------------------------------------//
 

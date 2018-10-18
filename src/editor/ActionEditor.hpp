@@ -9,6 +9,7 @@
 #include "game/FightWorld.hpp"
 #include "game/Stage.hpp"
 #include "game/Controller.hpp"
+#include "game/Actions.hpp"
 
 #include "main/Options.hpp"
 #include "main/SmashApp.hpp"
@@ -17,13 +18,13 @@
 
 namespace sts {
 
-class GameScene final : public sq::Scene
+class ActionEditor final : public sq::Scene
 {
 public: //====================================================//
 
-    GameScene(SmashApp& smashApp, GameSetup setup);
+    ActionEditor(SmashApp& smashApp);
 
-    ~GameScene() override;
+    ~ActionEditor() override;
 
     //--------------------------------------------------------//
 
@@ -43,19 +44,36 @@ private: //===================================================//
 
     UniquePtr<Renderer> mRenderer;
 
-    Array<UniquePtr<Controller>, 4> mControllers;
-
     //--------------------------------------------------------//
 
     SmashApp& mSmashApp;
 
     //--------------------------------------------------------//
 
-    sq::GuiWidget mGeneralWidget;
-    sq::GuiWidget mFightersWidget;
+    sq::GuiWidget widget_list_actions;
 
-    void impl_show_general_window();
-    void impl_show_fighters_window();
+    sq::GuiWidget widget_list_blobs;
+    sq::GuiWidget widget_edit_blob;
+
+    sq::GuiWidget widget_timeline;
+
+    void impl_show_list_actions_widget();
+
+    void impl_show_list_blobs_widget();
+    void impl_show_edit_blob_widget();
+
+    void impl_show_timeline_widget();
+
+    //--------------------------------------------------------//
+
+    Action::Type mActionType = Action::Type::None;
+
+    bool mManualTickEnabled = true;
+
+    //--------------------------------------------------------//
+
+    Fighter* mFighter = nullptr;
+    Action* mAction = nullptr;
 };
 
 } // namespace sts

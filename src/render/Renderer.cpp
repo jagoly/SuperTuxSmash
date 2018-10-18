@@ -1,7 +1,7 @@
 #include <sqee/debug/Logging.hpp>
-
 #include <sqee/gl/Context.hpp>
 #include <sqee/gl/Drawing.hpp>
+#include <sqee/redist/gl_loader.hpp>
 
 #include "render/DebugRender.hpp"
 #include "render/ParticleRender.hpp"
@@ -18,7 +18,9 @@ using namespace sts;
 
 Renderer::~Renderer() = default;
 
-Renderer::Renderer(const Options& options) : context(sq::Context::get()), options(options)
+Renderer::Renderer(GameMode gameMode, const Options& options)
+    : resources(processor), context(sq::Context::get()),
+      options(options), gameMode(gameMode)
 {
     //-- Set Texture Paramaters ------------------------------//
 
@@ -28,12 +30,8 @@ Renderer::Renderer(const Options& options) : context(sq::Context::get()), option
     //-- Import GLSL Headers ---------------------------------//
 
     processor.import_header("headers/blocks/Camera");
+    processor.import_header("headers/blocks/Fighter");
     processor.import_header("headers/blocks/Light");
-    processor.import_header("headers/blocks/Skeleton");
-
-    processor.import_header("headers/super/Simple_vs");
-    processor.import_header("headers/super/Skelly_vs");
-    processor.import_header("headers/super/Model_fs");
 
     //-- Create Uniform Buffers ------------------------------//
 
@@ -41,7 +39,10 @@ Renderer::Renderer(const Options& options) : context(sq::Context::get()), option
 
     //--------------------------------------------------------//
 
-    mCamera = std::make_unique<Camera>(*this);
+    if (gameMode == GameMode::Editor)
+        mCamera = std::make_unique<EditorCamera>(*this);
+    if (gameMode == GameMode::Standard)
+        mCamera = std::make_unique<StandardCamera>(*this);
 
     mDebugRender = std::make_unique<DebugRender>(*this);
     mParticleRender = std::make_unique<ParticleRender>(*this);
@@ -53,7 +54,7 @@ void Renderer::refresh_options()
 {
     //-- Prepare Shader Options Header -----------------------//
 
-    string headerStr = "// set of constants and defines added at runtime\n";
+    String headerStr = "// set of constants and defines added at runtime\n";
 
     headerStr += "const uint OPTION_WinWidth  = " + std::to_string(options.Window_Size.x) + ";\n";
     headerStr += "const uint OPTION_WinHeight = " + std::to_string(options.Window_Size.y) + ";\n";
@@ -90,29 +91,30 @@ void Renderer::refresh_options()
 
     //-- Load GLSL Shader Sources ----------------------------//
 
-    processor.load_vertex(shaders.Depth_SimpleSolid, "depth/Simple_vs");
-    processor.load_vertex(shaders.Depth_SkellySolid, "depth/Skelly_vs");
-    processor.load_vertex(shaders.Depth_SimplePunch, "depth/Simple_vs");
-    processor.load_vertex(shaders.Depth_SkellyPunch, "depth/Skelly_vs");
+    processor.load_vertex(shaders.Depth_StaticSolid, "depth/Static_vs");
+    processor.load_vertex(shaders.Depth_StaticPunch, "depth/Static_vs");
+    processor.load_fragment(shaders.Depth_StaticPunch, "depth/Mask_fs");
 
-    processor.load_fragment(shaders.Depth_SimplePunch, "depth/Mask_fs");
-    processor.load_fragment(shaders.Depth_SkellyPunch, "depth/Mask_fs");
+    processor.load_vertex(shaders.Depth_FighterSolid, "depth/Fighter_vs");
+    processor.load_vertex(shaders.Depth_FighterPunch, "depth/Fighter_vs");
+    processor.load_fragment(shaders.Depth_FighterPunch, "depth/Mask_fs");
 
     processor.load_vertex(shaders.Particles, "particles/test_vs");
     processor.load_fragment(shaders.Particles, "particles/test_fs");
 
     processor.load_vertex(shaders.Lighting_Skybox, "lighting/Skybox_vs");
-    processor.load_vertex(shaders.Composite, "FullScreen_vs");
-
     processor.load_fragment(shaders.Lighting_Skybox, "lighting/Skybox_fs");
+
+    processor.load_vertex(shaders.Composite, "FullScreen_vs");
     processor.load_fragment(shaders.Composite, "Composite_fs");
 
     //-- Link Shader Program Stages --------------------------//
 
-    shaders.Depth_SimpleSolid.link_program_stages();
-    shaders.Depth_SkellySolid.link_program_stages();
-    shaders.Depth_SimplePunch.link_program_stages();
-    shaders.Depth_SkellyPunch.link_program_stages();
+    shaders.Depth_StaticSolid.link_program_stages();
+    shaders.Depth_StaticPunch.link_program_stages();
+
+    shaders.Depth_FighterSolid.link_program_stages();
+    shaders.Depth_FighterPunch.link_program_stages();
 
     shaders.Particles.link_program_stages();
 
@@ -127,14 +129,9 @@ void Renderer::refresh_options()
 
 //============================================================================//
 
-void Renderer::add_object(unique_ptr<RenderObject> object)
+void Renderer::add_object(UniquePtr<RenderObject> object)
 {
     mRenderObjects.push_back(std::move(object));
-}
-
-void Renderer::update_from_scene_data(const SceneData& sceneData)
-{
-    mCamera->update_from_scene_data(sceneData);
 }
 
 //============================================================================//
@@ -145,7 +142,7 @@ struct StaticShit
 {
     StaticShit()
     {
-        TEX_Skybox.load_automatic("skybox");
+        TEX_Skybox.load_automatic("assets/skybox");
     }
 
     sq::TextureCube TEX_Skybox;
@@ -259,12 +256,12 @@ void Renderer::finish_rendering()
 
 //============================================================================//
 
-void Renderer::render_blobs(const std::vector<HitBlob*>& blobs)
+void Renderer::render_blobs(const Vector<HitBlob*>& blobs)
 {
     mDebugRender->render_blobs(blobs);
 }
 
-void Renderer::render_blobs(const std::vector<HurtBlob*>& blobs)
+void Renderer::render_blobs(const Vector<HurtBlob*>& blobs)
 {
     mDebugRender->render_blobs(blobs);
 }

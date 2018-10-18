@@ -1,12 +1,12 @@
 #pragma once
 
-#include <sqee/misc/PoolTools.hpp>
+#include <sqee/misc/TinyString.hpp>
 
 namespace sts {
 
 //====== Forward Declarations and Aliases ====================================//
 
-using PoolKey = sq::TinyString<15>;
+using PoolKey = sq::TinyString;
 
 class Action;
 

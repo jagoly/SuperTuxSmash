@@ -1,7 +1,7 @@
 #pragma once
 
-#include <sqee/builtins.hpp>
-#include <sqee/maths/Vectors.hpp>
+#include <sqee/misc/Builtins.hpp>
+#include <sqee/maths/Builtins.hpp>
 
 //============================================================================//
 
@@ -29,7 +29,7 @@ public: //====================================================//
     uchar MSAA_Quality = 1u;
 
     /// Debug Texture to Draw to Screen.
-    string Debug_Texture = "";
+    String Debug_Texture = "";
 
     //--------------------------------------------------------//
 

@@ -1,10 +1,12 @@
+#include "game/ParticleEmitter.hpp"
+
 #include <algorithm>
 
-#include <sqee/assert.hpp>
+#include <sqee/debug/Logging.hpp>
 #include <sqee/maths/Functions.hpp>
 #include <sqee/maths/Random.hpp>
 
-#include "game/ParticleEmitter.hpp"
+#include "game/Fighter.hpp"
 
 namespace maths = sq::maths;
 using namespace sts;
@@ -19,7 +21,10 @@ void ParticleEmitter::generate(ParticleSystem& system, uint count)
 
     static std::mt19937 gen(1337);
 
-    maths::RandomScalar<uint16_t> randSprite   { sprite.min, sprite.max };
+    // todo: sprite range map thing
+
+    //maths::RandomScalar<uint16_t> randSprite   { sprite.min, sprite.max };
+    maths::RandomScalar<uint16_t> randSprite   { 0u, 1u };
     maths::RandomScalar<uint16_t> randLifetime { lifetime.min, lifetime.max };
     maths::RandomScalar<float>    randScale    { scale.min, scale.max };
 
@@ -117,8 +122,15 @@ void ParticleEmitter::generate(ParticleSystem& system, uint count)
 
 //============================================================================//
 
-void ParticleEmitter::load_from_json(ParticleSystem& system, const sq::JsonValue& json)
+void ParticleEmitter::from_json(const sq::JsonValue& json)
 {
+    if (auto& jb = json.at("bone"); jb.is_null() == false)
+    {
+        bone = fighter->get_armature().get_bone_index(jb);
+        if (bone == -1) sq::log_warning("Invalid bone name %s", jb);
+    }
+    else bone = -1;
+
     direction = json.at("direction");
     origin = json.at("origin");
 
@@ -134,10 +146,9 @@ void ParticleEmitter::load_from_json(ParticleSystem& system, const sq::JsonValue
     opacity.start = json.at("startOpacity");
     opacity.end = json.at("endOpacity");
 
-    const auto& spriteRange = system.sprites.at(json.at("sprite"));
-    sprite.min = spriteRange.first; sprite.max = spriteRange.last;
+    json.at("sprite").get_to(sprite);
 
-    const string& shapeName = json.at("shape");
+    const String& shapeName = json.at("shape");
 
     if (shapeName == "disc")
     {
@@ -166,4 +177,48 @@ void ParticleEmitter::load_from_json(ParticleSystem& system, const sq::JsonValue
     else SQASSERT(false, "");
 
     return;
+}
+
+//============================================================================//
+
+void ParticleEmitter::to_json(JsonValue& json) const
+{
+    if (bone != -1)
+    {
+        const auto boneName = fighter->get_armature().get_bone_name(bone);
+        if (boneName.empty()) sq::log_warning("Invalid bone index %d", bone);
+        json["bone"] = boneName;
+    }
+    else json["bone"] = nullptr;
+
+    json["direction"] = direction;
+    json["origin"] = origin;
+    json["lifetimeMin"] = lifetime.min;
+    json["lifetimeMax"] = lifetime.max;
+    json["scaleMin"] = scale.min;
+    json["scaleMax"] = scale.max;
+    json["radiusStart"] = radius.start;
+    json["radiusEnd"] = radius.end;
+    json["opacityStart"] = opacity.start;
+    json["opacityEnd"] = opacity.end;
+    json["sprite"] = sprite;
+
+    if (auto disc = std::get_if<DiscShape>(&shape))
+    {
+        json["shapeName"] = "disc";
+
+        json["inclineMin"] = disc->incline.min;
+        json["inclineMax"] = disc->incline.max;
+
+        json["speedMin"] = disc->speed.min;
+        json["speedMax"] = disc->speed.max;
+    }
+
+    if (auto ball = std::get_if<BallShape>(&shape))
+    {
+        json["shapeName"] = "ball";
+
+        json["speedMin"] = ball->speed.min;
+        json["speedMax"] = ball->speed.max;
+    }
 }
