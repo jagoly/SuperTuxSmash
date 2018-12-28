@@ -1,11 +1,11 @@
-#include <sqee/macros.hpp>
-#include <sqee/debug/Logging.hpp>
-#include <sqee/app/GuiWidgets.hpp>
-#include <sqee/gl/Context.hpp>
+#include "main/MenuScene.hpp"
 
 #include "DebugGlobals.hpp"
 
-#include "main/MenuScene.hpp"
+#include <sqee/macros.hpp>
+#include <sqee/app/GuiWidgets.hpp>
+#include <sqee/debug/Logging.hpp>
+#include <sqee/gl/Context.hpp>
 
 using sq::literals::operator""_fmt_;
 
@@ -65,14 +65,7 @@ void MenuScene::impl_show_main_window()
     {
         //--------------------------------------------------------//
 
-        if (ImGui::BeginCombo("Stage", enum_to_string(setup.stage)))
-        {
-            for (int i = 0; i < int(StageEnum::Count); ++i)
-                if (ImGui::Selectable(enum_to_string(StageEnum(i))))
-                    setup.stage = StageEnum(i);
-
-            ImGui::EndCombo();
-        }
+        ImGui::InputSqeeEnumCombo("Stage", setup.stage, 0);
 
         //--------------------------------------------------------//
 
@@ -84,14 +77,8 @@ void MenuScene::impl_show_main_window()
             if (ImGui::CollapsingHeader(label.c_str()))
             {
                 const String label = "Fighter##%d"_fmt_(index);
-                if (ImGui::BeginCombo(label.c_str(), enum_to_string(player.fighter)))
-                {
-                    for (int i = 0; i < int(FighterEnum::Count); ++i)
-                        if (ImGui::Selectable(enum_to_string(FighterEnum(i))))
-                            player.fighter = FighterEnum(i);
+                ImGui::InputSqeeEnumCombo(label.c_str(), player.fighter, 0);
 
-                    ImGui::EndCombo();
-                }
                 player.enabled = (player.fighter != FighterEnum::Null);
             }
         }

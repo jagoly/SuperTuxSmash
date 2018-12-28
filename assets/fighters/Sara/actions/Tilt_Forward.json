@@ -2,7 +2,7 @@
 
 "blobs":
 {
-  "A": 
+  "BlobA": 
   { 
     "origin": [ 0.0, 1.0, 0.7 ],
     "radius": 0.3,
@@ -15,7 +15,7 @@
     "flavour": "Tangy",
     "priority": "High"
   },
-  "B":
+  "BlobB":
   {
     "origin": [ 0.0, 0.8, 1.0 ],
     "radius": 0.55,
@@ -28,7 +28,7 @@
     "flavour": "Sour",
     "priority": "Normal"
   },
-  "C": 
+  "BlobC": 
   {
     "origin": [ 0.0, 1.2, 1.0 ],
     "radius": 0.55,
@@ -47,15 +47,23 @@
 {
 },
 
-"commands":
-[
-  [ [ 5 ], "enable_blob A" ],
-  [ [ 5 ], "enable_blob B" ],
-  [ [ 5 ], "enable_blob C" ],
-  [ [ 14 ], "disable_blob A" ],
-  [ [ 14 ], "disable_blob B" ],
-  [ [ 14 ], "disable_blob C" ],
-  [ [ 22 ], "finish_action" ]
-]
+"procedures":
+{
+  "EnableBlobs":
+  {
+    "source": "enable_blob BlobA\nenable_blob BlobB\nenable_blob BlobC",
+    "frames": [5]
+  },
+  "DisableBlobs":
+  {
+    "source": "disable_blob BlobA\ndisable_blob BlobB\ndisable_blob BlobC",
+    "frames": [14]
+  },
+  "FinishAction":
+  {
+    "source": "finish_action",
+    "frames": [22]
+  }
+}
 
 }

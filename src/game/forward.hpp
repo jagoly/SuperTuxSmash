@@ -25,4 +25,6 @@ class PrivateWorld;
 struct HitBlob;
 struct HurtBlob;
 
+struct ParticleEmitter;
+
 } // namespace sts

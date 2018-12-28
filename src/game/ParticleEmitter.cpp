@@ -1,12 +1,10 @@
 #include "game/ParticleEmitter.hpp"
 
-#include <algorithm>
+#include "game/Fighter.hpp"
 
 #include <sqee/debug/Logging.hpp>
 #include <sqee/maths/Functions.hpp>
 #include <sqee/maths/Random.hpp>
-
-#include "game/Fighter.hpp"
 
 namespace maths = sq::maths;
 using namespace sts;
@@ -26,9 +24,9 @@ void ParticleEmitter::generate(ParticleSystem& system, uint count)
     //maths::RandomScalar<uint16_t> randSprite   { sprite.min, sprite.max };
     maths::RandomScalar<uint16_t> randSprite   { 0u, 1u };
     maths::RandomScalar<uint16_t> randLifetime { lifetime.min, lifetime.max };
-    maths::RandomScalar<float>    randScale    { scale.min, scale.max };
-
-    const Mat3F basis = maths::basis_from_y(direction);
+    maths::RandomScalar<float>    randRadius   { radius.min, radius.max };
+    maths::RandomVector<3, float> randColour   { colour.min, colour.max };
+    maths::RandomScalar<float>    randOpacity  { opacity.min, opacity.max };
 
     for (uint i = 0u; i < count; ++i)
     {
@@ -38,19 +36,23 @@ void ParticleEmitter::generate(ParticleSystem& system, uint count)
         p.currentPos = emitPosition;
 
         p.progress = 0u;
+
         p.lifetime = randLifetime(gen);
+        p.radius = randRadius(gen);
+        p.colour = randColour(gen);
+        p.opacity = randOpacity(gen);
 
-        const float scaleFactor = randScale(gen);
-        p.startRadius = radius.start * scaleFactor;
-        p.endRadius = radius.end * scaleFactor;;
-
-        p.startOpacity = opacity.start;
-        p.endOpacity = opacity.end;
+        p.endScale = endScale;
+        p.endOpacity = endOpacity;
 
         p.sprite = randSprite(gen);
 
         p.friction = 0.1f;
     }
+
+    //--------------------------------------------------------//
+
+    const Mat3F basis = maths::basis_from_y(direction);
 
     //--------------------------------------------------------//
 
@@ -131,20 +133,23 @@ void ParticleEmitter::from_json(const sq::JsonValue& json)
     }
     else bone = -1;
 
-    direction = json.at("direction");
-    origin = json.at("origin");
+    json.at("direction").get_to(direction);
+    json.at("origin").get_to(origin);
 
-    lifetime.min = json.at("minLifetime");
-    lifetime.max = json.at("maxLifetime");
+    json.at("endScale").get_to(endScale);
+    json.at("endOpacity").get_to(endOpacity);
 
-    scale.min = json.at("minScale");
-    scale.max = json.at("maxScale");
+    json.at("lifetime.min").get_to(lifetime.min);
+    json.at("lifetime.max").get_to(lifetime.max);
 
-    radius.start = json.at("startRadius");
-    radius.end = json.at("endRadius");
+    json.at("radius.min").get_to(radius.min);
+    json.at("radius.max").get_to(radius.max);
 
-    opacity.start = json.at("startOpacity");
-    opacity.end = json.at("endOpacity");
+    json.at("colour.min").get_to(colour.min);
+    json.at("colour.max").get_to(colour.max);
+
+    json.at("opacity.min").get_to(opacity.min);
+    json.at("opacity.max").get_to(opacity.max);
 
     json.at("sprite").get_to(sprite);
 
@@ -154,11 +159,11 @@ void ParticleEmitter::from_json(const sq::JsonValue& json)
     {
         DiscShape& ref = shape.emplace<DiscShape>();
 
-        ref.incline.min = json.at("minIncline");
-        ref.incline.max = json.at("maxIncline");
+        json.at("incline.min").get_to(ref.incline.min);
+        json.at("incline.max").get_to(ref.incline.max);
 
-        ref.speed.min = json.at("minSpeed");
-        ref.speed.max = json.at("maxSpeed");
+        json.at("speed.min").get_to(ref.speed.min);
+        json.at("speed.max").get_to(ref.speed.max);
     }
 
     else if (shapeName == "column")
@@ -170,8 +175,8 @@ void ParticleEmitter::from_json(const sq::JsonValue& json)
     {
         BallShape& ref = shape.emplace<BallShape>();
 
-        ref.speed.min = json.at("minSpeed");
-        ref.speed.max = json.at("maxSpeed");
+        json.at("speed.min").get_to(ref.speed.min);
+        json.at("speed.max").get_to(ref.speed.max);
     }
 
     else SQASSERT(false, "");
@@ -193,32 +198,66 @@ void ParticleEmitter::to_json(JsonValue& json) const
 
     json["direction"] = direction;
     json["origin"] = origin;
-    json["lifetimeMin"] = lifetime.min;
-    json["lifetimeMax"] = lifetime.max;
-    json["scaleMin"] = scale.min;
-    json["scaleMax"] = scale.max;
-    json["radiusStart"] = radius.start;
-    json["radiusEnd"] = radius.end;
-    json["opacityStart"] = opacity.start;
-    json["opacityEnd"] = opacity.end;
+    json["endScale"] = endScale;
+    json["endOpacity"] = endOpacity;
+    json["lifetime.min"] = lifetime.min;
+    json["lifetime.max"] = lifetime.max;
+    json["radius.min"] = radius.min;
+    json["radius.max"] = radius.max;
+    json["colour.min"] = colour.min;
+    json["colour.max"] = colour.max;
+    json["opacity.min"] = opacity.min;
+    json["opacity.max"] = opacity.max;
     json["sprite"] = sprite;
 
     if (auto disc = std::get_if<DiscShape>(&shape))
     {
-        json["shapeName"] = "disc";
+        json["shape"] = "disc";
 
-        json["inclineMin"] = disc->incline.min;
-        json["inclineMax"] = disc->incline.max;
+        json["incline.min"] = disc->incline.min;
+        json["incline.max"] = disc->incline.max;
 
-        json["speedMin"] = disc->speed.min;
-        json["speedMax"] = disc->speed.max;
+        json["speed.min"] = disc->speed.min;
+        json["speed.max"] = disc->speed.max;
     }
 
     if (auto ball = std::get_if<BallShape>(&shape))
     {
-        json["shapeName"] = "ball";
+        json["shape"] = "ball";
 
-        json["speedMin"] = ball->speed.min;
-        json["speedMax"] = ball->speed.max;
+        json["speed.min"] = ball->speed.min;
+        json["speed.max"] = ball->speed.max;
     }
 }
+
+//============================================================================//
+
+DISABLE_WARNING_FLOAT_EQUALITY;
+
+bool sts::operator!=(const ParticleEmitter::DiscShape& a, const ParticleEmitter::DiscShape& b)
+{
+    return a.incline.min != b.incline.min || a.incline.max != b.incline.max
+        || a.speed.min != b.speed.min || a.speed.max != b.speed.max;
+}
+
+bool sts::operator!=(const ParticleEmitter::ColumnShape& a, const ParticleEmitter::ColumnShape& b)
+{
+    return a.deviation.min != b.deviation.min || a.deviation.max != b.deviation.max
+        || a.speed.min != b.speed.min || a.speed.max != b.speed.max;
+}
+
+bool sts::operator!=(const ParticleEmitter::BallShape& a, const ParticleEmitter::BallShape& b)
+{
+    return a.speed.min != b.speed.min || a.speed.max != b.speed.max;
+}
+
+bool sts::operator==(const ParticleEmitter& a, const ParticleEmitter& b)
+{
+    if (a.origin    != b.origin)    return false;
+    if (a.bone      != b.bone)      return false;
+    if (a.direction != b.direction) return false;
+    if (a.shape     != b.shape)     return false;
+    return true;
+}
+
+ENABLE_WARNING_FLOAT_EQUALITY;

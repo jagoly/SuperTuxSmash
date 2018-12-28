@@ -1,25 +1,11 @@
 #pragma once
 
-#include <sqee/misc/Builtins.hpp>
-
+#include <sqee/app/PreProcessor.hpp>
+#include <sqee/gl/Program.hpp>
+#include <sqee/gl/Textures.hpp>
 #include <sqee/misc/ResourceCache.hpp>
 #include <sqee/misc/ResourceHandle.hpp>
-
-//====== Forward Declarations ================================================//
-
-namespace sq {
-
-class Texture2D;
-class TextureArray2D;
-class Mesh;
-
-class Program;
-struct ProgramKey;
-class PreProcessor;
-
-} // namespace sq
-
-//============================================================================//
+#include <sqee/render/Mesh.hpp>
 
 namespace sts {
 

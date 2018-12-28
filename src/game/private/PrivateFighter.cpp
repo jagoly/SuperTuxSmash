@@ -1,16 +1,13 @@
-#include <sqee/debug/Assert.hpp>
-#include <sqee/debug/Logging.hpp>
-
-#include <sqee/macros.hpp>
-
-#include <sqee/misc/Files.hpp>
-#include <sqee/misc/Json.hpp>
-
-#include <sqee/maths/Functions.hpp>
+#include "game/private/PrivateFighter.hpp"
 
 #include "game/Stage.hpp"
 
-#include "game/private/PrivateFighter.hpp"
+#include <sqee/macros.hpp>
+#include <sqee/debug/Assert.hpp>
+#include <sqee/debug/Logging.hpp>
+#include <sqee/maths/Functions.hpp>
+#include <sqee/misc/Files.hpp>
+#include <sqee/misc/Json.hpp>
 
 namespace maths = sq::maths;
 
@@ -231,23 +228,23 @@ void PrivateFighter::initialise_actions(const String& path)
 
     // todo: surely these ctors don't need all this crap
 
-    actions.neutral_first   = std::make_unique<Action>(world, fighter, Action::Type::Neutral_First);
-    actions.tilt_down       = std::make_unique<Action>(world, fighter, Action::Type::Tilt_Down);
-    actions.tilt_forward    = std::make_unique<Action>(world, fighter, Action::Type::Tilt_Forward);
-    actions.tilt_up         = std::make_unique<Action>(world, fighter, Action::Type::Tilt_Up);
-    actions.air_back        = std::make_unique<Action>(world, fighter, Action::Type::Air_Back);
-    actions.air_down        = std::make_unique<Action>(world, fighter, Action::Type::Air_Down);
-    actions.air_forward     = std::make_unique<Action>(world, fighter, Action::Type::Air_Forward);
-    actions.air_neutral     = std::make_unique<Action>(world, fighter, Action::Type::Air_Neutral);
-    actions.air_up          = std::make_unique<Action>(world, fighter, Action::Type::Air_Up);
-    actions.dash_attack     = std::make_unique<Action>(world, fighter, Action::Type::Dash_Attack);
-    actions.smash_down      = std::make_unique<Action>(world, fighter, Action::Type::Smash_Down);
-    actions.smash_forward   = std::make_unique<Action>(world, fighter, Action::Type::Smash_Forward);
-    actions.smash_up        = std::make_unique<Action>(world, fighter, Action::Type::Smash_Up);
-    actions.special_down    = std::make_unique<Action>(world, fighter, Action::Type::Special_Down);
-    actions.special_forward = std::make_unique<Action>(world, fighter, Action::Type::Special_Forward);
-    actions.special_neutral = std::make_unique<Action>(world, fighter, Action::Type::Special_Neutral);
-    actions.special_up      = std::make_unique<Action>(world, fighter, Action::Type::Special_Up);
+    actions.neutral_first   = std::make_unique<Action>(world, fighter, ActionType::Neutral_First);
+    actions.tilt_down       = std::make_unique<Action>(world, fighter, ActionType::Tilt_Down);
+    actions.tilt_forward    = std::make_unique<Action>(world, fighter, ActionType::Tilt_Forward);
+    actions.tilt_up         = std::make_unique<Action>(world, fighter, ActionType::Tilt_Up);
+    actions.air_back        = std::make_unique<Action>(world, fighter, ActionType::Air_Back);
+    actions.air_down        = std::make_unique<Action>(world, fighter, ActionType::Air_Down);
+    actions.air_forward     = std::make_unique<Action>(world, fighter, ActionType::Air_Forward);
+    actions.air_neutral     = std::make_unique<Action>(world, fighter, ActionType::Air_Neutral);
+    actions.air_up          = std::make_unique<Action>(world, fighter, ActionType::Air_Up);
+    actions.dash_attack     = std::make_unique<Action>(world, fighter, ActionType::Dash_Attack);
+    actions.smash_down      = std::make_unique<Action>(world, fighter, ActionType::Smash_Down);
+    actions.smash_forward   = std::make_unique<Action>(world, fighter, ActionType::Smash_Forward);
+    actions.smash_up        = std::make_unique<Action>(world, fighter, ActionType::Smash_Up);
+    actions.special_down    = std::make_unique<Action>(world, fighter, ActionType::Special_Down);
+    actions.special_forward = std::make_unique<Action>(world, fighter, ActionType::Special_Forward);
+    actions.special_neutral = std::make_unique<Action>(world, fighter, ActionType::Special_Neutral);
+    actions.special_up      = std::make_unique<Action>(world, fighter, ActionType::Special_Up);
 }
 
 //============================================================================//
@@ -303,14 +300,14 @@ void PrivateFighter::handle_input_movement(const Controller::Input& input)
 
     else if (state == State::Neutral)
     {
-        if (input.float_axis.x < -0.0f) facing = Facing::Left;
-        if (input.float_axis.x > +0.0f) facing = Facing::Right;
+        if (input.float_axis.x < -0.f) facing = Facing::Left;
+        if (input.float_axis.x > +0.f) facing = Facing::Right;
     }
 
 
     //-- transitions in response to input --------------------//
 
-    DISABLE_FLOAT_EQUALITY_WARNING;
+    DISABLE_WARNING_FLOAT_EQUALITY;
 
     SWITCH ( state ) {
 
@@ -322,10 +319,10 @@ void PrivateFighter::handle_input_movement(const Controller::Input& input)
         else if (input.hold_shield == true)
             state_transition(transitions.misc_shield);
 
-        else if (input.float_axis.y == -1.0f)
+        else if (input.float_axis.y == -1.f)
             state_transition(transitions.neutral_crouch);
 
-        else if (input.float_axis.x != 0.0f)
+        else if (input.float_axis.x != 0.f)
             state_transition(transitions.neutral_walking);
     }
 
@@ -337,10 +334,10 @@ void PrivateFighter::handle_input_movement(const Controller::Input& input)
         else if (input.press_shield == true)
             state_transition(transitions.misc_shield);
 
-        else if (input.float_axis.y == -1.0f)
+        else if (input.float_axis.y == -1.f)
             state_transition(transitions.walking_crouch);
 
-        else if (input.float_axis.x == 0.0f)
+        else if (input.float_axis.x == 0.f)
             state_transition(transitions.walking_neutral);
 
         else if (input.mash_axis.x != 0)
@@ -355,7 +352,7 @@ void PrivateFighter::handle_input_movement(const Controller::Input& input)
         else if (input.press_shield == true)
             state_transition(transitions.misc_shield);
 
-        else if (input.float_axis.x == 0.0f)
+        else if (input.float_axis.x == 0.f)
             state_transition(transitions.dashing_brake);
     }
 
@@ -430,7 +427,7 @@ void PrivateFighter::handle_input_movement(const Controller::Input& input)
 
     } SWITCH_END;
 
-    ENABLE_FLOAT_EQUALITY_WARNING;
+    ENABLE_WARNING_FLOAT_EQUALITY;
 
     //-- add horizontal velocity -----------------------------//
 
@@ -476,7 +473,7 @@ void PrivateFighter::handle_input_actions(const Controller::Input& input)
 
     //--------------------------------------------------------//
 
-    DISABLE_FLOAT_EQUALITY_WARNING;
+    DISABLE_WARNING_FLOAT_EQUALITY;
 
     SWITCH ( state ) {
 
@@ -486,13 +483,13 @@ void PrivateFighter::handle_input_actions(const Controller::Input& input)
     {
         if (input.press_attack == false) return;
 
-        if      (input.mod_axis.y == -1) switch_action(Action::Type::Smash_Down);
-        else if (input.mod_axis.y == +1) switch_action(Action::Type::Smash_Up);
+        if      (input.mod_axis.y == -1) switch_action(ActionType::Smash_Down);
+        else if (input.mod_axis.y == +1) switch_action(ActionType::Smash_Up);
 
-        else if (input.float_axis.y < -0.f) switch_action(Action::Type::Tilt_Down);
-        else if (input.float_axis.y > +0.f) switch_action(Action::Type::Tilt_Up);
+        else if (input.float_axis.y < -0.f) switch_action(ActionType::Tilt_Down);
+        else if (input.float_axis.y > +0.f) switch_action(ActionType::Tilt_Up);
 
-        else switch_action(Action::Type::Neutral_First);
+        else switch_action(ActionType::Neutral_First);
     }
 
     CASE ( Walking ) //=======================================//
@@ -502,39 +499,39 @@ void PrivateFighter::handle_input_actions(const Controller::Input& input)
         // todo: work out correct priority here
 
         if (input.mod_axis.x != 0)
-            switch_action(Action::Type::Smash_Forward);
+            switch_action(ActionType::Smash_Forward);
 
         else if (input.float_axis.y > std::abs(input.float_axis.x))
-            switch_action(Action::Type::Tilt_Up);
+            switch_action(ActionType::Tilt_Up);
 
-        else switch_action(Action::Type::Tilt_Forward);
+        else switch_action(ActionType::Tilt_Forward);
     }
 
     CASE ( Dashing ) //=======================================//
     {
         if (input.press_attack == false) return;
 
-        if (input.mod_axis.x != 0) switch_action(Action::Type::Smash_Forward);
+        if (input.mod_axis.x != 0) switch_action(ActionType::Smash_Forward);
 
-        else switch_action(Action::Type::Dash_Attack);
+        else switch_action(ActionType::Dash_Attack);
     }
 
     CASE ( Brake ) //=========================================//
     {
         if (input.press_attack == false) return;
 
-        if (input.mod_axis.y == +1) switch_action(Action::Type::Smash_Up);
+        if (input.mod_axis.y == +1) switch_action(ActionType::Smash_Up);
 
-        else switch_action(Action::Type::Dash_Attack);
+        else switch_action(ActionType::Dash_Attack);
     }
 
     CASE ( Crouch ) //========================================//
     {
         if (input.press_attack == false) return;
 
-        if (input.mod_axis.y == -1) switch_action(Action::Type::Smash_Down);
+        if (input.mod_axis.y == -1) switch_action(ActionType::Smash_Down);
 
-        else switch_action(Action::Type::Tilt_Down);
+        else switch_action(ActionType::Tilt_Down);
     }
 
     CASE ( Jumping, Falling ) //==============================//
@@ -544,20 +541,20 @@ void PrivateFighter::handle_input_actions(const Controller::Input& input)
         // todo: work out correct priority here
 
         if (input.float_axis.x == 0.f && input.float_axis.y == 0.f)
-            switch_action(Action::Type::Air_Neutral);
+            switch_action(ActionType::Air_Neutral);
 
         else if (std::abs(input.float_axis.x) >= std::abs(input.float_axis.y))
         {
             if (std::signbit(float(facing)) == std::signbit(input.float_axis.x))
-                switch_action(Action::Type::Air_Forward);
+                switch_action(ActionType::Air_Forward);
 
-            else switch_action(Action::Type::Air_Back);
+            else switch_action(ActionType::Air_Back);
         }
 
         else if (std::signbit(input.float_axis.y) == true)
-            switch_action(Action::Type::Air_Down);
+            switch_action(ActionType::Air_Down);
 
-        else switch_action(Action::Type::Air_Up);
+        else switch_action(ActionType::Air_Up);
     }
 
     CASE ( Charge ) //========================================//
@@ -598,7 +595,7 @@ void PrivateFighter::handle_input_actions(const Controller::Input& input)
 
     } SWITCH_END;
 
-    ENABLE_FLOAT_EQUALITY_WARNING;
+    ENABLE_WARNING_FLOAT_EQUALITY;
 }
 
 //============================================================================//
@@ -613,6 +610,9 @@ void PrivateFighter::state_transition(const Transition& transition)
     mNextAnimation = transition.loop;
     mFadeFrames = transition.fadeFrames;
 
+    if (get_game_mode() == GameMode::Editor)
+        mFadeFrames = 0u;
+
     mStaticPose = nullptr;
 
     mAnimTimeDiscrete = 0u;
@@ -624,15 +624,15 @@ void PrivateFighter::state_transition(const Transition& transition)
 
 //============================================================================//
 
-void PrivateFighter::switch_action(Action::Type actionType)
+void PrivateFighter::switch_action(ActionType type)
 {
-    Action* const newAction = fighter.get_action(actionType);
+    Action* const newAction = fighter.get_action(type);
 
     SQASSERT(newAction != fighter.current.action, "switch to same action");
 
     //--------------------------------------------------------//
 
-    SWITCH ( actionType ) {
+    SWITCH ( type ) {
 
     //--------------------------------------------------------//
 
@@ -681,7 +681,7 @@ void PrivateFighter::switch_action(Action::Type actionType)
         CASE ( Special_Down, Special_Forward, Special_Neutral, Special_Up )
         state_transition(transitions.misc_neutral); // todo
 
-        CASE_DEFAULT SQASSERT(false, "switch from None to None");
+        CASE ( None ) SQASSERT(false, "switch from None to None");
 
         } SWITCH_END;
     }
@@ -866,7 +866,7 @@ void PrivateFighter::update_after_input()
         else if (state == State::AirAttack)
         {
             state_transition(transitions.misc_land);
-            switch_action(Action::Type::None);
+            switch_action(ActionType::None);
         }
 
         else if (state == State::AirSpecial)
@@ -904,10 +904,16 @@ void PrivateFighter::update_after_input()
 
     //-- update the active action ----------------------------//
 
-    if (fighter.current.action != nullptr)
-        if (fighter.current.state != State::Charge)
-            if (fighter.current.action->do_tick() == true)
-                switch_action(Action::Type::None);
+    if (fighter.current.action != nullptr && fighter.current.state != State::Charge)
+    {
+        if (fighter.current.action->do_tick() == true)
+        {
+            message::fighter_action_finished msg { fighter, fighter.current.action->get_type() };
+            switch_action(ActionType::None);
+
+            fighter.mFightWorld.get_message_bus().get_message_source<message::fighter_action_finished>().publish(msg);
+        }
+    }
 }
 
 //============================================================================//
@@ -920,7 +926,7 @@ void PrivateFighter::base_tick_fighter()
 
     //--------------------------------------------------------//
 
-    if (fighter.mFightWorld.get_game_mode() == GameMode::Editor)
+    if (get_game_mode() == GameMode::Editor)
     {
         const auto input = Controller::Input();
 
@@ -953,8 +959,6 @@ void PrivateFighter::base_tick_fighter()
 void PrivateFighter::base_tick_animation()
 {
     SQASSERT(bool(mAnimation) != bool(mStaticPose), "XOR");
-
-    //--------------------------------------------------------//
 
     // update these animations based on horizontal velocity
     if ( mAnimation == &animations.walking_loop || mAnimation == &animations.dashing_loop )

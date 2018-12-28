@@ -1,10 +1,14 @@
-#include <sqee/maths/Functions.hpp>
-#include <sqee/gl/Context.hpp>
+#include "render/DebugRender.hpp"
 
 #include "game/Blobs.hpp"
-
+#include "game/Fighter.hpp"
 #include "render/Camera.hpp"
-#include "render/DebugRender.hpp"
+
+#include <sqee/gl/Context.hpp>
+#include <sqee/maths/Functions.hpp>
+#include <sqee/redist/gl_loader.hpp>
+
+#include <sqee/debug/Logging.hpp>
 
 using Context = sq::Context;
 namespace maths = sq::maths;
@@ -18,6 +22,14 @@ DebugRender::DebugRender(Renderer& renderer) : renderer(renderer)
 
     mSphereMesh.load_from_file("assets/debug/Sphere.sqm", true);
     mCapsuleMesh.load_from_file("assets/debug/Capsule.sqm", true);
+
+    //-- Set up the vao and vbo ------------------------------//
+
+    mLineVertexArray.set_vertex_buffer(mLineVertexBuffer, sizeof(Vec4F));
+    mLineVertexArray.add_float_attribute(0u, 4u, gl::FLOAT, false, 0u);
+
+    // allocate space for up to 32 lines
+    mLineVertexBuffer.allocate_dynamic(sizeof(Vec4F) * 64u, nullptr);
 }
 
 //============================================================================//
@@ -31,9 +43,13 @@ void DebugRender::refresh_options()
     processor.load_vertex(mBlobShader, "debug/HitBlob_vs");
     processor.load_fragment(mBlobShader, "debug/HitBlob_fs");
 
+    processor.load_vertex(mArrowShader, "debug/Arrow_vs");
+    processor.load_fragment(mArrowShader, "debug/Arrow_fs");
+
     //-- Link Shader Program Stages --------------------------//
 
     mBlobShader.link_program_stages();
+    mArrowShader.link_program_stages();
 }
 
 //============================================================================//
@@ -58,6 +74,11 @@ void DebugRender::render_blobs(const Vector<HitBlob*>& blobs)
 
     //--------------------------------------------------------//
 
+    Vector<Vec4F> lineData;
+    lineData.reserve(blobs.size() * 2u);
+
+    //--------------------------------------------------------//
+
     for (const HitBlob* blob : blobs)
     {
         const maths::Sphere& s = blob->sphere;
@@ -68,7 +89,35 @@ void DebugRender::render_blobs(const Vector<HitBlob*>& blobs)
         mBlobShader.update(1, blob->get_debug_colour());
 
         mSphereMesh.draw_complete();
+
+        const float angleA = maths::radians(blob->knockAngle * float(blob->fighter->current.facing));
+        const float angleB = maths::radians((blob->knockAngle + 0.0625f) * float(blob->fighter->current.facing));
+        const float angleC = maths::radians((blob->knockAngle - 0.0625f) * float(blob->fighter->current.facing));
+        const Vec3F offsetA = Vec3F(std::sin(angleA), std::cos(angleA), 0.f) * s.radius;
+        const Vec3F offsetB = Vec3F(std::sin(angleB), std::cos(angleB), 0.f) * s.radius * 0.75f;
+        const Vec3F offsetC = Vec3F(std::sin(angleC), std::cos(angleC), 0.f) * s.radius * 0.75f;
+
+        const Vec4F pA = projViewMat * Vec4F(s.origin, 1.f);
+        const Vec4F pB = projViewMat * Vec4F(s.origin + offsetA, 1.f);
+        const Vec4F pC = projViewMat * Vec4F(s.origin + offsetB, 1.f);
+        const Vec4F pD = projViewMat * Vec4F(s.origin + offsetC, 1.f);
+
+        lineData.insert(lineData.end(), { pA,pB, pB,pC, pB,pD });
     }
+
+    //--------------------------------------------------------//
+
+    context.set_state(Context::Blend_Mode::Disable);
+
+    gl::LineWidth(4.f);
+
+    context.bind_Program(mArrowShader);
+
+    context.bind_VertexArray(mLineVertexArray);
+
+    mLineVertexBuffer.update(0u, uint(sizeof(Vec4F) * lineData.size()), lineData.data());
+
+    gl::DrawArrays(gl::LINES, 0, int(lineData.size()));
 }
 
 //============================================================================//

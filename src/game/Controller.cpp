@@ -1,10 +1,9 @@
-#include <sqee/debug/Logging.hpp>
-
-#include <sqee/misc/Json.hpp>
+#include "game/Controller.hpp"
 
 #include "DebugGlobals.hpp"
 
-#include "Controller.hpp"
+#include <sqee/debug/Logging.hpp>
+#include <sqee/misc/Json.hpp>
 
 namespace maths = sq::maths;
 using namespace sts;
@@ -118,7 +117,7 @@ Controller::Input Controller::get_input()
 
     //--------------------------------------------------------//
 
-    DISABLE_FLOAT_EQUALITY_WARNING;
+    DISABLE_WARNING_FLOAT_EQUALITY;
 
     //--------------------------------------------------------//
 
@@ -179,7 +178,7 @@ Controller::Input Controller::get_input()
 
     //--------------------------------------------------------//
 
-    ENABLE_FLOAT_EQUALITY_WARNING;
+    ENABLE_WARNING_FLOAT_EQUALITY;
 
     //--------------------------------------------------------//
 

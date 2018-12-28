@@ -1,6 +1,6 @@
-#include "game/Fighter.hpp"
-
 #include "stages/TestZone_Stage.hpp"
+
+#include "game/Fighter.hpp"
 
 using namespace sts;
 

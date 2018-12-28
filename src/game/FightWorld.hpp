@@ -2,12 +2,14 @@
 
 #include <sqee/debug/Assert.hpp>
 #include <sqee/misc/Builtins.hpp>
+#include <sqee/app/MessageBus.hpp>
 
 #include "render/SceneData.hpp"
 
 #include "game/Blobs.hpp"
 #include "game/ParticleSystem.hpp"
 #include "game/ParticleEmitter.hpp"
+#include "game/ActionBuilder.hpp"
 
 #include "enumerations.hpp"
 
@@ -119,10 +121,10 @@ public: //====================================================//
     //--------------------------------------------------------//
 
     /// Access the HitBlob Allocator.
-    sq::PoolAllocator<HitBlob>& get_hit_blob_allocator();
+    sq::PoolAllocator<HitBlob>& get_hit_blob_allocator() { return mHitBlobAlloc; }
 
     /// Access the HurtBlob Allocator.
-    sq::PoolAllocator<HurtBlob>& get_hurt_blob_allocator();
+    sq::PoolAllocator<HurtBlob>& get_hurt_blob_allocator() { return mHurtBlobAlloc; }
 
     /// Access the enabled HitBlobs.
     const Vector<HitBlob*>& get_hit_blobs() const;
@@ -131,12 +133,18 @@ public: //====================================================//
     const Vector<HurtBlob*>& get_hurt_blobs() const;
 
     /// Access the Emitter Allocator.
-    sq::PoolAllocator<ParticleEmitter>& get_emitter_allocator();
+    sq::PoolAllocator<ParticleEmitter>& get_emitter_allocator() { return mEmitterAlloc; }
 
     //--------------------------------------------------------//
 
+    /// Access the ActionBuilder.
+    ActionBuilder& get_action_builder() { return mActionBuilder; }
+
     /// Access the ParticleSystem.
     ParticleSystem& get_particle_system() { return mParticleSystem; }
+
+    /// Access the MessageBus.
+    sq::MessageBus& get_message_bus() { return mMessageBus; }
 
     //--------------------------------------------------------//
 
@@ -144,13 +152,26 @@ public: //====================================================//
 
 private: //===================================================//
 
+    sq::PoolAllocator<HitBlob> mHitBlobAlloc { 1024u };
+    sq::PoolAllocator<HurtBlob> mHurtBlobAlloc { 128u };
+
+    sq::PoolAllocator<ParticleEmitter> mEmitterAlloc { 1024u };
+
+    //--------------------------------------------------------//
+
     const GameMode mGameMode;
+
+    ActionBuilder mActionBuilder;
+
+    ParticleSystem mParticleSystem;
+
+    sq::MessageBus mMessageBus;
+
+    //--------------------------------------------------------//
 
     UniquePtr<Stage> mStage;
 
     Array<UniquePtr<Fighter>, 4> mFighters;
-
-    ParticleSystem mParticleSystem;
 
     //--------------------------------------------------------//
 

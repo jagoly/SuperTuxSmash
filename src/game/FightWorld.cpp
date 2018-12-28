@@ -1,17 +1,17 @@
-#include <sqee/debug/Assert.hpp>
-#include <sqee/misc/Algorithms.hpp>
-#include <sqee/maths/Culling.hpp>
+#include "game/FightWorld.hpp"
 
-#include "game/Stage.hpp"
 #include "game/Actions.hpp"
 #include "game/Fighter.hpp"
-
+#include "game/Stage.hpp"
 #include "game/private/PrivateWorld.hpp"
 
-#include "game/FightWorld.hpp"
+#include <sqee/debug/Assert.hpp>
+#include <sqee/maths/Culling.hpp>
+#include <sqee/misc/Algorithms.hpp>
 
 namespace algo = sq::algo;
 namespace maths = sq::maths;
+
 using namespace sts;
 
 //============================================================================//
@@ -19,6 +19,8 @@ using namespace sts;
 FightWorld::FightWorld(GameMode gameMode)
     : mGameMode(gameMode)
 {
+    mMessageBus.add_message_source<message::fighter_action_finished>();
+
     impl = std::make_unique<PrivateWorld>(*this);
 }
 
@@ -61,28 +63,28 @@ void FightWorld::add_fighter(UniquePtr<Fighter> fighter)
 
 //============================================================================//
 
-sq::PoolAllocator<HitBlob>& FightWorld::get_hit_blob_allocator() { return impl->hitBlobAlloc; }
+const Vector<HitBlob*>& FightWorld::get_hit_blobs() const
+{
+    return impl->enabledHitBlobs;
+}
 
-sq::PoolAllocator<HurtBlob>& FightWorld::get_hurt_blob_allocator() { return impl->hurtBlobAlloc; }
-
-const Vector<HitBlob*>& FightWorld::get_hit_blobs() const { return impl->enabledHitBlobs; }
-
-const Vector<HurtBlob*>& FightWorld::get_hurt_blobs() const { return impl->enabledHurtBlobs; }
-
-sq::PoolAllocator<ParticleEmitter>& FightWorld::get_emitter_allocator() { return impl->emitterAlloc; }
+const Vector<HurtBlob*>& FightWorld::get_hurt_blobs() const
+{
+    return impl->enabledHurtBlobs;
+}
 
 //============================================================================//
 
 HurtBlob* FightWorld::create_hurt_blob(Fighter& fighter)
 {
-    HurtBlob* blob = impl->hurtBlobAlloc.allocate(fighter);
+    HurtBlob* blob = mHurtBlobAlloc.allocate(fighter);
     return impl->enabledHurtBlobs.emplace_back(blob);
 }
 
 void FightWorld::delete_hurt_blob(HurtBlob* blob)
 {
     impl->enabledHurtBlobs.erase(algo::find(impl->enabledHurtBlobs, blob));
-    impl->hurtBlobAlloc.deallocate(blob);
+    mHurtBlobAlloc.deallocate(blob);
 }
 
 //============================================================================//

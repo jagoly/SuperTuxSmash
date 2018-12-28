@@ -30,11 +30,13 @@ void Sara_Fighter::tick()
     emitter.emitVelocity = Vec3F(get_velocity().x * 0.2f, 0.f, 0.f);
     emitter.direction = Vec3F(0.f, 1.f, 0.f);
 
-    emitter.lifetime = { 16u, 24u };
-    emitter.scale = { 0.4f, 0.6f };
+    emitter.endScale = 2.f;
+    emitter.endOpacity = 0.f;
 
-    emitter.radius = { 0.5f, 1.0f };
-    emitter.opacity = { 0.4f, 0.0f };
+    emitter.lifetime = { 16u, 24u };
+    emitter.radius = { 0.4f, 0.6f };
+    emitter.opacity = { 0.4f, 0.5f };
+    emitter.colour = { Vec3F(1.f), Vec3F(1.f) };
 
     emitter.disc().incline = { -0.01f, 0.04f };
     emitter.disc().speed = { 1.2f, 2.2f };

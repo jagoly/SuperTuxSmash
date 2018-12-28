@@ -1,10 +1,10 @@
-#include <algorithm>
+#include "game/ParticleSystem.hpp"
 
 #include <sqee/debug/Assert.hpp>
 #include <sqee/maths/Functions.hpp>
 #include <sqee/maths/Random.hpp>
 
-#include "game/ParticleSystem.hpp"
+#include <algorithm> // for remove_if
 
 namespace maths = sq::maths;
 using namespace sts;
@@ -49,35 +49,39 @@ void ParticleSystem::update_and_clean()
 //        mAverageDepth += vertex.position.z;
 //    }
 
-    const auto lambda = [](Vector<ParticleData>& particles)
+    for (ParticleData& p : mParticles)
     {
-        for (ParticleData& p : particles)
-        {
-            p.previousPos = p.currentPos;
-            p.currentPos += p.velocity / 48.f;
-            p.velocity -= maths::normalize(p.velocity) * p.friction;
-        }
+        p.previousPos = p.currentPos;
+        p.currentPos += p.velocity / 48.f;
+        p.velocity -= maths::normalize(p.velocity) * p.friction;
+    }
 
-        const auto predicate = [](ParticleData& p) { return ++p.progress == p.lifetime; };
-        const auto end = std::remove_if(particles.begin(), particles.end(), predicate);
-        particles.erase(end, particles.end());
-    };
+    const auto predicate = [](ParticleData& p) { return ++p.progress == p.lifetime; };
+    const auto end = std::remove_if(mParticles.begin(), mParticles.end(), predicate);
+    mParticles.erase(end, mParticles.end());
 
-    lambda(mParticles);
+    const auto compare = [](const ParticleData& a, const ParticleData& b) { return a.currentPos.z > b.currentPos.z; };
+
+    std::sort(mParticles.begin(), mParticles.end(), compare);
 }
 
 void ParticleSystem::compute_vertices(float blend, VertexVec& vertices) const
 {
+    const auto UNorm16 = [](float value) { return uint16_t(value * 65535.0f); };
+
     for (const ParticleData& p : mParticles)
     {
         ParticleVertex& vertex = vertices.emplace_back();
         const float factor = (float(p.progress) + blend) / float(p.lifetime);
 
         vertex.position = maths::mix(p.previousPos, p.currentPos, blend);
-        vertex.radius = maths::mix(p.startRadius, p.endRadius, factor);
-        vertex.opacity = maths::mix(p.startOpacity, p.endOpacity, factor);
-
-        vertex.sprite = float(p.sprite);
+        vertex.radius = p.radius * maths::mix(1.f, p.endScale, factor);
+        vertex.colour[0] = UNorm16(p.colour.r);
+        vertex.colour[1] = UNorm16(p.colour.g);
+        vertex.colour[2] = UNorm16(p.colour.b);
+        vertex.opacity = UNorm16(p.opacity * maths::mix(1.f, p.endOpacity, factor));
+        vertex.misc = 0.f;
+        vertex.index = float(p.sprite);
     }
 
 //    float averageDepth = 0.f;

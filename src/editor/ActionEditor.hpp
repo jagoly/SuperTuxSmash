@@ -6,10 +6,9 @@
 
 #include "render/Renderer.hpp"
 
-#include "game/FightWorld.hpp"
-#include "game/Stage.hpp"
-#include "game/Controller.hpp"
 #include "game/Actions.hpp"
+#include "game/FightWorld.hpp"
+#include "game/Fighter.hpp"
 
 #include "main/Options.hpp"
 #include "main/SmashApp.hpp"
@@ -31,6 +30,9 @@ public: //====================================================//
     void handle_event(sq::Event event) override;
 
     void refresh_options() override;
+    using ProcedurePair = std::pair<const String, Action::Procedure>;
+
+    enum class PreviewMode { Pause, Normal, Slow, Slower };
 
 private: //===================================================//
 
@@ -40,40 +42,75 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
+    // destroy these objects last
     UniquePtr<FightWorld> mFightWorld;
-
     UniquePtr<Renderer> mRenderer;
-
-    //--------------------------------------------------------//
 
     SmashApp& mSmashApp;
 
     //--------------------------------------------------------//
 
-    sq::GuiWidget widget_list_actions;
-
-    sq::GuiWidget widget_list_blobs;
-    sq::GuiWidget widget_edit_blob;
-
+    sq::GuiWidget widget_main_menu;
+    sq::GuiWidget widget_hit_blobs;
+    sq::GuiWidget widget_procedures;
     sq::GuiWidget widget_timeline;
 
-    void impl_show_list_actions_widget();
+    void impl_show_widget_main_menu();
+    void impl_show_widget_hit_blobs();
+    void impl_show_widget_procedures();
+    void impl_show_widget_timeline();
 
-    void impl_show_list_blobs_widget();
-    void impl_show_edit_blob_widget();
+    sq::MessageReceiver <
+        message::fighter_action_finished
+    > receiver;
 
-    void impl_show_timeline_widget();
-
-    //--------------------------------------------------------//
-
-    Action::Type mActionType = Action::Type::None;
-
-    bool mManualTickEnabled = true;
+    void handle_message(const message::fighter_action_finished& msg);
 
     //--------------------------------------------------------//
 
-    Fighter* mFighter = nullptr;
-    Action* mAction = nullptr;
+    bool build_working_procedures();
+
+    void apply_working_changes();
+
+    void revert_working_changes();
+
+    void update_sorted_procedures();
+
+    void save_changed_actions();
+
+    void scrub_to_frame(uint16_t frame);
+
+    //--------------------------------------------------------//
+
+    UniquePtr<Action> mWorkingAction;
+    Action* mReferenceAction = nullptr;
+
+    Vector<ProcedurePair*> mSortedProcedures;
+
+    Vector<ActionType> mChangedActions;
+
+    struct CtxSwitchAction
+    {
+        bool waitConfirm = false;
+        ActionType actionType = ActionType::None;
+    };
+
+    Optional<CtxSwitchAction> ctxSwitchAction;
+
+    //--------------------------------------------------------//
+
+    Fighter* fighter = nullptr;
+    PrivateFighter* privateFighter = nullptr;
+
+    //--------------------------------------------------------//
+
+    bool mRenderBlobsEnabled = true;
+    bool mSortProceduresEnabled = true;
+    bool mLiveEditEnabled = false;
+
+    PreviewMode mPreviewMode = PreviewMode::Pause;
 };
 
 } // namespace sts
+
+SQEE_ENUM_HELPER(sts::ActionEditor::PreviewMode, Pause, Normal, Slow, Slower)

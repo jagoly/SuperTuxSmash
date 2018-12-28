@@ -1,12 +1,12 @@
-#include <sqee/debug/Assert.hpp>
-#include <sqee/misc/Algorithms.hpp>
-#include <sqee/maths/Culling.hpp>
+#include "game/private/PrivateWorld.hpp"
 
-#include "game/Stage.hpp"
 #include "game/Actions.hpp"
 #include "game/Fighter.hpp"
+#include "game/Stage.hpp"
 
-#include "game/private/PrivateWorld.hpp"
+#include <sqee/debug/Assert.hpp>
+#include <sqee/maths/Culling.hpp>
+#include <sqee/misc/Algorithms.hpp>
 
 namespace algo = sq::algo;
 namespace maths = sq::maths;

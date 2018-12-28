@@ -12,14 +12,14 @@ namespace sts {
 
 //============================================================================//
 
+enum class BlobFlavour : char { Sour, Tangy, Sweet };
+
+enum class BlobPriority : char { Low, Normal, High, Transcend };
+
+//============================================================================//
+
 struct alignas(16) HitBlob final
 {
-    enum class Flavour : char { Sour, Tangy, Sweet };
-
-    enum class Priority : char { Low, Normal, High, Transcend };
-
-    //--------------------------------------------------------//
-
     HitBlob() = default;
 
     HitBlob(const HitBlob& other) = default;
@@ -41,11 +41,11 @@ struct alignas(16) HitBlob final
 
     uint8_t group; ///< Groups may only collide once per fighter per action.
 
-    Flavour flavour;   ///< Flavour of blob from sour (worst) to sweet (best).
-    Priority priority; ///< Priority of blob when colliding with other hit blobs.
+    BlobFlavour flavour;   ///< Flavour of blob from sour (worst) to sweet (best).
+    BlobPriority priority; ///< Priority of blob when colliding with other hit blobs.
 
     float damage;     ///< How much damage the blob will do when hit.
-    float knockAngle; ///< Angle of knockback in turns (0.0 == up, 0.25 == xdir, 0.5 == down)
+    float knockAngle; ///< Angle of knockback in cycles (0.0 == up, 0.25 == xdir, 0.5 == down)
     float knockBase;  ///< Base knockback to apply on collision.
     float knockScale; ///< Scale the knockback based on current fighter damage.
 
@@ -54,10 +54,12 @@ struct alignas(16) HitBlob final
     constexpr Vec3F get_debug_colour() const
     {
         SWITCH ( flavour ) {
-        CASE ( Sour )  return { 1.0f, 1.0f, 0.0f };
-        CASE ( Tangy ) return { 1.0f, 1.0f, 0.0f };
-        CASE ( Sweet ) return { 1.0f, 0.6f, 0.6f };
-        } SWITCH_END; return {};
+        CASE ( Sour )  return { 0.6f, 0.6f, 0.0f };
+        CASE ( Tangy ) return { 0.2f, 1.0f, 0.0f };
+        CASE ( Sweet ) return { 1.0f, 0.5f, 0.5f };
+        } SWITCH_END;
+
+        return {}; // gcc warns without this
     }
 
     //-- serialisation methods -------------------------------//
@@ -100,17 +102,24 @@ struct alignas(16) HurtBlob final
 //============================================================================//
 
 static_assert(sizeof(HitBlob) == 80u);
-
 static_assert(sizeof(HurtBlob) == 80u);
+
+static_assert(std::is_trivially_copyable_v<HitBlob> == true);
+static_assert(std::is_trivially_copyable_v<HurtBlob> == true);
 
 //============================================================================//
 
-SQEE_ENUM_TO_STRING(HitBlob::Flavour, Sour, Tangy, Sweet)
-SQEE_ENUM_TO_STRING(HitBlob::Priority, Low, Normal, High, Transcend)
-
-SQEE_ENUM_JSON_CONVERSION_DECLARATIONS(HitBlob::Flavour)
-SQEE_ENUM_JSON_CONVERSION_DECLARATIONS(HitBlob::Priority)
+bool operator==(const HitBlob& a, const HitBlob& b);
+bool operator==(const HurtBlob& a, const HurtBlob& b);
 
 //============================================================================//
 
 } // namespace sts
+
+//============================================================================//
+
+SQEE_ENUM_HELPER(sts::BlobFlavour, Sour, Tangy, Sweet)
+SQEE_ENUM_HELPER(sts::BlobPriority, Low, Normal, High, Transcend)
+
+SQEE_ENUM_JSON_CONVERSIONS(sts::BlobFlavour)
+SQEE_ENUM_JSON_CONVERSIONS(sts::BlobPriority)

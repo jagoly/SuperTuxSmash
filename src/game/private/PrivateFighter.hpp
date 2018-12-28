@@ -168,6 +168,12 @@ public: //====================================================//
 
     void base_tick_animation();
 
+    //-- used internally and by the action editor ------------//
+
+    void state_transition(const Transition& transition);
+
+    void switch_action(ActionType type);
+
 private: //===================================================//
 
     int8_t mMoveAxisX = 0;
@@ -202,9 +208,7 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
-    void state_transition(const Transition& transition);
-
-    void switch_action(Action::Type actionType);
+    GameMode get_game_mode() const { return fighter.mFightWorld.get_game_mode(); }
 
     //--------------------------------------------------------//
 

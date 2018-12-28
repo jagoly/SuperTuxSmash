@@ -29,11 +29,13 @@ struct ParticleEmitter final
 
     TinyString sprite; ///< Sprite to use.
 
-    struct { uint16_t min, max; } lifetime; ///< Random lifetime.
-    struct { float    min, max; } scale;    ///< Random radius scale.
+    float endScale;   ///< End of life scale.
+    float endOpacity; ///< End of life opacity.
 
-    struct { float start, end; } radius;  ///< Particle radius.
-    struct { float start, end; } opacity; ///< Particle opacity.
+    struct { uint16_t min, max; } lifetime; ///< Random lifetime.
+    struct { float    min, max; } radius;   ///< Random radius.
+    struct { Vec3F    min, max; } colour;   ///< Random colour.
+    struct { float    min, max; } opacity;  ///< Random opacity.
 
     struct DiscShape
     {
@@ -69,6 +71,14 @@ struct ParticleEmitter final
     void from_json(const JsonValue& json);
     void to_json(JsonValue& json) const;
 };
+
+//============================================================================//
+
+bool operator!=(const ParticleEmitter::DiscShape& a, const ParticleEmitter::DiscShape& b);
+bool operator!=(const ParticleEmitter::ColumnShape& a, const ParticleEmitter::ColumnShape& b);
+bool operator!=(const ParticleEmitter::BallShape& a, const ParticleEmitter::BallShape& b);
+
+bool operator==(const ParticleEmitter& a, const ParticleEmitter& b);
 
 //============================================================================//
 

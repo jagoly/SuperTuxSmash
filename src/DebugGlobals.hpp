@@ -10,6 +10,7 @@ struct DebugGlobals
 {
     bool disableInput = false;
     bool renderBlobs = false;
+    bool actionEditor = false;
 };
 
 extern DebugGlobals dbg;

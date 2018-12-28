@@ -1,8 +1,8 @@
-#include <unordered_set>
+#include "main/Options.hpp"
 
 #include <sqee/debug/Logging.hpp>
 
-#include "Options.hpp"
+#include <unordered_set>
 
 //============================================================================//
 

@@ -1,9 +1,9 @@
-#include <algorithm>
+#include "render/ParticleRender.hpp"
 
 #include <sqee/gl/Context.hpp>
 #include <sqee/redist/gl_loader.hpp>
 
-#include "render/ParticleRender.hpp"
+#include <algorithm> // for sort
 
 using Context = sq::Context;
 namespace maths = sq::maths;
@@ -13,13 +13,15 @@ using namespace sts;
 
 ParticleRender::ParticleRender(Renderer& renderer) : renderer(renderer)
 {
-    mVertexBuffer.allocate_dynamic(24u * 8192u, nullptr);
-    mVertexArray.set_vertex_buffer(mVertexBuffer, 24u);
+    mVertexBuffer.allocate_dynamic(sizeof(ParticleVertex) * 8192u, nullptr);
+    mVertexArray.set_vertex_buffer(mVertexBuffer, sizeof(ParticleVertex));
 
     mVertexArray.add_float_attribute(0u, 3u, gl::FLOAT, false, 0u);
     mVertexArray.add_float_attribute(1u, 1u, gl::FLOAT, false, 12u);
-    mVertexArray.add_float_attribute(2u, 1u, gl::FLOAT, false, 16u);
-    mVertexArray.add_float_attribute(3u, 1u, gl::FLOAT, false, 20u);
+    mVertexArray.add_float_attribute(2u, 3u, gl::UNSIGNED_SHORT, true, 16u);
+    mVertexArray.add_float_attribute(3u, 1u, gl::UNSIGNED_SHORT, true, 22u);
+    mVertexArray.add_float_attribute(4u, 1u, gl::FLOAT, false, 24u);
+    mVertexArray.add_float_attribute(5u, 1u, gl::FLOAT, false, 28u);
 
     mTexture.load_automatic("assets/particles/Basic128");
 }
@@ -55,9 +57,9 @@ void ParticleRender::integrate_set(float blend, const ParticleSystem& system)
 
 void ParticleRender::render_particles()
 {
-    mVertexBuffer.update(0u, 24u * uint(mVertices.size()), mVertices.data());
+    mVertexBuffer.update(0u, sizeof(ParticleVertex) * uint(mVertices.size()), mVertices.data());
 
-    const auto compare = [&](ParticleSetInfo& a, ParticleSetInfo& b) { return a.averageDepth > b.averageDepth; };
+    const auto compare = [](ParticleSetInfo& a, ParticleSetInfo& b) { return a.averageDepth > b.averageDepth; };
     std::sort(mParticleSetInfo.begin(), mParticleSetInfo.end(), compare);
 
     //--------------------------------------------------------//

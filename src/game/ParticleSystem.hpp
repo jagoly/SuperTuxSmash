@@ -12,26 +12,32 @@ namespace sts {
 struct ParticleData
 {
     Vec3F previousPos;
-    Vec3F currentPos;
-    Vec3F velocity;
     uint16_t progress;
     uint16_t lifetime;
-    float startRadius;
-    float endRadius;
-    float startOpacity;
+    Vec3F currentPos;
+    float radius;
+    Vec3F velocity;
+    float endScale;
+    Vec3F colour;
+    float opacity;
     float endOpacity;
     float friction;
     uint16_t sprite;
-    char _padding[2];
+    char _padding[6];
 };
 
 struct ParticleVertex
 {
     Vec3F position;
     float radius;
-    float opacity;
-    float sprite;
+    uint16_t colour[3];
+    uint16_t opacity;
+    float misc;
+    float index;
 };
+
+static_assert(sizeof(ParticleData) == 80u);
+static_assert(sizeof(ParticleVertex) == 32u);
 
 //============================================================================//
 

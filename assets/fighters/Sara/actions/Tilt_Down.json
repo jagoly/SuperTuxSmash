@@ -2,7 +2,7 @@
 
 "blobs":
 {
-  "0:A":
+  "BlobA":
   {
     "origin": [ 0.0, 0.1, 1.0 ], 
     "radius": 0.5,
@@ -15,7 +15,7 @@
     "flavour": "Sour",
     "priority": "Normal"
   },
-  "1:A":
+  "BlobB":
   {
     "origin": [ 0.0, 0.1, 1.5 ],
     "radius": 0.5,
@@ -28,7 +28,7 @@
     "flavour": "Sour",
     "priority": "Normal"
   },
-  "2:A":
+  "BlobC":
   {
     "origin": [ 0.0, 0.1, 2.0 ],
     "radius": 0.5,
@@ -45,74 +45,105 @@
 
 "emitters":
 {
-  "Puff0":
+  "PuffA":
   {
     "shape": "ball",
     "sprite": "Sparkle",
     "direction": [ 0.0, 1.0, 0.0 ],
     "origin": [ 0.0, 0.1, 1.0 ],
     "bone": null,
-    "minLifetime": 16,
-    "maxLifetime": 18,
-    "minScale": 0.3,
-    "maxScale": 0.4,
-    "startRadius": 0.5,
-    "endRadius": 1.0,
-    "startOpacity": 1.0,
+    "endScale": 2.0,
     "endOpacity": 0.2,
-    "minSpeed": 1.5,
-    "maxSpeed": 2.0
+    "lifetime.min": 12,
+    "lifetime.max": 18,
+    "radius.min": 0.15,
+    "radius.max": 0.2,
+    "colour.min": [ 1.0, 1.0, 1.0 ],
+    "colour.max": [ 1.0, 1.0, 1.0 ],
+    "opacity.min": 0.9,
+    "opacity.max": 1.0,
+    "speed.min": 1.5,
+    "speed.max": 2.0
   },
-  "Puff1":
+  "PuffB":
   {
     "shape": "ball",
     "sprite": "Sparkle",
     "direction": [ 0.0, 1.0, 0.0 ],
     "origin": [ 0.0, 0.1, 1.5 ],
     "bone": null,
-    "minLifetime": 16,
-    "maxLifetime": 18,
-    "minScale": 0.3,
-    "maxScale": 0.4,
-    "startRadius": 0.5,
-    "endRadius": 1.0,
-    "startOpacity": 1.0,
+    "endScale": 2.0,
     "endOpacity": 0.2,
-    "minSpeed": 1.5,
-    "maxSpeed": 2.0
+    "lifetime.min": 12,
+    "lifetime.max": 18,
+    "radius.min": 0.15,
+    "radius.max": 0.2,
+    "colour.min": [ 1.0, 1.0, 1.0 ],
+    "colour.max": [ 1.0, 1.0, 1.0 ],
+    "opacity.min": 0.9,
+    "opacity.max": 1.0,
+    "speed.min": 1.5,
+    "speed.max": 2.0
   },
-  "Puff2":
+  "PuffC":
   {
     "shape": "ball",
     "sprite": "Sparkle",
     "direction": [ 0.0, 1.0, 0.0 ],
     "origin": [ 0.0, 0.1, 2.0 ],
     "bone": null,
-    "minLifetime": 16,
-    "maxLifetime": 18,
-    "minScale": 0.5,
-    "maxScale": 0.6,
-    "startRadius": 0.5,
-    "endRadius": 1.0,
-    "startOpacity": 1.0,
+    "endScale": 2.0,
     "endOpacity": 0.2,
-    "minSpeed": 1.5,
-    "maxSpeed": 2.0
+    "lifetime.min": 12,
+    "lifetime.max": 18,
+    "radius.min": 0.25,
+    "radius.max": 0.3,
+    "colour.min": [ 1.0, 1.0, 1.0 ],
+    "colour.max": [ 1.0, 1.0, 1.0 ],
+    "opacity.min": 0.9,
+    "opacity.max": 1.0,
+    "speed.min": 1.5,
+    "speed.max": 2.0
   }
 },
 
-"commands":
-[
-  [ [ 4 ], "emit_particles Puff0 40" ],
-  [ [ 4 ], "enable_blob 0:A" ],
-  [ [ 8 ], "emit_particles Puff1 40" ],
-  [ [ 8 ], "enable_blob 1:A" ],
-  [ [ 8 ], "disable_blob 0:A" ],
-  [ [ 12 ], "emit_particles Puff2 40" ],
-  [ [ 12 ], "enable_blob 2:A" ],
-  [ [ 12 ], "disable_blob 1:A" ],
-  [ [ 16 ], "disable_blob 2:A" ],
-  [ [ 26 ], "finish_action" ]
-]
+"procedures":
+{
+  "BeginA":
+  {
+    "source": "enable_blob BlobA\nemit_particles PuffA 40",
+    "frames": [4]
+  },
+  "EndA":
+  {
+    "source": "disable_blob BlobA",
+    "frames": [8]
+  },
+  "BeginB":
+  {
+    "source": "enable_blob BlobB\nemit_particles PuffB 40",
+    "frames": [8]
+  },
+  "EndB":
+  {
+    "source": "disable_blob BlobB",
+    "frames": [12]
+  },
+  "BeginC":
+  {
+    "source": "enable_blob BlobC\nemit_particles PuffC 40",
+    "frames": [12]
+  },
+  "EndC":
+  {
+    "source": "disable_blob BlobC",
+    "frames": [16]
+  },
+  "FinishAction":
+  {
+    "source": "finish_action",
+    "frames": [26]
+  }
+}
 
 }

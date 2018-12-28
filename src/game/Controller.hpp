@@ -7,24 +7,6 @@
 
 //============================================================================//
 
-#ifndef SQEE_MSVC
-
-#define DISABLE_FLOAT_EQUALITY_WARNING \
-_Pragma("GCC diagnostic push") \
-_Pragma("GCC diagnostic ignored \"-Wfloat-equal\"")
-
-#define ENABLE_FLOAT_EQUALITY_WARNING \
-_Pragma("GCC diagnostic pop")
-
-#else
-
-#define DISABLE_FLOAT_EQUALITY_WARNING
-#define ENABLE_FLOAT_EQUALITY_WARNING
-
-#endif
-
-//============================================================================//
-
 namespace sts {
 
 class Controller final : sq::NonCopyable

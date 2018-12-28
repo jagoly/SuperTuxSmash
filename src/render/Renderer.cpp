@@ -1,14 +1,14 @@
+#include "render/Renderer.hpp"
+
+#include "render/Camera.hpp"
+#include "render/DebugRender.hpp"
+#include "render/ParticleRender.hpp"
+#include "render/RenderObject.hpp"
+
 #include <sqee/debug/Logging.hpp>
 #include <sqee/gl/Context.hpp>
 #include <sqee/gl/Drawing.hpp>
 #include <sqee/redist/gl_loader.hpp>
-
-#include "render/DebugRender.hpp"
-#include "render/ParticleRender.hpp"
-#include "render/Camera.hpp"
-#include "render/RenderObject.hpp"
-
-#include "render/Renderer.hpp"
 
 using Context = sq::Context;
 namespace maths = sq::maths;

@@ -1,7 +1,7 @@
+#include "stages/TestZone_Render.hpp"
+
 #include <sqee/gl/Context.hpp>
 #include <sqee/maths/Functions.hpp>
-
-#include "stages/TestZone_Render.hpp"
 
 using Context = sq::Context;
 namespace maths = sq::maths;

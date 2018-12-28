@@ -1,10 +1,10 @@
-#include <sqee/app/PreProcessor.hpp>
-#include <sqee/gl/Textures.hpp>
-#include <sqee/gl/Program.hpp>
-#include <sqee/render/Mesh.hpp>
-#include <sqee/render/Armature.hpp>
+#include "render/ResourceCaches.hpp"
 
-#include "ResourceCaches.hpp"
+#include <sqee/app/PreProcessor.hpp>
+#include <sqee/gl/Program.hpp>
+#include <sqee/gl/Textures.hpp>
+#include <sqee/render/Armature.hpp>
+#include <sqee/render/Mesh.hpp>
 
 using namespace sts;
 

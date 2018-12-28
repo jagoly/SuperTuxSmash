@@ -1,5 +1,4 @@
-#include <sqee/macros.hpp>
-#include <sqee/app/GuiWidgets.hpp>
+#include "main/GameScene.hpp"
 
 #include "DebugGlobals.hpp"
 
@@ -13,7 +12,8 @@
 
 #include "game/ActionBuilder.hpp"
 
-#include "main/GameScene.hpp"
+#include <sqee/macros.hpp>
+#include <sqee/app/GuiWidgets.hpp>
 
 using namespace sts;
 

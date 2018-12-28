@@ -2,7 +2,7 @@
 
 "blobs":
 {
-  "0:A":
+  "Tangy":
   {
     "origin": [ 0.0, 2.1, 0.3 ],
     "radius": 0.4,
@@ -15,7 +15,7 @@
     "flavour": "Tangy",
     "priority": "High"
   },
-  "0:BA":
+  "SourA":
   {
     "origin": [ 0.0, 2.2, 0.0 ],
     "radius": 0.45,
@@ -28,7 +28,7 @@
     "flavour": "Sour",
     "priority": "Normal"
   },
-  "0:BB":
+  "SourB":
   {
     "origin": [ 0.0, 2.2, 0.6 ],
     "radius": 0.45,
@@ -45,80 +45,101 @@
 
 "emitters":
 {
-  "tangy":
+  "Tangy":
   {
     "shape": "disc",
     "sprite": "Sparkle",
     "direction": [ 0.0, 1.0, 0.0 ],
     "origin": [ 0.0, 1.8, 0.3 ],
     "bone": null,
-    "minLifetime": 12,
-    "maxLifetime": 18,
-    "minScale": 0.3,
-    "maxScale": 0.6,
-    "startRadius": 1.0,
-    "endRadius": 0.5,
-    "startOpacity": 1.0,
+    "endScale": 0.5,
     "endOpacity": 0.5,
-    "minIncline": 0.2,
-    "maxIncline": 0.5,
-    "minSpeed": 2.4,
-    "maxSpeed": 3.0
+    "lifetime.min": 12,
+    "lifetime.max": 18,
+    "radius.min": 0.3,
+    "radius.max": 0.6,
+    "colour.min": [ 1.0, 1.0, 1.0 ],
+    "colour.max": [ 1.0, 1.0, 1.0 ],
+    "opacity.min": 0.9,
+    "opacity.max": 1.0,
+    "incline.min": 0.2,
+    "incline.max": 0.5,
+    "speed.min": 2.4,
+    "speed.max": 3.0
   },
-  "sourA":
+  "SourA":
   {
     "shape": "disc",
     "sprite": "Sparkle",
     "direction": [ -0.4, 1.0, 0.0 ],
     "origin": [ 0.0, 1.9, 0.1 ],
     "bone": null,
-    "minLifetime": 12,
-    "maxLifetime": 18,
-    "minScale": 0.4,
-    "maxScale": 0.8,
-    "startRadius": 1.0,
-    "endRadius": 0.5,
-    "startOpacity": 1.0,
+    "endScale": 0.5,
     "endOpacity": 0.5,
-    "minIncline": 0.2,
-    "maxIncline": 0.5,
-    "minSpeed": 2.6,
-    "maxSpeed": 3.2
+    "lifetime.min": 12,
+    "lifetime.max": 18,
+    "radius.min": 0.4,
+    "radius.max": 0.8,
+    "colour.min": [ 1.0, 1.0, 1.0 ],
+    "colour.max": [ 1.0, 1.0, 1.0 ],
+    "opacity.min": 0.9,
+    "opacity.max": 1.0,
+    "incline.min": 0.2,
+    "incline.max": 0.5,
+    "speed.min": 2.6,
+    "speed.max": 3.2
   },
-  "sourB":
+  "SourB":
   {
     "shape": "disc",
     "sprite": "Sparkle",
     "direction": [ 0.4, 1.0, 0.0 ],
     "origin": [ 0.0, 1.9, 0.5 ],
     "bone": null,
-    "minLifetime": 12,
-    "maxLifetime": 18,
-    "minScale": 0.4,
-    "maxScale": 0.8,
-    "startRadius": 1.0,
-    "endRadius": 0.5,
-    "startOpacity": 1.0,
+    "endScale": 0.5,
     "endOpacity": 0.5,
-    "minIncline": 0.2,
-    "maxIncline": 0.5,
-    "minSpeed": 2.6,
-    "maxSpeed": 3.2
+    "lifetime.min": 12,
+    "lifetime.max": 18,
+    "radius.min": 0.4,
+    "radius.max": 0.8,
+    "colour.min": [ 1.0, 1.0, 1.0 ],
+    "colour.max": [ 1.0, 1.0, 1.0 ],
+    "opacity.min": 0.9,
+    "opacity.max": 1.0,
+    "incline.min": 0.2,
+    "incline.max": 0.5,
+    "speed.min": 2.6,
+    "speed.max": 3.2
   }
 },
 
-"commands":
-[
-  [ [ 4 ], "enable_blob 0:A" ],
-  [ [ 4 ], "emit_particles tangy 20" ],
-  [ [ 7 ], "emit_particles sourA 16" ],
-  [ [ 7 ], "emit_particles sourB 16" ],
-  [ [ 7 ], "enable_blob 0:BA" ],
-  [ [ 7 ], "enable_blob 0:BB" ],
-  [ [ 7 ], "disable_blob 0:A" ],
-  [ [ 13 ], "disable_blob 0:BA" ],
-  [ [ 13 ], "disable_blob 0:BB" ],
-  [ [ 20 ], "finish_action" ]
-]
+"procedures":
+{
+  "BeginTangy":
+  {
+    "source": "enable_blob Tangy\nemit_particles Tangy 20",
+    "frames": [4]
+  },
+  "EndTangy":
+  {
+    "source": "disable_blob Tangy",
+    "frames": [7]
+  },
+  "BeginSour":
+  {
+    "source": "enable_blob SourA\nenable_blob SourB\nemit_particles SourA 16\nemit_particles SourB 16",
+    "frames": [7]
+  },
+  "EndSour":
+  {
+    "source": "disable_blob SourA\ndisable_blob SourB",
+    "frames": [13]
+  },
+  "FinishAction":
+  {
+    "source": "finish_action",
+    "frames": [20]
+  }
+}
 
 }

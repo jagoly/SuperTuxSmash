@@ -1,17 +1,17 @@
-#include <sqee/app/GuiSystem.hpp>
+#include "main/SmashApp.hpp"
 
+#include "editor/ActionEditor.hpp"
+#include "main/GameScene.hpp"
+#include "main/MenuScene.hpp"
+
+#include <sqee/app/GuiSystem.hpp>
+#include <sqee/app/MessageBus.hpp>
 #include <sqee/debug/Logging.hpp>
 #include <sqee/debug/Misc.hpp>
 
-#include "main/MenuScene.hpp"
-#include "main/GameScene.hpp"
-
-#include "editor/ActionEditor.hpp"
-
-#include "SmashApp.hpp"
+namespace maths = sq::maths;
 
 using namespace sts;
-namespace maths = sq::maths;
 
 //============================================================================//
 
@@ -33,8 +33,6 @@ void SmashApp::initialise(Vector<String> args)
     sq::GuiSystem::construct(*mWindow, *mInputDevices);
 
     mDebugOverlay = std::make_unique<sq::DebugOverlay>();
-
-    //--------------------------------------------------------//
 
     return_to_main_menu();
 }

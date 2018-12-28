@@ -1,7 +1,8 @@
-#include <sqee/maths/Culling.hpp>
+#include "game/Stage.hpp"
 
 #include "game/Fighter.hpp"
-#include "game/Stage.hpp"
+
+#include <sqee/maths/Culling.hpp>
 
 namespace maths = sq::maths;
 using namespace sts;

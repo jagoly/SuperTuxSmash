@@ -12,10 +12,18 @@
 {
 },
 
-"commands":
-[
-  [ [ 0 ], "spawn_projectile NeutralOrb" ],
-  [ [ 32 ], "finish_action" ]
-]
+"procedures":
+{
+  "SpawnProjectile":
+  {
+    "source": "spawn_projectile NeutralOrb",
+    "frames": [0]
+  },
+  "FinishAction":
+  {
+    "source": "finish_action",
+    "frames": [32]
+  }
+}
 
 }

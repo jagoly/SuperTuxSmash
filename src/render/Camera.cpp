@@ -1,12 +1,10 @@
+#include "render/Camera.hpp"
+
 #include <sqee/debug/Logging.hpp>
 #include <sqee/debug/Misc.hpp>
-
-#include <sqee/maths/Functions.hpp>
-
 #include <sqee/gl/Context.hpp>
 #include <sqee/gl/Drawing.hpp>
-
-#include "render/Camera.hpp"
+#include <sqee/maths/Functions.hpp>
 
 using Context = sq::Context;
 namespace maths = sq::maths;

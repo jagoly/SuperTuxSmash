@@ -23,9 +23,13 @@ public: //====================================================//
 private: //===================================================//
 
     sq::Program mBlobShader;
+    sq::Program mArrowShader;
 
     sq::Mesh mSphereMesh;
     sq::Mesh mCapsuleMesh;
+
+    sq::VertexArray mLineVertexArray;
+    sq::FixedBuffer mLineVertexBuffer;
 
     //--------------------------------------------------------//
 

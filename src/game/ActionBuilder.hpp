@@ -1,18 +1,33 @@
 #pragma once
 
+#include <sqee/misc/Json.hpp>
+
 #include "game/Actions.hpp"
 
 namespace sts {
 
 //============================================================================//
 
-struct ActionBuilder final
+class ActionBuilder final : sq::NonCopyable
 {
-    static std::function<void(Action& action)> build_command(Action& action, StringView source);
+public:
 
-    static void load_from_json(Action& action);
+    Action::Command build_command(Action& action, StringView source);
 
-    static JsonValue serialise_as_json(const Action& action);
+    Vector<Action::Command> build_procedure(Action& action, StringView source);
+
+    void load_from_json(Action& action);
+
+    JsonValue serialise_as_json(const Action& action);
+
+    void flush_logged_errors(String heading);
+
+private:
+
+    Vector<String> mErrorLog;
+
+    template <class... Args>
+    void impl_log_error(const char* fmt, const Args&... args);
 };
 
 //============================================================================//

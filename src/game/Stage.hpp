@@ -26,11 +26,10 @@ struct AlignedBlock
 struct MoveAttempt
 {
     enum class Type { Simple, Slope, EdgeStop };
+    enum class Floor { None, Platform, Solid, Slope };
 
     Type type = Type::Simple;
     Vec2F result;
-
-    enum class Floor { None, Platform, Solid, Slope };
 
     Floor floor = Floor::None;
 
@@ -79,10 +78,10 @@ protected: //=================================================//
 
 //============================================================================//
 
-SQEE_ENUM_TO_STRING(MoveAttempt::Type, Simple, Slope, EdgeStop)
-
-SQEE_ENUM_TO_STRING(MoveAttempt::Floor, None, Platform, Solid, Slope)
+} // namespace sts
 
 //============================================================================//
 
-} // namespace sts
+SQEE_ENUM_HELPER(sts::MoveAttempt::Type, Simple, Slope, EdgeStop)
+
+SQEE_ENUM_HELPER(sts::MoveAttempt::Floor, None, Platform, Solid, Slope)

@@ -26,6 +26,12 @@ namespace sts { class ParticleSystem; }
 
 namespace sts {
 
+//============================================================================//
+
+struct DebugArrow { Vec2F origin; float angle; float length; };
+
+//============================================================================//
+
 class Renderer final : sq::NonCopyable
 {
 public: //====================================================//

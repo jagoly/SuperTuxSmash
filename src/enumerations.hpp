@@ -20,22 +20,35 @@ enum class FighterEnum : int8_t
 {
     Null = -1,
     Sara,
-    Tux,
-    Count
+    Tux
 };
 
 enum class StageEnum : int8_t
 {
     Null = -1,
-    TestZone,
-    Count
+    TestZone
 };
 
 //============================================================================//
 
-SQEE_ENUM_TO_STRING(FighterEnum, Null, Sara, Tux, Count);
-SQEE_ENUM_TO_STRING(StageEnum, Null, TestZone, Count)
+class Fighter;
+enum class ActionType : int8_t;
+
+namespace message {
+
+struct fighter_action_finished
+{
+    Fighter& fighter;
+    ActionType type;
+};
+
+} // namespace message
 
 //============================================================================//
 
 } // namespace sts
+
+//============================================================================//
+
+SQEE_ENUM_HELPER(sts::FighterEnum, Null, Sara, Tux)
+SQEE_ENUM_HELPER(sts::StageEnum, Null, TestZone)

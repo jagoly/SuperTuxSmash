@@ -1,18 +1,16 @@
-#include <fstream> // for loading json
-
-#include <sqee/helpers.hpp>
-#include <sqee/misc/Parsing.hpp>
-
-#include <sqee/debug/Logging.hpp>
-
-#include <sqee/misc/Files.hpp>
-#include <sqee/misc/Json.hpp>
+#include "game/ActionBuilder.hpp"
 
 #include "game/Actions.hpp"
 #include "game/ActionFuncs.hpp"
 #include "game/Fighter.hpp"
 
-#include "game/ActionBuilder.hpp"
+#include <sqee/helpers.hpp>
+#include <sqee/debug/Logging.hpp>
+#include <sqee/misc/Files.hpp>
+#include <sqee/misc/Json.hpp>
+#include <sqee/misc/Parsing.hpp>
+
+#include <fstream> // for loading json
 
 using json = nlohmann::json;
 using sq::literals::operator""_fmt_;
@@ -24,24 +22,31 @@ namespace { // anonymous
 
 //----------------------------------------------------------------------------//
 
-using BoundFunction = std::function<void(Action& action)>;
+template <class Type> Type impl_convert_param(StringView token);
 
-thread_local Vector<String> gErrorLog;
+template<> int impl_convert_param(StringView token)
+{
+    try { return sq::sv_to_i(token); }
+    catch (std::invalid_argument&) { throw "Could not convert '%s' to int"_fmt_(token); }
+}
 
-template <class... Args>
-void impl_log_error(const char* fmt, const Args&... args)
-{ gErrorLog.emplace_back(tfm::format(fmt, args...)); }
+template<> uint impl_convert_param(StringView token)
+{
+    try { return sq::sv_to_u(token); }
+    catch (std::invalid_argument&) { throw "Could not convert '%s' to uint"_fmt_(token); }
+}
 
-//----------------------------------------------------------------------------//
+template<> float impl_convert_param(StringView token)
+{
+    try { return sq::sv_to_f(token); }
+    catch (std::invalid_argument&) { throw "Could not convert '%s' to float"_fmt_(token); }
+}
 
-template <class Type> Optional<Type> impl_convert_param(StringView token);
-
-template <> Optional<int> impl_convert_param(StringView token) { return sq::safe_sv_to_i(token); }
-template <> Optional<uint> impl_convert_param(StringView token) { return sq::safe_sv_to_u(token); }
-template <> Optional<float> impl_convert_param(StringView token) { return sq::safe_sv_to_f(token); }
-
-template <> Optional<PoolKey> impl_convert_param(StringView token)
-{ return token.size() <= 15u ? std::make_optional<PoolKey>(token) : std::nullopt; }
+template<> PoolKey impl_convert_param(StringView token)
+{
+    if (token.size() > 15u) throw "string '%s' too big for a PoolKey"_fmt_(token);
+    return PoolKey(token);
+}
 
 //----------------------------------------------------------------------------//
 
@@ -61,25 +66,24 @@ auto impl_extract_param(const Vector<StringView>& tokens)
 {
     using Type = TypePackElement<Types, Index>;
     const StringView& token = tokens[Index + 1];
-
-    const Optional<Type> opt = impl_convert_param<Type>(token);
-    if (!opt.has_value()) impl_log_error("invalid paramater %d: '%s'", Index, token);
-
-    return opt.value();
+    return impl_convert_param<Type>(token);
 }
 
 template <class Func, class Types, size_t... Index> inline
-BoundFunction impl_bind_params(Func func, const Vector<StringView>& tokens, Types, std::index_sequence<Index...>)
+Action::Command impl_bind_params(Func func, const Vector<StringView>& tokens, Types, std::index_sequence<Index...>)
 {
-    if (tokens.size() != Types::Size + 1)
-    {
-        impl_log_error("wrong number of paramaters for command");
-        return nullptr;
-    }
+    // we have already done validation, so we don't need to handle exceptions here
+    return std::bind(func, std::placeholders::_1, impl_extract_param<Types, Index>(tokens)...);
+}
 
-    // this isn't a good use of exceptions, I'll refactor this later
-    try { return std::bind(func, std::placeholders::_1, impl_extract_param<Types, Index>(tokens)...); }
-    catch (std::bad_optional_access&) { return nullptr; }
+template <class Func, class Types, size_t... Index> inline
+String impl_validate_command(Func func, Action& action, const Vector<StringView>& tokens, Types, std::index_sequence<Index...>)
+{
+    if (tokens.size() != Types::Size + 1u) return "wrong number of paramaters for command";
+
+    // will throw a String if a paramater cannot be converted
+    try { return func(action, impl_extract_param<Types, Index>(tokens)...); }
+    catch (const String& error) { return error; }
 }
 
 //----------------------------------------------------------------------------//
@@ -88,62 +92,94 @@ BoundFunction impl_bind_params(Func func, const Vector<StringView>& tokens, Type
 
 //============================================================================//
 
-std::function<void(Action& action)> ActionBuilder::build_command(Action& action, StringView source)
+template <class... Args>
+void ActionBuilder::impl_log_error(const char* fmt, const Args&... args)
+{
+    mErrorLog.emplace_back(tfm::format(fmt, args...));
+}
+
+//============================================================================//
+
+Action::Command ActionBuilder::build_command(Action& action, StringView source)
 {
     const auto tokens = sq::tokenise_string_view(source, ' ');
 
     if (tokens.empty() == true)
     {
-        impl_log_error("source is empty");
+        mErrorLog.emplace_back("source is empty");
         return nullptr;
     }
 
-    BoundFunction result;
+    //--------------------------------------------------------//
+
+    #define RETURN_BOUND_FUNCTION(Name, ...) \
+    do { \
+        constexpr const auto types = TypePack<__VA_ARGS__ >(); \
+        constexpr const auto indices = std::index_sequence_for<__VA_ARGS__>(); \
+        String error = impl_validate_command(&ActionFuncsValidate::Name, action, tokens, types, indices); \
+        if (!error.empty()) { mErrorLog.push_back(std::move(error)); return nullptr; } \
+        return impl_bind_params(&ActionFuncs::Name, tokens, types, indices); \
+    } while (false)
+
+    if (tokens[0] == "enable_blob")    RETURN_BOUND_FUNCTION(enable_blob, PoolKey);
+    if (tokens[0] == "disable_blob")   RETURN_BOUND_FUNCTION(disable_blob, PoolKey);
+    if (tokens[0] == "add_velocity")   RETURN_BOUND_FUNCTION(add_velocity, float, float);
+    if (tokens[0] == "finish_action")  RETURN_BOUND_FUNCTION(finish_action);
+    if (tokens[0] == "emit_particles") RETURN_BOUND_FUNCTION(emit_particles, PoolKey, uint);
+
+    #undef RETURN_BOUND_FUNCTION
 
     //--------------------------------------------------------//
 
-    #define ASSIGN_BOUND_FUNCTION(Name, ...) result = impl_bind_params \
-    ( &ActionFuncs::Name, tokens, TypePack<__VA_ARGS__ >(), std::index_sequence_for<__VA_ARGS__>() )
+    impl_log_error("unknown function '%s'", tokens[0]);
 
-    if (tokens[0] == "enable_blob")    ASSIGN_BOUND_FUNCTION(enable_blob, PoolKey);
-    if (tokens[0] == "disable_blob")   ASSIGN_BOUND_FUNCTION(disable_blob, PoolKey);
-    if (tokens[0] == "add_velocity")   ASSIGN_BOUND_FUNCTION(add_velocity, float, float);
-    if (tokens[0] == "finish_action")  ASSIGN_BOUND_FUNCTION(finish_action);
-    if (tokens[0] == "emit_particles") ASSIGN_BOUND_FUNCTION(emit_particles, PoolKey, uint);
+    return nullptr;
+}
 
-    #undef ASSIGN_BOUND_FUNCTION
+//============================================================================//
 
-    //--------------------------------------------------------//
+Vector<Action::Command> ActionBuilder::build_procedure(Action& action, StringView source)
+{
+    const auto sourceLines = sq::tokenise_string_view(source, '\n');
 
-    if (result == nullptr)
+    if (sourceLines.empty() == true)
     {
-        impl_log_error("unknown function: %s", tokens[0]);
-        return nullptr;
+        mErrorLog.emplace_back("source is empty");
     }
 
-    //--------------------------------------------------------//
+    Vector<Action::Command> result;
+    result.reserve(sourceLines.size());
+
+    for (const StringView& sourceLine : sourceLines)
+    {
+        auto boundFunc = build_command(action, sourceLine);
+        if (boundFunc != nullptr) result.push_back(std::move(boundFunc));
+    }
 
     return result;
 }
 
-//----------------------------------------------------------------------------//
+//============================================================================//
 
 void ActionBuilder::load_from_json(Action& action)
 {
     action.blobs.clear(); // destroy existing blobs
     action.emitters.clear(); // destroy existing emitters
-    action.commands.clear(); // clear existing commands
+    action.procedures.clear(); // clear existing procedures
 
     // use a dummy action for actions I haven't written yet
     if (sq::check_file_exists(action.path) == false)
     {
         sq::log_warning("missing action '%s'", action.path);
 
-        auto& command = action.commands.emplace_back();
+        Action::Procedure& procedure = action.procedures["FinishAction"];
 
-        command.frames = { 12u };
-        command.func = &ActionFuncs::finish_action;
-        command.source = "finish_action";
+        procedure.meta.source = "finish_action";
+        procedure.meta.frames = { 12u };
+
+        procedure.commands = { build_command(action, procedure.meta.source) };
+
+        action.rebuild_timeline();
 
         return;
     }
@@ -156,6 +192,7 @@ void ActionBuilder::load_from_json(Action& action)
 
     //--------------------------------------------------------//
 
+    try {
     for (auto iter : root.at("blobs").items())
     {
         HitBlob* blob = action.blobs.emplace(iter.key());
@@ -168,9 +205,11 @@ void ActionBuilder::load_from_json(Action& action)
             impl_log_error("blob '%s': %s", iter.key(), e.what());
         }
     }
+    } catch (const std::exception& e) { impl_log_error(e.what()); }
 
     //--------------------------------------------------------//
 
+    try {
     for (auto iter : root.at("emitters").items())
     {
         ParticleEmitter* emitter = action.emitters.emplace(iter.key());
@@ -183,71 +222,77 @@ void ActionBuilder::load_from_json(Action& action)
             impl_log_error("emitter '%s': %s", iter.key(), e.what());
         }
     }
+    } catch (const std::exception& e) { impl_log_error(e.what()); }
 
     //--------------------------------------------------------//
 
-    for (const auto& item : root.at("commands"))
+    try {
+    for (auto iter : root.at("procedures").items())
     {
-        if (!item.is_array() || item.size() != 2u)
-        {
-            impl_log_error("invalid command: %s", item.dump());
-            continue;
-        }
+        Action::Procedure& procedure = action.procedures[iter.key()];
 
-        Action::Command& command = action.commands.emplace_back();
-
-        try { item.front().get_to(command.frames); }
+        try { iter.value().at("source").get_to(procedure.meta.source); }
         catch (const std::exception& e) {
-            impl_log_error("invalid command frames: %s", e.what());
+            impl_log_error("procedure '%s': %s", iter.key(), e.what());
         }
 
-        command.source = item.back();
+        try { iter.value().at("frames").get_to(procedure.meta.frames); }
+        catch (const std::exception& e) {
+            impl_log_error("procedure '%s': %s", iter.key(), e.what());
+        }
 
-        command.func = ActionBuilder::build_command(action, command.source);
+        procedure.commands = build_procedure(action, procedure.meta.source);
     }
+    } catch (const std::exception& e) { impl_log_error(e.what()); }
 
     //--------------------------------------------------------//
 
-    if (gErrorLog.empty() == false)
-    {
-        sq::log_warning_block("errors in action '%s'"_fmt_(action.path), gErrorLog);
-        gErrorLog.clear();
-    }
+    flush_logged_errors("errors in action '%s'"_fmt_(action.path));
+
+    action.rebuild_timeline();
 }
 
-//----------------------------------------------------------------------------//
+//============================================================================//
 
 JsonValue ActionBuilder::serialise_as_json(const Action& action)
 {
     JsonValue result;
 
-    auto& resultEmitters = result["emitters"];
-    auto& resultBlobs = result["blobs"];
-    auto& resultCommands = result["commands"];
-
     //--------------------------------------------------------//
 
-    for (auto& [key, emitter] : action.emitters)
-    {
+    auto& resultEmitters = result["emitters"] = JsonValue::object();
+
+    for (const auto& [key, emitter] : action.emitters)
         emitter->to_json(resultEmitters[key]);
-    }
 
-    //--------------------------------------------------------//
+    auto& resultBlobs = result["blobs"] = JsonValue::object();
 
-    for (auto& [key, blob] : action.blobs)
-    {
+    for (const auto& [key, blob] : action.blobs)
         blob->to_json(resultBlobs[key]);
-    }
 
     //--------------------------------------------------------//
 
-    for (const auto& command : action.commands)
-    {
-        resultCommands.emplace_back();
+    auto& resultProcedures = result["procedures"] = JsonValue::object();
 
-        resultCommands.back().push_back(command.frames);
-        resultCommands.back().push_back(command.source);
+    for (const auto& [key, procedure] : action.procedures)
+    {
+        JsonValue& jsonProcedure = resultProcedures[key];
+        jsonProcedure["source"] = procedure.meta.source;
+        jsonProcedure["frames"] = procedure.meta.frames;
     }
+
+    //--------------------------------------------------------//
 
     return result;
+}
+
+//============================================================================//
+
+void ActionBuilder::flush_logged_errors(String heading)
+{
+    if (mErrorLog.empty() == false)
+    {
+        sq::log_warning_block(heading, mErrorLog);
+        mErrorLog.clear();
+    }
 }

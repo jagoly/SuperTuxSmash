@@ -1,16 +1,16 @@
-#include <sqee/helpers.hpp>
-#include <sqee/misc/Parsing.hpp>
-
-#include <sqee/debug/Logging.hpp>
-
-#include <sqee/misc/Files.hpp>
-#include <sqee/misc/Json.hpp>
+#include "game/Actions.hpp"
 
 #include "game/Fighter.hpp"
 #include "game/ActionBuilder.hpp"
 #include "game/ActionFuncs.hpp"
 
-#include "game/Actions.hpp"
+#include "DebugGlobals.hpp"
+
+#include <sqee/helpers.hpp>
+#include <sqee/debug/Logging.hpp>
+#include <sqee/misc/Files.hpp>
+#include <sqee/misc/Json.hpp>
+#include <sqee/misc/Parsing.hpp>
 
 namespace algo = sq::algo;
 namespace maths = sq::maths;
@@ -20,12 +20,12 @@ using namespace sts;
 
 //============================================================================//
 
-Action::Action(FightWorld& world, Fighter& fighter, Type type)
+Action::Action(FightWorld& world, Fighter& fighter, ActionType type, bool load)
     : world(world), fighter(fighter), type(type)
-    , path(build_string("assets/fighters/", fighter.get_name(), "/actions/", enum_to_string(type), ".json"))
+    , path(build_string("assets/fighters/", fighter.get_name(), "/actions/", sq::enum_to_string(type), ".json"))
     , blobs(world.get_hit_blob_allocator()), emitters(world.get_emitter_allocator())
 {
-    ActionBuilder::load_from_json(*this);
+    if (load == true) world.get_action_builder().load_from_json(*this);
 }
 
 Action::~Action() = default;
@@ -34,14 +34,13 @@ Action::~Action() = default;
 
 void Action::do_start()
 {
-    mCommandIter = commands.begin();
     mCurrentFrame = 0u;
     finished = false;
 }
 
 bool Action::do_tick()
 {
-    SQASSERT(mCommandIter != commands.end(), "finish didn't get called!");
+    SQASSERT(dbg.actionEditor || mCurrentFrame < timeline.size(), "finish didn't get called!");
 
     // todo: this doesn't need to happen every frame
     for (auto& [key, emitter] : emitters)
@@ -59,19 +58,10 @@ bool Action::do_tick()
         emitter->emitVelocity = Vec3F(fighter.get_velocity().x * 0.2f, 0.f, 0.f);
     }
 
-    for (; mCommandIter != commands.end(); ++mCommandIter)
+    for (const Procedure& procedure : timeline[mCurrentFrame].procedures)
     {
-        if (mCommandIter->frames.empty()) continue;
-        if (mCurrentFrame <= mCommandIter->frames.back()) break;
-    }
-
-    for (auto iter = mCommandIter; iter != commands.end(); ++iter)
-    {
-        if (iter->frames.empty()) continue;
-        if (mCurrentFrame < iter->frames.front()) break;
-
-        if (algo::exists(iter->frames, mCurrentFrame))
-            iter->func(*this);
+        for (const Command& command : procedure.commands)
+            command(*this);
     }
 
     mCurrentFrame += 1u;
@@ -85,4 +75,35 @@ void Action::do_finish()
 {
     world.disable_all_hit_blobs(fighter);
     world.reset_all_hit_blob_groups(fighter);
+}
+
+//----------------------------------------------------------------------------//
+
+void Action::rebuild_timeline()
+{
+    timeline.clear();
+
+    for (const auto& [name, procedure] : procedures)
+    {
+        for (const uint16_t frame : procedure.meta.frames)
+        {
+            if (timeline.size() < frame + 1u) timeline.resize(frame + 1u);
+            timeline[frame].procedures.push_back(procedure);
+        }
+    }
+
+    for (TimelineItem& item : timeline)
+        item.procedures.shrink_to_fit();
+
+    timeline.shrink_to_fit();
+}
+
+//============================================================================//
+
+bool Action::has_changes(const Action& reference) const
+{
+    if (blobs != reference.blobs) return true;
+    if (emitters != reference.emitters) return true;
+    if (procedures != reference.procedures) return true;
+    return false;
 }

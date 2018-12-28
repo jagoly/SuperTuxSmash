@@ -1,15 +1,13 @@
-#include <sqee/debug/Assert.hpp>
-#include <sqee/debug/Logging.hpp>
+#include "game/Fighter.hpp"
 
 #include <sqee/app/GuiWidgets.hpp>
-
-#include <sqee/misc/Files.hpp>
+#include <sqee/debug/Assert.hpp>
+#include <sqee/debug/Logging.hpp>
 #include <sqee/maths/Functions.hpp>
-
-#include "game/private/PrivateFighter.hpp"
+#include <sqee/misc/Files.hpp>
 
 #include "game/ActionBuilder.hpp"
-#include "game/Fighter.hpp"
+#include "game/private/PrivateFighter.hpp"
 
 namespace maths = sq::maths;
 
@@ -92,6 +90,32 @@ void Fighter::interpolate_bone_matrices(float blend, Mat34F* out, size_t len) co
 
 //============================================================================//
 
+Action* Fighter::get_action(ActionType type)
+{
+    SWITCH (type) {
+    CASE (Neutral_First)    return actions.neutral_first.get();
+    CASE (Tilt_Down)        return actions.tilt_down.get();
+    CASE (Tilt_Forward)     return actions.tilt_forward.get();
+    CASE (Tilt_Up)          return actions.tilt_up.get();
+    CASE (Air_Back)         return actions.air_back.get();
+    CASE (Air_Down)         return actions.air_down.get();
+    CASE (Air_Forward)      return actions.air_forward.get();
+    CASE (Air_Neutral)      return actions.air_neutral.get();
+    CASE (Air_Up)           return actions.air_up.get();
+    CASE (Dash_Attack)      return actions.dash_attack.get();
+    CASE (Smash_Down)       return actions.smash_down.get();
+    CASE (Smash_Forward)    return actions.smash_forward.get();
+    CASE (Smash_Up)         return actions.smash_up.get();
+    CASE (Special_Down)     return actions.special_down.get();
+    CASE (Special_Forward)  return actions.special_forward.get();
+    CASE (Special_Neutral)  return actions.special_neutral.get();
+    CASE (Special_Up)       return actions.special_up.get();
+    CASE (None)             return nullptr;
+    } SWITCH_END;
+}
+
+//============================================================================//
+
 void Fighter::debug_show_fighter_widget()
 {
     const String label = "Fighter %d - %s"_fmt_(index, mName);
@@ -103,13 +127,15 @@ void Fighter::debug_show_fighter_widget()
         const ImGui::ScopeFont font = ImGui::FONT_MONO;
 
         ImGui::Text("Position: %s"_fmt_(impl->current.position));
-
-        ImGui::Text("Position: %s"_fmt_(impl->current.position));
         ImGui::Text("Velocity: %s"_fmt_(mVelocity));
         ImGui::Text("Damage: %0.f%%"_fmt_(status.damage));
 
-        ImGui::Text("state: %s"_fmt_(enum_to_string(current.state)));
-        ImGui::Text("action: %s"_fmt_(current.action ? enum_to_string(current.action->get_type()) : "None"));
+        ImGui::Text("state: %s"_fmt_(current.state));
+
+        const String actionName = current.action == nullptr ? "None" :
+            "%s (%d)"_fmt_(current.action->get_type(), current.action->mCurrentFrame);
+
+        ImGui::Text("action: %s"_fmt_(actionName));
     }
 
     if (ImGui::CollapsingHeader("Edit Stats"))
@@ -117,30 +143,30 @@ void Fighter::debug_show_fighter_widget()
         const ImGui::ScopeFont font = ImGui::FONT_MONO;
         const ImGui::ScopeItemWidth width = 160.f;
 
-        ImGui::InputValue("walk_speed",     &stats.walk_speed,     0.05f, '2');
-        ImGui::InputValue("dash_speed",     &stats.dash_speed,     0.05f, '2');
-        ImGui::InputValue("air_speed",      &stats.air_speed,      0.05f, '2');
-        ImGui::InputValue("traction",       &stats.traction,       0.05f, '2');
-        ImGui::InputValue("air_mobility",   &stats.air_mobility,   0.05f, '2');
-        ImGui::InputValue("air_friction",   &stats.air_friction,   0.05f, '2');
-        ImGui::InputValue("hop_height",     &stats.hop_height,     0.05f, '2');
-        ImGui::InputValue("jump_height",    &stats.jump_height,    0.05f, '2');
-        ImGui::InputValue("air_hop_height", &stats.air_hop_height, 0.05f, '2');
-        ImGui::InputValue("gravity",        &stats.gravity,        0.05f, '2');
-        ImGui::InputValue("fall_speed",     &stats.fall_speed,     0.05f, '2');
-        ImGui::InputValue("evade_distance", &stats.evade_distance, 0.05f, '2');
+        ImGui::InputValue("walk_speed",     stats.walk_speed,     0.05f, '2');
+        ImGui::InputValue("dash_speed",     stats.dash_speed,     0.05f, '2');
+        ImGui::InputValue("air_speed",      stats.air_speed,      0.05f, '2');
+        ImGui::InputValue("traction",       stats.traction,       0.05f, '2');
+        ImGui::InputValue("air_mobility",   stats.air_mobility,   0.05f, '2');
+        ImGui::InputValue("air_friction",   stats.air_friction,   0.05f, '2');
+        ImGui::InputValue("hop_height",     stats.hop_height,     0.05f, '2');
+        ImGui::InputValue("jump_height",    stats.jump_height,    0.05f, '2');
+        ImGui::InputValue("air_hop_height", stats.air_hop_height, 0.05f, '2');
+        ImGui::InputValue("gravity",        stats.gravity,        0.05f, '2');
+        ImGui::InputValue("fall_speed",     stats.fall_speed,     0.05f, '2');
+        ImGui::InputValue("evade_distance", stats.evade_distance, 0.05f, '2');
 
         ImGui::Separator();
 
-        ImGui::InputValue("dodge_finish",         &stats.dodge_finish,         1);
-        ImGui::InputValue("dodge_safe_start",     &stats.dodge_safe_start,     1);
-        ImGui::InputValue("dodge_safe_end",       &stats.dodge_safe_end,       1);
-        ImGui::InputValue("evade_finish",         &stats.evade_finish,         1);
-        ImGui::InputValue("evade_safe_start",     &stats.evade_safe_start,     1);
-        ImGui::InputValue("evade_safe_end",       &stats.evade_safe_end,       1);
-        ImGui::InputValue("air_dodge_finish",     &stats.air_dodge_finish,     1);
-        ImGui::InputValue("air_dodge_safe_start", &stats.air_dodge_safe_start, 1);
-        ImGui::InputValue("air_dodge_safe_end",   &stats.air_dodge_safe_end,   1);
+        ImGui::InputValue("dodge_finish",         stats.dodge_finish,         1);
+        ImGui::InputValue("dodge_safe_start",     stats.dodge_safe_start,     1);
+        ImGui::InputValue("dodge_safe_end",       stats.dodge_safe_end,       1);
+        ImGui::InputValue("evade_finish",         stats.evade_finish,         1);
+        ImGui::InputValue("evade_safe_start",     stats.evade_safe_start,     1);
+        ImGui::InputValue("evade_safe_end",       stats.evade_safe_end,       1);
+        ImGui::InputValue("air_dodge_finish",     stats.air_dodge_finish,     1);
+        ImGui::InputValue("air_dodge_safe_start", stats.air_dodge_safe_start, 1);
+        ImGui::InputValue("air_dodge_safe_end",   stats.air_dodge_safe_end,   1);
 
         ImGui::Separator();
     }
@@ -170,28 +196,28 @@ void Fighter::debug_show_fighter_widget()
 
 void Fighter::debug_reload_actions()
 {
-    actions.neutral_first->blobs.clear();
+    ActionBuilder& actionBuilder = mFightWorld.get_action_builder();
 
-    ActionBuilder::load_from_json(*actions.neutral_first);
+    actionBuilder.load_from_json(*actions.neutral_first);
 
-    ActionBuilder::load_from_json(*actions.tilt_down);
-    ActionBuilder::load_from_json(*actions.tilt_forward);
-    ActionBuilder::load_from_json(*actions.tilt_up);
+    actionBuilder.load_from_json(*actions.tilt_down);
+    actionBuilder.load_from_json(*actions.tilt_forward);
+    actionBuilder.load_from_json(*actions.tilt_up);
 
-    ActionBuilder::load_from_json(*actions.air_back);
-    ActionBuilder::load_from_json(*actions.air_down);
-    ActionBuilder::load_from_json(*actions.air_forward);
-    ActionBuilder::load_from_json(*actions.air_neutral);
-    ActionBuilder::load_from_json(*actions.air_up);
+    actionBuilder.load_from_json(*actions.air_back);
+    actionBuilder.load_from_json(*actions.air_down);
+    actionBuilder.load_from_json(*actions.air_forward);
+    actionBuilder.load_from_json(*actions.air_neutral);
+    actionBuilder.load_from_json(*actions.air_up);
 
-    ActionBuilder::load_from_json(*actions.dash_attack);
+    actionBuilder.load_from_json(*actions.dash_attack);
 
-    ActionBuilder::load_from_json(*actions.smash_down);
-    ActionBuilder::load_from_json(*actions.smash_forward);
-    ActionBuilder::load_from_json(*actions.smash_up);
+    actionBuilder.load_from_json(*actions.smash_down);
+    actionBuilder.load_from_json(*actions.smash_forward);
+    actionBuilder.load_from_json(*actions.smash_up);
 
-    ActionBuilder::load_from_json(*actions.special_down);
-    ActionBuilder::load_from_json(*actions.special_forward);
-    ActionBuilder::load_from_json(*actions.special_neutral);
-    ActionBuilder::load_from_json(*actions.special_up);
+    actionBuilder.load_from_json(*actions.special_down);
+    actionBuilder.load_from_json(*actions.special_forward);
+    actionBuilder.load_from_json(*actions.special_neutral);
+    actionBuilder.load_from_json(*actions.special_up);
 }

@@ -1,46 +1,60 @@
 {
-
-"blobs":
-{
-  "0:A":
+  "blobs": 
   {
-    "origin": [ 0.0, 0.6, 0.65 ],
-    "radius": 0.4,
-    "bone": null,
-    "group": 0,
-    "knockAngle": 0.125,
-    "knockBase": 1.5,
-    "knockScale": 0.0,
-    "damage": 3.0,
-    "flavour": "Sour",
-    "priority": "Low"
+    "BlobA": 
+    {
+      "bone": null,
+      "damage": 3.0,
+      "flavour": "Sour",
+      "group": 0,
+      "knockAngle": 0.125,
+      "knockBase": 1.5,
+      "knockScale": 0.0,
+      "origin": [ 0.0, 0.6, 0.65 ],
+      "priority": "Low",
+      "radius": 0.4
+    },
+    "BlobB": 
+    {
+      "bone": null,
+      "damage": 3.0,
+      "flavour": "Sour",
+      "group": 0,
+      "knockAngle": 0.125,
+      "knockBase": 1.5,
+      "knockScale": 0.0,
+      "origin": [ 0.0, 1.0, 0.7 ],
+      "priority": "Low",
+      "radius": 0.45
+    }
   },
-  "0:B":
+  "emitters": {},
+  "procedures": 
   {
-    "origin": [ 0.0, 1.0, 0.7 ],
-    "radius": 0.45,
-    "bone": null,
-    "group": 0,
-    "knockAngle": 0.125,
-    "knockBase": 1.5,
-    "knockScale": 0.0,
-    "damage": 3.0,
-    "flavour": "Sour",
-    "priority": "Low"
+    "DisableBlobA": 
+    {
+      "frames": [ 4 ],
+      "source": "disable_blob BlobA"
+    },
+    "DisableBlobB": 
+    {
+      "frames": [ 6 ],
+      "source": "disable_blob BlobB"
+    },
+    "EnableBlobA": 
+    {
+      "frames": [ 2 ],
+      "source": "enable_blob BlobA"
+    },
+    "EnableBlobB": 
+    {
+      "frames": [ 4 ],
+      "source": "enable_blob BlobB"
+    },
+    "FinishAction": 
+    {
+      "frames": [ 14 ],
+      "source": "finish_action"
+    }
   }
-},
-
-"emitters":
-{
-},
-
-"commands":
-[
-  [ [ 2 ], "enable_blob 0:A" ],
-  [ [ 4 ], "enable_blob 0:B" ],
-  [ [ 6 ], "disable_blob 0:A" ],
-  [ [ 8 ], "disable_blob 0:B" ],
-  [ [ 14 ], "finish_action" ]
-]
-
 }

@@ -11,9 +11,12 @@ layout(std140, binding=0) uniform CAMERABLOCK { CameraBlock CB; };
 
 layout(location=0) in vec3 v_Position;
 layout(location=1) in float v_Radius;
-layout(location=2) in float v_Opacity;
-layout(location=3) in float v_Index;
+layout(location=2) in vec3 v_Colour;
+layout(location=3) in float v_Opacity;
+layout(location=4) in float v_Misc;
+layout(location=5) in float v_Index;
 
+out vec3 colour;
 out float opacity;
 out float index;
 
@@ -23,6 +26,7 @@ out float depth;
 
 void main() 
 {
+    colour = v_Colour;
     opacity = v_Opacity;
     index = v_Index;
     

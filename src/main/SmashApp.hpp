@@ -1,12 +1,12 @@
 #pragma once
 
+#include "main/GameSetup.hpp"
+#include "main/Options.hpp"
+
 #include <sqee/app/Application.hpp>
 #include <sqee/app/Window.hpp>
 #include <sqee/app/InputDevices.hpp>
 #include <sqee/app/DebugOverlay.hpp>
-
-#include "main/Options.hpp"
-#include "main/GameSetup.hpp"
 
 //============================================================================//
 

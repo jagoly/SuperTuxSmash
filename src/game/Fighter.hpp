@@ -142,7 +142,7 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    Action* get_action(Action::Type action);
+    Action* get_action(ActionType type);
 
     //--------------------------------------------------------//
 
@@ -180,12 +180,6 @@ public: //====================================================//
 
     Vec2F mVelocity = { 0.f, 0.f };
 
-    //--------------------------------------------------------//
-
-    void debug_show_fighter_widget();
-
-    void debug_reload_actions();
-
 protected: //=================================================//
 
     Vector<HurtBlob*> mHurtBlobs;
@@ -217,42 +211,24 @@ private: //===================================================//
 
     friend class PrivateFighter;
     UniquePtr<PrivateFighter> impl;
+
+public: //== debug and editor interfaces =====================//
+
+    void debug_show_fighter_widget();
+
+    void debug_reload_actions();
+
+    PrivateFighter* editor_get_private() { return impl.get(); }
 };
 
 //============================================================================//
 
-inline Action* Fighter::get_action(Action::Type action)
-{
-    SWITCH (action) {
-        CASE (Neutral_First)    return actions.neutral_first.get();
-        CASE (Tilt_Down)        return actions.tilt_down.get();
-        CASE (Tilt_Forward)     return actions.tilt_forward.get();
-        CASE (Tilt_Up)          return actions.tilt_up.get();
-        CASE (Air_Back)         return actions.air_back.get();
-        CASE (Air_Down)         return actions.air_down.get();
-        CASE (Air_Forward)      return actions.air_forward.get();
-        CASE (Air_Neutral)      return actions.air_neutral.get();
-        CASE (Air_Up)           return actions.air_up.get();
-        CASE (Dash_Attack)      return actions.dash_attack.get();
-        CASE (Smash_Down)       return actions.smash_down.get();
-        CASE (Smash_Forward)    return actions.smash_forward.get();
-        CASE (Smash_Up)         return actions.smash_up.get();
-        CASE (Special_Down)     return actions.special_down.get();
-        CASE (Special_Forward)  return actions.special_forward.get();
-        CASE (Special_Neutral)  return actions.special_neutral.get();
-        CASE (Special_Up)       return actions.special_up.get();
-        CASE_DEFAULT            return nullptr;
-    } SWITCH_END;
-}
-
-//============================================================================//
-
-SQEE_ENUM_TO_STRING(Fighter::State,
-                    Neutral, Walking, Dashing, Brake, Crouch,
-                    Charge, Attack, Special, Landing, PreJump, Jumping,
-                    Falling, AirAttack, AirSpecial, Knocked, Stunned,
-                    Shield, Dodge, Evade, AirDodge)
-
-//============================================================================//
-
 } // namespace sts
+
+//============================================================================//
+
+SQEE_ENUM_HELPER(sts::Fighter::State,
+                 Neutral, Walking, Dashing, Brake, Crouch,
+                 Charge, Attack, Special, Landing, PreJump, Jumping,
+                 Falling, AirAttack, AirSpecial, Knocked, Stunned,
+                 Shield, Dodge, Evade, AirDodge)

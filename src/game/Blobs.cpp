@@ -1,10 +1,12 @@
 #include "game/Blobs.hpp"
 
-#include <sqee/debug/Logging.hpp>
-
 #include "game/Fighter.hpp"
 
+#include <sqee/debug/Logging.hpp>
+
 using namespace sts;
+
+//============================================================================//
 
 void HitBlob::from_json(const JsonValue& json)
 {
@@ -47,6 +49,8 @@ void HitBlob::to_json(JsonValue& json) const
     json["priority"] = priority;
 }
 
+//============================================================================//
+
 void HurtBlob::from_json(const JsonValue& item)
 {
     bone = int8_t(item[0]);
@@ -70,5 +74,34 @@ void HurtBlob::to_json(JsonValue& json) const
     json["radius"] = radius;
 }
 
-SQEE_ENUM_JSON_CONVERSION_DEFINITIONS(sts, HitBlob::Flavour, Sour, Tangy, Sweet)
-SQEE_ENUM_JSON_CONVERSION_DEFINITIONS(sts, HitBlob::Priority, Low, Normal, High, Transcend)
+//============================================================================//
+
+DISABLE_WARNING_FLOAT_EQUALITY;
+
+bool sts::operator==(const HitBlob& a, const HitBlob& b)
+{
+    if (a.origin     != b.origin)     return false;
+    if (a.radius     != b.radius)     return false;
+    if (a.bone       != b.bone)       return false;
+    if (a.group      != b.group)      return false;
+    if (a.flavour    != b.flavour)    return false;
+    if (a.priority   != b.priority)   return false;
+    if (a.damage     != b.damage)     return false;
+    if (a.knockAngle != b.knockAngle) return false;
+    if (a.knockBase  != b.knockBase)  return false;
+    if (a.knockScale != b.knockScale) return false;
+
+    return true;
+}
+
+bool sts::operator==(const HurtBlob& a, const HurtBlob& b)
+{
+    if (a.originA != b.originA) return false;
+    if (a.originB != b.originB) return false;
+    if (a.radius  != b.radius)  return false;
+    if (a.bone    != b.bone)    return false;
+
+    return true;
+}
+
+ENABLE_WARNING_FLOAT_EQUALITY;

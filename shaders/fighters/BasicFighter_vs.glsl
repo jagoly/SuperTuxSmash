@@ -29,20 +29,24 @@ void main()
     vec3 normal   = vec3(0.f, 0.f, 0.f);
     vec3 tangent  = vec3(0.f, 0.f, 0.f);
 
-    if (v_Bones.r != -1) position += vec4(v_Position, 1.f) * FB.bones[v_Bones.r] * v_Weights.r;
-    if (v_Bones.g != -1) position += vec4(v_Position, 1.f) * FB.bones[v_Bones.g] * v_Weights.g;
-    if (v_Bones.b != -1) position += vec4(v_Position, 1.f) * FB.bones[v_Bones.b] * v_Weights.b;
-    if (v_Bones.a != -1) position += vec4(v_Position, 1.f) * FB.bones[v_Bones.a] * v_Weights.a;
+    // low precision means we need to normalise this
+    const float weightSum = v_Weights.r + v_Weights.g + v_Weights.b + v_Weights.a;
+    const vec4 weights = v_Weights * (1.0 / weightSum);
 
-    if (v_Bones.r != -1) normal += v_Normal * mat3(FB.bones[v_Bones.r]) * v_Weights.r;
-    if (v_Bones.g != -1) normal += v_Normal * mat3(FB.bones[v_Bones.g]) * v_Weights.g;
-    if (v_Bones.b != -1) normal += v_Normal * mat3(FB.bones[v_Bones.b]) * v_Weights.b;
-    if (v_Bones.a != -1) normal += v_Normal * mat3(FB.bones[v_Bones.a]) * v_Weights.a;
+    if (v_Bones.r != -1) position += vec4(v_Position, 1.f) * FB.bones[v_Bones.r] * weights.r;
+    if (v_Bones.g != -1) position += vec4(v_Position, 1.f) * FB.bones[v_Bones.g] * weights.g;
+    if (v_Bones.b != -1) position += vec4(v_Position, 1.f) * FB.bones[v_Bones.b] * weights.b;
+    if (v_Bones.a != -1) position += vec4(v_Position, 1.f) * FB.bones[v_Bones.a] * weights.a;
 
-    if (v_Bones.r != -1) tangent += v_Tangent.xyz * mat3(FB.bones[v_Bones.r]) * v_Weights.r;
-    if (v_Bones.g != -1) tangent += v_Tangent.xyz * mat3(FB.bones[v_Bones.g]) * v_Weights.g;
-    if (v_Bones.b != -1) tangent += v_Tangent.xyz * mat3(FB.bones[v_Bones.b]) * v_Weights.b;
-    if (v_Bones.a != -1) tangent += v_Tangent.xyz * mat3(FB.bones[v_Bones.a]) * v_Weights.a;
+    if (v_Bones.r != -1) normal += v_Normal * mat3(FB.bones[v_Bones.r]) * weights.r;
+    if (v_Bones.g != -1) normal += v_Normal * mat3(FB.bones[v_Bones.g]) * weights.g;
+    if (v_Bones.b != -1) normal += v_Normal * mat3(FB.bones[v_Bones.b]) * weights.b;
+    if (v_Bones.a != -1) normal += v_Normal * mat3(FB.bones[v_Bones.a]) * weights.a;
+
+    if (v_Bones.r != -1) tangent += v_Tangent.xyz * mat3(FB.bones[v_Bones.r]) * weights.r;
+    if (v_Bones.g != -1) tangent += v_Tangent.xyz * mat3(FB.bones[v_Bones.g]) * weights.g;
+    if (v_Bones.b != -1) tangent += v_Tangent.xyz * mat3(FB.bones[v_Bones.b]) * weights.b;
+    if (v_Bones.a != -1) tangent += v_Tangent.xyz * mat3(FB.bones[v_Bones.a]) * weights.a;
 
     //--------------------------------------------------------//
 
