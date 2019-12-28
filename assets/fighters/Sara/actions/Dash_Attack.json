@@ -1,52 +1,43 @@
 {
-
-"blobs":
-{
-},
-
-"emitters":
-{
-  "BeginDash":
+  "blobs": {},
+  "emitters": 
   {
-    "shape": "disc",
-    "sprite": "Smoke",
-    "direction": [ 0.0, 1.0, 0.0 ],
-    "origin": [ 0.0, 0.0, 0.0 ],
-    "bone": null,
-    "endScale": 2.0,
-    "endOpacity": 0.0,
-    "lifetime.min": 12,
-    "lifetime.max": 18,
-    "radius.min": 0.15,
-    "radius.max": 0.3,
-    "colour.min": [ 1.0, 1.0, 1.0 ],
-    "colour.max": [ 1.0, 1.0, 1.0 ],
-    "opacity.min": 0.4,
-    "opacity.max": 0.5,
-    "incline.min": -0.01,
-    "incline.max": 0.04,
-    "speed.min": 1.1,
-    "speed.max": 1.8
-  }
-},
-
-"procedures":
-{
-  "EmitParticles":
-  {
-    "source": "emit_particles BeginDash 5",
-    "frames": [0,1,2,3,4,5,6,7,8,9,10,11]
+    "BeginDash": 
+    {
+      "bone": null,
+      "colour.fixed": [ 0.0, 0.0, 0.0 ],
+      "direction": [ 0.0, 1.0, 0.0 ],
+      "endOpacity": 0.0,
+      "endScale": 2.0,
+      "lifetime": [ 12, 18 ],
+      "opacity": [ 0.4, 0.5 ],
+      "origin": [ 0.0, 0.0, 0.0 ],
+      "radius": [ 0.15, 0.3 ],
+      "shape.disc": 
+      {
+        "incline": [ -0.01, 0.04 ],
+        "speed": [ 1.1, 1.8 ]
+      },
+      "speed": [ 0.0, 0.0 ],
+      "sprite": "Smoke"
+    }
   },
-  "AddVelocity":
+  "procedures": 
   {
-    "source": "add_velocity 0.2 0.0",
-    "frames": [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]
-  },
-  "FinishAction":
-  {
-    "source": "finish_action",
-    "frames": [32]
+    "AddVelocity": 
+    {
+      "frames": [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 ],
+      "source": "add_velocity 0.2 0.0"
+    },
+    "EmitParticles": 
+    {
+      "frames": [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 ],
+      "source": "emit_particles BeginDash 5"
+    },
+    "FinishAction": 
+    {
+      "frames": [ 32 ],
+      "source": "finish_action"
+    }
   }
-}
-
 }

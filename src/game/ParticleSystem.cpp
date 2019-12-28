@@ -20,6 +20,11 @@ ParticleSystem::ParticleSystem()
     };
 }
 
+void ParticleSystem::clear()
+{
+    mParticles.clear();
+}
+
 //============================================================================//
 
 void ParticleSystem::update_and_clean()
@@ -79,7 +84,7 @@ void ParticleSystem::compute_vertices(float blend, VertexVec& vertices) const
         vertex.colour[0] = UNorm16(p.colour.r);
         vertex.colour[1] = UNorm16(p.colour.g);
         vertex.colour[2] = UNorm16(p.colour.b);
-        vertex.opacity = UNorm16(p.opacity * maths::mix(1.f, p.endOpacity, factor));
+        vertex.opacity = UNorm16(std::pow(p.opacity * maths::mix(1.f, p.endOpacity, factor), 0.5f));
         vertex.misc = 0.f;
         vertex.index = float(p.sprite);
     }

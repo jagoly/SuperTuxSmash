@@ -16,7 +16,7 @@ using namespace sts;
 
 //============================================================================//
 
-DebugRender::DebugRender(Renderer& renderer) : renderer(renderer)
+DebugRenderer::DebugRenderer(Renderer& renderer) : renderer(renderer)
 {
     //-- Load Mesh Objects -----------------------------------//
 
@@ -34,7 +34,7 @@ DebugRender::DebugRender(Renderer& renderer) : renderer(renderer)
 
 //============================================================================//
 
-void DebugRender::refresh_options()
+void DebugRenderer::refresh_options()
 {
     const auto& processor = renderer.processor;
 
@@ -54,7 +54,7 @@ void DebugRender::refresh_options()
 
 //============================================================================//
 
-void DebugRender::render_blobs(const Vector<HitBlob*>& blobs)
+void DebugRenderer::render_hit_blobs(const Vector<HitBlob*>& blobs)
 {
     auto& context = renderer.context;
 
@@ -62,11 +62,12 @@ void DebugRender::render_blobs(const Vector<HitBlob*>& blobs)
 
     //--------------------------------------------------------//
 
-    context.bind_FrameBuffer(renderer.fbos.Main);
+    context.bind_FrameBuffer(renderer.fbos.Resolve);
 
     context.set_state(Context::Blend_Mode::Alpha);
     context.set_state(Context::Cull_Face::Disable);
-    context.set_state(Context::Depth_Test::Disable);
+    context.set_state(Context::Depth_Test::Keep);
+    context.set_state(Context::Depth_Compare::Less);
 
     context.bind_Program(mBlobShader);
 
@@ -122,7 +123,7 @@ void DebugRender::render_blobs(const Vector<HitBlob*>& blobs)
 
 //============================================================================//
 
-void DebugRender::render_blobs(const Vector<HurtBlob*>& blobs)
+void DebugRenderer::render_hurt_blobs(const Vector<HurtBlob*>& blobs)
 {
     auto& context = renderer.context;
 
@@ -130,7 +131,7 @@ void DebugRender::render_blobs(const Vector<HurtBlob*>& blobs)
 
     //--------------------------------------------------------//
 
-    context.bind_FrameBuffer(renderer.fbos.Main);
+    context.bind_FrameBuffer(renderer.fbos.Resolve);
 
     context.set_state(Context::Blend_Mode::Alpha);
     context.set_state(Context::Cull_Face::Disable);

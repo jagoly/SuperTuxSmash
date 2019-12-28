@@ -12,6 +12,15 @@ namespace sts {
 
 //============================================================================//
 
+constexpr const float BLOB_RADIUS_MIN = 0.05f;
+constexpr const float BLOB_RADIUS_MAX = 2.f;
+constexpr const float BLOB_DAMAGE_MIN = 0.1f;
+constexpr const float BLOB_DAMAGE_MAX = 50.f;
+constexpr const float BLOB_KNOCK_MIN = 0.f;
+constexpr const float BLOB_KNOCK_MAX = 100.f;
+
+//============================================================================//
+
 enum class BlobFlavour : char { Sour, Tangy, Sweet };
 
 enum class BlobPriority : char { Low, Normal, High, Transcend };

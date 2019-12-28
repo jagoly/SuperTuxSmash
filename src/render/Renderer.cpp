@@ -24,8 +24,8 @@ Renderer::Renderer(GameMode gameMode, const Options& options)
 {
     //-- Set Texture Paramaters ------------------------------//
 
+    textures.MsColour.set_filter_mode(true);
     textures.Colour.set_filter_mode(true);
-    textures.Final.set_filter_mode(true);
 
     //-- Import GLSL Headers ---------------------------------//
 
@@ -44,8 +44,8 @@ Renderer::Renderer(GameMode gameMode, const Options& options)
     if (gameMode == GameMode::Standard)
         mCamera = std::make_unique<StandardCamera>(*this);
 
-    mDebugRender = std::make_unique<DebugRender>(*this);
-    mParticleRender = std::make_unique<ParticleRender>(*this);
+    mDebugRenderer = std::make_unique<DebugRenderer>(*this);
+    mParticleRenderer = std::make_unique<ParticleRenderer>(*this);
 }
 
 //============================================================================//
@@ -75,19 +75,21 @@ void Renderer::refresh_options()
 
     const uint msaaNum = std::max(4u * options.MSAA_Quality * options.MSAA_Quality, 1u);
 
-    textures.Depth.allocate_storage(Vec3U(options.Window_Size, msaaNum));
-    textures.Colour.allocate_storage(Vec3U(options.Window_Size, msaaNum));
+    textures.MsDepth.allocate_storage(Vec3U(options.Window_Size, msaaNum));
+    textures.MsColour.allocate_storage(Vec3U(options.Window_Size, msaaNum));
 
-    textures.Resolve.allocate_storage(options.Window_Size);
-    //textures.Final.allocate_storage(options.Window_Size);
+    textures.Depth.allocate_storage(options.Window_Size);
+    textures.Colour.allocate_storage(options.Window_Size);
 
     //-- Attach Textures to FrameBuffers ---------------------//
 
-    fbos.Depth.attach(gl::DEPTH_STENCIL_ATTACHMENT, textures.Depth);
-    fbos.Main.attach(gl::DEPTH_STENCIL_ATTACHMENT, textures.Depth);
-    fbos.Main.attach(gl::COLOR_ATTACHMENT0, textures.Colour);
-    fbos.Resolve.attach(gl::COLOR_ATTACHMENT0, textures.Resolve);
-    //fbos.Final.attach(gl::COLOR_ATTACHMENT0, textures.Final);
+    fbos.MsDepth.attach(gl::DEPTH_STENCIL_ATTACHMENT, textures.MsDepth);
+
+    fbos.MsMain.attach(gl::DEPTH_STENCIL_ATTACHMENT, textures.MsDepth);
+    fbos.MsMain.attach(gl::COLOR_ATTACHMENT0, textures.MsColour);
+
+    fbos.Resolve.attach(gl::DEPTH_ATTACHMENT, textures.Depth);
+    fbos.Resolve.attach(gl::COLOR_ATTACHMENT0, textures.Colour);
 
     //-- Load GLSL Shader Sources ----------------------------//
 
@@ -100,6 +102,7 @@ void Renderer::refresh_options()
     processor.load_fragment(shaders.Depth_FighterPunch, "depth/Mask_fs");
 
     processor.load_vertex(shaders.Particles, "particles/test_vs");
+    processor.load_geometry(shaders.Particles, "particles/test_gs");
     processor.load_fragment(shaders.Particles, "particles/test_fs");
 
     processor.load_vertex(shaders.Lighting_Skybox, "lighting/Skybox_vs");
@@ -123,8 +126,8 @@ void Renderer::refresh_options()
 
     //--------------------------------------------------------//
 
-    mDebugRender->refresh_options();
-    mParticleRender->refresh_options();
+    mDebugRenderer->refresh_options();
+    mParticleRenderer->refresh_options();
 }
 
 //============================================================================//
@@ -183,7 +186,7 @@ void Renderer::render_objects(float elapsed, float blend)
 
     //-- Clear the FrameBuffer -------------------------------//
 
-    context.bind_FrameBuffer(fbos.Main);
+    context.bind_FrameBuffer(fbos.MsMain);
 
     context.clear_Colour({0.f, 0.f, 0.f, 0.f});
     context.clear_Depth_Stencil();
@@ -201,21 +204,21 @@ void Renderer::render_objects(float elapsed, float blend)
 
     //-- Render Depth Pass -----------------------------------//
 
-    context.bind_FrameBuffer(fbos.Depth);
+    context.bind_FrameBuffer(fbos.MsDepth);
 
     for (const auto& object : mRenderObjects)
         object->render_depth();
 
     //-- Render Main Pass ------------------------------------//
 
-    context.bind_FrameBuffer(fbos.Main);
+    context.bind_FrameBuffer(fbos.MsMain);
 
     for (const auto& object : mRenderObjects)
         object->render_main();
 
     //-- Render Alpha Pass -----------------------------------//
 
-    context.bind_FrameBuffer(fbos.Main);
+    context.bind_FrameBuffer(fbos.MsMain);
 
     for (const auto& object : mRenderObjects)
         object->render_alpha();
@@ -225,21 +228,26 @@ void Renderer::render_objects(float elapsed, float blend)
 
 void Renderer::render_particles(const ParticleSystem& system, float accum, float blend)
 {
-    mParticleRender->swap_sets();
+    mParticleRenderer->swap_sets();
 
-    mParticleRender->integrate_set(blend, system);
+    mParticleRenderer->integrate_set(blend, system);
 
-    mParticleRender->render_particles();
+    mParticleRenderer->render_particles();
+}
+
+//============================================================================//
+
+void Renderer::resolve_multisample()
+{
+    //-- Resolve the Multi Sample Texture --------------------//
+
+    fbos.MsMain.blit(fbos.Resolve, options.Window_Size, gl::DEPTH_BUFFER_BIT | gl::COLOR_BUFFER_BIT);
 }
 
 //============================================================================//
 
 void Renderer::finish_rendering()
 {
-    //-- Resolve the Multi Sample Texture --------------------//
-
-    fbos.Main.blit(fbos.Resolve, options.Window_Size, gl::COLOR_BUFFER_BIT);
-
     //-- Composite to the Default Framebuffer ----------------//
 
     context.bind_FrameBuffer_default();
@@ -248,20 +256,8 @@ void Renderer::finish_rendering()
     context.set_state(Context::Cull_Face::Disable);
     context.set_state(Context::Depth_Test::Disable);
 
-    context.bind_Texture(textures.Resolve, 0u);
+    context.bind_Texture(textures.Colour, 0u);
     context.bind_Program(shaders.Composite);
 
     sq::draw_screen_quad();
-}
-
-//============================================================================//
-
-void Renderer::render_blobs(const Vector<HitBlob*>& blobs)
-{
-    mDebugRender->render_blobs(blobs);
-}
-
-void Renderer::render_blobs(const Vector<HurtBlob*>& blobs)
-{
-    mDebugRender->render_blobs(blobs);
 }

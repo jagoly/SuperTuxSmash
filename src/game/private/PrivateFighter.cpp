@@ -50,6 +50,8 @@ void PrivateFighter::initialise_armature(const String& path)
 
     current.pose = previous.pose = armature.get_rest_pose();
 
+    fighter.mBoneMatrices.resize(armature.get_bone_count());
+
     //--------------------------------------------------------//
 
     const auto load_animation = [&](sq::Armature::Animation& anim, const char* name)
@@ -217,6 +219,9 @@ void PrivateFighter::initialise_stats(const String& path)
     stats.air_dodge_finish     = json.at("air_dodge_finish");
     stats.air_dodge_safe_start = json.at("air_dodge_safe_start");
     stats.air_dodge_safe_end   = json.at("air_dodge_safe_end");
+
+    stats.anim_walk_stride = json.at("anim_walk_stride");
+    stats.anim_dash_stride = json.at("anim_dash_stride");
 }
 
 //============================================================================//
@@ -963,7 +968,12 @@ void PrivateFighter::base_tick_animation()
     // update these animations based on horizontal velocity
     if ( mAnimation == &animations.walking_loop || mAnimation == &animations.dashing_loop )
     {
-        mAnimTimeContinuous += std::abs(fighter.mVelocity.x);
+        const float stride = mAnimation == &animations.walking_loop
+                             ? fighter.stats.anim_walk_stride : fighter.stats.anim_dash_stride;
+
+        const float animSpeed = stride / float(mAnimation->totalTime);
+
+        mAnimTimeContinuous += std::abs(fighter.mVelocity.x) / animSpeed / STS_TICK_RATE;
 
         current.pose = armature.compute_pose(*mAnimation, mAnimTimeContinuous);
     }
@@ -1006,5 +1016,5 @@ void PrivateFighter::base_tick_animation()
         current.pose = armature.blend_poses(mFadeStartPose, current.pose, blend);
     }
 
-    fighter.mBoneMatrices = armature.compute_ubo_data(current.pose);
+    armature.compute_ubo_data(current.pose, fighter.mBoneMatrices.data(), fighter.mBoneMatrices.size());
 }

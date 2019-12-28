@@ -1,149 +1,151 @@
 {
-
-"blobs":
-{
-  "BlobA":
+  "blobs": 
   {
-    "origin": [ 0.0, 0.1, 1.0 ], 
-    "radius": 0.5,
-    "bone": null,
-    "group": 0,
-    "knockAngle": 0.125,
-    "knockBase": 6.0,
-    "knockScale": 0.0,
-    "damage": 3.0,
-    "flavour": "Sour",
-    "priority": "Normal"
+    "BlobA": 
+    {
+      "bone": null,
+      "damage": 3.0,
+      "flavour": "Sour",
+      "group": 0,
+      "knockAngle": 0.125,
+      "knockBase": 6.0,
+      "knockScale": 0.0,
+      "origin": [ 0.0, 0.1, 1.0 ],
+      "priority": "Normal",
+      "radius": 0.5
+    },
+    "BlobB": 
+    {
+      "bone": null,
+      "damage": 3.0,
+      "flavour": "Sour",
+      "group": 1,
+      "knockAngle": 0.125,
+      "knockBase": 6.0,
+      "knockScale": 0.0,
+      "origin": [ 0.0, 0.1, 1.5 ],
+      "priority": "Normal",
+      "radius": 0.5
+    },
+    "BlobC": 
+    {
+      "bone": null,
+      "damage": 6.0,
+      "flavour": "Tangy",
+      "group": 2,
+      "knockAngle": 0.04,
+      "knockBase": 10.0,
+      "knockScale": 1.0,
+      "origin": [ 0.0, 0.1, 2.0 ],
+      "priority": "High",
+      "radius": 0.5
+    }
   },
-  "BlobB":
+  "emitters": 
   {
-    "origin": [ 0.0, 0.1, 1.5 ],
-    "radius": 0.5,
-    "bone": null,
-    "group": 1,
-    "knockAngle": 0.125,
-    "knockBase": 6.0,
-    "knockScale": 0.0,
-    "damage": 3.0,
-    "flavour": "Sour",
-    "priority": "Normal"
+    "PuffA": 
+    {
+      "bone": null,
+      "colour.random": [         [ 1.0, 0.0, 0.0 ],
+        [ 0.0, 1.0, 0.0 ],
+        [ 0.0, 0.0, 1.0 ]
+      ],
+      "direction": [ 0.0, 1.0, 0.0 ],
+      "endOpacity": 0.1,
+      "endScale": 1.5,
+      "lifetime": [ 12, 18 ],
+      "opacity": [ 0.9, 1.0 ],
+      "origin": [ 0.0, 0.1, 1.0 ],
+      "radius": [ 0.3, 0.4 ],
+      "shape.disc": 
+      {
+        "incline": [ -0.05, 0.25 ],
+        "speed": [ 1.5, 2.5 ]
+      },
+      "speed": [ 0.1, 0.5 ],
+      "sprite": "Sparkle"
+    },
+    "PuffB": 
+    {
+      "bone": null,
+      "colour.random": [         [ 1.0, 0.0, 0.0 ],
+        [ 0.0, 1.0, 0.0 ],
+        [ 0.0, 0.0, 1.0 ]
+      ],
+      "direction": [ 0.0, 1.0, 0.0 ],
+      "endOpacity": 0.1,
+      "endScale": 1.5,
+      "lifetime": [ 12, 18 ],
+      "opacity": [ 0.9, 1.0 ],
+      "origin": [ 0.0, 0.1, 1.5 ],
+      "radius": [ 0.3, 0.4 ],
+      "shape.disc": 
+      {
+        "incline": [ -0.05, 0.25 ],
+        "speed": [ 1.5, 2.5 ]
+      },
+      "speed": [ 0.1, 0.5 ],
+      "sprite": "Sparkle"
+    },
+    "PuffC": 
+    {
+      "bone": null,
+      "colour.random": [         [ 1.0, 0.0, 0.0 ],
+        [ 0.0, 1.0, 0.0 ],
+        [ 0.0, 0.0, 1.0 ]
+      ],
+      "direction": [ 0.0, 1.0, 0.0 ],
+      "endOpacity": 0.1,
+      "endScale": 1.5,
+      "lifetime": [ 14, 20 ],
+      "opacity": [ 0.9, 1.0 ],
+      "origin": [ 0.0, 0.1, 2.0 ],
+      "radius": [ 0.3, 0.4 ],
+      "shape.disc": 
+      {
+        "incline": [ -0.05, 0.25 ],
+        "speed": [ 1.5, 2.5 ]
+      },
+      "speed": [ 0.1, 0.5 ],
+      "sprite": "Sparkle"
+    }
   },
-  "BlobC":
+  "procedures": 
   {
-    "origin": [ 0.0, 0.1, 2.0 ],
-    "radius": 0.5,
-    "bone": null,
-    "group": 2,
-    "knockAngle": 0.04,
-    "knockBase": 10.0,
-    "knockScale": 1.0,
-    "damage": 6.0,
-    "flavour": "Tangy",
-    "priority": "High"
+    "BeginA": 
+    {
+      "frames": [ 4 ],
+      "source": "enable_blob BlobA\nemit_particles PuffA 40"
+    },
+    "BeginB": 
+    {
+      "frames": [ 8 ],
+      "source": "enable_blob BlobB\nemit_particles PuffB 40"
+    },
+    "BeginC": 
+    {
+      "frames": [ 12 ],
+      "source": "enable_blob BlobC\nemit_particles PuffC 50"
+    },
+    "EndA": 
+    {
+      "frames": [ 8 ],
+      "source": "disable_blob BlobA"
+    },
+    "EndB": 
+    {
+      "frames": [ 12 ],
+      "source": "disable_blob BlobB"
+    },
+    "EndC": 
+    {
+      "frames": [ 16 ],
+      "source": "disable_blob BlobC"
+    },
+    "FinishAction": 
+    {
+      "frames": [ 26 ],
+      "source": "finish_action"
+    }
   }
-},
-
-"emitters":
-{
-  "PuffA":
-  {
-    "shape": "ball",
-    "sprite": "Sparkle",
-    "direction": [ 0.0, 1.0, 0.0 ],
-    "origin": [ 0.0, 0.1, 1.0 ],
-    "bone": null,
-    "endScale": 2.0,
-    "endOpacity": 0.2,
-    "lifetime.min": 12,
-    "lifetime.max": 18,
-    "radius.min": 0.15,
-    "radius.max": 0.2,
-    "colour.min": [ 1.0, 1.0, 1.0 ],
-    "colour.max": [ 1.0, 1.0, 1.0 ],
-    "opacity.min": 0.9,
-    "opacity.max": 1.0,
-    "speed.min": 1.5,
-    "speed.max": 2.0
-  },
-  "PuffB":
-  {
-    "shape": "ball",
-    "sprite": "Sparkle",
-    "direction": [ 0.0, 1.0, 0.0 ],
-    "origin": [ 0.0, 0.1, 1.5 ],
-    "bone": null,
-    "endScale": 2.0,
-    "endOpacity": 0.2,
-    "lifetime.min": 12,
-    "lifetime.max": 18,
-    "radius.min": 0.15,
-    "radius.max": 0.2,
-    "colour.min": [ 1.0, 1.0, 1.0 ],
-    "colour.max": [ 1.0, 1.0, 1.0 ],
-    "opacity.min": 0.9,
-    "opacity.max": 1.0,
-    "speed.min": 1.5,
-    "speed.max": 2.0
-  },
-  "PuffC":
-  {
-    "shape": "ball",
-    "sprite": "Sparkle",
-    "direction": [ 0.0, 1.0, 0.0 ],
-    "origin": [ 0.0, 0.1, 2.0 ],
-    "bone": null,
-    "endScale": 2.0,
-    "endOpacity": 0.2,
-    "lifetime.min": 12,
-    "lifetime.max": 18,
-    "radius.min": 0.25,
-    "radius.max": 0.3,
-    "colour.min": [ 1.0, 1.0, 1.0 ],
-    "colour.max": [ 1.0, 1.0, 1.0 ],
-    "opacity.min": 0.9,
-    "opacity.max": 1.0,
-    "speed.min": 1.5,
-    "speed.max": 2.0
-  }
-},
-
-"procedures":
-{
-  "BeginA":
-  {
-    "source": "enable_blob BlobA\nemit_particles PuffA 40",
-    "frames": [4]
-  },
-  "EndA":
-  {
-    "source": "disable_blob BlobA",
-    "frames": [8]
-  },
-  "BeginB":
-  {
-    "source": "enable_blob BlobB\nemit_particles PuffB 40",
-    "frames": [8]
-  },
-  "EndB":
-  {
-    "source": "disable_blob BlobB",
-    "frames": [12]
-  },
-  "BeginC":
-  {
-    "source": "enable_blob BlobC\nemit_particles PuffC 40",
-    "frames": [12]
-  },
-  "EndC":
-  {
-    "source": "disable_blob BlobC",
-    "frames": [16]
-  },
-  "FinishAction":
-  {
-    "source": "finish_action",
-    "frames": [26]
-  }
-}
-
 }

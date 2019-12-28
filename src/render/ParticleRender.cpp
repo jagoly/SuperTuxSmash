@@ -11,7 +11,7 @@ using namespace sts;
 
 //============================================================================//
 
-ParticleRender::ParticleRender(Renderer& renderer) : renderer(renderer)
+ParticleRenderer::ParticleRenderer(Renderer& renderer) : renderer(renderer)
 {
     mVertexBuffer.allocate_dynamic(sizeof(ParticleVertex) * 8192u, nullptr);
     mVertexArray.set_vertex_buffer(mVertexBuffer, sizeof(ParticleVertex));
@@ -28,14 +28,14 @@ ParticleRender::ParticleRender(Renderer& renderer) : renderer(renderer)
 
 //============================================================================//
 
-void ParticleRender::refresh_options()
+void ParticleRenderer::refresh_options()
 {
 
 }
 
 //============================================================================//
 
-void ParticleRender::swap_sets()
+void ParticleRenderer::swap_sets()
 {
     mParticleSetInfoKeep.clear();
     std::swap(mParticleSetInfo, mParticleSetInfoKeep);
@@ -43,7 +43,7 @@ void ParticleRender::swap_sets()
     mVertices.clear();
 }
 
-void ParticleRender::integrate_set(float blend, const ParticleSystem& system)
+void ParticleRenderer::integrate_set(float blend, const ParticleSystem& system)
 {
     auto& info = mParticleSetInfo.emplace_back();
 
@@ -55,7 +55,7 @@ void ParticleRender::integrate_set(float blend, const ParticleSystem& system)
 
 //============================================================================//
 
-void ParticleRender::render_particles()
+void ParticleRenderer::render_particles()
 {
     mVertexBuffer.update(0u, sizeof(ParticleVertex) * uint(mVertices.size()), mVertices.data());
 
@@ -66,17 +66,21 @@ void ParticleRender::render_particles()
 
     auto& context = renderer.context;
 
+    context.bind_FrameBuffer(renderer.fbos.Resolve);
+
     context.bind_VertexArray(mVertexArray);
     context.bind_Program(renderer.shaders.Particles);
 
-    gl::Enable(gl::PROGRAM_POINT_SIZE);
+    //gl::Enable(gl::PROGRAM_POINT_SIZE);
 
     context.set_state(Context::Blend_Mode::Alpha);
     context.set_state(Context::Cull_Face::Disable);
-    context.set_state(Context::Depth_Test::Keep);
-    context.set_state(Context::Depth_Compare::LessEqual);
+    context.set_state(Context::Depth_Test::Disable);
+    //context.set_state(Context::Depth_Compare::LessEqual);
 
     context.bind_Texture(mTexture, 0u);
+
+    context.bind_Texture(renderer.textures.Depth, 1u);
 
     for (const ParticleSetInfo& info : mParticleSetInfo)
     {

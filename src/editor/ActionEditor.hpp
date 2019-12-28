@@ -51,12 +51,14 @@ private: //===================================================//
     //--------------------------------------------------------//
 
     sq::GuiWidget widget_main_menu;
-    sq::GuiWidget widget_hit_blobs;
+    sq::GuiWidget widget_hitblobs;
+    sq::GuiWidget widget_emitters;
     sq::GuiWidget widget_procedures;
     sq::GuiWidget widget_timeline;
 
     void impl_show_widget_main_menu();
-    void impl_show_widget_hit_blobs();
+    void impl_show_widget_hitblobs();
+    void impl_show_widget_emitters();
     void impl_show_widget_procedures();
     void impl_show_widget_timeline();
 
@@ -109,6 +111,8 @@ private: //===================================================//
     bool mLiveEditEnabled = false;
 
     PreviewMode mPreviewMode = PreviewMode::Pause;
+
+    uint64_t mRandomSeed = 1337ul;
 };
 
 } // namespace sts

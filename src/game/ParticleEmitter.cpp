@@ -1,5 +1,6 @@
 #include "game/ParticleEmitter.hpp"
 
+#include "DebugGlobals.hpp"
 #include "game/Fighter.hpp"
 
 #include <sqee/debug/Logging.hpp>
@@ -11,22 +12,27 @@ using namespace sts;
 
 //============================================================================//
 
+// todo: use one RNG for whole program
+static std::mt19937 gRandomNumberGenerator { 1337ul };
+
+void ParticleEmitter::reset_random_seed(uint64_t seed)
+{
+    gRandomNumberGenerator.seed(seed);
+}
+
+//============================================================================//
+
 void ParticleEmitter::generate(ParticleSystem& system, uint count)
 {
     const size_t genStart = system.mParticles.size();
 
+    std::mt19937& rng = gRandomNumberGenerator;
+
     //--------------------------------------------------------//
 
-    static std::mt19937 gen(1337);
+    const auto& [spriteMin, spriteMax] = system.sprites[sprite];
 
-    // todo: sprite range map thing
-
-    //maths::RandomScalar<uint16_t> randSprite   { sprite.min, sprite.max };
-    maths::RandomScalar<uint16_t> randSprite   { 0u, 1u };
-    maths::RandomScalar<uint16_t> randLifetime { lifetime.min, lifetime.max };
-    maths::RandomScalar<float>    randRadius   { radius.min, radius.max };
-    maths::RandomVector<3, float> randColour   { colour.min, colour.max };
-    maths::RandomScalar<float>    randOpacity  { opacity.min, opacity.max };
+    RandomRange<uint16_t> randSprite { spriteMin, spriteMax };
 
     for (uint i = 0u; i < count; ++i)
     {
@@ -37,15 +43,15 @@ void ParticleEmitter::generate(ParticleSystem& system, uint count)
 
         p.progress = 0u;
 
-        p.lifetime = randLifetime(gen);
-        p.radius = randRadius(gen);
-        p.colour = randColour(gen);
-        p.opacity = randOpacity(gen);
+        p.lifetime = lifetime(rng);
+        p.radius = radius(rng);
+        p.opacity = opacity(rng);
+        p.velocity = emitVelocity + direction * speed(rng);
 
         p.endScale = endScale;
         p.endOpacity = endOpacity;
 
-        p.sprite = randSprite(gen);
+        p.sprite = randSprite(rng);
 
         p.friction = 0.1f;
     }
@@ -56,40 +62,44 @@ void ParticleEmitter::generate(ParticleSystem& system, uint count)
 
     //--------------------------------------------------------//
 
-    if (auto disc = std::get_if<DiscShape>(&shape))
+    if (auto fixed = std::get_if<FixedColour>(&colour))
     {
-        maths::RandomScalar<float> randAngle   { 0.0f, 1.0f };
-        maths::RandomScalar<float> randIncline { disc->incline.min, disc->incline.max };
-        maths::RandomScalar<float> randSpeed   { disc->speed.min, disc->speed.max };
-
         for (size_t i = genStart; i < genStart + count; ++i)
-        {
-            ParticleData& p = system.mParticles[i];
+            system.mParticles[i].colour = *fixed;
+    }
 
-            p.velocity = maths::rotate_x(Vec3F(0.f, 0.f, -1.f), randIncline(gen));
-            p.velocity = maths::rotate_y(p.velocity, randAngle(gen));
-            p.velocity = emitVelocity + basis * p.velocity * randSpeed(gen);
-        }
+    if (auto random = std::get_if<RandomColour>(&colour))
+    {
+        RandomRange<uint8_t> randIndex { 0u, uint8_t(random->size() - 1) };
+        for (size_t i = genStart; i < genStart + count; ++i)
+            system.mParticles[i].colour = (*random)[randIndex(rng)];
     }
 
     //--------------------------------------------------------//
 
     if (auto ball = std::get_if<BallShape>(&shape))
     {
-        maths::RandomVector<3, float> randVector { Vec3F(-1.f), Vec3F(1.f) };
-        maths::RandomScalar<float> randSpeed { ball->speed.min, ball->speed.max };
+        // not really a spherical distribution, but good enough for now
+        RandomRange<Vec3F> randNormal { Vec3F(-1.f), Vec3F(1.f) };
 
         for (size_t i = genStart; i < genStart + count; ++i)
         {
-            ParticleData& p = system.mParticles[i];
+            // don't care about basis, since we are going in every direction anyway
+            const Vec3F dir = maths::normalize(randNormal(rng));
+            system.mParticles[i].velocity += dir * ball->speed(rng);
+        }
+    }
 
-            while (true)
-            {
-                p.velocity = randVector(gen);
-                /*if (maths::length_squared(p.velocity) < 1.0f) */break;
-            }
+    //--------------------------------------------------------//
 
-            p.velocity =  p.velocity * randSpeed(gen);
+    if (auto disc = std::get_if<DiscShape>(&shape))
+    {
+        RandomRange<float> randAngle { 0.f, 1.f };
+
+        for (size_t i = genStart; i < genStart + count; ++i)
+        {
+            const Vec3F dir = maths::rotate_y(maths::rotate_x(Vec3F(0.f, 0.f, -1.f), disc->incline(rng)), randAngle(rng));
+            system.mParticles[i].velocity += basis * dir * disc->speed(rng);
         }
     }
 }
@@ -126,6 +136,8 @@ void ParticleEmitter::generate(ParticleSystem& system, uint count)
 
 void ParticleEmitter::from_json(const sq::JsonValue& json)
 {
+    // todo: figure out what exceptions I should actually throw for missing data
+
     if (auto& jb = json.at("bone"); jb.is_null() == false)
     {
         bone = fighter->get_armature().get_bone_index(jb);
@@ -133,53 +145,43 @@ void ParticleEmitter::from_json(const sq::JsonValue& json)
     }
     else bone = -1;
 
-    json.at("direction").get_to(direction);
     json.at("origin").get_to(origin);
-
+    json.at("direction").get_to(direction);
+    json.at("sprite").get_to(sprite);
     json.at("endScale").get_to(endScale);
     json.at("endOpacity").get_to(endOpacity);
 
-    json.at("lifetime.min").get_to(lifetime.min);
-    json.at("lifetime.max").get_to(lifetime.max);
+    json.at("lifetime").get_to(lifetime);
+    json.at("radius").get_to(radius);
+    json.at("opacity").get_to(opacity);
+    json.at("speed").get_to(speed);
 
-    json.at("radius.min").get_to(radius.min);
-    json.at("radius.max").get_to(radius.max);
+    if (auto jColour = json.find("colour.fixed"); jColour != json.end())
+        jColour->get_to(colour.emplace<FixedColour>());
 
-    json.at("colour.min").get_to(colour.min);
-    json.at("colour.max").get_to(colour.max);
+    else if (auto jColour = json.find("colour.random"); jColour != json.end())
+        jColour->get_to(colour.emplace<RandomColour>());
 
-    json.at("opacity.min").get_to(opacity.min);
-    json.at("opacity.max").get_to(opacity.max);
+    else { throw nlohmann::detail::out_of_range::create(403, "missing colour data"); }
 
-    json.at("sprite").get_to(sprite);
-
-    const String& shapeName = json.at("shape");
-
-    if (shapeName == "disc")
-    {
-        DiscShape& ref = shape.emplace<DiscShape>();
-
-        json.at("incline.min").get_to(ref.incline.min);
-        json.at("incline.max").get_to(ref.incline.max);
-
-        json.at("speed.min").get_to(ref.speed.min);
-        json.at("speed.max").get_to(ref.speed.max);
-    }
-
-    else if (shapeName == "column")
-    {
-
-    }
-
-    else if (shapeName == "ball")
+    if (auto jShape = json.find("shape.ball"); jShape != json.end())
     {
         BallShape& ref = shape.emplace<BallShape>();
-
-        json.at("speed.min").get_to(ref.speed.min);
-        json.at("speed.max").get_to(ref.speed.max);
+        jShape->at("speed").get_to(ref.speed);
     }
 
-    else SQASSERT(false, "");
+    else if (auto jShape = json.find("shape.disc"); jShape != json.end())
+    {
+        DiscShape& ref = shape.emplace<DiscShape>();
+        jShape->at("incline").get_to(ref.incline);
+        jShape->at("speed").get_to(ref.speed);
+    }
+
+    else if (auto jShape = json.find("shape.ring"); jShape != json.end())
+    {
+    }
+
+    else { throw nlohmann::detail::out_of_range::create(403, "missing shape data"); }
 
     return;
 }
@@ -196,37 +198,37 @@ void ParticleEmitter::to_json(JsonValue& json) const
     }
     else json["bone"] = nullptr;
 
-    json["direction"] = direction;
     json["origin"] = origin;
+    json["direction"] = direction;
+    json["sprite"] = sprite;
     json["endScale"] = endScale;
     json["endOpacity"] = endOpacity;
-    json["lifetime.min"] = lifetime.min;
-    json["lifetime.max"] = lifetime.max;
-    json["radius.min"] = radius.min;
-    json["radius.max"] = radius.max;
-    json["colour.min"] = colour.min;
-    json["colour.max"] = colour.max;
-    json["opacity.min"] = opacity.min;
-    json["opacity.max"] = opacity.max;
-    json["sprite"] = sprite;
+    json["lifetime"] = lifetime;
+    json["radius"] = radius;
+    json["opacity"] = opacity;
+    json["speed"] = speed;
 
-    if (auto disc = std::get_if<DiscShape>(&shape))
-    {
-        json["shape"] = "disc";
+    if (auto fixed = std::get_if<FixedColour>(&colour))
+        json["colour.fixed"] = *fixed;
 
-        json["incline.min"] = disc->incline.min;
-        json["incline.max"] = disc->incline.max;
-
-        json["speed.min"] = disc->speed.min;
-        json["speed.max"] = disc->speed.max;
-    }
+    if (auto random = std::get_if<RandomColour>(&colour))
+        json["colour.random"] = *random;
 
     if (auto ball = std::get_if<BallShape>(&shape))
     {
-        json["shape"] = "ball";
+        auto& jShape = json["shape.ball"];
+        jShape["speed"] = ball->speed;
+    }
 
-        json["speed.min"] = ball->speed.min;
-        json["speed.max"] = ball->speed.max;
+    if (auto disc = std::get_if<DiscShape>(&shape))
+    {
+        auto& jShape = json["shape.disc"];
+        jShape["incline"] = disc->incline;
+        jShape["speed"] = disc->speed;
+    }
+
+    if (auto ring = std::get_if<RingShape>(&shape))
+    {
     }
 }
 
@@ -234,29 +236,36 @@ void ParticleEmitter::to_json(JsonValue& json) const
 
 DISABLE_WARNING_FLOAT_EQUALITY;
 
-bool sts::operator!=(const ParticleEmitter::DiscShape& a, const ParticleEmitter::DiscShape& b)
-{
-    return a.incline.min != b.incline.min || a.incline.max != b.incline.max
-        || a.speed.min != b.speed.min || a.speed.max != b.speed.max;
-}
-
-bool sts::operator!=(const ParticleEmitter::ColumnShape& a, const ParticleEmitter::ColumnShape& b)
-{
-    return a.deviation.min != b.deviation.min || a.deviation.max != b.deviation.max
-        || a.speed.min != b.speed.min || a.speed.max != b.speed.max;
-}
-
 bool sts::operator!=(const ParticleEmitter::BallShape& a, const ParticleEmitter::BallShape& b)
 {
-    return a.speed.min != b.speed.min || a.speed.max != b.speed.max;
+    return a.speed != b.speed;
+}
+
+bool sts::operator!=(const ParticleEmitter::DiscShape& a, const ParticleEmitter::DiscShape& b)
+{
+    return a.incline != b.incline || a.speed != b.speed;
+}
+
+bool sts::operator!=(const ParticleEmitter::RingShape& a, const ParticleEmitter::RingShape& b)
+{
+    return a.deviation != b.deviation || a.incline != b.incline;
 }
 
 bool sts::operator==(const ParticleEmitter& a, const ParticleEmitter& b)
 {
-    if (a.origin    != b.origin)    return false;
-    if (a.bone      != b.bone)      return false;
-    if (a.direction != b.direction) return false;
-    if (a.shape     != b.shape)     return false;
+    if (a.bone       != b.bone)       return false;
+    if (a.origin     != b.origin)     return false;
+    if (a.direction  != b.direction)  return false;
+    if (a.sprite     != b.sprite)     return false;
+    if (a.endScale   != b.endScale)   return false;
+    if (a.endOpacity != b.endOpacity) return false;
+    if (a.lifetime   != b.lifetime)   return false;
+    if (a.radius     != b.radius)     return false;
+    if (a.opacity    != b.opacity)    return false;
+    if (a.speed      != b.speed)      return false;
+    if (a.colour     != b.colour)     return false;
+    if (a.shape      != b.shape)      return false;
+
     return true;
 }
 

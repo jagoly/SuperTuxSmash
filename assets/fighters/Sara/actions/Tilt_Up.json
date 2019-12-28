@@ -1,145 +1,132 @@
 {
-
-"blobs":
-{
-  "Tangy":
+  "blobs": 
   {
-    "origin": [ 0.0, 2.1, 0.3 ],
-    "radius": 0.4,
-    "bone": null,
-    "group": 0,
-    "knockAngle": 0.0,
-    "knockBase": 12.0,
-    "knockScale": 1.0,
-    "damage": 8.0,
-    "flavour": "Tangy",
-    "priority": "High"
+    "SourA": 
+    {
+      "bone": null,
+      "damage": 5.0,
+      "flavour": "Sour",
+      "group": 0,
+      "knockAngle": 0.98,
+      "knockBase": 8.0,
+      "knockScale": 1.0,
+      "origin": [ 0.0, 2.2, 0.0 ],
+      "priority": "Normal",
+      "radius": 0.45
+    },
+    "SourB": 
+    {
+      "bone": null,
+      "damage": 5.0,
+      "flavour": "Sour",
+      "group": 0,
+      "knockAngle": 0.02,
+      "knockBase": 8.0,
+      "knockScale": 1.0,
+      "origin": [ 0.0, 2.2, 0.6 ],
+      "priority": "Normal",
+      "radius": 0.45
+    },
+    "Tangy": 
+    {
+      "bone": null,
+      "damage": 8.0,
+      "flavour": "Tangy",
+      "group": 0,
+      "knockAngle": 0.0,
+      "knockBase": 12.0,
+      "knockScale": 1.0,
+      "origin": [ 0.0, 2.1, 0.3 ],
+      "priority": "High",
+      "radius": 0.4
+    }
   },
-  "SourA":
+  "emitters": 
   {
-    "origin": [ 0.0, 2.2, 0.0 ],
-    "radius": 0.45,
-    "bone": null,
-    "group": 0,
-    "knockAngle": 0.98,
-    "knockBase": 8.0,
-    "knockScale": 1.0,
-    "damage": 5.0,
-    "flavour": "Sour",
-    "priority": "Normal"
+    "SourA": 
+    {
+      "bone": null,
+      "colour.fixed": [ 0.0, 0.0, 0.0 ],
+      "direction": [ -0.4, 1.0, 0.0 ],
+      "endOpacity": 0.5,
+      "endScale": 0.5,
+      "lifetime": [ 12, 18 ],
+      "opacity": [ 0.9, 1.0 ],
+      "origin": [ 0.0, 1.9, 0.1 ],
+      "radius": [ 0.4, 0.8 ],
+      "shape.disc": 
+      {
+        "incline": [ 0.2, 0.5 ],
+        "speed": [ 2.6, 3.2 ]
+      },
+      "speed": [ 0.0, 0.0 ],
+      "sprite": "Sparkle"
+    },
+    "SourB": 
+    {
+      "bone": null,
+      "colour.fixed": [ 0.0, 0.0, 0.0 ],
+      "direction": [ 0.4, 1.0, 0.0 ],
+      "endOpacity": 0.5,
+      "endScale": 0.5,
+      "lifetime": [ 12, 18 ],
+      "opacity": [ 0.9, 1.0 ],
+      "origin": [ 0.0, 1.9, 0.5 ],
+      "radius": [ 0.4, 0.8 ],
+      "shape.disc": 
+      {
+        "incline": [ 0.2, 0.5 ],
+        "speed": [ 2.6, 3.2 ]
+      },
+      "speed": [ 0.0, 0.0 ],
+      "sprite": "Sparkle"
+    },
+    "Tangy": 
+    {
+      "bone": null,
+      "colour.fixed": [ 0.0, 0.0, 0.0 ],
+      "direction": [ 0.0, 1.0, 0.0 ],
+      "endOpacity": 0.5,
+      "endScale": 0.5,
+      "lifetime": [ 12, 18 ],
+      "opacity": [ 0.9, 1.0 ],
+      "origin": [ 0.0, 1.8, 0.3 ],
+      "radius": [ 0.3, 0.6 ],
+      "shape.disc": 
+      {
+        "incline": [ 0.2, 0.5 ],
+        "speed": [ 2.4, 3.0 ]
+      },
+      "speed": [ 0.0, 0.0 ],
+      "sprite": "Sparkle"
+    }
   },
-  "SourB":
+  "procedures": 
   {
-    "origin": [ 0.0, 2.2, 0.6 ],
-    "radius": 0.45,
-    "bone": null,
-    "group": 0,
-    "knockAngle": 0.02,
-    "knockBase": 8.0,
-    "knockScale": 1.0,
-    "damage": 5.0,
-    "flavour": "Sour",
-    "priority": "Normal"
+    "BeginSour": 
+    {
+      "frames": [ 7 ],
+      "source": "enable_blob SourA\nenable_blob SourB\nemit_particles SourA 16\nemit_particles SourB 16"
+    },
+    "BeginTangy": 
+    {
+      "frames": [ 4 ],
+      "source": "enable_blob Tangy\nemit_particles Tangy 20"
+    },
+    "EndSour": 
+    {
+      "frames": [ 13 ],
+      "source": "disable_blob SourA\ndisable_blob SourB"
+    },
+    "EndTangy": 
+    {
+      "frames": [ 7 ],
+      "source": "disable_blob Tangy"
+    },
+    "FinishAction": 
+    {
+      "frames": [ 20 ],
+      "source": "finish_action"
+    }
   }
-},
-
-"emitters":
-{
-  "Tangy":
-  {
-    "shape": "disc",
-    "sprite": "Sparkle",
-    "direction": [ 0.0, 1.0, 0.0 ],
-    "origin": [ 0.0, 1.8, 0.3 ],
-    "bone": null,
-    "endScale": 0.5,
-    "endOpacity": 0.5,
-    "lifetime.min": 12,
-    "lifetime.max": 18,
-    "radius.min": 0.3,
-    "radius.max": 0.6,
-    "colour.min": [ 1.0, 1.0, 1.0 ],
-    "colour.max": [ 1.0, 1.0, 1.0 ],
-    "opacity.min": 0.9,
-    "opacity.max": 1.0,
-    "incline.min": 0.2,
-    "incline.max": 0.5,
-    "speed.min": 2.4,
-    "speed.max": 3.0
-  },
-  "SourA":
-  {
-    "shape": "disc",
-    "sprite": "Sparkle",
-    "direction": [ -0.4, 1.0, 0.0 ],
-    "origin": [ 0.0, 1.9, 0.1 ],
-    "bone": null,
-    "endScale": 0.5,
-    "endOpacity": 0.5,
-    "lifetime.min": 12,
-    "lifetime.max": 18,
-    "radius.min": 0.4,
-    "radius.max": 0.8,
-    "colour.min": [ 1.0, 1.0, 1.0 ],
-    "colour.max": [ 1.0, 1.0, 1.0 ],
-    "opacity.min": 0.9,
-    "opacity.max": 1.0,
-    "incline.min": 0.2,
-    "incline.max": 0.5,
-    "speed.min": 2.6,
-    "speed.max": 3.2
-  },
-  "SourB":
-  {
-    "shape": "disc",
-    "sprite": "Sparkle",
-    "direction": [ 0.4, 1.0, 0.0 ],
-    "origin": [ 0.0, 1.9, 0.5 ],
-    "bone": null,
-    "endScale": 0.5,
-    "endOpacity": 0.5,
-    "lifetime.min": 12,
-    "lifetime.max": 18,
-    "radius.min": 0.4,
-    "radius.max": 0.8,
-    "colour.min": [ 1.0, 1.0, 1.0 ],
-    "colour.max": [ 1.0, 1.0, 1.0 ],
-    "opacity.min": 0.9,
-    "opacity.max": 1.0,
-    "incline.min": 0.2,
-    "incline.max": 0.5,
-    "speed.min": 2.6,
-    "speed.max": 3.2
-  }
-},
-
-"procedures":
-{
-  "BeginTangy":
-  {
-    "source": "enable_blob Tangy\nemit_particles Tangy 20",
-    "frames": [4]
-  },
-  "EndTangy":
-  {
-    "source": "disable_blob Tangy",
-    "frames": [7]
-  },
-  "BeginSour":
-  {
-    "source": "enable_blob SourA\nenable_blob SourB\nemit_particles SourA 16\nemit_particles SourB 16",
-    "frames": [7]
-  },
-  "EndSour":
-  {
-    "source": "disable_blob SourA\ndisable_blob SourB",
-    "frames": [13]
-  },
-  "FinishAction":
-  {
-    "source": "finish_action",
-    "frames": [20]
-  }
-}
-
 }

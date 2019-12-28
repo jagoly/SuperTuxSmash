@@ -2,7 +2,7 @@
 
 #include <sqee/misc/Builtins.hpp>
 
-#ifdef SQEE_DEBUG
+// todo: there's no reason for the action editor to not be a part of the release build
 
 namespace sts {
 
@@ -16,5 +16,3 @@ struct DebugGlobals
 extern DebugGlobals dbg;
 
 } // namespace sts
-
-#endif

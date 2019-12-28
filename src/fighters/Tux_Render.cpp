@@ -24,6 +24,7 @@ Tux_Render::Tux_Render(Renderer& renderer, const Tux_Fighter& fighter)
     TX_Tux_spec = cache.textures.acquire("assets/fighters/Tux/textures/Tux_spec");
 
     sq::ProgramKey programKey;
+    programKey.fragmentDefines = "#define OPT_TEX_DIFFUSE\n#define OPT_TEX_SPECULAR";
     programKey.vertexPath = "fighters/BasicFighter_vs";
     programKey.fragmentPath = "fighters/BasicFighter_fs";
     PROG_Tux = cache.programs.acquire(programKey);

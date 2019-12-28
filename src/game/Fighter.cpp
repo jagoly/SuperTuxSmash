@@ -84,6 +84,7 @@ Mat4F Fighter::interpolate_model_matrix(float blend) const
 
 void Fighter::interpolate_bone_matrices(float blend, Mat34F* out, size_t len) const
 {
+    SQASSERT (len == impl->armature.get_bone_names().size(), "");
     auto blendPose = impl->armature.blend_poses(impl->previous.pose, impl->current.pose, blend);
     impl->armature.compute_ubo_data(blendPose, out, uint(len));
 }
@@ -143,18 +144,18 @@ void Fighter::debug_show_fighter_widget()
         const ImGui::ScopeFont font = ImGui::FONT_MONO;
         const ImGui::ScopeItemWidth width = 160.f;
 
-        ImGui::InputValue("walk_speed",     stats.walk_speed,     0.05f, '2');
-        ImGui::InputValue("dash_speed",     stats.dash_speed,     0.05f, '2');
-        ImGui::InputValue("air_speed",      stats.air_speed,      0.05f, '2');
-        ImGui::InputValue("traction",       stats.traction,       0.05f, '2');
-        ImGui::InputValue("air_mobility",   stats.air_mobility,   0.05f, '2');
-        ImGui::InputValue("air_friction",   stats.air_friction,   0.05f, '2');
-        ImGui::InputValue("hop_height",     stats.hop_height,     0.05f, '2');
-        ImGui::InputValue("jump_height",    stats.jump_height,    0.05f, '2');
-        ImGui::InputValue("air_hop_height", stats.air_hop_height, 0.05f, '2');
-        ImGui::InputValue("gravity",        stats.gravity,        0.05f, '2');
-        ImGui::InputValue("fall_speed",     stats.fall_speed,     0.05f, '2');
-        ImGui::InputValue("evade_distance", stats.evade_distance, 0.05f, '2');
+        ImGui::InputValue("walk_speed",     stats.walk_speed,     0.05f, "%.2f");
+        ImGui::InputValue("dash_speed",     stats.dash_speed,     0.05f, "%.2f");
+        ImGui::InputValue("air_speed",      stats.air_speed,      0.05f, "%.2f");
+        ImGui::InputValue("traction",       stats.traction,       0.05f, "%.2f");
+        ImGui::InputValue("air_mobility",   stats.air_mobility,   0.05f, "%.2f");
+        ImGui::InputValue("air_friction",   stats.air_friction,   0.05f, "%.2f");
+        ImGui::InputValue("hop_height",     stats.hop_height,     0.05f, "%.2f");
+        ImGui::InputValue("jump_height",    stats.jump_height,    0.05f, "%.2f");
+        ImGui::InputValue("air_hop_height", stats.air_hop_height, 0.05f, "%.2f");
+        ImGui::InputValue("gravity",        stats.gravity,        0.05f, "%.2f");
+        ImGui::InputValue("fall_speed",     stats.fall_speed,     0.05f, "%.2f");
+        ImGui::InputValue("evade_distance", stats.evade_distance, 0.05f, "%.2f");
 
         ImGui::Separator();
 
@@ -167,6 +168,11 @@ void Fighter::debug_show_fighter_widget()
         ImGui::InputValue("air_dodge_finish",     stats.air_dodge_finish,     1);
         ImGui::InputValue("air_dodge_safe_start", stats.air_dodge_safe_start, 1);
         ImGui::InputValue("air_dodge_safe_end",   stats.air_dodge_safe_end,   1);
+
+        ImGui::Separator();
+
+        ImGui::InputValue("anim_walk_stride", stats.anim_walk_stride, 0.1f);
+        ImGui::InputValue("anim_dash_stride", stats.anim_dash_stride, 0.1f);
 
         ImGui::Separator();
     }

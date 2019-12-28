@@ -5,6 +5,7 @@
 #include <sqee/debug/Logging.hpp>
 
 using namespace sts;
+namespace maths = sq::maths;
 
 //============================================================================//
 

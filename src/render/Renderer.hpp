@@ -18,7 +18,7 @@
 //====== Forward Declarations ================================================//
 
 namespace sts { struct HitBlob; struct HurtBlob; }
-namespace sts { class DebugRender; class ParticleRender; }
+namespace sts { class DebugRenderer; class ParticleRenderer; }
 namespace sts { class Camera; class RenderObject; }
 namespace sts { class ParticleSystem; }
 
@@ -58,20 +58,21 @@ public: //====================================================//
 
     void render_particles(const ParticleSystem& system, float accum, float blend);
 
-    void render_blobs(const Vector<HitBlob*>& blobs);
-
-    void render_blobs(const Vector<HurtBlob*>& blobs);
+    void resolve_multisample();
 
     void finish_rendering();
 
     //--------------------------------------------------------//
 
+    DebugRenderer& get_debug_renderer() { return *mDebugRenderer; }
+
+    //--------------------------------------------------------//
+
     struct {
 
-        sq::FrameBuffer Depth;
-        sq::FrameBuffer Main;
+        sq::FrameBuffer MsDepth;
+        sq::FrameBuffer MsMain;
         sq::FrameBuffer Resolve;
-        //sq::FrameBuffer Final;
 
     } fbos;
 
@@ -79,10 +80,10 @@ public: //====================================================//
 
     struct {
 
-        sq::TextureMulti Depth { sq::Texture::Format::DEP24S8 };
-        sq::TextureMulti Colour { sq::Texture::Format::RGB16_FP };
-        sq::Texture2D Resolve { sq::Texture::Format::RGB16_FP };
-        sq::Texture2D Final { sq::Texture::Format::RGBA8_UN };
+        sq::TextureMulti MsDepth { sq::Texture::Format::DEP24S8 };
+        sq::TextureMulti MsColour { sq::Texture::Format::RGB16_FP };
+        sq::Texture2D Depth { sq::Texture::Format::DEP24S8 };
+        sq::Texture2D Colour { sq::Texture::Format::RGB16_FP };
 
     } textures;
 
@@ -125,8 +126,8 @@ private: //===================================================//
 
     Vector<UniquePtr<RenderObject>> mRenderObjects;
 
-    UniquePtr<DebugRender> mDebugRender;
-    UniquePtr<ParticleRender> mParticleRender;
+    UniquePtr<DebugRenderer> mDebugRenderer;
+    UniquePtr<ParticleRenderer> mParticleRenderer;
 };
 
 } // namespace sts

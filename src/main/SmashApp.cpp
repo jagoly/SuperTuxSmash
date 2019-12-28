@@ -23,7 +23,7 @@ SmashApp::~SmashApp() = default;
 
 void SmashApp::initialise(Vector<String> args)
 {
-    mWindow = std::make_unique<sq::Window>("SuperTuxSmash", Vec2U(1280u, 720u));
+    mWindow = std::make_unique<sq::Window>("SuperTuxSmash - Main Menu", Vec2U(1280u, 720u));
 
     mWindow->set_vsync_enabled(true);
     mWindow->set_key_repeat(false);
@@ -206,17 +206,20 @@ void SmashApp::refresh_options()
 void SmashApp::start_game(GameSetup setup)
 {
     mActiveScene = std::make_unique<GameScene>(*this, setup);
+    mWindow->set_window_title("SuperTuxSmash - Game");
     refresh_options();
 }
 
 void SmashApp::start_action_editor()
 {
     mActiveScene = std::make_unique<ActionEditor>(*this);
+    mWindow->set_window_title("SuperTuxSmash - Action Editor");
     refresh_options();
 }
 
 void SmashApp::return_to_main_menu()
 {
     mActiveScene = std::make_unique<MenuScene>(*this);
+    mWindow->set_window_title("SuperTuxSmash - Main Menu");
     refresh_options();
 }

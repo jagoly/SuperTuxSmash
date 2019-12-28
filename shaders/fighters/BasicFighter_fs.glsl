@@ -21,8 +21,6 @@ in vec3 N, T, B;
 
 //============================================================================//
 
-#if 0
-
 #ifdef OPT_TEX_DIFFUSE
 layout(binding=0) uniform sampler2D tex_Diffuse;
 #else
@@ -38,14 +36,6 @@ layout(binding=2) uniform sampler2D tex_Specular;
 #else
 layout(location=3) uniform vec3 u_Specular;
 #endif
-
-#endif
-
-layout(binding=0) uniform sampler2D tex_Diffuse;
-#ifdef OPT_TEX_NORMAL
-layout(binding=1) uniform sampler2D tex_Normal;
-#endif
-layout(binding=2) uniform sampler2D tex_Specular;
 
 //============================================================================//
 
@@ -80,19 +70,19 @@ vec3 get_specular_value(vec3 colour, float gloss, vec3 lightDir, vec3 normal)
 
 void main() 
 {
-//    #ifdef OPT_TEX_DIFFUSE
+    #ifdef OPT_TEX_DIFFUSE
     const vec3 diffuse = texture(tex_Diffuse, texcrd).rgb;
-//    #else
-//    const vec3 diffuse = u_Diffuse;
-//    #endif
+    #else
+    const vec3 diffuse = u_Diffuse;
+    #endif
 
     //--------------------------------------------------------//
 
-//    #ifdef OPT_TEX_SPECULAR
+    #ifdef OPT_TEX_SPECULAR
     const vec3 specular = texture(tex_Specular, texcrd).rgb;
-//    #else
-//    const vec3 specular = u_Specular;
-//    #endif
+    #else
+    const vec3 specular = u_Specular;
+    #endif
 
     //--------------------------------------------------------//
 

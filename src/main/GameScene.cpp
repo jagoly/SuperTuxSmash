@@ -10,6 +10,8 @@
 #include "fighters/Sara_Render.hpp"
 #include "fighters/Tux_Render.hpp"
 
+#include "render/DebugRender.hpp"
+
 #include "game/ActionBuilder.hpp"
 
 #include <sqee/macros.hpp>
@@ -130,12 +132,17 @@ void GameScene::render(double elapsed)
     const float blend = float(mAccumulation / mTickTime);
 
     mRenderer->render_objects(accum, blend);
+
+    mRenderer->resolve_multisample();
+
     mRenderer->render_particles(mFightWorld->get_particle_system(), accum, blend);
+
+    auto& debugRenderer = mRenderer->get_debug_renderer();
 
     if (dbg.renderBlobs == true)
     {
-        mRenderer->render_blobs(mFightWorld->get_hit_blobs());
-        mRenderer->render_blobs(mFightWorld->get_hurt_blobs());
+        debugRenderer.render_hit_blobs(mFightWorld->get_hit_blobs());
+        debugRenderer.render_hurt_blobs(mFightWorld->get_hurt_blobs());
     }
 
     mRenderer->finish_rendering();

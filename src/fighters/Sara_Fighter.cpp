@@ -36,10 +36,11 @@ void Sara_Fighter::tick()
     emitter.lifetime = { 16u, 24u };
     emitter.radius = { 0.4f, 0.6f };
     emitter.opacity = { 0.4f, 0.5f };
-    emitter.colour = { Vec3F(1.f), Vec3F(1.f) };
 
-    emitter.disc().incline = { -0.01f, 0.04f };
-    emitter.disc().speed = { 1.2f, 2.2f };
+    emitter.colour_fixed() = { 1.f, 1.f, 1.f };
+
+    emitter.shape_disc().incline = { -0.01f, 0.04f };
+    emitter.shape_disc().speed = { 1.2f, 2.2f };
 
     //emitter.sprite = { 0u, 15u };
     emitter.sprite = "Smoke";

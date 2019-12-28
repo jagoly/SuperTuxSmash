@@ -32,10 +32,10 @@ Sara_Render::Sara_Render(Renderer& renderer, const Sara_Fighter& fighter)
     programKey.vertexPath = "fighters/BasicFighter_vs";
     programKey.fragmentPath = "fighters/BasicFighter_fs";
 
-    programKey.fragmentDefines = "";
+    programKey.fragmentDefines = "#define OPT_TEX_DIFFUSE\n#define OPT_TEX_SPECULAR";
     PROG_Main = cache.programs.acquire(programKey);
 
-    programKey.fragmentDefines = "#define OPT_TEX_NORMAL";
+    programKey.fragmentDefines = "#define OPT_TEX_DIFFUSE\n#define OPT_TEX_NORMAL\n#define OPT_TEX_SPECULAR";
     PROG_Hair = cache.programs.acquire(programKey);
 }
 

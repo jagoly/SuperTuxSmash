@@ -65,7 +65,7 @@ void MenuScene::impl_show_main_window()
     {
         //--------------------------------------------------------//
 
-        ImGui::InputSqeeEnumCombo("Stage", setup.stage, 0);
+        ImGui::ComboEnum("Stage", setup.stage);
 
         //--------------------------------------------------------//
 
@@ -77,7 +77,7 @@ void MenuScene::impl_show_main_window()
             if (ImGui::CollapsingHeader(label.c_str()))
             {
                 const String label = "Fighter##%d"_fmt_(index);
-                ImGui::InputSqeeEnumCombo(label.c_str(), player.fighter, 0);
+                ImGui::ComboEnum(label.c_str(), player.fighter, 0);
 
                 player.enabled = (player.fighter != FighterEnum::Null);
             }

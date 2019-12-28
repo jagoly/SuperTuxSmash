@@ -24,6 +24,9 @@
 
 "air_dodge_finish":     26,
 "air_dodge_safe_start": 2,
-"air_dodge_safe_end":   22
+"air_dodge_safe_end":   22,
+
+"anim_walk_stride": 1.0,
+"anim_dash_stride": 2.0
 
 }

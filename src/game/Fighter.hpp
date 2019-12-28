@@ -57,6 +57,9 @@ public: //====================================================//
         uint air_dodge_finish     = 26u;
         uint air_dodge_safe_start = 2u;
         uint air_dodge_safe_end   = 22u;
+
+        float anim_walk_stride = 2.0;
+        float anim_dash_stride = 3.0;
     };
 
     //--------------------------------------------------------//

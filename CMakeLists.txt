@@ -3,7 +3,7 @@ project(SuperTuxSmash_Game)
 
 ################################################################################
 
-option(SQEE_BUILD_ROOT "The build directory for the SQEE Library")
+set(SQEE_BUILD_ROOT CACHE PATH "The build directory for the SQEE Library")
 
 if (NOT SQEE_BUILD_ROOT)
     message(FATAL_ERROR "You must specify the build directory for SQEE")

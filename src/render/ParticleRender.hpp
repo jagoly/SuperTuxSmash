@@ -11,11 +11,11 @@ namespace sts {
 
 //============================================================================//
 
-class ParticleRender final : sq::NonCopyable
+class ParticleRenderer final : sq::NonCopyable
 {
 public: //====================================================//
 
-    ParticleRender(Renderer& renderer);
+    ParticleRenderer(Renderer& renderer);
 
     void refresh_options();
 

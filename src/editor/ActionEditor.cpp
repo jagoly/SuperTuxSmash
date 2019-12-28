@@ -10,17 +10,21 @@
 #include "fighters/Sara_Render.hpp"
 #include "fighters/Tux_Render.hpp"
 
+#include "render/DebugRender.hpp"
+
 #include "game/ActionBuilder.hpp"
 #include "game/private/PrivateFighter.hpp"
 
 #include <sqee/macros.hpp>
 #include <sqee/app/GuiWidgets.hpp>
 #include <sqee/debug/Logging.hpp>
+#include <sqee/maths/Functions.hpp>
 #include <sqee/misc/Files.hpp>
 
 #include <algorithm> // for lots of stuff
 
 namespace algo = sq::algo;
+namespace maths = sq::maths;
 
 using sq::literals::operator""_fmt_;
 
@@ -28,14 +32,17 @@ using namespace sts;
 
 //============================================================================//
 
-constexpr const Vec2F MIN_SIZE_HIT_BLOBS   = { 400, 200 };
-constexpr const Vec2F MAX_SIZE_HIT_BLOBS   = { 600, 1000 };
+constexpr const Vec2F MIN_SIZE_HITBLOBS   = { 500, 200 };
+constexpr const Vec2F MAX_SIZE_HITBLOBS   = { 600, 1000 };
 
-constexpr const Vec2F MIN_SIZE_PROCEDURES  = { 400, 200 };
-constexpr const Vec2F MAX_SIZE_PROCEDURES  = { 600, 1000 };
+constexpr const Vec2F MIN_SIZE_EMITTERS   = { 500, 200 };
+constexpr const Vec2F MAX_SIZE_EMITTERS   = { 600, 1000 };
 
-constexpr const Vec2F MIN_SIZE_TIMELINE    = { 800, 200 };
-constexpr const Vec2F MAX_SIZE_TIMELINE    = { 1500, 800 };
+constexpr const Vec2F MIN_SIZE_PROCEDURES = { 500, 200 };
+constexpr const Vec2F MAX_SIZE_PROCEDURES = { 600, 1000 };
+
+constexpr const Vec2F MIN_SIZE_TIMELINE   = { 800, 200 };
+constexpr const Vec2F MAX_SIZE_TIMELINE   = { 1500, 800 };
 
 //----------------------------------------------------------------------------//
 
@@ -62,7 +69,8 @@ ActionEditor::ActionEditor(SmashApp& smashApp)
     : Scene(1.0 / 48.0), mSmashApp(smashApp)
 {
     widget_main_menu.func = [this]() { impl_show_widget_main_menu(); };
-    widget_hit_blobs.func = [this]() { impl_show_widget_hit_blobs(); };
+    widget_hitblobs.func = [this]() { impl_show_widget_hitblobs(); };
+    widget_emitters.func = [this]() { impl_show_widget_emitters(); };
     widget_procedures.func = [this]() { impl_show_widget_procedures(); };
     widget_timeline.func = [this]() { impl_show_widget_timeline(); };
 
@@ -118,6 +126,10 @@ void ActionEditor::handle_event(sq::Event event)
             if (mPreviewMode == PreviewMode::Pause)
             {
                 mFightWorld->tick();
+            }
+            else
+            {
+                mPreviewMode = PreviewMode::Pause;
             }
         }
     }
@@ -177,12 +189,17 @@ void ActionEditor::render(double elapsed)
     const float blend = mPreviewMode == PreviewMode::Pause ? 1.f : float(mAccumulation / mTickTime);
 
     mRenderer->render_objects(accum, blend);
+
+    mRenderer->resolve_multisample();
+
     mRenderer->render_particles(mFightWorld->get_particle_system(), accum, blend);
+
+    auto& debugRenderer = mRenderer->get_debug_renderer();
 
     if (mRenderBlobsEnabled == true)
     {
-        mRenderer->render_blobs(mFightWorld->get_hit_blobs());
-        mRenderer->render_blobs(mFightWorld->get_hurt_blobs());
+        debugRenderer.render_hit_blobs(mFightWorld->get_hit_blobs());
+        debugRenderer.render_hurt_blobs(mFightWorld->get_hurt_blobs());
     }
 
     mRenderer->finish_rendering();
@@ -224,7 +241,7 @@ void ActionEditor::impl_show_widget_main_menu()
                                   : mWorkingAction ? mWorkingAction->type : ActionType::None;
 
             const ImGui::ScopeItemWidth itemWidth = 160.f;
-            if (ImGui::InputSqeeEnumCombo("##ActionList", actionType, ImGuiComboFlags_HeightLargest))
+            if (ImGui::ComboEnum("##ActionList", actionType, ImGuiComboFlags_HeightLargest))
             {
                 if (mWorkingAction == nullptr || actionType != mWorkingAction->type)
                 {
@@ -295,6 +312,11 @@ void ActionEditor::impl_show_widget_main_menu()
         if (ImGui::RadioButton("Slower", mPreviewMode, PreviewMode::Slower)) mTickTime = 1.0 / 3.0;
         ImGui::HoverTooltip("play preview at 1/16 speed");
 
+        ImGui::Separator();
+        ImGui::SetNextItemWidth(80.f);
+        if (ImGui::InputValue(" RNG Seed", mRandomSeed, 1) && hasWorkingAction)
+            scrub_to_frame(mReferenceAction->mCurrentFrame);
+
         ImGui::EndMainMenuBar();
     }
 
@@ -303,10 +325,10 @@ void ActionEditor::impl_show_widget_main_menu()
 
 //============================================================================//
 
-void ActionEditor::impl_show_widget_hit_blobs()
+void ActionEditor::impl_show_widget_hitblobs()
 {
     if (mWorkingAction == nullptr) return;
-    ImGui::SetNextWindowSizeConstraints(MIN_SIZE_HIT_BLOBS, MAX_SIZE_HIT_BLOBS);
+    ImGui::SetNextWindowSizeConstraints(MIN_SIZE_HITBLOBS, MAX_SIZE_HITBLOBS);
     const ImGui::ScopeWindow window = { "Edit HitBlobs", 0 };
     if (window.open == false) return;
 
@@ -347,7 +369,7 @@ void ActionEditor::impl_show_widget_hit_blobs()
     {
         const ImGui::ScopeID idScope = key.c_str();
 
-        if (collapseAll) ImGui::SetNextTreeNodeOpen(false);
+        if (collapseAll) ImGui::SetNextItemOpen(false);
         const bool sectionOpen = ImGui::CollapsingHeader(key.c_str());
 
         //--------------------------------------------------------//
@@ -383,11 +405,8 @@ void ActionEditor::impl_show_widget_hit_blobs()
             TinyString newKey = key;
             if (ImGui::InputText("", newKey.data(), sizeof(TinyString), ImGuiInputTextFlags_EnterReturnsTrue))
             {
-                if (!mWorkingAction->blobs.contains(newKey))
-                {
-                    toRename.emplace(key, newKey);
-                    ImGui::CloseCurrentPopup();
-                }
+                toRename.emplace(key, newKey);
+                ImGui::CloseCurrentPopup();
             }
             if (ImGui::IsWindowAppearing()) ImGui::SetKeyboardFocusHere();
             ImGui::EndPopup();
@@ -399,11 +418,8 @@ void ActionEditor::impl_show_widget_hit_blobs()
             TinyString newKey = key;
             if (ImGui::InputText("", newKey.data(), sizeof(TinyString), ImGuiInputTextFlags_EnterReturnsTrue))
             {
-                if (!mWorkingAction->blobs.contains(newKey))
-                {
-                    toCopy.emplace(key, newKey);
-                    ImGui::CloseCurrentPopup();
-                }
+                toCopy.emplace(key, newKey);
+                ImGui::CloseCurrentPopup();
             }
             if (ImGui::IsWindowAppearing()) ImGui::SetKeyboardFocusHere();
             ImGui::EndPopup();
@@ -413,15 +429,17 @@ void ActionEditor::impl_show_widget_hit_blobs()
 
         if (sectionOpen == true)
         {
-            ImGui::InputVector(" Origin", blob->origin, '4');
-            ImGui::InputValue(" Radius", blob->radius, 0.01f, '4');
-            ImGui::InputValue(" Group", blob->group, 1);
-            ImGui::InputValue(" KnockAngle", blob->knockAngle, 0.01f, '4');
-            ImGui::InputValue(" KnockBase", blob->knockBase, 0.01f, '4');
-            ImGui::InputValue(" KnockScale", blob->knockScale, 0.01f, '4');
-            ImGui::InputValue(" Damage", blob->damage, 0.01f, '4');
-            ImGui::InputSqeeEnumCombo(" Flavour", blob->flavour, 0);
-            ImGui::InputSqeeEnumCombo(" Priority", blob->priority, 0);
+            const ImGui::ScopeItemWidth widthScope = -100.f;
+
+            ImGui::InputVector(" Origin", blob->origin, 0, "%.4f");
+            ImGui::SliderValue(" Radius", blob->radius, 0.05f, 2.0f, "%.3f metres");
+            ImGui::InputValue(" Group", blob->group, 1, "%u");
+            ImGui::InputValue(" KnockAngle", blob->knockAngle, 0.01f, "%.4f");
+            ImGui::InputValue(" KnockBase", blob->knockBase, 0.01f, "%.4f");
+            ImGui::InputValue(" KnockScale", blob->knockScale, 0.01f, "%.4f");
+            ImGui::InputValue(" Damage", blob->damage, 0.01f, "%.4f");
+            ImGui::ComboEnum(" Flavour", blob->flavour);
+            ImGui::ComboEnum(" Priority", blob->priority);
         }
     }
 
@@ -436,16 +454,229 @@ void ActionEditor::impl_show_widget_hit_blobs()
     if (toRename.has_value() == true)
     {
         SQASSERT(mWorkingAction->blobs.contains(toRename->first), "");
-        SQASSERT(!mWorkingAction->blobs.contains(toRename->second), "");
-        mWorkingAction->blobs.modify_key(toRename->first, toRename->second);
+        if (!mWorkingAction->blobs.contains(toRename->second))
+            mWorkingAction->blobs.modify_key(toRename->first, toRename->second);
     }
 
     if (toCopy.has_value() == true)
     {
         SQASSERT(mWorkingAction->blobs.contains(toCopy->first), "");
-        SQASSERT(!mWorkingAction->blobs.contains(toCopy->second), "");
         auto sourcePtr = mWorkingAction->blobs[toCopy->first];
-        mWorkingAction->blobs.emplace(toCopy->second, *sourcePtr);
+        if (!mWorkingAction->blobs.contains(toCopy->second))
+            mWorkingAction->blobs.emplace(toCopy->second, *sourcePtr);
+    }
+}
+
+//============================================================================//
+
+void ActionEditor::impl_show_widget_emitters()
+{
+    if (mWorkingAction == nullptr) return;
+    ImGui::SetNextWindowSizeConstraints(MIN_SIZE_EMITTERS, MAX_SIZE_EMITTERS);
+    const ImGui::ScopeWindow window = { "Edit Emitters", 0 };
+    if (window.open == false) return;
+
+    //--------------------------------------------------------//
+
+    if (ImGui::Button("New...")) ImGui::OpenPopup("New Emitter");
+
+    ImGui::SameLine();
+    const bool collapseAll = ImGui::Button("Collapse All");
+
+    //--------------------------------------------------------//
+
+    if (ImGui::BeginPopup("New Emitter"))
+    {
+        ImGui::TextUnformatted("Create New Emitter:");
+        TinyString newKey;
+        if (ImGui::InputText("", newKey.data(), sizeof(TinyString), ImGuiInputTextFlags_EnterReturnsTrue))
+        {
+            if (!mWorkingAction->emitters.contains(newKey))
+            {
+                mWorkingAction->emitters.emplace(newKey, ParticleEmitter());
+                ImGui::CloseCurrentPopup();
+            }
+        }
+        if (ImGui::IsWindowAppearing()) ImGui::SetKeyboardFocusHere();
+        ImGui::EndPopup();
+    }
+
+    //--------------------------------------------------------//
+
+    Optional<TinyString> toDelete;
+    Optional<Pair<TinyString, TinyString>> toRename;
+    Optional<Pair<TinyString, TinyString>> toCopy;
+
+    //--------------------------------------------------------//
+
+    for (auto& [key, emitter] : mWorkingAction->emitters)
+    {
+        const ImGui::ScopeID idScope = key.c_str();
+
+        if (collapseAll) ImGui::SetNextItemOpen(false);
+        const bool sectionOpen = ImGui::CollapsingHeader(key.c_str());
+
+        //--------------------------------------------------------//
+
+        enum class Choice { None, Delete, Rename, Copy } choice {};
+
+        if (ImGui::BeginPopupContextItem(nullptr, ImGui::MOUSE_RIGHT))
+        {
+            if (ImGui::MenuItem("Delete...")) choice = Choice::Delete;
+            if (ImGui::MenuItem("Rename...")) choice = Choice::Rename;
+            if (ImGui::MenuItem("Copy...")) choice = Choice::Copy;
+            ImGui::EndPopup();
+        }
+
+        if (choice == Choice::Delete) ImGui::OpenPopup("Delete Emitter");
+        if (choice == Choice::Rename) ImGui::OpenPopup("Rename Emitter");
+        if (choice == Choice::Copy) ImGui::OpenPopup("Copy Emitter");
+
+        if (ImGui::BeginPopup("Delete Emitter"))
+        {
+            ImGui::Text("Delete '%s'?"_fmt_(key));
+            if (ImGui::Button("Confirm"))
+            {
+                toDelete = key;
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+        }
+
+        if (ImGui::BeginPopup("Rename Emitter"))
+        {
+            ImGui::Text("Rename '%s':"_fmt_(key));
+            TinyString newKey = key;
+            if (ImGui::InputText("", newKey.data(), sizeof(TinyString), ImGuiInputTextFlags_EnterReturnsTrue))
+            {
+                toRename.emplace(key, newKey);
+                ImGui::CloseCurrentPopup();
+            }
+            if (ImGui::IsWindowAppearing()) ImGui::SetKeyboardFocusHere();
+            ImGui::EndPopup();
+        }
+
+        if (ImGui::BeginPopup("Copy Emitter"))
+        {
+            ImGui::Text("Copy '%s':"_fmt_(key));
+            TinyString newKey = key;
+            if (ImGui::InputText("", newKey.data(), sizeof(TinyString), ImGuiInputTextFlags_EnterReturnsTrue))
+            {
+                toCopy.emplace(key, newKey);
+                ImGui::CloseCurrentPopup();
+            }
+            if (ImGui::IsWindowAppearing()) ImGui::SetKeyboardFocusHere();
+            ImGui::EndPopup();
+        }
+
+        //--------------------------------------------------------//
+
+        if (sectionOpen == true)
+        {
+            const ImGui::ScopeItemWidth widthScope = -100.f;
+
+            ImGui::InputVector(" Origin", emitter->origin, 0, "%.4f");
+
+            const auto& boneNames = fighter->get_armature().get_bone_names();
+            ImGui::ComboPlus(" Bone", boneNames, emitter->bone, "(None)");
+
+            ImGui::InputVector(" Direction", emitter->direction, 0, "%.4f");
+
+            ImGui::InputText(" Sprite", emitter->sprite.data(), TinyString::capacity());
+
+            ImGui::DragValue(" EndScale", emitter->endScale, 0.f, EMIT_END_SCALE_MAX, 0.001f, "%.3f");
+            ImGui::DragValue(" EndOpacity", emitter->endOpacity, 0.f, EMIT_END_OPACITY_MAX, 0.0025f, "%.2f");
+
+            ImGui::DragValueRange2(" Lifetime", emitter->lifetime.min, emitter->lifetime.max, EMIT_RAND_LIFETIME_MIN, EMIT_RAND_LIFETIME_MAX, 0.5f, "%d");
+            ImGui::DragValueRange2(" Radius", emitter->radius.min, emitter->radius.max, EMIT_RAND_RADIUS_MIN, EMIT_RAND_RADIUS_MAX, 0.001f, "%.3f");
+            ImGui::DragValueRange2(" Opacity", emitter->opacity.min, emitter->opacity.max, EMIT_RAND_OPACITY_MIN, 1.f, 0.0025f, "%.2f");
+            ImGui::DragValueRange2(" Speed", emitter->speed.min, emitter->speed.max, 0.f, EMIT_RAND_SPEED_MAX, 0.001f, "%.3f");
+
+            ImGui::Separator();
+
+            constexpr const Array<const char*, 2> colourTypes = { "Fixed", "Random" };
+            int colourIndex = emitter->colour.index();
+            ImGui::ComboPlus(" Colour", colourTypes, colourIndex);
+
+            if (colourIndex == 0)
+            {
+                if (emitter->colour.index() != 0)
+                {
+                    const Vec3F defaultValue = emitter->colour_random().front();
+                    emitter->colour.emplace<ParticleEmitter::FixedColour>(defaultValue);
+                }
+
+                ImGui::ColorEdit3(" RGB", emitter->colour_fixed().data, ImGuiColorEditFlags_Float);
+            }
+
+            if (colourIndex == 1)
+            {
+                if (emitter->colour.index() != 1)
+                {
+                    const Vec3F defaultValue = emitter->colour_fixed();
+                    emitter->colour.emplace<ParticleEmitter::RandomColour>({defaultValue});
+                }
+
+                int indexToDelete = -1;
+                for (int index = 0; index < emitter->colour_random().size(); ++index)
+                {
+                    const ImGui::ScopeID idScope = index;
+                    if (ImGui::Button(" X ")) indexToDelete = index;
+                    ImGui::SameLine();
+                    ImGui::ColorEdit3(" RGB", emitter->colour_random()[index].data);
+                }
+                if (indexToDelete >= 0)
+                    emitter->colour_random().erase(emitter->colour_random().begin() + indexToDelete);
+                if (ImGui::Button("Add New Entry") && !emitter->colour_random().full())
+                    emitter->colour_random().emplace_back();
+            }
+
+            ImGui::Separator();
+
+            constexpr const Array<const char*, 3> shapeTypes = { "Ball", "Disc", "Ring" };
+            int shapeIndex = emitter->shape.index();
+            ImGui::ComboPlus(" Shape", shapeTypes, shapeIndex);
+
+            if (shapeIndex == 0)
+            {
+                if (emitter->shape.index() != 0)
+                    emitter->shape.emplace<ParticleEmitter::BallShape>();
+
+                ImGui::SliderValueRange2(" Speed", emitter->shape_ball().speed.min, emitter->shape_ball().speed.max, 0.f, 100.f, "%.3f");
+            }
+
+            if (shapeIndex == 1)
+            {
+                if (emitter->shape.index() != 1)
+                    emitter->shape.emplace<ParticleEmitter::DiscShape>();
+
+                ImGui::SliderValueRange2(" Incline", emitter->shape_disc().incline.min, emitter->shape_disc().incline.max, -0.25f, 0.25f, "%.3f");
+                ImGui::SliderValueRange2(" Speed##shape", emitter->shape_disc().speed.min, emitter->shape_disc().speed.max, 0.f, 100.f, "%.3f");
+            }
+        }
+    }
+
+    //--------------------------------------------------------//
+
+    if (toDelete.has_value() == true)
+    {
+        SQASSERT(mWorkingAction->emitters.contains(*toDelete), "");
+        mWorkingAction->emitters.erase(*toDelete);
+    }
+
+    if (toRename.has_value() == true)
+    {
+        SQASSERT(mWorkingAction->emitters.contains(toRename->first), "");
+        if (!mWorkingAction->emitters.contains(toRename->second))
+            mWorkingAction->emitters.modify_key(toRename->first, toRename->second);
+    }
+
+    if (toCopy.has_value() == true)
+    {
+        SQASSERT(mWorkingAction->emitters.contains(toCopy->first), "");
+        auto sourcePtr = mWorkingAction->emitters[toCopy->first];
+        if (!mWorkingAction->emitters.contains(toCopy->second))
+            mWorkingAction->emitters.emplace(toCopy->second, *sourcePtr);
     }
 }
 
@@ -497,7 +728,7 @@ void ActionEditor::impl_show_widget_procedures()
     {
         const ImGui::ScopeID idScope = key.c_str();
 
-        if (collapseAll) ImGui::SetNextTreeNodeOpen(false);
+        if (collapseAll) ImGui::SetNextItemOpen(false);
         const bool sectionOpen = ImGui::CollapsingHeader(key.c_str());
 
         //--------------------------------------------------------//
@@ -533,11 +764,8 @@ void ActionEditor::impl_show_widget_procedures()
             TinyString newKey = key;
             if (ImGui::InputText("", newKey.data(), sizeof(TinyString), ImGuiInputTextFlags_EnterReturnsTrue))
             {
-                if (!mWorkingAction->procedures.count(newKey))
-                {
-                    toRename.emplace(key, newKey);
-                    ImGui::CloseCurrentPopup();
-                }
+                toRename.emplace(key, newKey);
+                ImGui::CloseCurrentPopup();
             }
             if (ImGui::IsWindowAppearing()) ImGui::SetKeyboardFocusHere();
             ImGui::EndPopup();
@@ -549,11 +777,8 @@ void ActionEditor::impl_show_widget_procedures()
             TinyString newKey = key;
             if (ImGui::InputText("", newKey.data(), sizeof(TinyString), ImGuiInputTextFlags_EnterReturnsTrue))
             {
-                if (!mWorkingAction->procedures.count(newKey))
-                {
-                    toCopy.emplace(key, newKey);
-                    ImGui::CloseCurrentPopup();
-                }
+                toCopy.emplace(key, newKey);
+                ImGui::CloseCurrentPopup();
             }
             if (ImGui::IsWindowAppearing()) ImGui::SetKeyboardFocusHere();
             ImGui::EndPopup();
@@ -580,20 +805,24 @@ void ActionEditor::impl_show_widget_procedures()
     if (toRename.has_value() == true)
     {
         SQASSERT(mWorkingAction->procedures.count(toRename->first) == 1u, "");
-        SQASSERT(mWorkingAction->procedures.count(toRename->second) == 0u, "");
-        auto node = mWorkingAction->procedures.extract(toRename->first);
-        node.key() = toRename->second;
-        mWorkingAction->procedures.insert(std::move(node));
-        update_sorted_procedures();
+        if (mWorkingAction->procedures.count(toRename->second) == 0u)
+        {
+            auto node = mWorkingAction->procedures.extract(toRename->first);
+            node.key() = toRename->second;
+            mWorkingAction->procedures.insert(std::move(node));
+            update_sorted_procedures();
+        }
     }
 
     if (toCopy.has_value() == true)
     {
         SQASSERT(mWorkingAction->procedures.count(toCopy->first) == 1u, "");
-        SQASSERT(mWorkingAction->procedures.count(toCopy->second) == 0u, "");
-        auto& sourceRef = mWorkingAction->procedures.at(toCopy->first);
-        mWorkingAction->procedures.emplace(toCopy->second, sourceRef);
-        update_sorted_procedures();
+        if (mWorkingAction->procedures.count(toCopy->second) == 0u)
+        {
+            auto& sourceRef = mWorkingAction->procedures.at(toCopy->first);
+            mWorkingAction->procedures.emplace(toCopy->second, sourceRef);
+            update_sorted_procedures();
+        }
     }
 }
 
@@ -879,20 +1108,23 @@ void ActionEditor::scrub_to_frame(uint16_t frame)
     SQASSERT(mWorkingAction != nullptr, "no working action");
 
     privateFighter->switch_action(ActionType::None);
+
+    ParticleEmitter::reset_random_seed(mRandomSeed);
+    mFightWorld->get_particle_system().clear();
+
     privateFighter->switch_action(mWorkingAction->type);
 
     for (uint16_t i = 0u; i < frame; ++i)
-    {
         mFightWorld->tick();
-    }
 }
 
 //============================================================================//
 
-void ActionEditor::handle_message(const message::fighter_action_finished& msg)
+void ActionEditor::handle_message(const message::fighter_action_finished& /*msg*/)
 {
     if (mWorkingAction != nullptr)
     {
+        ParticleEmitter::reset_random_seed(mRandomSeed);
         privateFighter->switch_action(mWorkingAction->type);
     }
 }

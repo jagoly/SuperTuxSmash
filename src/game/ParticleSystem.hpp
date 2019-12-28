@@ -51,6 +51,9 @@ public: //====================================================//
 
     ParticleSystem();
 
+    /// Immediately destroy all particles.
+    void clear();
+
     //--------------------------------------------------------//
 
     struct SpriteRange { uint16_t first, last; };
@@ -58,9 +61,9 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
+    /// Simulate all particles, then destroy dead particles.
     void update_and_clean();
 
-    // returns the approx average depth for sorting
     void compute_vertices(float blend, VertexVec& vertices) const;
 
     const Vector<ParticleData>& get_particles() const { return mParticles; }
