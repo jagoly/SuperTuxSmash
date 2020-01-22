@@ -1,0 +1,72 @@
+{
+  "HeadN": 
+  {
+    "bone": "HeadN",
+    "originA": [ 0.0, 1.16, 0.03 ],
+    "originB": [ 0.0, 1.26, 0.03 ],
+    "radius": 0.26
+  },
+  "LArmJ": 
+  {
+    "bone": "LArmJ",
+    "originA": [ -0.36, 0.87, -0.02 ],
+    "originB": [ -0.57, 0.87, -0.02 ],
+    "radius": 0.1
+  },
+  "LKneeJ": 
+  {
+    "bone": "LKneeJ",
+    "originA": [ -0.11, 0.38, 0.0 ],
+    "originB": [ -0.11, 0.18, 0.0 ],
+    "radius": 0.14
+  },
+  "LLegJ": 
+  {
+    "bone": "LLegJ",
+    "originA": [ -0.11, 0.58, 0.0 ],
+    "originB": [ -0.11, 0.38, 0.0 ],
+    "radius": 0.14
+  },
+  "LShoulderJ": 
+  {
+    "bone": "LShoulderJ",
+    "originA": [ -0.17, 0.87, -0.02 ],
+    "originB": [ -0.27, 0.87, -0.02 ],
+    "radius": 0.09
+  },
+  "RArmJ": 
+  {
+    "bone": "RArmJ",
+    "originA": [ 0.36, 0.87, -0.02 ],
+    "originB": [ 0.57, 0.87, -0.02 ],
+    "radius": 0.1
+  },
+  "RKneeJ": 
+  {
+    "bone": "RKneeJ",
+    "originA": [ 0.11, 0.38, 0.0 ],
+    "originB": [ 0.11, 0.18, 0.0 ],
+    "radius": 0.14
+  },
+  "RLegJ": 
+  {
+    "bone": "RLegJ",
+    "originA": [ 0.11, 0.58, 0.0 ],
+    "originB": [ 0.11, 0.38, 0.0 ],
+    "radius": 0.14
+  },
+  "RShoulderJ": 
+  {
+    "bone": "RShoulderJ",
+    "originA": [ 0.17, 0.87, -0.02 ],
+    "originB": [ 0.27, 0.87, -0.02 ],
+    "radius": 0.09
+  },
+  "WaistN": 
+  {
+    "bone": "WaistN",
+    "originA": [ 0.0, 0.64, 0.029 ],
+    "originB": [ 0.0, 0.78, 0.029 ],
+    "radius": 0.23
+  }
+}

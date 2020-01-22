@@ -1,0 +1,6 @@
+{
+
+"BodyA_diff": { "format": "RGB8_UN", "wrap": "RR", "swizzle": "RGB1", "filter": true, "mipmaps": true },
+"BodyB_diff": { "format": "RGB8_UN", "wrap": "RR", "swizzle": "RGB1", "filter": true, "mipmaps": true }
+
+}
