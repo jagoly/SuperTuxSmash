@@ -1,4 +1,4 @@
-#include "editor/ActionEditor.hpp"
+#include "editor/EditorScene.hpp"
 
 #include "stages/TestZone_Stage.hpp"
 #include "fighters/Sara_Fighter.hpp"
@@ -39,7 +39,7 @@ constexpr const float WIDTH_NAVIGATOR = 240;
 
 //============================================================================//
 
-ActionEditor::ActionEditor(SmashApp& smashApp)
+EditorScene::EditorScene(SmashApp& smashApp)
     : Scene(1.0 / 48.0), mSmashApp(smashApp)
 {
     widget_toolbar.func = [this]() { impl_show_widget_toolbar(); };
@@ -58,11 +58,11 @@ ActionEditor::ActionEditor(SmashApp& smashApp)
     smashApp.get_window().set_key_repeat(true);
 }
 
-ActionEditor::~ActionEditor() = default;
+EditorScene::~EditorScene() = default;
 
 //============================================================================//
 
-void ActionEditor::handle_event(sq::Event event)
+void EditorScene::handle_event(sq::Event event)
 {
     if (event.type == sq::Event::Type::Keyboard_Press)
     {
@@ -98,7 +98,7 @@ void ActionEditor::handle_event(sq::Event event)
 
 //============================================================================//
 
-void ActionEditor::refresh_options()
+void EditorScene::refresh_options()
 {
     if (mActiveContext != nullptr)
         mActiveContext->renderer->refresh_options();
@@ -106,7 +106,7 @@ void ActionEditor::refresh_options()
 
 //============================================================================//
 
-void ActionEditor::update()
+void EditorScene::update()
 {
     if (mActiveActionContext != nullptr)
         apply_working_changes(*mActiveActionContext);
@@ -121,7 +121,7 @@ void ActionEditor::update()
 
 //============================================================================//
 
-void ActionEditor::render(double elapsed)
+void EditorScene::render(double elapsed)
 {
     // only need to clear the window if we don't have an active context
     if (mActiveContext == nullptr)
@@ -178,7 +178,7 @@ void ActionEditor::render(double elapsed)
 
 //============================================================================//
 
-void ActionEditor::impl_show_widget_toolbar()
+void EditorScene::impl_show_widget_toolbar()
 {
     ImGui::SetNextWindowPos({0, 0});
     ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize);
@@ -337,7 +337,7 @@ void ActionEditor::impl_show_widget_toolbar()
 
 //============================================================================//
 
-void ActionEditor::impl_show_widget_navigator()
+void EditorScene::impl_show_widget_navigator()
 {
     if (mDoResetDockNavigator) ImGui::SetNextWindowDockID(mDockLeftId);
     mDoResetDockNavigator = false;
@@ -483,7 +483,7 @@ void ActionEditor::impl_show_widget_navigator()
 
 //============================================================================//
 
-void ActionEditor::handle_message(const message::fighter_action_finished& /*msg*/)
+void EditorScene::handle_message(const message::fighter_action_finished& /*msg*/)
 {
     SQASSERT(mActiveActionContext != nullptr, "where did this message come from");
 
@@ -497,7 +497,7 @@ void ActionEditor::handle_message(const message::fighter_action_finished& /*msg*
 
 //============================================================================//
 
-void ActionEditor::create_base_context(FighterEnum fighterKey, BaseContext& ctx)
+void EditorScene::create_base_context(FighterEnum fighterKey, BaseContext& ctx)
 {
     ctx.world = std::make_unique<FightWorld>(mSmashApp.get_globals());
     ctx.renderer = std::make_unique<Renderer>(mSmashApp.get_globals(), mSmashApp.get_options());
@@ -549,7 +549,7 @@ void ActionEditor::create_base_context(FighterEnum fighterKey, BaseContext& ctx)
 
 //----------------------------------------------------------------------------//
 
-ActionEditor::ActionContext& ActionEditor::get_action_context(ActionKey key)
+EditorScene::ActionContext& EditorScene::get_action_context(ActionKey key)
 {
     if (auto iter = mActionContexts.find(key); iter != mActionContexts.end())
         return iter->second;
@@ -571,7 +571,7 @@ ActionEditor::ActionContext& ActionEditor::get_action_context(ActionKey key)
 
 //----------------------------------------------------------------------------//
 
-ActionEditor::HurtblobsContext& ActionEditor::get_hurtblobs_context(FighterEnum key)
+EditorScene::HurtblobsContext& EditorScene::get_hurtblobs_context(FighterEnum key)
 {
     if (auto iter = mHurtblobsContexts.find(key); iter != mHurtblobsContexts.end())
         return iter->second;
@@ -596,7 +596,7 @@ ActionEditor::HurtblobsContext& ActionEditor::get_hurtblobs_context(FighterEnum 
 // TODO: should merge similar edits so that dragging a slider doesn't generate 50+ undo entries
 // probably need to make some "can_merge_edits" methods for editables and to store the time for each record
 
-void ActionEditor::apply_working_changes(ActionContext& ctx)
+void EditorScene::apply_working_changes(ActionContext& ctx)
 {
     Action& action = *ctx.fighter->get_action(ctx.key.action);
 
@@ -612,7 +612,7 @@ void ActionEditor::apply_working_changes(ActionContext& ctx)
     }
 }
 
-void ActionEditor::apply_working_changes(HurtblobsContext& ctx)
+void EditorScene::apply_working_changes(HurtblobsContext& ctx)
 {
     if (ctx.fighter->hurtBlobs != *ctx.undoStack[ctx.undoIndex])
     {
@@ -632,7 +632,7 @@ void ActionEditor::apply_working_changes(HurtblobsContext& ctx)
 
 //----------------------------------------------------------------------------//
 
-void ActionEditor::do_undo_redo(ActionContext &ctx, bool redo)
+void EditorScene::do_undo_redo(ActionContext &ctx, bool redo)
 {
     const size_t oldIndex = ctx.undoIndex;
 
@@ -651,7 +651,7 @@ void ActionEditor::do_undo_redo(ActionContext &ctx, bool redo)
     }
 }
 
-void ActionEditor::do_undo_redo(HurtblobsContext &ctx, bool redo)
+void EditorScene::do_undo_redo(HurtblobsContext &ctx, bool redo)
 {
     const size_t oldIndex = ctx.undoIndex;
 
@@ -675,7 +675,7 @@ void ActionEditor::do_undo_redo(HurtblobsContext &ctx, bool redo)
 
 //----------------------------------------------------------------------------//
 
-void ActionEditor::save_changes(ActionContext& ctx)
+void EditorScene::save_changes(ActionContext& ctx)
 {
     const Action& action = *ctx.fighter->get_action(ctx.key.action);
 
@@ -687,7 +687,7 @@ void ActionEditor::save_changes(ActionContext& ctx)
     ctx.modified = false;
 }
 
-void ActionEditor::save_changes(HurtblobsContext& ctx)
+void EditorScene::save_changes(HurtblobsContext& ctx)
 {
     JsonValue json;
     for (const auto& [key, blob] : ctx.fighter->hurtBlobs)
@@ -701,7 +701,7 @@ void ActionEditor::save_changes(HurtblobsContext& ctx)
 
 //============================================================================//
 
-bool ActionEditor::build_working_procedures(ActionContext& ctx)
+bool EditorScene::build_working_procedures(ActionContext& ctx)
 {
     ActionBuilder& actionBuilder = ctx.world->get_action_builder();
     Action& action = *ctx.fighter->get_action(ctx.key.action);
@@ -743,7 +743,7 @@ bool ActionEditor::build_working_procedures(ActionContext& ctx)
 
 //----------------------------------------------------------------------------//
 
-void ActionEditor::scrub_to_frame(ActionContext& ctx, uint16_t frame)
+void EditorScene::scrub_to_frame(ActionContext& ctx, uint16_t frame)
 {
     if (ctx.fighter->current.action != nullptr)
         ctx.privateFighter->switch_action(ActionType::None);
@@ -757,7 +757,7 @@ void ActionEditor::scrub_to_frame(ActionContext& ctx, uint16_t frame)
         ctx.world->tick();
 }
 
-void ActionEditor::scrub_to_frame_current(ActionContext &ctx)
+void EditorScene::scrub_to_frame_current(ActionContext &ctx)
 {
     Action& action = *ctx.fighter->get_action(ctx.key.action);
     scrub_to_frame(ctx, action.mCurrentFrame);

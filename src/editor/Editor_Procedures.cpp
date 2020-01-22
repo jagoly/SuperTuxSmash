@@ -1,4 +1,4 @@
-#include "editor/ActionEditor.hpp"
+#include "editor/EditorScene.hpp"
 
 #include <sqee/debug/Logging.hpp>
 #include <sqee/misc/Algorithms.hpp>

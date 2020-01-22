@@ -189,4 +189,4 @@ private: //===================================================//
 
 } // namespace sts
 
-SQEE_ENUM_HELPER(sts::ActionEditor::PreviewMode, Pause, Normal, Slow, Slower)
+SQEE_ENUM_HELPER(sts::EditorScene::PreviewMode, Pause, Normal, Slow, Slower)

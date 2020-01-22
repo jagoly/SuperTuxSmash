@@ -1,6 +1,6 @@
 #include "main/SmashApp.hpp"
 
-#include "editor/ActionEditor.hpp"
+#include "editor/EditorScene.hpp"
 #include "main/GameScene.hpp"
 #include "main/MenuScene.hpp"
 
@@ -212,7 +212,7 @@ void SmashApp::start_game(GameSetup setup)
 
 void SmashApp::start_action_editor()
 {
-    mActiveScene = std::make_unique<ActionEditor>(*this);
+    mActiveScene = std::make_unique<EditorScene>(*this);
     mWindow->set_window_title("SuperTuxSmash - Action Editor");
     refresh_options();
 }
