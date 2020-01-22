@@ -7,7 +7,8 @@
 #include <sqee/misc/PoolTools.hpp>
 #include <sqee/misc/TinyString.hpp>
 
-#include "game/forward.hpp"
+#include "game/Blobs.hpp"
+#include "game/ParticleEmitter.hpp"
 
 namespace sts {
 
@@ -60,13 +61,15 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    Action(FightWorld& world, Fighter& fighter, ActionType type, bool load = true);
+    Action(FightWorld& world, Fighter& fighter, ActionType type, String path);
 
     virtual ~Action();
 
     //--------------------------------------------------------//
 
     ActionType get_type() const { return type; }
+
+    const Fighter& get_fighter() const { return fighter; }
 
     //--------------------------------------------------------//
 
@@ -92,11 +95,11 @@ protected: //=================================================//
 
     //--------------------------------------------------------//
 
-    sq::TinyPoolMap<TinyString, HitBlob> blobs;
+    sq::PoolMap<TinyString, HitBlob> blobs;
 
-    sq::TinyPoolMap<TinyString, ParticleEmitter> emitters;
+    sq::PoolMap<TinyString, ParticleEmitter> emitters;
 
-    std::map<String, Procedure> procedures;
+    std::map<TinyString, Procedure> procedures;
 
     //--------------------------------------------------------//
 
@@ -114,7 +117,12 @@ private: //===================================================//
     //--------------------------------------------------------//
 
     // for the action editor
+
     bool has_changes(const Action& reference) const;
+
+    void apply_changes(const Action& source);
+
+    UniquePtr<Action> clone() const;
 
     //--------------------------------------------------------//
 
@@ -122,10 +130,10 @@ private: //===================================================//
     friend class Actions;
 
     friend class ActionBuilder;
-    friend class ActionEditor;
-    friend class ActionFuncsValidate;
+    friend class EditorScene;
 
     friend struct ActionFuncs;
+    friend struct ActionFuncsValidate;
 };
 
 //============================================================================//

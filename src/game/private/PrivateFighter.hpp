@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <sqee/render/Armature.hpp>
 
@@ -21,72 +21,10 @@ public: //====================================================//
     using Facing = Fighter::Facing;
     using Stats = Fighter::Stats;
     using Status = Fighter::Status;
+    using AnimMode = Fighter::AnimMode;
 
-    //--------------------------------------------------------//
-
-    using Animation = sq::Armature::Animation;
-
-    struct Transition
-    {
-        State newState; uint fadeFrames;
-        const Animation* animation;
-        const Animation* loop = nullptr;
-    };
-
-    //--------------------------------------------------------//
-
-    struct Animations
-    {
-        Animation crouch_loop;
-        Animation dashing_loop;
-        Animation falling_loop;
-        Animation jumping_loop;
-        Animation neutral_loop;
-        Animation shield_loop;
-        Animation vertigo_loop;
-        Animation walking_loop;
-
-        Animation airdodge; // dodge in the air
-        Animation airhop;   // begin an extra jump
-        Animation brake;    // finish dashing
-        Animation crouch;   // begin crouching
-        Animation divedash; // dash off an edge
-        Animation divewalk; // walk off an edge
-        Animation dodge;    // dodge on the ground
-        Animation evade;    // evade back or forward
-        Animation jump;     // begin a normal jump
-        Animation land;     // land on the ground
-        Animation stand;    // finish crouching
-        Animation unshield; // finish shielding
-
-        //Animation knocked;
-
-        Animation action_neutral_first;
-
-        Animation action_tilt_down;
-        Animation action_tilt_forward;
-        Animation action_tilt_up;
-
-        Animation action_air_back;
-        Animation action_air_down;
-        Animation action_air_forward;
-        Animation action_air_neutral;
-        Animation action_air_up;
-
-        Animation action_dash_attack;
-
-        Animation action_smash_down_start;
-        Animation action_smash_forward_start;
-        Animation action_smash_up_start;
-
-        Animation action_smash_down_charge;
-        Animation action_smash_forward_charge;
-        Animation action_smash_up_charge;
-
-        Animation action_smash_down_attack;
-        Animation action_smash_forward_attack;
-        Animation action_smash_up_attack;
-    };
+    using Animation = Fighter::Animation;
+    using Transition = Fighter::Transition;
 
     //--------------------------------------------------------//
 
@@ -125,6 +63,20 @@ public: //====================================================//
         Transition misc_shield;
         Transition misc_vertigo;
 
+        Transition neutral_attack;
+
+        Transition tilt_down_attack;
+        Transition tilt_forward_attack;
+        Transition tilt_up_attack;
+
+        Transition air_back_attack;
+        Transition air_down_attack;
+        Transition air_forward_attack;
+        Transition air_neutral_attack;
+        Transition air_up_attack;
+
+        Transition dash_attack;
+
         Transition smash_down_start;
         Transition smash_forward_start;
         Transition smash_up_start;
@@ -132,6 +84,8 @@ public: //====================================================//
         Transition smash_down_attack;
         Transition smash_forward_attack;
         Transition smash_up_attack;
+
+        Transition editor_preview;
     };
 
     //--------------------------------------------------------//
@@ -147,7 +101,6 @@ public: //====================================================//
 
     Controller* controller = nullptr;
 
-    Animations animations;
     Transitions transitions;
 
     sq::Armature armature;
@@ -179,15 +132,14 @@ private: //===================================================//
     int8_t mMoveAxisX = 0;
     int8_t mMoveAxisY = 0;
 
-    bool mAttackHeld = false;
     bool mJumpHeld = false;
 
     uint mStateProgress = 0u;
 
     //--------------------------------------------------------//
 
-    const sq::Armature::Animation* mAnimation = nullptr;
-    const sq::Armature::Animation* mNextAnimation = nullptr;
+    const Animation* mAnimation = nullptr;
+    const Animation* mNextAnimation = nullptr;
     const sq::Armature::Pose* mStaticPose = nullptr;
 
     int mAnimTimeDiscrete = 0;
@@ -208,7 +160,7 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
-    GameMode get_game_mode() const { return fighter.mFightWorld.get_game_mode(); }
+    FightWorld& get_world() { return fighter.mFightWorld; }
 
     //--------------------------------------------------------//
 

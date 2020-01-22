@@ -9,7 +9,7 @@ using namespace sts;
 
 //============================================================================//
 
-void ActionEditor::impl_show_widget_emitters()
+void EditorScene::impl_show_widget_emitters()
 {
     if (mActiveActionContext == nullptr) return;
 

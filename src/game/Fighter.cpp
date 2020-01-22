@@ -17,12 +17,12 @@ using namespace sts;
 
 //============================================================================//
 
-Fighter::Fighter(uint8_t index, FightWorld& world, StringView name)
-    : index(index), mFightWorld(world), mName(name)
+Fighter::Fighter(uint8_t index, FightWorld& world, FighterEnum type)
+    : index(index), type(type), hurtBlobs(world.get_hurt_blob_allocator()), mFightWorld(world)
 {
     impl = std::make_unique<PrivateFighter>(*this);
 
-    const String path = sq::build_path("assets/fighters", name);
+    const String path = sq::build_path("assets/fighters", sq::to_c_string(type));
 
     impl->initialise_armature(path);
     impl->initialise_hurt_blobs(path);
@@ -78,7 +78,8 @@ void Fighter::pass_boundary()
 Mat4F Fighter::interpolate_model_matrix(float blend) const
 {
     const Vec2F position = maths::mix(impl->previous.position, impl->current.position, blend);
-    const QuatF rotation = QuatF(0.f, 0.25f * float(current.facing), 0.f);
+    const float rotY = current.state == State::EditorPreview ? 0.5f : 0.25f * float(current.facing);
+    const QuatF rotation = QuatF(0.f, rotY, 0.f);
     return maths::transform(Vec3F(position, 0.f), rotation, Vec3F(1.f));
 }
 
@@ -93,86 +94,74 @@ void Fighter::interpolate_bone_matrices(float blend, Mat34F* out, size_t len) co
 
 Action* Fighter::get_action(ActionType type)
 {
-    SWITCH (type) {
-    CASE (Neutral_First)    return actions.neutral_first.get();
-    CASE (Tilt_Down)        return actions.tilt_down.get();
-    CASE (Tilt_Forward)     return actions.tilt_forward.get();
-    CASE (Tilt_Up)          return actions.tilt_up.get();
-    CASE (Air_Back)         return actions.air_back.get();
-    CASE (Air_Down)         return actions.air_down.get();
-    CASE (Air_Forward)      return actions.air_forward.get();
-    CASE (Air_Neutral)      return actions.air_neutral.get();
-    CASE (Air_Up)           return actions.air_up.get();
-    CASE (Dash_Attack)      return actions.dash_attack.get();
-    CASE (Smash_Down)       return actions.smash_down.get();
-    CASE (Smash_Forward)    return actions.smash_forward.get();
-    CASE (Smash_Up)         return actions.smash_up.get();
-    CASE (Special_Down)     return actions.special_down.get();
-    CASE (Special_Forward)  return actions.special_forward.get();
-    CASE (Special_Neutral)  return actions.special_neutral.get();
-    CASE (Special_Up)       return actions.special_up.get();
-    CASE (None)             return nullptr;
-    } SWITCH_END;
+    if (type == ActionType::None) return nullptr;
+    return actions[int8_t(type)].get();
 }
+
+//Animation* Fighter::get_animation(AnimationType type)
+//{
+//    if (type == AnimationType::None) return nullptr;
+//    return &animations[int8_t(type)];
+//}
 
 //============================================================================//
 
 void Fighter::debug_show_fighter_widget()
 {
-    const String label = "Fighter %d - %s"_fmt_(index, mName);
+    const String label = "Fighter %d - %s"_fmt_(index, type);
     if (ImGui::CollapsingHeader(label.c_str()) == false) return;
 
     //--------------------------------------------------------//
 
     {
-        const ImGui::ScopeFont font = ImGui::FONT_MONO;
+        const ImPlus::ScopeFont font = ImPlus::FONT_MONO;
 
-        ImGui::Text("Position: %s"_fmt_(impl->current.position));
-        ImGui::Text("Velocity: %s"_fmt_(mVelocity));
-        ImGui::Text("Damage: %0.f%%"_fmt_(status.damage));
+        ImPlus::Text("Position: %s"_fmt_(impl->current.position));
+        ImPlus::Text("Velocity: %s"_fmt_(mVelocity));
+        ImPlus::Text("Damage: %0.f%%"_fmt_(status.damage));
 
-        ImGui::Text("state: %s"_fmt_(current.state));
+        ImPlus::Text("state: %s"_fmt_(current.state));
 
         const String actionName = current.action == nullptr ? "None" :
             "%s (%d)"_fmt_(current.action->get_type(), current.action->mCurrentFrame);
 
-        ImGui::Text("action: %s"_fmt_(actionName));
+        ImPlus::Text("action: %s"_fmt_(actionName));
     }
 
     if (ImGui::CollapsingHeader("Edit Stats"))
     {
-        const ImGui::ScopeFont font = ImGui::FONT_MONO;
-        const ImGui::ScopeItemWidth width = 160.f;
+        const ImPlus::ScopeFont font = ImPlus::FONT_MONO;
+        const ImPlus::ScopeItemWidth width = 160.f;
 
-        ImGui::InputValue("walk_speed",     stats.walk_speed,     0.05f, "%.2f");
-        ImGui::InputValue("dash_speed",     stats.dash_speed,     0.05f, "%.2f");
-        ImGui::InputValue("air_speed",      stats.air_speed,      0.05f, "%.2f");
-        ImGui::InputValue("traction",       stats.traction,       0.05f, "%.2f");
-        ImGui::InputValue("air_mobility",   stats.air_mobility,   0.05f, "%.2f");
-        ImGui::InputValue("air_friction",   stats.air_friction,   0.05f, "%.2f");
-        ImGui::InputValue("hop_height",     stats.hop_height,     0.05f, "%.2f");
-        ImGui::InputValue("jump_height",    stats.jump_height,    0.05f, "%.2f");
-        ImGui::InputValue("air_hop_height", stats.air_hop_height, 0.05f, "%.2f");
-        ImGui::InputValue("gravity",        stats.gravity,        0.05f, "%.2f");
-        ImGui::InputValue("fall_speed",     stats.fall_speed,     0.05f, "%.2f");
-        ImGui::InputValue("evade_distance", stats.evade_distance, 0.05f, "%.2f");
-
-        ImGui::Separator();
-
-        ImGui::InputValue("dodge_finish",         stats.dodge_finish,         1);
-        ImGui::InputValue("dodge_safe_start",     stats.dodge_safe_start,     1);
-        ImGui::InputValue("dodge_safe_end",       stats.dodge_safe_end,       1);
-        ImGui::InputValue("evade_finish",         stats.evade_finish,         1);
-        ImGui::InputValue("evade_safe_start",     stats.evade_safe_start,     1);
-        ImGui::InputValue("evade_safe_end",       stats.evade_safe_end,       1);
-        ImGui::InputValue("air_dodge_finish",     stats.air_dodge_finish,     1);
-        ImGui::InputValue("air_dodge_safe_start", stats.air_dodge_safe_start, 1);
-        ImGui::InputValue("air_dodge_safe_end",   stats.air_dodge_safe_end,   1);
+        ImPlus::InputValue("walk_speed",     stats.walk_speed,     0.05f, "%.2f");
+        ImPlus::InputValue("dash_speed",     stats.dash_speed,     0.05f, "%.2f");
+        ImPlus::InputValue("air_speed",      stats.air_speed,      0.05f, "%.2f");
+        ImPlus::InputValue("traction",       stats.traction,       0.05f, "%.2f");
+        ImPlus::InputValue("air_mobility",   stats.air_mobility,   0.05f, "%.2f");
+        ImPlus::InputValue("air_friction",   stats.air_friction,   0.05f, "%.2f");
+        ImPlus::InputValue("hop_height",     stats.hop_height,     0.05f, "%.2f");
+        ImPlus::InputValue("jump_height",    stats.jump_height,    0.05f, "%.2f");
+        ImPlus::InputValue("air_hop_height", stats.air_hop_height, 0.05f, "%.2f");
+        ImPlus::InputValue("gravity",        stats.gravity,        0.05f, "%.2f");
+        ImPlus::InputValue("fall_speed",     stats.fall_speed,     0.05f, "%.2f");
+        ImPlus::InputValue("evade_distance", stats.evade_distance, 0.05f, "%.2f");
 
         ImGui::Separator();
 
-        ImGui::InputValue("anim_walk_stride", stats.anim_walk_stride, 0.1f);
-        ImGui::InputValue("anim_dash_stride", stats.anim_dash_stride, 0.1f);
+        ImPlus::InputValue("dodge_finish",         stats.dodge_finish,         1);
+        ImPlus::InputValue("dodge_safe_start",     stats.dodge_safe_start,     1);
+        ImPlus::InputValue("dodge_safe_end",       stats.dodge_safe_end,       1);
+        ImPlus::InputValue("evade_finish",         stats.evade_finish,         1);
+        ImPlus::InputValue("evade_safe_start",     stats.evade_safe_start,     1);
+        ImPlus::InputValue("evade_safe_end",       stats.evade_safe_end,       1);
+        ImPlus::InputValue("air_dodge_finish",     stats.air_dodge_finish,     1);
+        ImPlus::InputValue("air_dodge_safe_start", stats.air_dodge_safe_start, 1);
+        ImPlus::InputValue("air_dodge_safe_end",   stats.air_dodge_safe_end,   1);
+
+        ImGui::Separator();
+
+        ImPlus::InputValue("anim_walk_stride", stats.anim_walk_stride, 0.1f);
+        ImPlus::InputValue("anim_dash_stride", stats.anim_dash_stride, 0.1f);
 
         ImGui::Separator();
     }
@@ -180,13 +169,13 @@ void Fighter::debug_show_fighter_widget()
     //--------------------------------------------------------//
 
     {
-        const ImGui::ScopeFont font = ImGui::FONT_REGULAR;
+        const ImPlus::ScopeFont font = ImPlus::FONT_REGULAR;
 
         if (ImGui::Button("RESET"))
         {
             impl->current.position = { 0.f, 1.f };
         }
-        ImGui::HoverTooltip("reset the fighter's position");
+        ImPlus::HoverTooltip("reset the fighter's position");
 
         ImGui::SameLine();
 
@@ -194,7 +183,7 @@ void Fighter::debug_show_fighter_widget()
         {
             mVelocity.y = +10.f;
         }
-        ImGui::HoverTooltip("make the fighter bounce");
+        ImPlus::HoverTooltip("make the fighter bounce");
     }
 }
 
@@ -202,28 +191,18 @@ void Fighter::debug_show_fighter_widget()
 
 void Fighter::debug_reload_actions()
 {
-    ActionBuilder& actionBuilder = mFightWorld.get_action_builder();
+    for (int8_t i = 0; i < sq::enum_count_v<ActionType>; ++i)
+        mFightWorld.get_action_builder().load_from_json(*actions[i]);
+}
 
-    actionBuilder.load_from_json(*actions.neutral_first);
+//============================================================================//
 
-    actionBuilder.load_from_json(*actions.tilt_down);
-    actionBuilder.load_from_json(*actions.tilt_forward);
-    actionBuilder.load_from_json(*actions.tilt_up);
+Vec2F& Fighter::edit_position()
+{
+    return impl->current.position;
+}
 
-    actionBuilder.load_from_json(*actions.air_back);
-    actionBuilder.load_from_json(*actions.air_down);
-    actionBuilder.load_from_json(*actions.air_forward);
-    actionBuilder.load_from_json(*actions.air_neutral);
-    actionBuilder.load_from_json(*actions.air_up);
-
-    actionBuilder.load_from_json(*actions.dash_attack);
-
-    actionBuilder.load_from_json(*actions.smash_down);
-    actionBuilder.load_from_json(*actions.smash_forward);
-    actionBuilder.load_from_json(*actions.smash_up);
-
-    actionBuilder.load_from_json(*actions.special_down);
-    actionBuilder.load_from_json(*actions.special_forward);
-    actionBuilder.load_from_json(*actions.special_neutral);
-    actionBuilder.load_from_json(*actions.special_up);
+Vec2F& Fighter::edit_velocity()
+{
+    return impl->current.position;
 }

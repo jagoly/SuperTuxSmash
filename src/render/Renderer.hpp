@@ -9,11 +9,12 @@
 
 #include <sqee/render/Mesh.hpp>
 
+#include "main/Enumerations.hpp"
+#include "main/Globals.hpp"
 #include "main/Options.hpp"
+
 #include "render/ResourceCaches.hpp"
 #include "render/SceneData.hpp"
-
-#include "enumerations.hpp"
 
 //====== Forward Declarations ================================================//
 
@@ -36,7 +37,7 @@ class Renderer final : sq::NonCopyable
 {
 public: //====================================================//
 
-    Renderer(GameMode gameMode, const Options& options);
+    Renderer(const Globals& globals, const Options& options);
 
     ~Renderer();
 
@@ -51,6 +52,8 @@ public: //====================================================//
     //--------------------------------------------------------//
 
     void add_object(UniquePtr<RenderObject> object);
+
+    UniquePtr<RenderObject> remove_object(RenderObject* ptr);
 
     //--------------------------------------------------------//
 
@@ -116,9 +119,9 @@ public: //====================================================//
 
     sq::Context& context;
 
-    const Options& options;
+    const Globals& globals;
 
-    const GameMode gameMode;
+    const Options& options;
 
 private: //===================================================//
 

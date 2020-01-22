@@ -13,7 +13,7 @@ using namespace sts;
 
 //============================================================================//
 
-void ActionEditor::impl_show_widget_hurtblobs()
+void EditorScene::impl_show_widget_hurtblobs()
 {
     if (mActiveHurtblobsContext == nullptr) return;
 

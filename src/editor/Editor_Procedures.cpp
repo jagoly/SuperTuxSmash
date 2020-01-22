@@ -13,7 +13,7 @@ using namespace sts;
 
 //============================================================================//
 
-void ActionEditor::impl_show_widget_procedures()
+void EditorScene::impl_show_widget_procedures()
 {
     if (mActiveActionContext == nullptr) return;
 
@@ -180,7 +180,7 @@ void ActionEditor::impl_show_widget_procedures()
 
 //============================================================================//
 
-void ActionEditor::impl_show_widget_timeline()
+void EditorScene::impl_show_widget_timeline()
 {
     if (mActiveActionContext == nullptr) return;
 

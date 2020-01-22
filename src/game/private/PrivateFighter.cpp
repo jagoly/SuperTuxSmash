@@ -54,136 +54,154 @@ void PrivateFighter::initialise_armature(const String& path)
 
     //--------------------------------------------------------//
 
-    const auto load_animation = [&](sq::Armature::Animation& anim, const char* name)
+    constexpr const auto DEFAULT_ANIMATIONS = std::array
     {
-        const String filePath = sq::build_path(path, "anims", name) + ".txt";
+        std::tuple { "CrouchLoop",  AnimMode::Standard },
+        std::tuple { "DashingLoop", AnimMode::DashCycle },
+        std::tuple { "FallingLoop", AnimMode::Standard },
+        std::tuple { "JumpingLoop", AnimMode::Standard },
+        std::tuple { "NeutralLoop", AnimMode::Standard },
+        std::tuple { "ShieldLoop",  AnimMode::Standard },
+        std::tuple { "VertigoLoop", AnimMode::Standard },
+        std::tuple { "WalkingLoop", AnimMode::WalkCycle },
 
+        std::tuple { "AirDodge", AnimMode::Standard }, // dodge in the air
+        std::tuple { "AirHop",   AnimMode::Standard }, // begin an extra jump
+        std::tuple { "Brake",    AnimMode::Standard }, // finish dashing
+        std::tuple { "Crouch",   AnimMode::Standard }, // begin crouching
+        std::tuple { "DiveDash", AnimMode::Standard }, // dash off an edge
+        std::tuple { "DiveWalk", AnimMode::Standard }, // walk off an edge
+        std::tuple { "Dodge",    AnimMode::Standard }, // dodge on the ground
+        std::tuple { "Evade",    AnimMode::Standard }, // evade back or forward
+        std::tuple { "Jump",     AnimMode::Standard }, // begin a normal jump
+        std::tuple { "Land",     AnimMode::Standard }, // land on the ground
+        std::tuple { "Stand",    AnimMode::Standard }, // finish crouching
+        std::tuple { "Unshield", AnimMode::Standard }, // finish shielding
+
+        std::tuple { "Knocked", AnimMode::Standard },
+
+        std::tuple { "NeutralFirst", AnimMode::Standard },
+
+        std::tuple { "TiltDown",    AnimMode::Standard },
+        std::tuple { "TiltForward", AnimMode::Standard },
+        std::tuple { "TiltUp",      AnimMode::Standard },
+
+        std::tuple { "AirBack",    AnimMode::Standard },
+        std::tuple { "AirDown",    AnimMode::Standard },
+        std::tuple { "AirForward", AnimMode::Standard },
+        std::tuple { "AirNeutral", AnimMode::Standard },
+        std::tuple { "AirUp",      AnimMode::Standard },
+
+        std::tuple { "DashAttack", AnimMode::Standard },
+
+        std::tuple { "SmashDownStart",    AnimMode::Standard },
+        std::tuple { "SmashForwardStart", AnimMode::Standard },
+        std::tuple { "SmashUpStart",      AnimMode::Standard },
+
+        std::tuple { "SmashDownCharge",    AnimMode::Standard },
+        std::tuple { "SmashForwardCharge", AnimMode::Standard },
+        std::tuple { "SmashUpCharge",      AnimMode::Standard },
+
+        std::tuple { "SmashDownAttack",    AnimMode::Standard },
+        std::tuple { "SmashForwardAttack", AnimMode::Standard },
+        std::tuple { "SmashUpAttack",      AnimMode::Standard },
+
+        std::tuple { "Null", AnimMode::Manual }
+    };
+
+    for (const auto& [key, mode] : DEFAULT_ANIMATIONS)
+    {
+        const String filePath = sq::build_path(path, "anims", sq::to_c_string(key)) + ".txt";
         if (sq::check_file_exists(filePath) == false)
         {
             sq::log_warning("missing animation '%s'", filePath);
-            anim = armature.make_animation(path + "/anims/Null.txt");
-            return;
+            fighter.animations[key] = { armature.make_animation(path + "/anims/Null.txt"), mode };
+            continue;
         }
-
-        anim = armature.make_animation(filePath);
-    };
+        fighter.animations[key] = { armature.make_animation(filePath), mode };
+    }
 
     //--------------------------------------------------------//
 
-    Animations& a = animations;
+    const auto a = [&](const char* key) { return &fighter.animations.at(key); };
+
     Transitions& t = transitions;
 
-    //--------------------------------------------------------//
+    t.neutral_crouch  = { State::Crouch,  2u, a("Crouch"), a("CrouchLoop") };
+    t.neutral_walking = { State::Walking, 4u, a("WalkingLoop"), nullptr };
 
-    load_animation ( a.crouch_loop,  "CrouchLoop"  );
-    load_animation ( a.dashing_loop, "DashingLoop" );
-    load_animation ( a.falling_loop, "FallingLoop" );
-    load_animation ( a.jumping_loop, "JumpingLoop" );
-    load_animation ( a.neutral_loop, "NeutralLoop" );
-    load_animation ( a.shield_loop,  "ShieldLoop"  );
-    load_animation ( a.vertigo_loop, "VertigoLoop" );
-    load_animation ( a.walking_loop, "WalkingLoop" );
+    t.walking_crouch  = { State::Crouch,  2u, a("Crouch"), a("CrouchLoop") };
+    t.walking_dashing = { State::Dashing, 4u, a("DashingLoop"), nullptr };
+    t.walking_dive    = { State::Falling, 2u, a("DiveWalk"), a("FallingLoop") };
+    t.walking_neutral = { State::Neutral, 4u, a("NeutralLoop"), nullptr };
 
-    load_animation ( a.airdodge, "Airdodge" );
-    load_animation ( a.airhop,   "Airhop"   );
-    load_animation ( a.brake,    "Brake"    );
-    load_animation ( a.crouch,   "Crouch"   );
-    load_animation ( a.divedash, "Divedash" );
-    load_animation ( a.divewalk, "Divewalk" );
-    load_animation ( a.dodge,    "Dodge"    );
-    load_animation ( a.evade,    "Evade"    );
-    load_animation ( a.jump,     "Jump"     );
-    load_animation ( a.land,     "Land"     );
-    load_animation ( a.stand,    "Stand"    );
-    load_animation ( a.unshield, "Unshield" );
+    t.dashing_brake = { State::Brake,   2u, a("Brake"), a("NeutralLoop") };
+    t.dashing_dive  = { State::Falling, 2u, a("DiveDash"), a("FallingLoop") };
 
-    load_animation ( a.action_neutral_first, "actions/NeutralFirst" );
+    t.crouch_stand = { State::Neutral, 2u, a("Stand"), a("NeutralLoop") };
 
-    load_animation ( a.action_tilt_down,    "actions/TiltDown"    );
-    load_animation ( a.action_tilt_forward, "actions/TiltForward" );
-    load_animation ( a.action_tilt_up,      "actions/TiltUp"      );
+    t.jumping_dodge   = { State::AirDodge, 1u, a("AirDodge"), a("FallingLoop") };
+    t.jumping_falling = { State::Falling,  8u, a("FallingLoop"), nullptr };
+    t.jumping_hop     = { State::Jumping,  1u, a("AirHop"), a("JumpingLoop") };
 
-    load_animation ( a.action_air_back,    "actions/AirBack"    );
-    load_animation ( a.action_air_down,    "actions/AirDown"    );
-    load_animation ( a.action_air_forward, "actions/AirForward" );
-    load_animation ( a.action_air_neutral, "actions/AirNeutral" );
-    load_animation ( a.action_air_up,      "actions/AirUp"      );
+    t.shield_dodge   = { State::Dodge,   1u, a("Dodge"), a("NeutralLoop") };
+    t.shield_evade   = { State::Evade,   1u, a("Evade"), a("NeutralLoop") };
+    t.shield_neutral = { State::Neutral, 1u, a("Unshield"), a("NeutralLoop") };
 
-    load_animation ( a.action_dash_attack, "actions/DashAttack" );
+    t.falling_dodge = { State::AirDodge, 1u, a("AirDodge"), a("FallingLoop") };
+    t.falling_hop   = { State::Jumping,  1u, a("AirHop"), a("JumpingLoop") };
 
-    load_animation ( a.action_smash_down_start,    "action/SmashDownStart"    );
-    load_animation ( a.action_smash_forward_start, "action/SmashForwardStart" );
-    load_animation ( a.action_smash_up_start,      "action/SmashUpStart"      );
+    t.misc_jump = { State::PreJump, 1u, a("Jump"), a("JumpingLoop") };
+    t.misc_land = { State::Landing, 1u, a("Land"), a("NeutralLoop") };
 
-    load_animation ( a.action_smash_down_charge,    "action/SmashDownCharge"    );
-    load_animation ( a.action_smash_forward_charge, "action/SmashForwardCharge" );
-    load_animation ( a.action_smash_up_charge,      "action/SmashUpCharge"      );
+    t.misc_crouch  = { State::Crouch,  2u, a("CrouchLoop"), nullptr };
+    t.misc_falling = { State::Falling, 2u, a("FallingLoop"), nullptr };
+    t.misc_neutral = { State::Neutral, 2u, a("NeutralLoop"), nullptr };
+    t.misc_shield  = { State::Shield,  2u, a("ShieldLoop"), nullptr };
+    t.misc_vertigo = { State::Neutral, 2u, a("VertigoLoop"), nullptr };
 
-    load_animation ( a.action_smash_down_attack,    "action/SmashDownAttack"    );
-    load_animation ( a.action_smash_forward_attack, "action/SmashForwardAttack" );
-    load_animation ( a.action_smash_up_attack,      "action/SmashUpAttack"      );
+    t.neutral_attack = { State::Attack, 1u, a("NeutralFirst"), nullptr };
 
-    //--------------------------------------------------------//
+    t.tilt_down_attack    = { State::Attack, 1u, a("TiltDown"), nullptr };
+    t.tilt_forward_attack = { State::Attack, 1u, a("TiltForward"), nullptr };
+    t.tilt_up_attack      = { State::Attack, 1u, a("TiltUp"), nullptr };
 
-    t.neutral_crouch  = { State::Crouch,  2u, &a.crouch, &a.crouch_loop };
-    t.neutral_walking = { State::Walking, 4u, &a.walking_loop, nullptr };
+    t.air_back_attack    = { State::AirAttack, 1u, a("AirBack"), nullptr };
+    t.air_down_attack    = { State::AirAttack, 1u, a("AirDown"), nullptr };
+    t.air_forward_attack = { State::AirAttack, 1u, a("AirForward"), nullptr };
+    t.air_neutral_attack = { State::AirAttack, 1u, a("AirNeutral"), nullptr };
+    t.air_up_attack      = { State::AirAttack, 1u, a("AirUp"), nullptr };
 
-    t.walking_crouch  = { State::Crouch,  2u, &a.crouch, &a.crouch_loop };
-    t.walking_dashing = { State::Dashing, 4u, &a.dashing_loop, nullptr };
-    t.walking_dive    = { State::Falling, 2u, &a.divewalk, &a.falling_loop };
-    t.walking_neutral = { State::Neutral, 4u, &a.neutral_loop, nullptr };
+    t.dash_attack = { State::Attack, 1u, a("DashAttack"), nullptr };
 
-    t.dashing_brake = { State::Brake,   2u, &a.brake, &a.neutral_loop };
-    t.dashing_dive  = { State::Falling, 2u, &a.divedash, &a.falling_loop };
+    t.smash_down_start    = { State::Charge, 1u, a("SmashDownStart"), a("SmashDownCharge") };
+    t.smash_forward_start = { State::Charge, 1u, a("SmashForwardStart"), a("SmashForwardCharge") };
+    t.smash_up_start      = { State::Charge, 1u, a("SmashUpStart"), a("SmashUpCharge") };
 
-    t.crouch_stand = { State::Neutral, 2u, &a.stand, &a.neutral_loop };
+    t.smash_down_attack    = { State::Attack, 1u, a("SmashDownAttack"), nullptr };
+    t.smash_forward_attack = { State::Attack, 1u, a("SmashForwardAttack"), nullptr };
+    t.smash_up_attack      = { State::Attack, 1u, a("SmashUpAttack"), nullptr };
 
-    t.jumping_dodge   = { State::AirDodge, 1u, &a.airdodge, &a.falling_loop };
-    t.jumping_falling = { State::Falling,  8u, &a.falling_loop, nullptr };
-    t.jumping_hop     = { State::Jumping,  1u, &a.airhop, &a.jumping_loop };
-
-    t.shield_dodge   = { State::Dodge,   1u, &a.dodge, &a.neutral_loop };
-    t.shield_evade   = { State::Evade,   1u, &a.evade, &a.neutral_loop };
-    t.shield_neutral = { State::Neutral, 1u, &a.unshield, &a.neutral_loop };
-
-    t.falling_dodge = { State::AirDodge, 1u, &a.airdodge, &a.falling_loop };
-    t.falling_hop   = { State::Jumping,  1u, &a.airhop, &a.jumping_loop };
-
-    t.misc_jump = { State::PreJump, 1u, &a.jump, &a.jumping_loop };
-    t.misc_land = { State::Landing, 1u, &a.land, &a.neutral_loop };
-
-    t.misc_crouch  = { State::Crouch,  2u, &a.crouch_loop, nullptr };
-    t.misc_falling = { State::Falling, 2u, &a.falling_loop, nullptr };
-    t.misc_neutral = { State::Neutral, 2u, &a.neutral_loop, nullptr };
-    t.misc_shield  = { State::Shield,  2u, &a.shield_loop, nullptr };
-    t.misc_vertigo = { State::Neutral, 2u, &a.vertigo_loop, nullptr };
-
-    t.smash_down_start    = { State::Charge, 1u, &a.action_smash_down_start, &a.action_smash_down_charge };
-    t.smash_forward_start = { State::Charge, 1u, &a.action_smash_forward_start, &a.action_smash_forward_charge };
-    t.smash_up_start      = { State::Charge, 1u, &a.action_smash_up_start, &a.action_smash_up_charge };
-
-    t.smash_down_attack    = { State::Attack, 1u, &a.action_smash_down_attack, nullptr };
-    t.smash_forward_attack = { State::Attack, 1u, &a.action_smash_forward_attack, nullptr };
-    t.smash_up_attack      = { State::Attack, 1u, &a.action_smash_up_attack, nullptr };
+    t.editor_preview = { State::EditorPreview, 0u, a("Null"), nullptr };
 }
 
 //============================================================================//
 
 void PrivateFighter::initialise_hurt_blobs(const String& path)
 {
-    auto& hurtBlobs = fighter.mHurtBlobs;
-    auto& fightWorld = fighter.mFightWorld;
-
-    //--------------------------------------------------------//
-
-    for (const auto& item : sq::parse_json_from_file(path + "/HurtBlobs.json"))
+    const JsonValue root = sq::parse_json_from_file(path + "/HurtBlobs.json");
+    for (const auto& item : root.items())
     {
-        HurtBlob* blob = hurtBlobs.emplace_back(fightWorld.create_hurt_blob(fighter));
+        HurtBlob& blob = fighter.hurtBlobs[item.key()];
 
-        try { blob->from_json(item); }
+        blob.fighter = &fighter;
+
+        try { blob.from_json(item.value()); }
         catch (const std::exception& e) {
-            sq::log_warning("problem loading hurt blobs: %s", e.what());
+            sq::log_warning("problem loading hurt blob '%s': %s", item.key(), e.what());
         }
+
+        get_world().enable_hurt_blob(&blob);
     }
 }
 
@@ -228,28 +246,14 @@ void PrivateFighter::initialise_stats(const String& path)
 
 void PrivateFighter::initialise_actions(const String& path)
 {
-    Fighter::Actions& actions = fighter.actions;
-    FightWorld& world = fighter.mFightWorld;
+    for (int8_t i = 0; i < sq::enum_count_v<ActionType>; ++i)
+    {
+        const auto actionType = ActionType(i);
+        const auto actionPath = sq::build_string(path, "/actions/", sq::to_c_string(actionType), ".json");
 
-    // todo: surely these ctors don't need all this crap
-
-    actions.neutral_first   = std::make_unique<Action>(world, fighter, ActionType::Neutral_First);
-    actions.tilt_down       = std::make_unique<Action>(world, fighter, ActionType::Tilt_Down);
-    actions.tilt_forward    = std::make_unique<Action>(world, fighter, ActionType::Tilt_Forward);
-    actions.tilt_up         = std::make_unique<Action>(world, fighter, ActionType::Tilt_Up);
-    actions.air_back        = std::make_unique<Action>(world, fighter, ActionType::Air_Back);
-    actions.air_down        = std::make_unique<Action>(world, fighter, ActionType::Air_Down);
-    actions.air_forward     = std::make_unique<Action>(world, fighter, ActionType::Air_Forward);
-    actions.air_neutral     = std::make_unique<Action>(world, fighter, ActionType::Air_Neutral);
-    actions.air_up          = std::make_unique<Action>(world, fighter, ActionType::Air_Up);
-    actions.dash_attack     = std::make_unique<Action>(world, fighter, ActionType::Dash_Attack);
-    actions.smash_down      = std::make_unique<Action>(world, fighter, ActionType::Smash_Down);
-    actions.smash_forward   = std::make_unique<Action>(world, fighter, ActionType::Smash_Forward);
-    actions.smash_up        = std::make_unique<Action>(world, fighter, ActionType::Smash_Up);
-    actions.special_down    = std::make_unique<Action>(world, fighter, ActionType::Special_Down);
-    actions.special_forward = std::make_unique<Action>(world, fighter, ActionType::Special_Forward);
-    actions.special_neutral = std::make_unique<Action>(world, fighter, ActionType::Special_Neutral);
-    actions.special_up      = std::make_unique<Action>(world, fighter, ActionType::Special_Up);
+        fighter.actions[i] = std::make_unique<Action>(get_world(), fighter, actionType, actionPath);
+        get_world().get_action_builder().load_from_json(*fighter.actions[i]);
+    }
 }
 
 //============================================================================//
@@ -424,6 +428,8 @@ void PrivateFighter::handle_input_movement(const Controller::Input& input)
     CASE ( Attack, AirAttack, Special, AirSpecial ) {}
     CASE ( Landing, Charge, Dodge, Evade, AirDodge ) {}
 
+    CASE ( EditorPreview ) {}
+
     //== Not Yet Implemented =================================//
 
     CASE ( Knocked, Stunned ) {}
@@ -566,16 +572,16 @@ void PrivateFighter::handle_input_actions(const Controller::Input& input)
     {
         if (input.hold_attack == false) // todo: or max charge reached
         {
-            if (action == fighter.actions.smash_down.get())
+            if (action && action->get_type() == ActionType::Smash_Down)
                 state_transition(transitions.smash_down_attack);
 
-            else if (action == fighter.actions.smash_forward.get())
+            else if (action && action->get_type() == ActionType::Smash_Forward)
                 state_transition(transitions.smash_forward_attack);
 
-            else if (action == fighter.actions.smash_up.get())
+            else if (action && action->get_type() == ActionType::Smash_Up)
                 state_transition(transitions.smash_up_attack);
 
-            else SQASSERT(false, "invalid charge action");
+            else SQASSERT(false, "invalid action for charge");
 
             action->do_start();
         }
@@ -596,6 +602,8 @@ void PrivateFighter::handle_input_actions(const Controller::Input& input)
     CASE ( PreJump, Landing, Knocked, Stunned ) {}
     CASE ( Shield, Dodge, Evade, AirDodge ) {}
 
+    CASE ( EditorPreview ) {}
+
     //--------------------------------------------------------//
 
     } SWITCH_END;
@@ -615,7 +623,7 @@ void PrivateFighter::state_transition(const Transition& transition)
     mNextAnimation = transition.loop;
     mFadeFrames = transition.fadeFrames;
 
-    if (get_game_mode() == GameMode::Editor)
+    if (get_world().globals.editorMode == true)
         mFadeFrames = 0u;
 
     mStaticPose = nullptr;
@@ -641,19 +649,19 @@ void PrivateFighter::switch_action(ActionType type)
 
     //--------------------------------------------------------//
 
-    CASE ( Neutral_First ) state_transition({ State::Attack, 1u, &animations.action_neutral_first });
+    CASE ( Neutral_First ) state_transition(transitions.neutral_attack);
 
-    CASE ( Tilt_Down )    state_transition({ State::Attack, 1u, &animations.action_tilt_down });
-    CASE ( Tilt_Forward ) state_transition({ State::Attack, 1u, &animations.action_tilt_forward });
-    CASE ( Tilt_Up )      state_transition({ State::Attack, 1u, &animations.action_tilt_up });
+    CASE ( Tilt_Down )    state_transition(transitions.tilt_down_attack);
+    CASE ( Tilt_Forward ) state_transition(transitions.tilt_forward_attack);
+    CASE ( Tilt_Up )      state_transition(transitions.tilt_up_attack);
 
-    CASE ( Air_Back )    state_transition({ State::AirAttack, 1u, &animations.action_air_back });
-    CASE ( Air_Down )    state_transition({ State::AirAttack, 1u, &animations.action_air_down });
-    CASE ( Air_Forward ) state_transition({ State::AirAttack, 1u, &animations.action_air_forward });
-    CASE ( Air_Neutral ) state_transition({ State::AirAttack, 1u, &animations.action_air_neutral });
-    CASE ( Air_Up )      state_transition({ State::AirAttack, 1u, &animations.action_air_up });
+    CASE ( Air_Back )    state_transition(transitions.air_back_attack);
+    CASE ( Air_Down )    state_transition(transitions.air_down_attack);
+    CASE ( Air_Forward ) state_transition(transitions.air_forward_attack);
+    CASE ( Air_Neutral ) state_transition(transitions.air_neutral_attack);
+    CASE ( Air_Up )      state_transition(transitions.air_up_attack);
 
-    CASE ( Dash_Attack ) state_transition({ State::Attack, 1u, &animations.action_dash_attack });
+    CASE ( Dash_Attack ) state_transition(transitions.dash_attack);
 
     CASE ( Smash_Down )    state_transition(transitions.smash_down_start);
     CASE ( Smash_Forward ) state_transition(transitions.smash_forward_start);
@@ -666,11 +674,9 @@ void PrivateFighter::switch_action(ActionType type)
 
     //--------------------------------------------------------//
 
-    CASE_DEFAULT
+    CASE ( None )
     {
         // we know here that current action is not nullptr
-
-        // todo: this is a mess and is wrong
 
         SWITCH ( fighter.current.action->get_type() ) {
 
@@ -711,7 +717,7 @@ void PrivateFighter::update_after_input()
 {
     const Stats& stats = fighter.stats;
 
-    Stage& stage = fighter.mFightWorld.get_stage();
+    Stage& stage = get_world().get_stage();
 
     State& state = fighter.current.state;
     Facing& facing = fighter.current.facing;
@@ -753,6 +759,8 @@ void PrivateFighter::update_after_input()
     }
 
     CASE ( Evade, PreJump, Knocked, Stunned ) {}
+
+    CASE ( EditorPreview ) {}
 
     } SWITCH_END;
 
@@ -916,7 +924,7 @@ void PrivateFighter::update_after_input()
             message::fighter_action_finished msg { fighter, fighter.current.action->get_type() };
             switch_action(ActionType::None);
 
-            fighter.mFightWorld.get_message_bus().get_message_source<message::fighter_action_finished>().publish(msg);
+            get_world().get_message_bus().get_message_source<message::fighter_action_finished>().publish(msg);
         }
     }
 }
@@ -931,12 +939,15 @@ void PrivateFighter::base_tick_fighter()
 
     //--------------------------------------------------------//
 
-    if (get_game_mode() == GameMode::Editor)
+    if (get_world().globals.editorMode == true)
     {
-        const auto input = Controller::Input();
+        if (fighter.current.state != State::EditorPreview)
+        {
+            const auto input = Controller::Input();
 
-        handle_input_movement(input);
-        handle_input_actions(input);
+            handle_input_movement(input);
+            handle_input_actions(input);
+        }
     }
     else
     {
@@ -949,12 +960,14 @@ void PrivateFighter::base_tick_fighter()
 
     //--------------------------------------------------------//
 
-    update_after_input();
+    if (fighter.current.state != State::EditorPreview)
+        update_after_input();
 
     //--------------------------------------------------------//
 
     const Vec3F position ( current.position, 0.f );
-    const QuatF rotation ( 0.f, 0.25f * float(fighter.current.facing), 0.f );
+    const float rotY = fighter.current.state == State::EditorPreview ? 0.5f : 0.25f * float(fighter.current.facing);
+    const QuatF rotation = QuatF(0.f, rotY, 0.f);
 
     fighter.mModelMatrix = maths::transform(position, rotation, Vec3F(1.f));
 }
@@ -963,40 +976,50 @@ void PrivateFighter::base_tick_fighter()
 
 void PrivateFighter::base_tick_animation()
 {
-    SQASSERT(bool(mAnimation) != bool(mStaticPose), "XOR");
+    SQASSERT(fighter.current.state == State::EditorPreview || bool(mAnimation) != bool(mStaticPose),
+             "fighter should always have an animation xor a static pose");
 
-    // update these animations based on horizontal velocity
-    if ( mAnimation == &animations.walking_loop || mAnimation == &animations.dashing_loop )
+    if (mAnimation != nullptr)
     {
-        const float stride = mAnimation == &animations.walking_loop
-                             ? fighter.stats.anim_walk_stride : fighter.stats.anim_dash_stride;
-
-        const float animSpeed = stride / float(mAnimation->totalTime);
-
-        mAnimTimeContinuous += std::abs(fighter.mVelocity.x) / animSpeed / STS_TICK_RATE;
-
-        current.pose = armature.compute_pose(*mAnimation, mAnimTimeContinuous);
-    }
-
-    // update all other animations based on time
-    else if (mAnimation != nullptr)
-    {
-        current.pose = armature.compute_pose(*mAnimation, float(mAnimTimeDiscrete));
-
-        if (++mAnimTimeDiscrete >= int(mAnimation->totalTime))
+        const auto update_movement_cycle = [&](float stride, float distance)
         {
-            if (mAnimation->times.back() == 0u)
+            const float animSpeed = stride / float(mAnimation->anim.totalTime);
+            mAnimTimeContinuous += distance / animSpeed / STS_TICK_RATE;
+            current.pose = armature.compute_pose(mAnimation->anim, mAnimTimeContinuous);
+        };
+
+        // update all standard animations based on time
+        if (mAnimation->mode == AnimMode::Standard)
+        {
+            current.pose = armature.compute_pose(mAnimation->anim, float(mAnimTimeDiscrete));
+
+            if (++mAnimTimeDiscrete >= int(mAnimation->anim.totalTime))
             {
-                if (mNextAnimation == nullptr)
-                    mStaticPose = &mAnimation->poses.back();
+                if (mAnimation->anim.times.back() == 0u)
+                {
+                    if (mNextAnimation == nullptr)
+                        mStaticPose = &mAnimation->anim.poses.back();
 
-                mAnimation = mNextAnimation;
-                mNextAnimation = nullptr;
+                    mAnimation = mNextAnimation;
+                    mNextAnimation = nullptr;
 
-                mAnimTimeDiscrete = 0;
-                mAnimTimeContinuous = 0.f;
+                    mAnimTimeDiscrete = 0;
+                    mAnimTimeContinuous = 0.f;
+                }
+                else mAnimTimeDiscrete = 0;
             }
-            else mAnimTimeDiscrete = 0;
+        }
+
+        // update these animations based on horizontal velocity
+        else if (mAnimation->mode == AnimMode::WalkCycle)
+            update_movement_cycle(fighter.stats.anim_walk_stride, std::abs(fighter.mVelocity.x));
+        else if (mAnimation->mode == AnimMode::DashCycle)
+            update_movement_cycle(fighter.stats.anim_dash_stride, std::abs(fighter.mVelocity.x));
+
+        // if mode is manual, then we don't increment the anim time
+        else if (mAnimation->mode == AnimMode::Manual)
+        {
+            current.pose = mAnimation->anim.poses.back();
         }
     }
 

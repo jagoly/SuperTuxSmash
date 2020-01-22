@@ -52,12 +52,28 @@ void HitBlob::to_json(JsonValue& json) const
 
 //============================================================================//
 
-void HurtBlob::from_json(const JsonValue& item)
+void HurtBlob::from_json(const JsonValue& json)
 {
-    bone = int8_t(item[0]);
-    originA = Vec3F(item[1], item[2], item[3]);
-    originB = Vec3F(item[4], item[5], item[6]);
-    radius = float(item[7]);
+    if (json.is_object())
+    {
+        if (auto& jb = json.at("bone"); jb.is_null() == false)
+        {
+            bone = fighter->get_armature().get_bone_index(jb);
+            if (bone == -1) sq::log_warning("Invalid bone name %s", jb);
+        }
+        else bone = -1;
+
+        json.at("originA").get_to(originA);
+        json.at("originB").get_to(originB);
+        json.at("radius").get_to(radius);
+    }
+    else
+    {
+        bone = int8_t(json[0]);
+        originA = Vec3F(json[1], json[2], json[3]);
+        originB = Vec3F(json[4], json[5], json[6]);
+        radius = float(json[7]);
+    }
 }
 
 void HurtBlob::to_json(JsonValue& json) const

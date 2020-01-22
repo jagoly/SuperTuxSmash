@@ -1,7 +1,5 @@
 #include "game/Controller.hpp"
 
-#include "DebugGlobals.hpp"
-
 #include <sqee/debug/Logging.hpp>
 #include <sqee/misc/Json.hpp>
 
@@ -10,8 +8,8 @@ using namespace sts;
 
 //============================================================================//
 
-Controller::Controller(const sq::InputDevices& devices, String configPath)
-    : mDevices(devices)
+Controller::Controller(const Globals& globals, const sq::InputDevices& devices, String configPath)
+    : globals(globals), devices(devices)
 {
     const auto root = sq::parse_json_from_file(configPath);
 
@@ -70,49 +68,49 @@ Controller::Input Controller::get_input()
         const int port = config.gamepad_port;
 
         if (config.stick_move != Stick::Unknown)
-            mInput.float_axis = mDevices.get_stick_pos(port, config.stick_move);
+            mInput.float_axis = devices.get_stick_pos(port, config.stick_move);
 
         if (config.button_attack != Button::Unknown)
-            if (mDevices.is_pressed(port, config.button_attack))
+            if (devices.is_pressed(port, config.button_attack))
                 mInput.hold_attack = true;
 
         if (config.button_jump != Button::Unknown)
-            if (mDevices.is_pressed(port, config.button_jump))
+            if (devices.is_pressed(port, config.button_jump))
                 mInput.hold_jump = true;
 
         if (config.button_shield != Button::Unknown)
-            if (mDevices.is_pressed(port, config.button_shield))
+            if (devices.is_pressed(port, config.button_shield))
                 mInput.hold_shield = true;
     }
 
     //--------------------------------------------------------//
 
     if (config.key_left != Key::Unknown)
-        if (mDevices.is_pressed(config.key_left))
+        if (devices.is_pressed(config.key_left))
             mInput.float_axis.x -= 1.f;
 
     if (config.key_up != Key::Unknown)
-        if (mDevices.is_pressed(config.key_up))
+        if (devices.is_pressed(config.key_up))
             mInput.float_axis.y += 1.f;
 
     if (config.key_right != Key::Unknown)
-        if (mDevices.is_pressed(config.key_right))
+        if (devices.is_pressed(config.key_right))
             mInput.float_axis.x += 1.f;
 
     if (config.key_down != Key::Unknown)
-        if (mDevices.is_pressed(config.key_down))
+        if (devices.is_pressed(config.key_down))
             mInput.float_axis.y -= 1.f;
 
     if (config.key_attack != Key::Unknown)
-        if (mDevices.is_pressed(config.key_attack))
+        if (devices.is_pressed(config.key_attack))
             mInput.hold_attack = true;
 
     if (config.key_jump != Key::Unknown)
-        if (mDevices.is_pressed(config.key_jump))
+        if (devices.is_pressed(config.key_jump))
             mInput.hold_jump = true;
 
     if (config.key_shield != Key::Unknown)
-        if (mDevices.is_pressed(config.key_shield))
+        if (devices.is_pressed(config.key_shield))
             mInput.hold_shield = true;
 
     //--------------------------------------------------------//
@@ -187,9 +185,8 @@ Controller::Input Controller::get_input()
     Input result = mInput;
     mInput = Input();
 
-    #ifdef SQEE_DEBUG
-    if (dbg.disableInput) result = Input();
-    #endif
+    if (globals.disableInput)
+        result = Input();
 
     return result;
 }

@@ -9,7 +9,7 @@ using namespace sts;
 
 //============================================================================//
 
-void ActionEditor::impl_show_widget_hitblobs()
+void EditorScene::impl_show_widget_hitblobs()
 {
     if (mActiveActionContext == nullptr) return;
 

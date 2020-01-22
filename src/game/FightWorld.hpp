@@ -4,14 +4,15 @@
 #include <sqee/misc/Builtins.hpp>
 #include <sqee/app/MessageBus.hpp>
 
+#include "main/Enumerations.hpp"
+#include "main/Globals.hpp"
+
 #include "render/SceneData.hpp"
 
 #include "game/Blobs.hpp"
 #include "game/ParticleSystem.hpp"
 #include "game/ParticleEmitter.hpp"
 #include "game/ActionBuilder.hpp"
-
-#include "enumerations.hpp"
 
 namespace sts {
 
@@ -44,18 +45,17 @@ class FightWorld final : sq::NonCopyable
 {
 public: //====================================================//
 
-    FightWorld(GameMode gameMode);
+    FightWorld(const Globals& globals);
 
     ~FightWorld();
 
     //--------------------------------------------------------//
 
-    void tick();
+    const Globals& globals;
 
     //--------------------------------------------------------//
 
-    /// Get the mode of the active game.
-    GameMode get_game_mode() const { return mGameMode; }
+    void tick();
 
     //--------------------------------------------------------//
 
@@ -67,19 +67,17 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    /// Create a new hurt blob.
-    HurtBlob* create_hurt_blob(Fighter& fighter);
-
-    /// Delete an existing hurt blob.
-    void delete_hurt_blob(HurtBlob* blob);
-
-    //--------------------------------------------------------//
-
     /// Enable a hit blob.
     void enable_hit_blob(HitBlob* blob);
 
     /// Disable a hit blob.
     void disable_hit_blob(HitBlob* blob);
+
+    /// Enable a hurt blob.
+    void enable_hurt_blob(HurtBlob* blob);
+
+    /// Disable a hurt blob.
+    void disable_hurt_blob(HurtBlob* blob);
 
     //--------------------------------------------------------//
 
@@ -88,6 +86,9 @@ public: //====================================================//
 
     /// Disable all of a fighter's hit blobs.
     void disable_all_hit_blobs(Fighter& fighter);
+
+    /// Disable all of a fighter's hurt blobs.
+    void disable_all_hurt_blobs(Fighter& fighter);
 
     //--------------------------------------------------------//
 
@@ -120,20 +121,20 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    /// Access the HitBlob Allocator.
-    sq::PoolAllocator<HitBlob>& get_hit_blob_allocator() { return mHitBlobAlloc; }
-
     /// Access the HurtBlob Allocator.
-    sq::PoolAllocator<HurtBlob>& get_hurt_blob_allocator() { return mHurtBlobAlloc; }
+    auto get_hurt_blob_allocator() { return mHurtBlobAlloc.get(); }
 
-    /// Access the enabled HitBlobs.
-    const Vector<HitBlob*>& get_hit_blobs() const;
+    /// Access the HitBlob Allocator.
+    auto get_hit_blob_allocator() { return mHitBlobAlloc.get(); }
+
+    /// Access the Emitter Allocator.
+    auto get_emitter_allocator() { return mEmitterAlloc.get(); }
 
     /// Access the enabled HurtBlobs.
     const Vector<HurtBlob*>& get_hurt_blobs() const;
 
-    /// Access the Emitter Allocator.
-    sq::PoolAllocator<ParticleEmitter>& get_emitter_allocator() { return mEmitterAlloc; }
+    /// Access the enabled HitBlobs.
+    const Vector<HitBlob*>& get_hit_blobs() const;
 
     //--------------------------------------------------------//
 
@@ -152,14 +153,14 @@ public: //====================================================//
 
 private: //===================================================//
 
-    sq::PoolAllocator<HitBlob> mHitBlobAlloc { 1024u };
-    sq::PoolAllocator<HurtBlob> mHurtBlobAlloc { 128u };
+    // undo stack in the editor can cause us to run out of slots, so we reserve more space
+    // todo: for the editor, use big pools shared between all contexts
 
-    sq::PoolAllocator<ParticleEmitter> mEmitterAlloc { 1024u };
+    sq::PoolAllocatorStore<Pair<const TinyString, HurtBlob>> mHurtBlobAlloc;
+    sq::PoolAllocatorStore<Pair<const TinyString, HitBlob>> mHitBlobAlloc;
+    sq::PoolAllocatorStore<Pair<const TinyString, ParticleEmitter>> mEmitterAlloc;
 
     //--------------------------------------------------------//
-
-    const GameMode mGameMode;
 
     ActionBuilder mActionBuilder;
 
@@ -177,6 +178,14 @@ private: //===================================================//
 
     friend class PrivateWorld;
     UniquePtr<PrivateWorld> impl;
+
+public: //== debug and editor interfaces =====================//
+
+    void debug_show_fighter_widget();
+
+    void debug_reload_actions();
+
+    void editor_disable_all_hurtblobs();
 };
 
 //============================================================================//

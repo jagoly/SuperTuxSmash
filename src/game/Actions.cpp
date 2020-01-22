@@ -1,10 +1,10 @@
 #include "game/Actions.hpp"
 
+#include "main/Globals.hpp"
+
 #include "game/Fighter.hpp"
 #include "game/ActionBuilder.hpp"
 #include "game/ActionFuncs.hpp"
-
-#include "DebugGlobals.hpp"
 
 #include <sqee/helpers.hpp>
 #include <sqee/debug/Logging.hpp>
@@ -12,21 +12,15 @@
 #include <sqee/misc/Json.hpp>
 #include <sqee/misc/Parsing.hpp>
 
-namespace algo = sq::algo;
 namespace maths = sq::maths;
-using sq::build_string;
 
 using namespace sts;
 
 //============================================================================//
 
-Action::Action(FightWorld& world, Fighter& fighter, ActionType type, bool load)
-    : world(world), fighter(fighter), type(type)
-    , path(build_string("assets/fighters/", fighter.get_name(), "/actions/", sq::enum_to_string(type), ".json"))
-    , blobs(world.get_hit_blob_allocator()), emitters(world.get_emitter_allocator())
-{
-    if (load == true) world.get_action_builder().load_from_json(*this);
-}
+Action::Action(FightWorld& world, Fighter& fighter, ActionType type, String path)
+    : world(world), fighter(fighter), type(type), path(path)
+    , blobs(world.get_hit_blob_allocator()), emitters(world.get_emitter_allocator()) {}
 
 Action::~Action() = default;
 
@@ -40,22 +34,22 @@ void Action::do_start()
 
 bool Action::do_tick()
 {
-    SQASSERT(dbg.actionEditor || mCurrentFrame < timeline.size(), "finish didn't get called!");
+    SQASSERT(world.globals.editorMode || mCurrentFrame < timeline.size(), "finish didn't get called!");
 
     // todo: this doesn't need to happen every frame
     for (auto& [key, emitter] : emitters)
     {
         Mat4F matrix = fighter.get_model_matrix();
 
-        if (emitter->bone >= 0)
+        if (emitter.bone >= 0)
         {
             const auto& matrices = fighter.get_bone_matrices();
-            const auto& boneMatrix = matrices[uint(emitter->bone)];
+            const auto& boneMatrix = matrices[uint(emitter.bone)];
             matrix *= maths::transpose(Mat4F(boneMatrix));
         }
 
-        emitter->emitPosition = Vec3F(matrix * Vec4F(emitter->origin, 1.f));
-        emitter->emitVelocity = Vec3F(fighter.get_velocity().x * 0.2f, 0.f, 0.f);
+        emitter.emitPosition = Vec3F(matrix * Vec4F(emitter.origin, 1.f));
+        emitter.emitVelocity = Vec3F(fighter.get_velocity().x * 0.2f, 0.f, 0.f);
     }
 
     for (const Procedure& procedure : timeline[mCurrentFrame].procedures)
@@ -106,4 +100,31 @@ bool Action::has_changes(const Action& reference) const
     if (emitters != reference.emitters) return true;
     if (procedures != reference.procedures) return true;
     return false;
+}
+
+void Action::apply_changes(const Action &source)
+{
+    blobs.clear();
+    emitters.clear();
+    procedures.clear();
+
+    for (const auto& [key, blob] : source.blobs)
+        blobs.try_emplace(key, blob);
+
+    for (const auto& [key, emitter] : source.emitters)
+        emitters.try_emplace(key, emitter);
+
+    for (const auto& [key, procedure] : source.procedures)
+        procedures.try_emplace(key, procedure);
+
+    rebuild_timeline();
+}
+
+UniquePtr<Action> Action::clone() const
+{
+    auto result = std::make_unique<Action>(world, fighter, type, path);
+
+    result->apply_changes(*this);
+
+    return result;
 }

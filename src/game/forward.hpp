@@ -22,9 +22,4 @@ class Stage;
 class PrivateFighter;
 class PrivateWorld;
 
-struct HitBlob;
-struct HurtBlob;
-
-struct ParticleEmitter;
-
 } // namespace sts

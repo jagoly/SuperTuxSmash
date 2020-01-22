@@ -16,8 +16,11 @@ using namespace sts;
 
 //============================================================================//
 
-FightWorld::FightWorld(GameMode gameMode)
-    : mGameMode(gameMode)
+FightWorld::FightWorld(const Globals& globals)
+    : globals(globals)
+    , mHurtBlobAlloc(globals.editorMode ? 128 * 64 : 128)
+    , mHitBlobAlloc(globals.editorMode ? 1024 * 64 : 1024)
+    , mEmitterAlloc(globals.editorMode ? 1024 * 64 : 1024)
 {
     mMessageBus.add_message_source<message::fighter_action_finished>();
 
@@ -75,19 +78,8 @@ const Vector<HurtBlob*>& FightWorld::get_hurt_blobs() const
 
 //============================================================================//
 
-HurtBlob* FightWorld::create_hurt_blob(Fighter& fighter)
-{
-    HurtBlob* blob = mHurtBlobAlloc.allocate(fighter);
-    return impl->enabledHurtBlobs.emplace_back(blob);
-}
-
-void FightWorld::delete_hurt_blob(HurtBlob* blob)
-{
-    impl->enabledHurtBlobs.erase(algo::find(impl->enabledHurtBlobs, blob));
-    mHurtBlobAlloc.deallocate(blob);
-}
-
-//============================================================================//
+// for now these can silently fail, so as to not crash in the action editor
+// possibly these could throw exceptions which the editor can catch and display
 
 void FightWorld::enable_hit_blob(HitBlob* blob)
 {
@@ -105,6 +97,22 @@ void FightWorld::disable_hit_blob(HitBlob* blob)
     impl->enabledHitBlobs.erase(iter);
 }
 
+void FightWorld::enable_hurt_blob(HurtBlob *blob)
+{
+    const auto iter = algo::find(impl->enabledHurtBlobs, blob);
+    if (iter != impl->enabledHurtBlobs.end()) return;
+
+    impl->enabledHurtBlobs.push_back(blob);
+}
+
+void FightWorld::disable_hurt_blob(HurtBlob* blob)
+{
+    const auto iter = algo::find(impl->enabledHurtBlobs, blob);
+    if (iter == impl->enabledHurtBlobs.end()) return;
+
+    impl->enabledHurtBlobs.erase(iter);
+}
+
 //============================================================================//
 
 void FightWorld::reset_all_hit_blob_groups(Fighter& fighter)
@@ -117,6 +125,13 @@ void FightWorld::disable_all_hit_blobs(Fighter& fighter)
     const auto predicate = [&](HitBlob* blob) { return blob->fighter == &fighter; };
     const auto end = std::remove_if(impl->enabledHitBlobs.begin(), impl->enabledHitBlobs.end(), predicate);
     impl->enabledHitBlobs.erase(end, impl->enabledHitBlobs.end());
+}
+
+void FightWorld::disable_all_hurt_blobs(Fighter &fighter)
+{
+    const auto predicate = [&](HurtBlob* blob) { return blob->fighter == &fighter; };
+    const auto end = std::remove_if(impl->enabledHurtBlobs.begin(), impl->enabledHurtBlobs.end(), predicate);
+    impl->enabledHurtBlobs.erase(end, impl->enabledHurtBlobs.end());
 }
 
 //============================================================================//
@@ -144,4 +159,11 @@ SceneData FightWorld::compute_scene_data() const
     result.view.max = maths::min(result.view.max, result.inner.max);
 
     return result;
+}
+
+//============================================================================//
+
+void FightWorld::editor_disable_all_hurtblobs()
+{
+    impl->enabledHurtBlobs.clear();
 }

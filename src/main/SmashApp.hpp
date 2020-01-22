@@ -1,6 +1,7 @@
 #pragma once
 
 #include "main/GameSetup.hpp"
+#include "main/Globals.hpp"
 #include "main/Options.hpp"
 
 #include <sqee/app/Application.hpp>
@@ -34,6 +35,7 @@ public: //====================================================//
     sq::InputDevices& get_input_devices() { return *mInputDevices; }
     sq::DebugOverlay& get_debug_overlay() { return *mDebugOverlay; }
 
+    Globals& get_globals() { return mGlobals; }
     Options& get_options() { return mOptions; }
 
 private: //===================================================//
@@ -54,6 +56,7 @@ private: //===================================================//
     UniquePtr<sq::InputDevices> mInputDevices;
     UniquePtr<sq::DebugOverlay> mDebugOverlay;
 
+    Globals mGlobals;
     Options mOptions;
 
     //--------------------------------------------------------//

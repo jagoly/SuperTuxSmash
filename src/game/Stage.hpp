@@ -45,7 +45,7 @@ public: //====================================================//
 
     Stage(FightWorld& world);
 
-    virtual ~Stage() = default;
+    virtual ~Stage();
 
     virtual void tick() = 0;
 

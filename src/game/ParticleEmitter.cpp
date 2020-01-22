@@ -1,6 +1,5 @@
 #include "game/ParticleEmitter.hpp"
 
-#include "DebugGlobals.hpp"
 #include "game/Fighter.hpp"
 
 #include <sqee/debug/Logging.hpp>

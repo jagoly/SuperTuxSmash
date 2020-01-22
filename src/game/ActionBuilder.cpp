@@ -79,11 +79,21 @@ Action::Command impl_bind_params(Func func, const Vector<StringView>& tokens, Ty
 template <class Func, class Types, size_t... Index> inline
 String impl_validate_command(Func func, Action& action, const Vector<StringView>& tokens, Types, std::index_sequence<Index...>)
 {
-    if (tokens.size() != Types::Size + 1u) return "wrong number of paramaters for command";
+    if (tokens.size() != Types::Size + 1u) return "wrong number of paramaters for '%s'"_fmt_(tokens[0]);
 
     // will throw a String if a paramater cannot be converted
     try { return func(action, impl_extract_param<Types, Index>(tokens)...); }
     catch (const String& error) { return error; }
+}
+
+template <class Func, class Validate, class... Types> inline
+Action::Command impl_build_command(Func func, Validate validate, TypePack<Types...> types, Action& action,
+                                   const Vector<StringView>& tokens, Vector<String>& errors, uint line)
+{
+    constexpr const auto indices = std::index_sequence_for<Types...>();
+    const String error = impl_validate_command(validate, action, tokens, types, indices);
+    if (!error.empty()) { errors.push_back("%02d: %s"_fmt_(line, error)); return nullptr; }
+    return impl_bind_params(func, tokens, types, indices);
 }
 
 //----------------------------------------------------------------------------//
@@ -92,69 +102,53 @@ String impl_validate_command(Func func, Action& action, const Vector<StringView>
 
 //============================================================================//
 
-template <class... Args>
-void ActionBuilder::impl_log_error(const char* fmt, const Args&... args)
-{
-    mErrorLog.emplace_back(tfm::format(fmt, args...));
-}
-
-//============================================================================//
-
-Action::Command ActionBuilder::build_command(Action& action, StringView source)
+Action::Command ActionBuilder::build_command(Action& action, StringView source, Vector<String>& errors, uint line)
 {
     const auto tokens = sq::tokenise_string_view(source, ' ');
 
-    if (tokens.empty() == true)
-    {
-        mErrorLog.emplace_back("source is empty");
-        return nullptr;
-    }
+    // can happen if source is only space characters, not an error
+    if (tokens.empty()) return nullptr;
 
     //--------------------------------------------------------//
 
     #define RETURN_BOUND_FUNCTION(Name, ...) \
-    do { \
-        constexpr const auto types = TypePack<__VA_ARGS__ >(); \
-        constexpr const auto indices = std::index_sequence_for<__VA_ARGS__>(); \
-        String error = impl_validate_command(&ActionFuncsValidate::Name, action, tokens, types, indices); \
-        if (!error.empty()) { mErrorLog.push_back(std::move(error)); return nullptr; } \
-        return impl_bind_params(&ActionFuncs::Name, tokens, types, indices); \
-    } while (false)
+    return impl_build_command(&ActionFuncs::Name, &ActionFuncsValidate::Name, TypePack<__VA_ARGS__ >(), action, tokens, errors, line)
 
     if (tokens[0] == "enable_blob")    RETURN_BOUND_FUNCTION(enable_blob, PoolKey);
     if (tokens[0] == "disable_blob")   RETURN_BOUND_FUNCTION(disable_blob, PoolKey);
     if (tokens[0] == "add_velocity")   RETURN_BOUND_FUNCTION(add_velocity, float, float);
-    if (tokens[0] == "finish_action")  RETURN_BOUND_FUNCTION(finish_action);
+    if (tokens[0] == "set_position")   RETURN_BOUND_FUNCTION(set_position, float, float);
+    if (tokens[0] == "finish_action")  RETURN_BOUND_FUNCTION(finish_action, );
     if (tokens[0] == "emit_particles") RETURN_BOUND_FUNCTION(emit_particles, PoolKey, uint);
 
     #undef RETURN_BOUND_FUNCTION
 
     //--------------------------------------------------------//
 
-    impl_log_error("unknown function '%s'", tokens[0]);
+    errors.push_back("%02d: unknown function '%s'"_fmt_(line, tokens[0]));
 
     return nullptr;
 }
 
 //============================================================================//
 
-Vector<Action::Command> ActionBuilder::build_procedure(Action& action, StringView source)
+Vector<Action::Command> ActionBuilder::build_procedure(Action& action, StringView source, Vector<String>& errors)
 {
-    const auto sourceLines = sq::tokenise_string_view(source, '\n');
+    const auto sourceLines = sq::tokenise_string_view_lines(source);
 
-    if (sourceLines.empty() == true)
-    {
-        mErrorLog.emplace_back("source is empty");
-    }
+    const auto oldErrorCount = errors.size();
 
     Vector<Action::Command> result;
     result.reserve(sourceLines.size());
 
-    for (const StringView& sourceLine : sourceLines)
+    for (auto& [line, source] : sourceLines)
     {
-        auto boundFunc = build_command(action, sourceLine);
-        if (boundFunc != nullptr) result.push_back(std::move(boundFunc));
+        auto boundFunc = build_command(action, source, errors, line);
+        if (boundFunc) result.push_back(std::move(boundFunc));
     }
+
+    // remove this line to still run any commands that did build
+    if (errors.size() != oldErrorCount) result.clear();
 
     return result;
 }
@@ -177,7 +171,8 @@ void ActionBuilder::load_from_json(Action& action)
         procedure.meta.source = "finish_action";
         procedure.meta.frames = { 12u };
 
-        procedure.commands = { build_command(action, procedure.meta.source) };
+        Vector<String> errors; const uint line = 0u;
+        procedure.commands = { build_command(action, procedure.meta.source, errors, line) };
 
         action.rebuild_timeline();
 
@@ -186,43 +181,43 @@ void ActionBuilder::load_from_json(Action& action)
 
     //--------------------------------------------------------//
 
-    const auto root = sq::parse_json_from_file(action.path);
+    const JsonValue root = sq::parse_json_from_file(action.path);
 
-    if (root.is_null() == true) return;
+    Vector<String> errors;
 
     //--------------------------------------------------------//
 
     try {
     for (auto iter : root.at("blobs").items())
     {
-        HitBlob* blob = action.blobs.emplace(iter.key());
+        HitBlob& blob = action.blobs[iter.key()];
 
-        blob->fighter = &action.fighter;
-        blob->action = &action;
+        blob.fighter = &action.fighter;
+        blob.action = &action;
 
-        try { blob->from_json(iter.value()); }
+        try { blob.from_json(iter.value()); }
         catch (const std::exception& e) {
-            impl_log_error("blob '%s': %s", iter.key(), e.what());
+            errors.push_back("blob '%s': %s"_fmt_(iter.key(), e.what()));
         }
     }
-    } catch (const std::exception& e) { impl_log_error(e.what()); }
+    } catch (const std::exception& e) { errors.emplace_back(e.what()); }
 
     //--------------------------------------------------------//
 
     try {
     for (auto iter : root.at("emitters").items())
     {
-        ParticleEmitter* emitter = action.emitters.emplace(iter.key());
+        ParticleEmitter& emitter = action.emitters[iter.key()];
 
-        emitter->fighter = &action.fighter;
-        emitter->action = &action;
+        emitter.fighter = &action.fighter;
+        emitter.action = &action;
 
-        try { emitter->from_json(iter.value()); }
+        try { emitter.from_json(iter.value()); }
         catch (const std::exception& e) {
-            impl_log_error("emitter '%s': %s", iter.key(), e.what());
+            errors.push_back("emitter '%s': %s"_fmt_(iter.key(), e.what()));
         }
     }
-    } catch (const std::exception& e) { impl_log_error(e.what()); }
+    } catch (const std::exception& e) { errors.emplace_back(e.what()); }
 
     //--------------------------------------------------------//
 
@@ -233,21 +228,22 @@ void ActionBuilder::load_from_json(Action& action)
 
         try { iter.value().at("source").get_to(procedure.meta.source); }
         catch (const std::exception& e) {
-            impl_log_error("procedure '%s': %s", iter.key(), e.what());
+            errors.push_back("procedure '%s': %s"_fmt_(iter.key(), e.what()));
         }
 
         try { iter.value().at("frames").get_to(procedure.meta.frames); }
         catch (const std::exception& e) {
-            impl_log_error("procedure '%s': %s", iter.key(), e.what());
+            errors.push_back("procedure '%s': %s"_fmt_(iter.key(), e.what()));
         }
 
-        procedure.commands = build_procedure(action, procedure.meta.source);
+        procedure.commands = build_procedure(action, procedure.meta.source, errors);
     }
-    } catch (const std::exception& e) { impl_log_error(e.what()); }
+    } catch (const std::exception& e) { errors.emplace_back(e.what()); }
 
     //--------------------------------------------------------//
 
-    flush_logged_errors("errors in action '%s'"_fmt_(action.path));
+    if (errors.empty() == false)
+        sq::log_warning_block("errors in action '%s'"_fmt_(action.path), errors);
 
     action.rebuild_timeline();
 }
@@ -260,15 +256,15 @@ JsonValue ActionBuilder::serialise_as_json(const Action& action)
 
     //--------------------------------------------------------//
 
-    auto& resultEmitters = result["emitters"] = JsonValue::object();
-
-    for (const auto& [key, emitter] : action.emitters)
-        emitter->to_json(resultEmitters[key]);
-
     auto& resultBlobs = result["blobs"] = JsonValue::object();
 
     for (const auto& [key, blob] : action.blobs)
-        blob->to_json(resultBlobs[key]);
+        blob.to_json(resultBlobs[key]);
+
+    auto& resultEmitters = result["emitters"] = JsonValue::object();
+
+    for (const auto& [key, emitter] : action.emitters)
+        emitter.to_json(resultEmitters[key]);
 
     //--------------------------------------------------------//
 
@@ -284,15 +280,4 @@ JsonValue ActionBuilder::serialise_as_json(const Action& action)
     //--------------------------------------------------------//
 
     return result;
-}
-
-//============================================================================//
-
-void ActionBuilder::flush_logged_errors(String heading)
-{
-    if (mErrorLog.empty() == false)
-    {
-        sq::log_warning_block(heading, mErrorLog);
-        mErrorLog.clear();
-    }
 }

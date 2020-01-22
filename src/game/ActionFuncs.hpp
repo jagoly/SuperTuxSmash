@@ -1,14 +1,15 @@
 #pragma once
 
+#include <sqee/misc/Builtins.hpp>
 #include <sqee/misc/TinyString.hpp>
 
 namespace sts {
 
 //====== Forward Declarations and Aliases ====================================//
 
-using PoolKey = sq::TinyString;
-
 class Action;
+
+using PoolKey = TinyString;
 
 //============================================================================//
 
@@ -19,6 +20,8 @@ struct ActionFuncs final
     static void disable_blob(Action& action, PoolKey key);
 
     static void add_velocity(Action& action, float fwd, float up);
+
+    static void set_position(Action& action, float x, float y);
 
     static void finish_action(Action& action);
 
@@ -32,6 +35,8 @@ struct ActionFuncsValidate final
     static String disable_blob(Action& action, PoolKey key);
 
     static String add_velocity(Action& action, float fwd, float up);
+
+    static String set_position(Action& action, float x, float y);
 
     static String finish_action(Action& action);
 

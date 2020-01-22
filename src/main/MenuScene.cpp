@@ -1,7 +1,5 @@
 #include "main/MenuScene.hpp"
 
-#include "DebugGlobals.hpp"
-
 #include <sqee/macros.hpp>
 #include <sqee/app/GuiWidgets.hpp>
 #include <sqee/debug/Logging.hpp>
@@ -17,6 +15,8 @@ MenuScene::MenuScene(SmashApp& smashApp)
     : Scene(1.0 / 60.0), mSmashApp(smashApp)
 {
     mMainWidget.func = [this]() { impl_show_main_window(); };
+
+    mSmashApp.get_window().set_key_repeat(false);
 }
 
 MenuScene::~MenuScene() = default;
@@ -65,7 +65,7 @@ void MenuScene::impl_show_main_window()
     {
         //--------------------------------------------------------//
 
-        ImGui::ComboEnum("Stage", setup.stage);
+        ImPlus::ComboEnum("Stage", setup.stage);
 
         //--------------------------------------------------------//
 
@@ -77,7 +77,7 @@ void MenuScene::impl_show_main_window()
             if (ImGui::CollapsingHeader(label.c_str()))
             {
                 const String label = "Fighter##%d"_fmt_(index);
-                ImGui::ComboEnum(label.c_str(), player.fighter, 0);
+                ImPlus::ComboEnum(label.c_str(), player.fighter, 0);
 
                 player.enabled = (player.fighter != FighterEnum::Null);
             }

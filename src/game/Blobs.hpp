@@ -29,13 +29,6 @@ enum class BlobPriority : char { Low, Normal, High, Transcend };
 
 struct alignas(16) HitBlob final
 {
-    HitBlob() = default;
-
-    HitBlob(const HitBlob& other) = default;
-    HitBlob& operator=(const HitBlob& other) = default;
-
-    //--------------------------------------------------------//
-
     Fighter* fighter; ///< The fighter who owns this blob.
     Action* action;   ///< The action that created this blob.
 
@@ -81,10 +74,6 @@ struct alignas(16) HitBlob final
 
 struct alignas(16) HurtBlob final
 {
-    HurtBlob(Fighter& fighter) : fighter(&fighter) {}
-
-    //--------------------------------------------------------//
-
     Fighter* fighter; ///< The fighter who owns this blob.
 
     Vec3F originA; ///< Local first origin of the blob capsule.
@@ -112,9 +101,6 @@ struct alignas(16) HurtBlob final
 
 static_assert(sizeof(HitBlob) == 80u);
 static_assert(sizeof(HurtBlob) == 80u);
-
-static_assert(std::is_trivially_copyable_v<HitBlob> == true);
-static_assert(std::is_trivially_copyable_v<HurtBlob> == true);
 
 //============================================================================//
 

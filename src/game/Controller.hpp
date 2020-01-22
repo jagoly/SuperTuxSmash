@@ -5,6 +5,8 @@
 #include <sqee/app/InputDevices.hpp>
 #include <sqee/app/Event.hpp>
 
+#include "main/Globals.hpp"
+
 //============================================================================//
 
 namespace sts {
@@ -13,7 +15,7 @@ class Controller final : sq::NonCopyable
 {
 public: //====================================================//
 
-    Controller(const sq::InputDevices& devices, String configPath);
+    Controller(const Globals& globals, const sq::InputDevices& devices, String configPath);
 
     //--------------------------------------------------------//
 
@@ -42,6 +44,11 @@ public: //====================================================//
 
     /// Refresh and access input data.
     Input get_input();
+
+    //--------------------------------------------------------//
+
+    const Globals& globals;
+    const sq::InputDevices& devices;
 
 private: //===================================================//
 
@@ -77,10 +84,6 @@ private: //===================================================//
     bool mDoneMashY = false;
 
     Input mInput;
-
-    //--------------------------------------------------------//
-
-    const sq::InputDevices& mDevices;
 };
 
 } // namespace sts

@@ -6,15 +6,17 @@
 #include <sqee/misc/ResourceCache.hpp>
 #include <sqee/misc/ResourceHandle.hpp>
 #include <sqee/render/Mesh.hpp>
+#include <sqee/render/Armature.hpp>
 
 namespace sts {
 
 //====== Alias Declarations ==================================================//
 
-using TextureHandle  = sq::Handle<String, sq::Texture2D>;
-using TexArrayHandle = sq::Handle<String, sq::TextureArray2D>;
-using MeshHandle     = sq::Handle<String, sq::Mesh>;
-using ProgramHandle  = sq::Handle<sq::ProgramKey, sq::Program>;
+using TextureHandle   = sq::Handle<String, sq::Texture2D>;
+using TexArrayHandle  = sq::Handle<String, sq::TextureArray2D>;
+using MeshHandle      = sq::Handle<String, sq::Mesh>;
+//using AnimationHandle = sq::Handle<String, sq::Animation>;
+using ProgramHandle   = sq::Handle<sq::ProgramKey, sq::Program>;
 
 //============================================================================//
 
@@ -48,6 +50,17 @@ public:
 private:
     UniquePtr<sq::Mesh> create(const String& path) override;
 };
+
+//----------------------------------------------------------------------------//
+
+//class AnimationCache final : public sq::ResourceCache<String, sq::Armature::Animation>
+//{
+//public:
+//    AnimationCache();
+//    ~AnimationCache() override;
+//private:
+//    UniquePtr<sq::Armature::Animation> create(const String& path) override;
+//};
 
 //----------------------------------------------------------------------------//
 

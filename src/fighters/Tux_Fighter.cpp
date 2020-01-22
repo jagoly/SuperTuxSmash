@@ -5,7 +5,7 @@ using namespace sts;
 //============================================================================//
 
 Tux_Fighter::Tux_Fighter(uint8_t index, FightWorld& world)
-    : Fighter(index, world, "Tux")
+    : Fighter(index, world, FighterEnum::Tux)
 {
     mLocalDiamond.offsetTop = 1.f;
     mLocalDiamond.offsetMiddle = 0.5f;

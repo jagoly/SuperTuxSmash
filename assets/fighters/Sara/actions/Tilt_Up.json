@@ -46,7 +46,10 @@
     "SourA": 
     {
       "bone": null,
-      "colour.fixed": [ 0.0, 0.0, 0.0 ],
+      "colour.random": [         [ 1.0, 0.0, 0.0 ],
+        [ 0.0, 1.0, 0.0 ],
+        [ 0.0, 0.0, 1.0 ]
+      ],
       "direction": [ -0.4, 1.0, 0.0 ],
       "endOpacity": 0.5,
       "endScale": 0.5,
@@ -65,7 +68,10 @@
     "SourB": 
     {
       "bone": null,
-      "colour.fixed": [ 0.0, 0.0, 0.0 ],
+      "colour.random": [         [ 1.0, 0.0, 0.0 ],
+        [ 0.0, 1.0, 0.0 ],
+        [ 0.0, 0.0, 1.0 ]
+      ],
       "direction": [ 0.4, 1.0, 0.0 ],
       "endOpacity": 0.5,
       "endScale": 0.5,

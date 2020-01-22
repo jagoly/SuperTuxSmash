@@ -2,7 +2,7 @@
 
 #include <sqee/misc/Builtins.hpp>
 
-#include "enumerations.hpp"
+#include "main/Enumerations.hpp"
 
 //============================================================================//
 

@@ -147,15 +147,12 @@ void DebugRenderer::render_hurt_blobs(const Vector<HurtBlob*>& blobs)
     {
         const maths::Capsule& c = blob->capsule;
 
-        const Mat3F rotation = maths::basis_from_y(maths::normalize(c.originB - c.originA));
-
-        const Vec3F originM = (c.originA + c.originB) * 0.5f;
-        const float lengthM = maths::distance(c.originA, c.originB);
+        const Vec3F difference = c.originB - c.originA;
+        const float length = maths::length(difference);
+        const Mat3F rotation = length > 0.00001f ? maths::basis_from_y(difference / length) : Mat3F();
 
         const Mat4F matrixA = maths::transform(c.originA, rotation, c.radius);
         const Mat4F matrixB = maths::transform(c.originB, rotation, c.radius);
-
-        const Mat4F matrixM = maths::transform(originM, rotation, Vec3F(c.radius, lengthM, c.radius));
 
         mBlobShader.update(1, blob->get_debug_colour());
 
@@ -165,7 +162,13 @@ void DebugRenderer::render_hurt_blobs(const Vector<HurtBlob*>& blobs)
         mBlobShader.update(0, projViewMat * matrixB);
         mCapsuleMesh.draw_partial(1u);
 
-        mBlobShader.update(0, projViewMat * matrixM);
-        mCapsuleMesh.draw_partial(2u);
+        if (length > 0.00001f)
+        {
+            const Vec3F originM = (c.originA + c.originB) * 0.5f;
+            const Mat4F matrixM = maths::transform(originM, rotation, Vec3F(c.radius, length, c.radius));
+
+            mBlobShader.update(0, projViewMat * matrixM);
+            mCapsuleMesh.draw_partial(2u);
+        }
     }
 }

@@ -11,6 +11,8 @@ using namespace sts;
 
 Stage::Stage(FightWorld& world) : mFightWorld(world) {}
 
+Stage::~Stage() = default;
+
 //============================================================================//
 
 MoveAttempt Stage::attempt_move(WorldDiamond diamond, Vec2F translation)

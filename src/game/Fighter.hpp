@@ -20,12 +20,35 @@ public: //====================================================//
         Neutral, Walking, Dashing, Brake, Crouch,
         Charge, Attack, Special, Landing, PreJump, Jumping,
         Falling, AirAttack, AirSpecial, Knocked, Stunned,
-        Shield, Dodge, Evade, AirDodge
+        Shield, Dodge, Evade, AirDodge,
+        EditorPreview
     };
 
     enum class Facing
     {
         Left = -1, Right = +1
+    };
+
+    enum class AnimMode
+    {
+        Standard,
+        WalkCycle,
+        DashCycle,
+        Manual
+    };
+
+    struct Animation
+    {
+        sq::Armature::Animation anim;
+        AnimMode mode;
+    };
+
+    struct Transition
+    {
+        State newState;
+        uint fadeFrames;
+        const Animation* animation;
+        const Animation* loop;
     };
 
     //--------------------------------------------------------//
@@ -58,36 +81,8 @@ public: //====================================================//
         uint air_dodge_safe_start = 2u;
         uint air_dodge_safe_end   = 22u;
 
-        float anim_walk_stride = 2.0;
-        float anim_dash_stride = 3.0;
-    };
-
-    //--------------------------------------------------------//
-
-    struct Actions
-    {
-        UniquePtr<Action> neutral_first;
-
-        UniquePtr<Action> tilt_down;
-        UniquePtr<Action> tilt_forward;
-        UniquePtr<Action> tilt_up;
-
-        UniquePtr<Action> air_back;
-        UniquePtr<Action> air_down;
-        UniquePtr<Action> air_forward;
-        UniquePtr<Action> air_neutral;
-        UniquePtr<Action> air_up;
-
-        UniquePtr<Action> dash_attack;
-
-        UniquePtr<Action> smash_down;
-        UniquePtr<Action> smash_forward;
-        UniquePtr<Action> smash_up;
-
-        UniquePtr<Action> special_down;
-        UniquePtr<Action> special_forward;
-        UniquePtr<Action> special_neutral;
-        UniquePtr<Action> special_up;
+        float anim_walk_stride = 2.f;
+        float anim_dash_stride = 3.f;
     };
 
     //--------------------------------------------------------//
@@ -101,8 +96,6 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    Fighter(uint8_t index, FightWorld& world, StringView name);
-
     virtual ~Fighter();
 
     //--------------------------------------------------------//
@@ -113,11 +106,22 @@ public: //====================================================//
 
     const uint8_t index;
 
+    const FighterEnum type;
+
     Stats stats;
 
     Status status;
 
-    Actions actions;
+    //--------------------------------------------------------//
+
+    // all of the data edited by the editor should be here for now
+    // in the future, may make them private and add getters
+
+    Array<UniquePtr<Action>, sq::enum_count_v<ActionType>> actions;
+\
+    std::unordered_map<SmallString, Animation> animations;
+
+    sq::PoolMap<TinyString, HurtBlob> hurtBlobs;
 
     //--------------------------------------------------------//
 
@@ -132,8 +136,6 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    StringView get_name() const { return mName; }
-
     const sq::Armature& get_armature() const;
 
     //--------------------------------------------------------//
@@ -146,6 +148,8 @@ public: //====================================================//
     //--------------------------------------------------------//
 
     Action* get_action(ActionType type);
+
+    //Animation* get_animation(AnimationType type);
 
     //--------------------------------------------------------//
 
@@ -177,19 +181,21 @@ public: //====================================================//
     /// Compute interpolated armature pose matrices.
     void interpolate_bone_matrices(float blend, Mat34F* out, size_t len) const;
 
-    //--------------------------------------------------------//
+    //-- interface used by ActionFuncs -----------------------//
 
-    // todo: make better interface for actions to use
+    Vec2F& edit_position();
 
-    Vec2F mVelocity = { 0.f, 0.f };
+    Vec2F& edit_velocity();
 
 protected: //=================================================//
 
-    Vector<HurtBlob*> mHurtBlobs;
+    Fighter(uint8_t index, FightWorld& world, FighterEnum type);
 
     //--------------------------------------------------------//
 
     FightWorld& mFightWorld;
+
+    Vec2F mVelocity = {0.f, 0.f};
 
     LocalDiamond mLocalDiamond;
     WorldDiamond mWorldDiamond;
@@ -199,10 +205,6 @@ protected: //=================================================//
     void base_tick_fighter();
 
     void base_tick_animation();
-
-    //--------------------------------------------------------//
-
-    StringView mName;
 
 private: //===================================================//
 
@@ -234,4 +236,5 @@ SQEE_ENUM_HELPER(sts::Fighter::State,
                  Neutral, Walking, Dashing, Brake, Crouch,
                  Charge, Attack, Special, Landing, PreJump, Jumping,
                  Falling, AirAttack, AirSpecial, Knocked, Stunned,
-                 Shield, Dodge, Evade, AirDodge)
+                 Shield, Dodge, Evade, AirDodge,
+                 EditorPreview)

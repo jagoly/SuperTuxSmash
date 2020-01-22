@@ -23,13 +23,13 @@ do { \
 
 void ActionFuncs::enable_blob(Action& action, PoolKey key)
 {
-    action.world.enable_hit_blob(action.blobs[key]);
+    action.world.enable_hit_blob(&action.blobs[key]);
 };
 
 
 String ActionFuncsValidate::enable_blob(Action& action, PoolKey key)
 {
-    VERIFY(action.blobs.contains(key), "HitBlob '%s' does not exist", key);
+    VERIFY(action.blobs.count(key), "HitBlob '%s' does not exist", key);
     return String();
 }
 
@@ -37,12 +37,12 @@ String ActionFuncsValidate::enable_blob(Action& action, PoolKey key)
 
 void ActionFuncs::disable_blob(Action& action, PoolKey key)
 {
-    action.world.disable_hit_blob(action.blobs[key]);
+    action.world.disable_hit_blob(&action.blobs[key]);
 };
 
 String ActionFuncsValidate::disable_blob(Action& action, PoolKey key)
 {
-    VERIFY(action.blobs.contains(key), "HitBlob '%s' does not exist", key);
+    VERIFY(action.blobs.count(key), "HitBlob '%s' does not exist", key);
     return String();
 }
 
@@ -51,11 +51,23 @@ String ActionFuncsValidate::disable_blob(Action& action, PoolKey key)
 void ActionFuncs::add_velocity(Action& action, float fwd, float up)
 {
     Fighter& fighter = action.fighter;
-    fighter.mVelocity.x += float(fighter.current.facing) * fwd;
-    fighter.mVelocity.y += up;
+    action.fighter.edit_velocity() += { float(fighter.current.facing) * fwd, up };
 }
 
 String ActionFuncsValidate::add_velocity(Action& /*action*/, float /*fwd*/, float /*up*/)
+{
+    return String();
+}
+
+//----------------------------------------------------------------------------//
+
+void ActionFuncs::set_position(Action& action, float x, float y)
+{
+    Fighter& fighter = action.fighter;
+    fighter.edit_position() = { x, y };
+}
+
+String ActionFuncsValidate::set_position(Action& /*action*/, float /*x*/, float /*y*/)
 {
     return String();
 }
@@ -76,11 +88,11 @@ String ActionFuncsValidate::finish_action(Action& /*action*/)
 
 void ActionFuncs::emit_particles(Action& action, PoolKey key, uint count)
 {
-    action.emitters[key]->generate(action.world.get_particle_system(), count);
+    action.emitters[key].generate(action.world.get_particle_system(), count);
 }
 
 String ActionFuncsValidate::emit_particles(Action& action, PoolKey key, uint /*count*/)
 {
-    VERIFY(action.emitters.contains(key), "Emitter '%s' does not exist", key);
+    VERIFY(action.emitters.count(key), "Emitter '%s' does not exist", key);
     return String();
 }

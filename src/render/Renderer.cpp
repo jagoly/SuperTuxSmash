@@ -5,12 +5,15 @@
 #include "render/ParticleRender.hpp"
 #include "render/RenderObject.hpp"
 
+#include <sqee/debug/Assert.hpp>
 #include <sqee/debug/Logging.hpp>
 #include <sqee/gl/Context.hpp>
 #include <sqee/gl/Drawing.hpp>
 #include <sqee/redist/gl_loader.hpp>
+#include <sqee/misc/Algorithms.hpp>
 
 using Context = sq::Context;
+namespace algo = sq::algo;
 namespace maths = sq::maths;
 using namespace sts;
 
@@ -18,9 +21,9 @@ using namespace sts;
 
 Renderer::~Renderer() = default;
 
-Renderer::Renderer(GameMode gameMode, const Options& options)
+Renderer::Renderer(const Globals& globals, const Options& options)
     : resources(processor), context(sq::Context::get()),
-      options(options), gameMode(gameMode)
+      globals(globals), options(options)
 {
     //-- Set Texture Paramaters ------------------------------//
 
@@ -39,10 +42,8 @@ Renderer::Renderer(GameMode gameMode, const Options& options)
 
     //--------------------------------------------------------//
 
-    if (gameMode == GameMode::Editor)
-        mCamera = std::make_unique<EditorCamera>(*this);
-    if (gameMode == GameMode::Standard)
-        mCamera = std::make_unique<StandardCamera>(*this);
+    if (globals.editorMode) mCamera = std::make_unique<EditorCamera>(*this);
+    else mCamera = std::make_unique<StandardCamera>(*this);
 
     mDebugRenderer = std::make_unique<DebugRenderer>(*this);
     mParticleRenderer = std::make_unique<ParticleRenderer>(*this);
@@ -135,6 +136,16 @@ void Renderer::refresh_options()
 void Renderer::add_object(UniquePtr<RenderObject> object)
 {
     mRenderObjects.push_back(std::move(object));
+}
+
+UniquePtr<RenderObject> Renderer::remove_object(RenderObject* ptr)
+{
+    const auto predicate = [ptr](auto& item) { return item.get() == ptr; };
+    const auto iter = algo::find_if(mRenderObjects, predicate);
+    SQASSERT(iter != mRenderObjects.end(), "invalid ptr for remove");
+    auto result = std::move(*iter);
+    mRenderObjects.erase(iter);
+    return result;
 }
 
 //============================================================================//

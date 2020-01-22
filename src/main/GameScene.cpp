@@ -1,14 +1,14 @@
 #include "main/GameScene.hpp"
 
-#include "DebugGlobals.hpp"
-
 #include "stages/TestZone_Stage.hpp"
 #include "fighters/Sara_Fighter.hpp"
 #include "fighters/Tux_Fighter.hpp"
+#include "fighters/Mario_Fighter.hpp"
 
 #include "stages/TestZone_Render.hpp"
 #include "fighters/Sara_Render.hpp"
 #include "fighters/Tux_Render.hpp"
+#include "fighters/Mario_Render.hpp"
 
 #include "render/DebugRender.hpp"
 
@@ -27,17 +27,19 @@ GameScene::GameScene(SmashApp& smashApp, GameSetup setup)
     mGeneralWidget.func = [this]() { impl_show_general_window(); };
     mFightersWidget.func = [this]() { impl_show_fighters_window(); };
 
-    //--------------------------------------------------------//
-
-    mFightWorld = std::make_unique<FightWorld>(GameMode::Standard);
-    mRenderer = std::make_unique<Renderer>(GameMode::Standard, mSmashApp.get_options());
+    mSmashApp.get_window().set_key_repeat(false);
 
     //--------------------------------------------------------//
 
-    mControllers[0] = std::make_unique<Controller>(mSmashApp.get_input_devices(), "player1.json");
-    mControllers[1] = std::make_unique<Controller>(mSmashApp.get_input_devices(), "player2.json");
-    mControllers[2] = std::make_unique<Controller>(mSmashApp.get_input_devices(), "player3.json");
-    mControllers[3] = std::make_unique<Controller>(mSmashApp.get_input_devices(), "player4.json");
+    mFightWorld = std::make_unique<FightWorld>(mSmashApp.get_globals());
+    mRenderer = std::make_unique<Renderer>(mSmashApp.get_globals(), mSmashApp.get_options());
+
+    //--------------------------------------------------------//
+
+    mControllers[0] = std::make_unique<Controller>(mSmashApp.get_globals(), mSmashApp.get_input_devices(), "player1.json");
+    mControllers[1] = std::make_unique<Controller>(mSmashApp.get_globals(), mSmashApp.get_input_devices(), "player2.json");
+    mControllers[2] = std::make_unique<Controller>(mSmashApp.get_globals(), mSmashApp.get_input_devices(), "player3.json");
+    mControllers[3] = std::make_unique<Controller>(mSmashApp.get_globals(), mSmashApp.get_input_devices(), "player4.json");
 
     //--------------------------------------------------------//
 
@@ -80,6 +82,12 @@ GameScene::GameScene(SmashApp& smashApp, GameSetup setup)
             {
                 fighter = std::make_unique<Tux_Fighter>(index, *mFightWorld);
                 renderFighter = std::make_unique<Tux_Render>(*mRenderer, static_cast<Tux_Fighter&>(*fighter));
+            }
+
+            CASE (Mario)
+            {
+                fighter = std::make_unique<Mario_Fighter>(index, *mFightWorld);
+                renderFighter = std::make_unique<Mario_Render>(*mRenderer, static_cast<Mario_Fighter&>(*fighter));
             }
 
             CASE_DEFAULT SQASSERT(false, "bad fighter setup");
@@ -139,7 +147,7 @@ void GameScene::render(double elapsed)
 
     auto& debugRenderer = mRenderer->get_debug_renderer();
 
-    if (dbg.renderBlobs == true)
+    if (mSmashApp.get_globals().renderBlobs == true)
     {
         debugRenderer.render_hit_blobs(mFightWorld->get_hit_blobs());
         debugRenderer.render_hurt_blobs(mFightWorld->get_hurt_blobs());
@@ -165,7 +173,7 @@ void GameScene::impl_show_general_window()
             for (Fighter* fighter : mFightWorld->get_fighters())
                 fighter->debug_reload_actions();
         }
-        ImGui::HoverTooltip("reload action from json");
+        ImPlus::HoverTooltip("reload action from json");
 
         ImGui::SameLine();
 
@@ -180,11 +188,11 @@ void GameScene::impl_show_general_window()
                 fighters[0]->set_controller(controllerLast);
             }
         }
-        ImGui::HoverTooltip("cycle the controllers");
+        ImPlus::HoverTooltip("cycle the controllers");
 
-        ImGui::Checkbox("disable input", &dbg.disableInput);
+        ImGui::Checkbox("disable input", &mSmashApp.get_globals().disableInput);
         ImGui::SameLine();
-        ImGui::Checkbox("render blobs", &dbg.renderBlobs);
+        ImGui::Checkbox("render blobs", &mSmashApp.get_globals().renderBlobs);
     }
 
     ImGui::End();
@@ -195,8 +203,8 @@ void GameScene::impl_show_general_window()
 void GameScene::impl_show_fighters_window()
 {
     const ImGuiWindowFlags flags = ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove;
-    ImGui::SetNextWindowSizeConstraints({380, 0}, {380, ImGui::FromScreenBottom(20+20)});
-    ImGui::SetNextWindowPos({ImGui::FromScreenRight(380+20), 20});
+    ImGui::SetNextWindowSizeConstraints({380, 0}, {380, ImPlus::FromScreenBottom(20+20)});
+    ImGui::SetNextWindowPos({ImPlus::FromScreenRight(380+20), 20});
 
     if (ImGui::Begin("Fighter Debug", nullptr, flags))
     {
