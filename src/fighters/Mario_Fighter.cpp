@@ -1,5 +1,7 @@
 #include "fighters/Mario_Fighter.hpp"
 
+namespace maths = sq::maths;
+
 using namespace sts;
 
 //============================================================================//
@@ -7,9 +9,7 @@ using namespace sts;
 Mario_Fighter::Mario_Fighter(uint8_t index, FightWorld& world)
     : Fighter(index, world, FighterEnum::Mario)
 {
-    mLocalDiamond.offsetTop = 1.4f;
-    mLocalDiamond.offsetMiddle = 0.8f;
-    mLocalDiamond.halfWidth = 0.3f;
+    diamond = LocalDiamond(0.4f, 1.4f, 0.8f);
 }
 
 //============================================================================//
@@ -26,8 +26,6 @@ void Mario_Fighter::tick()
 
     emitter.shape = ParticleEmitter::DiscShape();
 
-    emitter.emitPosition = Vec3F(get_diamond().origin(), 0.f);
-    emitter.emitVelocity = Vec3F(get_velocity().x * 0.2f, 0.f, 0.f);
     emitter.direction = Vec3F(0.f, 1.f, 0.f);
 
     emitter.endScale = 2.f;
@@ -46,11 +44,51 @@ void Mario_Fighter::tick()
 
     auto& partilcles = mFightWorld.get_particle_system();
 
+    const auto get_bone_pos = [&](const char* boneName) -> Vec3F
+    {
+        const int8_t boneIndex = get_armature().get_bone_index(boneName);
+        const Mat4F matrix = get_model_matrix() * maths::transpose(Mat4F(get_bone_matrices()[boneIndex]));
+        return Vec3F(matrix[3]);
+    };
+
     if (current.state == State::Landing && previous.state != State::Landing)
     {
-        emitter.emitPosition.z = -0.2f;
+        emitter.emitPosition = Vec3F(get_position(), 0.f);
+        emitter.emitVelocity = Vec3F(get_velocity().x * 0.2f, 0.f, 0.f);
+
         emitter.generate(partilcles, 20u);
-        emitter.emitPosition.z = +0.2f;
+    }
+
+    else if (current.state == State::Jumping && previous.state == State::PreJump)
+    {
+        emitter.emitPosition = Vec3F(get_position() - get_velocity() / 48.f, 0.f);
+        emitter.emitVelocity = Vec3F(get_velocity().x * 0.2f, 0.f, 0.f);
+
         emitter.generate(partilcles, 20u);
+    }
+
+    else if (current.state == State::Brake)
+    {
+        const Vec3F leftFootPos = get_bone_pos("LFootJ");
+        const Vec3F rightFootPos = get_bone_pos("RFootJ");
+
+        emitter.emitVelocity = Vec3F(get_velocity().x * 0.5f, 0.f, 0.f);
+        emitter.direction = Vec3F(0.f, 1.f, 0.f);
+
+        emitter.shape = ParticleEmitter::BallShape();
+
+        emitter.shape_ball().speed = { 0.f, 0.f };
+
+        if (leftFootPos.y - get_position().y < 0.1f)
+        {
+            emitter.emitPosition = Vec3F(leftFootPos.x, get_position().y, leftFootPos.z);
+            emitter.generate(partilcles, 1u);
+        }
+
+        if (rightFootPos.y - get_position().y < 0.1f)
+        {
+            emitter.emitPosition = Vec3F(rightFootPos.x, get_position().y, rightFootPos.z);
+            emitter.generate(partilcles, 1u);
+        }
     }
 }

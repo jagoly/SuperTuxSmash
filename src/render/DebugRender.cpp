@@ -2,6 +2,7 @@
 
 #include "game/Blobs.hpp"
 #include "game/Fighter.hpp"
+#include "game/FightWorld.hpp"
 #include "render/Camera.hpp"
 
 #include <sqee/gl/Context.hpp>
@@ -22,6 +23,7 @@ DebugRenderer::DebugRenderer(Renderer& renderer) : renderer(renderer)
 
     mSphereMesh.load_from_file("assets/debug/Sphere.sqm", true);
     mCapsuleMesh.load_from_file("assets/debug/Capsule.sqm", true);
+    mDiamondMesh.load_from_file("assets/debug/Diamond.sqm", true);
 
     //-- Set up the vao and vbo ------------------------------//
 
@@ -171,4 +173,42 @@ void DebugRenderer::render_hurt_blobs(const Vector<HurtBlob*>& blobs)
             mCapsuleMesh.draw_partial(2u);
         }
     }
+}
+
+//============================================================================//
+
+void DebugRenderer::render_diamond(Vec2F position, const LocalDiamond& diamond)
+{
+    auto& context = renderer.context;
+
+    const Mat4F projViewMat = renderer.get_camera().get_combo_matrix();
+
+    //--------------------------------------------------------//
+
+    context.bind_FrameBuffer(renderer.fbos.Resolve);
+
+    context.set_state(Context::Blend_Mode::Alpha);
+    context.set_state(Context::Cull_Face::Disable);
+    context.set_state(Context::Depth_Test::Disable);
+
+    context.bind_Program(mBlobShader);
+
+    context.bind_VertexArray(mDiamondMesh.get_vao());
+
+    //--------------------------------------------------------//
+
+    const Vec3F translate = Vec3F(position.x, position.y + diamond.offsetCross, 0.f);
+    const float scaleBottom = diamond.offsetCross;
+    const float scaleTop = diamond.offsetTop - diamond.offsetCross;
+
+    const Mat4F bottomMat = maths::transform(translate, Vec3F(diamond.halfWidth, scaleBottom, 0.1f));
+    const Mat4F topMat = maths::transform(translate, Vec3F(diamond.halfWidth, scaleTop, 0.1f));
+
+    mBlobShader.update(1, Vec3F(1.f, 1.f, 1.f));
+
+    mBlobShader.update(0, projViewMat * bottomMat);
+    mDiamondMesh.draw_partial(0u);
+
+    mBlobShader.update(0, projViewMat * topMat);
+    mDiamondMesh.draw_partial(1u);
 }

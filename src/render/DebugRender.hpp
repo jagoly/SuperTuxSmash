@@ -20,6 +20,8 @@ public: //====================================================//
 
     void render_hurt_blobs(const Vector<HurtBlob*>& blobs);
 
+    void render_diamond(Vec2F position, const struct LocalDiamond& diamond);
+
 private: //===================================================//
 
     sq::Program mBlobShader;
@@ -27,6 +29,7 @@ private: //===================================================//
 
     sq::Mesh mSphereMesh;
     sq::Mesh mCapsuleMesh;
+    sq::Mesh mDiamondMesh;
 
     sq::VertexArray mLineVertexArray;
     sq::FixedBuffer mLineVertexBuffer;

@@ -48,7 +48,8 @@ GameScene::GameScene(SmashApp& smashApp, GameSetup setup)
 
     SWITCH (setup.stage)
     {
-        CASE (TestZone)
+        //CASE (TestZone)
+        CASE (Null, TestZone)
         {
             stage = std::make_unique<TestZone_Stage>(*mFightWorld);
             renderStage = std::make_unique<TestZone_Render>(*mRenderer, static_cast<TestZone_Stage&>(*stage));
@@ -116,8 +117,17 @@ void GameScene::handle_event(sq::Event event)
 {
     for (auto& controller : mControllers)
     {
-        if (controller != nullptr)
-            controller->handle_event(event);
+        if (mGamePaused == false)
+        {
+            if (controller != nullptr)
+                controller->handle_event(event);
+        }
+    }
+
+    if (event.type == sq::Event::Type::Keyboard_Press)
+    {
+        if (event.data.keyboard.key == sq::Keyboard_Key::F1)
+            mGamePaused = !mGamePaused;
     }
 }
 
@@ -125,10 +135,9 @@ void GameScene::handle_event(sq::Event event)
 
 void GameScene::update()
 {
-    mFightWorld->tick();
+    if (mGamePaused == false) mFightWorld->tick();
 
     auto& camera = static_cast<StandardCamera&>(mRenderer->get_camera());
-
     camera.update_from_scene_data(mFightWorld->compute_scene_data());
 }
 
@@ -151,6 +160,9 @@ void GameScene::render(double elapsed)
     {
         debugRenderer.render_hit_blobs(mFightWorld->get_hit_blobs());
         debugRenderer.render_hurt_blobs(mFightWorld->get_hurt_blobs());
+
+        for (const auto fighter : mFightWorld->get_fighters())
+            debugRenderer.render_diamond(fighter->get_position(), fighter->diamond);
     }
 
     mRenderer->finish_rendering();
@@ -164,38 +176,44 @@ void GameScene::impl_show_general_window()
     ImGui::SetNextWindowSizeConstraints({300, 0}, {300, 200});
     ImGui::SetNextWindowPos({20, 20});
 
-    if (ImGui::Begin("General Debug", nullptr, flags))
+    const ImPlus::ScopeWindow window = { "General Debug", flags };
+    if (window.show == false) return;
+
+    //--------------------------------------------------------//
+
+    if (ImGui::Button("reload actions"))
     {
-        //--------------------------------------------------------//
-
-        if (ImGui::Button("reload actions"))
-        {
-            for (Fighter* fighter : mFightWorld->get_fighters())
-                fighter->debug_reload_actions();
-        }
-        ImPlus::HoverTooltip("reload action from json");
-
-        ImGui::SameLine();
-
-        if (ImGui::Button("swap control"))
-        {
-            if (auto fighters = mFightWorld->get_fighters(); fighters.size() >= 2u)
-            {
-                auto controllerLast = fighters.back()->get_controller();
-                if (fighters.size() == 4u) fighters[3]->set_controller(fighters[2]->get_controller());
-                if (fighters.size() >= 3u) fighters[2]->set_controller(fighters[1]->get_controller());
-                fighters[1]->set_controller(fighters[0]->get_controller());
-                fighters[0]->set_controller(controllerLast);
-            }
-        }
-        ImPlus::HoverTooltip("cycle the controllers");
-
-        ImGui::Checkbox("disable input", &mSmashApp.get_globals().disableInput);
-        ImGui::SameLine();
-        ImGui::Checkbox("render blobs", &mSmashApp.get_globals().renderBlobs);
+        for (Fighter* fighter : mFightWorld->get_fighters())
+            fighter->debug_reload_actions();
     }
+    ImPlus::HoverTooltip("reload action from json");
 
-    ImGui::End();
+    ImGui::SameLine();
+
+    if (ImGui::Button("swap control"))
+    {
+        if (auto fighters = mFightWorld->get_fighters(); fighters.size() >= 2u)
+        {
+            auto controllerLast = fighters.back()->get_controller();
+            if (fighters.size() == 4u) fighters[3]->set_controller(fighters[2]->get_controller());
+            if (fighters.size() >= 3u) fighters[2]->set_controller(fighters[1]->get_controller());
+            fighters[1]->set_controller(fighters[0]->get_controller());
+            fighters[0]->set_controller(controllerLast);
+        }
+    }
+    ImPlus::HoverTooltip("cycle the controllers");
+
+    ImGui::Checkbox("disable input", &mSmashApp.get_globals().disableInput);
+    ImGui::SameLine();
+    ImGui::Checkbox("render blobs", &mSmashApp.get_globals().renderBlobs);
+
+    ImPlus::RadioButton("0.125×", mTickTime, 1.0 / 6.0);
+    ImGui::SameLine();
+    ImPlus::RadioButton("0.5×", mTickTime, 1.0 / 24.0);
+    ImGui::SameLine();
+    ImPlus::RadioButton("1×", mTickTime, 1.0 / 48.0);
+    ImGui::SameLine();
+    ImPlus::RadioButton("2×", mTickTime, 1.0 / 96.0);
 }
 
 //============================================================================//

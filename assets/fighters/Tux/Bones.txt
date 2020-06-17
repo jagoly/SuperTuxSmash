@@ -1,4 +1,5 @@
-Torso
+Root
+Torso Root
 Thigh.L Torso
 Thigh.R Torso
 Waist Torso
@@ -19,3 +20,5 @@ ArmB.L ArmA.L
 ArmB.R ArmA.R
 Hand.L ArmB.L
 Hand.R ArmB.R
+Hold.L Hand.L
+Hold.R Hand.R

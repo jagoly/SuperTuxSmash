@@ -146,10 +146,10 @@ SceneData FightWorld::compute_scene_data() const
     {
         if (fighter == nullptr) continue;
 
-        const Vec2F origin = fighter->get_diamond().centre();
+        const Vec2F centre = fighter->get_position() + fighter->diamond.cross();
 
-        result.view.min = maths::min(result.view.min, origin);
-        result.view.max = maths::max(result.view.max, origin);
+        result.view.min = maths::min(result.view.min, centre);
+        result.view.max = maths::max(result.view.max, centre);
     }
 
     result.inner = { Vec2F(-14.f,  -6.f), Vec2F(+14.f, +14.f) };

@@ -20,7 +20,8 @@ public: //====================================================//
         Neutral, Walking, Dashing, Brake, Crouch,
         Charge, Attack, Special, Landing, PreJump, Jumping,
         Falling, AirAttack, AirSpecial, Knocked, Stunned,
-        Shield, Dodge, Evade, AirDodge,
+        Shield, Dodge, EvadeBack, EvadeForward, AirDodge,
+        LedgeHang, LedgeClimb,
         EditorPreview
     };
 
@@ -31,10 +32,16 @@ public: //====================================================//
 
     enum class AnimMode
     {
-        Standard,
-        WalkCycle,
-        DashCycle,
-        Manual
+        Standard,    ///< non-looping, without root motion
+        //Looping,     ///< looping, without root motion
+        ApplyMotion, ///< non-looping, apply root motion continuously
+        FixedMotion, ///< non-looping, apply root motion at end of animation
+        WalkCycle,   ///< looping, update using velocity and anim_walk_stride
+        DashCycle,   ///< looping, update using velocity and anim_dash_stride
+        JumpAscend,  ///< non-looping, update using difference from jump velocity
+        BrakeSlow,   ///< non-looping, update using difference from brake velocity
+        //AboutFace,   ///< non-looping, change facing at end of animation
+        Manual       ///< used by the editor
     };
 
     struct Animation
@@ -67,31 +74,41 @@ public: //====================================================//
         float gravity        = 1.f;
         float fall_speed     = 1.f;
         float weight         = 1.f;
-        float evade_distance = 1.f;
 
         uint dodge_finish     = 22u;
         uint dodge_safe_start = 2u;
         uint dodge_safe_end   = 14u;
 
-        uint evade_finish     = 24u;
-        uint evade_safe_start = 3u;
-        uint evade_safe_end   = 13u;
+        uint evade_back_finish     = 24u;
+        uint evade_back_safe_start = 3u;
+        uint evade_back_safe_end   = 13u;
+
+        uint evade_forward_finish     = 24u;
+        uint evade_forward_safe_start = 3u;
+        uint evade_forward_safe_end   = 13u;
 
         uint air_dodge_finish     = 26u;
         uint air_dodge_safe_start = 2u;
         uint air_dodge_safe_end   = 22u;
 
+        uint ledge_climb_finish = 34u;
+
         float anim_walk_stride = 2.f;
         float anim_dash_stride = 3.f;
+
+        //float anim_evade_distance       = 2.f;
+        //float anim_ledge_climb_distance = 0.5f;
     };
 
     //--------------------------------------------------------//
 
     struct Status
     {
-        float damage = 0.f;
         bool intangible = false;
+        uint timeSinceLedge = 0u;
+        float damage = 0.f;
         float shield = 0.f;
+        struct Ledge* ledge = nullptr;
     };
 
     //--------------------------------------------------------//
@@ -118,10 +135,12 @@ public: //====================================================//
     // in the future, may make them private and add getters
 
     Array<UniquePtr<Action>, sq::enum_count_v<ActionType>> actions;
-\
+
     std::unordered_map<SmallString, Animation> animations;
 
     sq::PoolMap<TinyString, HurtBlob> hurtBlobs;
+
+    LocalDiamond diamond;
 
     //--------------------------------------------------------//
 
@@ -167,11 +186,9 @@ public: //====================================================//
     /// Get current armature pose matrices.
     const Vector<Mat34F>& get_bone_matrices() const { return mBoneMatrices; }
 
-    /// Get current velocity.
-    const Vec2F& get_velocity() const { return mVelocity; }
+    Vec2F get_position() const; ///< Get current position.
 
-    /// Get world space physics diamond.
-    const WorldDiamond& get_diamond() const { return mWorldDiamond; }
+    Vec2F get_velocity() const; ///< Get current velocity.
 
     //-- compute data needed for rendering -------------------//
 
@@ -195,10 +212,8 @@ protected: //=================================================//
 
     FightWorld& mFightWorld;
 
-    Vec2F mVelocity = {0.f, 0.f};
-
-    LocalDiamond mLocalDiamond;
-    WorldDiamond mWorldDiamond;
+    Vec2F mVelocity = { 0.f, 0.f };
+    Vec2F mTranslate = { 0.f, 0.f };
 
     //--------------------------------------------------------//
 
@@ -236,5 +251,6 @@ SQEE_ENUM_HELPER(sts::Fighter::State,
                  Neutral, Walking, Dashing, Brake, Crouch,
                  Charge, Attack, Special, Landing, PreJump, Jumping,
                  Falling, AirAttack, AirSpecial, Knocked, Stunned,
-                 Shield, Dodge, Evade, AirDodge,
+                 Shield, Dodge, EvadeBack, EvadeForward, AirDodge,
+                 LedgeHang, LedgeClimb,
                  EditorPreview)

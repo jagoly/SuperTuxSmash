@@ -75,12 +75,21 @@ void Fighter::pass_boundary()
 
 //============================================================================//
 
+static const QuatF ROTATION_LEFT  = QuatF(0.f, -0.25f, 0.f);
+static const QuatF ROTATION_RIGHT = QuatF(0.f, +0.25f, 0.f);
+static const QuatF ROTATION_BACK  = QuatF(0.f, 0.5f, 0.f);
+
 Mat4F Fighter::interpolate_model_matrix(float blend) const
 {
     const Vec2F position = maths::mix(impl->previous.position, impl->current.position, blend);
-    const float rotY = current.state == State::EditorPreview ? 0.5f : 0.25f * float(current.facing);
-    const QuatF rotation = QuatF(0.f, rotY, 0.f);
-    return maths::transform(Vec3F(position, 0.f), rotation, Vec3F(1.f));
+    const float rotation = [&]() {
+        if (current.state == State::EditorPreview) return 0.5f;
+        if (current.facing == previous.facing) return 0.25f * float(current.facing);
+        const float prevRotation = 0.25f * float(previous.facing);
+        return maths::mix(prevRotation, prevRotation + 0.5f, blend);
+    }();
+
+    return maths::transform(Vec3F(position, 0.f), QuatF(0.f, rotation, 0.f), Vec3F(1.f));
 }
 
 void Fighter::interpolate_bone_matrices(float blend, Mat34F* out, size_t len) const
@@ -144,24 +153,29 @@ void Fighter::debug_show_fighter_widget()
         ImPlus::InputValue("air_hop_height", stats.air_hop_height, 0.05f, "%.2f");
         ImPlus::InputValue("gravity",        stats.gravity,        0.05f, "%.2f");
         ImPlus::InputValue("fall_speed",     stats.fall_speed,     0.05f, "%.2f");
-        ImPlus::InputValue("evade_distance", stats.evade_distance, 0.05f, "%.2f");
 
         ImGui::Separator();
 
-        ImPlus::InputValue("dodge_finish",         stats.dodge_finish,         1);
-        ImPlus::InputValue("dodge_safe_start",     stats.dodge_safe_start,     1);
-        ImPlus::InputValue("dodge_safe_end",       stats.dodge_safe_end,       1);
-        ImPlus::InputValue("evade_finish",         stats.evade_finish,         1);
-        ImPlus::InputValue("evade_safe_start",     stats.evade_safe_start,     1);
-        ImPlus::InputValue("evade_safe_end",       stats.evade_safe_end,       1);
-        ImPlus::InputValue("air_dodge_finish",     stats.air_dodge_finish,     1);
-        ImPlus::InputValue("air_dodge_safe_start", stats.air_dodge_safe_start, 1);
-        ImPlus::InputValue("air_dodge_safe_end",   stats.air_dodge_safe_end,   1);
+        ImPlus::InputValue("dodge_finish",             stats.dodge_finish,             1);
+        ImPlus::InputValue("dodge_safe_start",         stats.dodge_safe_start,         1);
+        ImPlus::InputValue("dodge_safe_end",           stats.dodge_safe_end,           1);
+        ImPlus::InputValue("evade_back_finish",        stats.evade_back_finish,        1);
+        ImPlus::InputValue("evade_back_safe_start",    stats.evade_back_safe_start,    1);
+        ImPlus::InputValue("evade_back_safe_end",      stats.evade_back_safe_end,      1);
+        ImPlus::InputValue("evade_forward_finish",     stats.evade_forward_finish,     1);
+        ImPlus::InputValue("evade_forward_safe_start", stats.evade_forward_safe_start, 1);
+        ImPlus::InputValue("evade_forward_safe_end",   stats.evade_forward_safe_end,   1);
+        ImPlus::InputValue("air_dodge_finish",         stats.air_dodge_finish,         1);
+        ImPlus::InputValue("air_dodge_safe_start",     stats.air_dodge_safe_start,     1);
+        ImPlus::InputValue("air_dodge_safe_end",       stats.air_dodge_safe_end,       1);
 
         ImGui::Separator();
 
         ImPlus::InputValue("anim_walk_stride", stats.anim_walk_stride, 0.1f);
         ImPlus::InputValue("anim_dash_stride", stats.anim_dash_stride, 0.1f);
+
+        //ImPlus::InputValue("anim_evade_distance",       stats.anim_evade_distance,       0.1f);
+        //ImPlus::InputValue("anim_ledge_climb_distance", stats.anim_ledge_climb_distance, 0.1f);
 
         ImGui::Separator();
     }
@@ -205,4 +219,14 @@ Vec2F& Fighter::edit_position()
 Vec2F& Fighter::edit_velocity()
 {
     return impl->current.position;
+}
+
+Vec2F Fighter::get_position() const
+{
+    return impl->current.position;
+}
+
+Vec2F Fighter::get_velocity() const
+{
+    return mVelocity;
 }

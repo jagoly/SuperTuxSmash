@@ -31,37 +31,54 @@ public: //====================================================//
     struct Transitions
     {
         Transition neutral_crouch;
+        Transition neutral_shield;
         Transition neutral_walking;
 
         Transition walking_crouch;
+        Transition walking_shield;
         Transition walking_dashing;
         Transition walking_dive;
         Transition walking_neutral;
 
+        Transition dashing_shield;
         Transition dashing_brake;
         Transition dashing_dive;
 
-        Transition crouch_stand;
+        Transition neutral_turn;
 
-        Transition jumping_dodge;
+        Transition brake_turn_brake;
+        Transition brake_turn_dash;
+
+        Transition crouch_shield;
+        Transition crouch_neutral;
+
+        Transition air_dodge;
+        Transition air_hop;
+        Transition air_ledge;
+
         Transition jumping_falling;
-        Transition jumping_hop;
 
         Transition shield_dodge;
-        Transition shield_evade;
+        Transition shield_evade_back;
+        Transition shield_evade_forward;
         Transition shield_neutral;
 
-        Transition falling_dodge;
-        Transition falling_hop;
+        Transition ledge_climb;
+        Transition ledge_jump;
+        Transition ledge_drop;
 
-        Transition misc_jump;
-        Transition misc_land;
-
-        Transition misc_crouch;
-        Transition misc_falling;
-        Transition misc_neutral;
-        Transition misc_shield;
         Transition misc_vertigo;
+        Transition misc_prejump;
+
+        Transition jump_back;
+        Transition jump_forward;
+        Transition land_clean;
+
+        Transition instant_crouch;
+        Transition instant_falling;
+        Transition instant_neutral;
+        Transition instant_shield;
+        Transition instant_dashing;
 
         Transition neutral_attack;
 
@@ -123,7 +140,7 @@ public: //====================================================//
 
     //-- used internally and by the action editor ------------//
 
-    void state_transition(const Transition& transition);
+    void state_transition(const Transition& transition, bool keepTime = false);
 
     void switch_action(ActionType type);
 
@@ -132,7 +149,13 @@ private: //===================================================//
     int8_t mMoveAxisX = 0;
     int8_t mMoveAxisY = 0;
 
+    int8_t mDoBrakeTurn = 0;
+
     bool mJumpHeld = false;
+    bool mDoTurnDash = false;
+
+    float mJumpVelocity = 0.f;
+    float mBrakeVelocity = 0.f;
 
     uint mStateProgress = 0u;
 
@@ -144,6 +167,11 @@ private: //===================================================//
 
     int mAnimTimeDiscrete = 0;
     float mAnimTimeContinuous = 0.f;
+    float mAnimScaleTime = 1.f;
+
+    bool mVertigoActive = false;
+
+    Vec2F mPrevRootMotionOffset = Vec2F();
 
     sq::Armature::Pose mFadeStartPose;
 

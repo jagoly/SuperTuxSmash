@@ -17,29 +17,31 @@ using namespace sts;
 
 //============================================================================//
 
-static constexpr float STS_WALK_SPEED       = 3.0f;  // walk_speed
-static constexpr float STS_DASH_SPEED       = 6.0f;  // dash_speed
-static constexpr float STS_AIR_SPEED        = 3.0f;  // air_speed
+static constexpr float STS_WALK_SPEED           = 3.0f;  // walk_speed
+static constexpr float STS_DASH_SPEED           = 6.0f;  // dash_speed
+static constexpr float STS_AIR_SPEED            = 3.0f;  // air_speed
 
-static constexpr float STS_WALK_MOBILITY    = 1.0f;  // traction
-static constexpr float STS_DASH_MOBILITY    = 1.5f;  // traction
-static constexpr float STS_LAND_FRICTION    = 0.5f;  // traction
+static constexpr float STS_WALK_MOBILITY        = 1.0f;  // traction
+static constexpr float STS_DASH_MOBILITY        = 1.5f;  // traction
+static constexpr float STS_LAND_FRICTION        = 0.5f;  // traction
 
-static constexpr float STS_AIR_MOBILITY     = 0.5f;  // air_mobility
-static constexpr float STS_AIR_FRICTION     = 0.2f;  // air_friction
+static constexpr float STS_AIR_MOBILITY         = 0.5f;  // air_mobility
+static constexpr float STS_AIR_FRICTION         = 0.2f;  // air_friction
 
-static constexpr float STS_HOP_HEIGHT       = 2.0f;  // hop_height
-static constexpr float STS_JUMP_HEIGHT      = 3.0f;  // jump_height
-static constexpr float STS_AIR_HOP_HEIGHT   = 2.0f;  // air_hop_height
+static constexpr float STS_HOP_HEIGHT           = 2.0f;  // hop_height
+static constexpr float STS_JUMP_HEIGHT          = 3.0f;  // jump_height
+static constexpr float STS_AIR_HOP_HEIGHT       = 2.0f;  // air_hop_height
 
-static constexpr float STS_GRAVITY          = 0.5f;  // gravity
-static constexpr float STS_FALL_SPEED       = 12.0f; // fall_speed
+static constexpr float STS_GRAVITY              = 0.5f;  // gravity
+static constexpr float STS_FALL_SPEED           = 12.0f; // fall_speed
 
-static constexpr float STS_EVADE_DISTANCE   = 2.0f;  // evade_distance
+static constexpr float STS_TICK_RATE            = 48.0f;
+static constexpr uint  STS_LANDING_LAG          = 4u;
+static constexpr uint  STS_JUMP_DELAY           = 4u;
+static constexpr uint  STS_DASH_TURN_LIMIT      = 4u;
 
-static constexpr float STS_TICK_RATE        = 48.0f;
-static constexpr uint  STS_LANDING_LAG      = 4u;
-static constexpr uint  STS_JUMP_DELAY       = 4u;
+static constexpr float STS_LEDGE_DROP_VELOCITY  = 1.0f;
+static constexpr uint  STS_NO_LEDGE_CATCH_TIME  = 48u;
 
 //============================================================================//
 
@@ -56,27 +58,45 @@ void PrivateFighter::initialise_armature(const String& path)
 
     constexpr const auto DEFAULT_ANIMATIONS = std::array
     {
-        std::tuple { "CrouchLoop",  AnimMode::Standard },
         std::tuple { "DashingLoop", AnimMode::DashCycle },
         std::tuple { "FallingLoop", AnimMode::Standard },
-        std::tuple { "JumpingLoop", AnimMode::Standard },
         std::tuple { "NeutralLoop", AnimMode::Standard },
-        std::tuple { "ShieldLoop",  AnimMode::Standard },
-        std::tuple { "VertigoLoop", AnimMode::Standard },
         std::tuple { "WalkingLoop", AnimMode::WalkCycle },
 
-        std::tuple { "AirDodge", AnimMode::Standard }, // dodge in the air
-        std::tuple { "AirHop",   AnimMode::Standard }, // begin an extra jump
-        std::tuple { "Brake",    AnimMode::Standard }, // finish dashing
-        std::tuple { "Crouch",   AnimMode::Standard }, // begin crouching
-        std::tuple { "DiveDash", AnimMode::Standard }, // dash off an edge
-        std::tuple { "DiveWalk", AnimMode::Standard }, // walk off an edge
-        std::tuple { "Dodge",    AnimMode::Standard }, // dodge on the ground
-        std::tuple { "Evade",    AnimMode::Standard }, // evade back or forward
-        std::tuple { "Jump",     AnimMode::Standard }, // begin a normal jump
-        std::tuple { "Land",     AnimMode::Standard }, // land on the ground
-        std::tuple { "Stand",    AnimMode::Standard }, // finish crouching
-        std::tuple { "Unshield", AnimMode::Standard }, // finish shielding
+        std::tuple { "VertigoStart", AnimMode::Standard },
+        std::tuple { "VertigoLoop",  AnimMode::Standard },
+
+        std::tuple { "ShieldOn",   AnimMode::Standard }, // GuardOn
+        std::tuple { "ShieldOff",  AnimMode::Standard }, // GuradOff
+        std::tuple { "ShieldLoop", AnimMode::Standard }, // Guard
+
+        std::tuple { "CrouchOn",   AnimMode::Standard }, // Squat
+        std::tuple { "CrouchOff",  AnimMode::Standard }, // SquatRv
+        std::tuple { "CrouchLoop", AnimMode::Standard }, // SquatWait
+
+        std::tuple { "Brake",     AnimMode::BrakeSlow }, // finish dashing
+        std::tuple { "DiveDash",  AnimMode::Standard }, // dash off an edge
+        std::tuple { "DiveWalk",  AnimMode::Standard }, // walk off an edge
+        std::tuple { "Dodge",     AnimMode::Standard }, // dodge on the ground
+        std::tuple { "LandClean", AnimMode::Standard }, // land normally
+        std::tuple { "PreJump",   AnimMode::Standard }, // JumpSquat
+        std::tuple { "Turn",      AnimMode::Standard }, // turn around while standing
+        std::tuple { "TurnBrake", AnimMode::BrakeSlow }, // brake after turning after dashing
+        std::tuple { "TurnDash",  AnimMode::BrakeSlow }, // turn and dash after braking
+
+        std::tuple { "EvadeBack",    AnimMode::ApplyMotion }, // evade backwards
+        std::tuple { "EvadeForward", AnimMode::ApplyMotion }, // evade forwards
+        std::tuple { "Dodge",        AnimMode::Standard },    // dodge on the spot
+        std::tuple { "AirDodge",     AnimMode::Standard },    // dodge in the air
+
+        std::tuple { "JumpBack",    AnimMode::JumpAscend }, // begin a back jump
+        std::tuple { "JumpForward", AnimMode::JumpAscend }, // begin a forward jump
+        std::tuple { "AirHop",      AnimMode::JumpAscend }, // begin an extra jump
+
+        std::tuple { "LedgeCatch", AnimMode::Standard }, // CliffCatch
+        std::tuple { "LedgeLoop",  AnimMode::Standard }, // CliffWait
+        std::tuple { "LedgeClimb", AnimMode::FixedMotion }, // CliffClimbQuick
+        std::tuple { "LedgeJump",  AnimMode::Standard }, // CliffJumpQuick
 
         std::tuple { "Knocked", AnimMode::Standard },
 
@@ -127,38 +147,55 @@ void PrivateFighter::initialise_armature(const String& path)
 
     Transitions& t = transitions;
 
-    t.neutral_crouch  = { State::Crouch,  2u, a("Crouch"), a("CrouchLoop") };
+    t.neutral_crouch  = { State::Crouch,  2u, a("CrouchOn"), a("CrouchLoop") };
+    t.neutral_shield  = { State::Shield,  2u, a("ShieldOn"), a("ShieldLoop") };
     t.neutral_walking = { State::Walking, 4u, a("WalkingLoop"), nullptr };
 
-    t.walking_crouch  = { State::Crouch,  2u, a("Crouch"), a("CrouchLoop") };
+    t.walking_crouch  = { State::Crouch,  2u, a("CrouchOn"), a("CrouchLoop") };
+    t.walking_shield  = { State::Shield,  2u, a("ShieldOn"), a("ShieldLoop") };
     t.walking_dashing = { State::Dashing, 4u, a("DashingLoop"), nullptr };
     t.walking_dive    = { State::Falling, 2u, a("DiveWalk"), a("FallingLoop") };
     t.walking_neutral = { State::Neutral, 4u, a("NeutralLoop"), nullptr };
 
-    t.dashing_brake = { State::Brake,   2u, a("Brake"), a("NeutralLoop") };
-    t.dashing_dive  = { State::Falling, 2u, a("DiveDash"), a("FallingLoop") };
+    t.dashing_shield = { State::Shield,  2u, a("ShieldOn"), a("ShieldLoop") };
+    t.dashing_brake  = { State::Brake,   4u, a("Brake"), a("NeutralLoop") };
+    t.dashing_dive   = { State::Falling, 2u, a("DiveDash"), a("FallingLoop") };
 
-    t.crouch_stand = { State::Neutral, 2u, a("Stand"), a("NeutralLoop") };
+    t.crouch_shield  = { State::Shield,  2u, a("ShieldLoop"), nullptr };
+    t.crouch_neutral = { State::Neutral, 2u, a("CrouchOff"), a("NeutralLoop") };
 
-    t.jumping_dodge   = { State::AirDodge, 1u, a("AirDodge"), a("FallingLoop") };
+    t.air_dodge = { State::AirDodge,  1u, a("AirDodge"), a("FallingLoop") };
+    t.air_hop   = { State::Jumping,   1u, a("AirHop"), a("FallingLoop") };
+    t.air_ledge = { State::LedgeHang, 1u, a("LedgeCatch"), a("LedgeLoop") };
+
     t.jumping_falling = { State::Falling,  8u, a("FallingLoop"), nullptr };
-    t.jumping_hop     = { State::Jumping,  1u, a("AirHop"), a("JumpingLoop") };
 
-    t.shield_dodge   = { State::Dodge,   1u, a("Dodge"), a("NeutralLoop") };
-    t.shield_evade   = { State::Evade,   1u, a("Evade"), a("NeutralLoop") };
-    t.shield_neutral = { State::Neutral, 1u, a("Unshield"), a("NeutralLoop") };
+    t.shield_dodge         = { State::Dodge,        1u, a("Dodge"), a("NeutralLoop") };
+    t.shield_evade_back    = { State::EvadeBack,    1u, a("EvadeBack"), nullptr };
+    t.shield_evade_forward = { State::EvadeForward, 1u, a("EvadeForward"), nullptr };
+    t.shield_neutral       = { State::Neutral,      1u, a("ShieldOff"), a("NeutralLoop") };
 
-    t.falling_dodge = { State::AirDodge, 1u, a("AirDodge"), a("FallingLoop") };
-    t.falling_hop   = { State::Jumping,  1u, a("AirHop"), a("JumpingLoop") };
+    t.ledge_climb = { State::LedgeClimb, 1u, a("LedgeClimb"), a("NeutralLoop") };
+    t.ledge_jump  = { State::Jumping,    1u, a("LedgeJump"), a("FallingLoop") };
+    t.ledge_drop  = { State::Falling,    0u, a("FallingLoop"), nullptr };
 
-    t.misc_jump = { State::PreJump, 1u, a("Jump"), a("JumpingLoop") };
-    t.misc_land = { State::Landing, 1u, a("Land"), a("NeutralLoop") };
+    t.misc_prejump = { State::PreJump, 1u, a("PreJump"), nullptr };
+    t.jump_back    = { State::Jumping, 1u, a("JumpBack"), a("FallingLoop") };
+    t.jump_forward = { State::Jumping, 1u, a("JumpForward"), a("FallingLoop") };
+    t.land_clean   = { State::Landing, 1u, a("LandClean"), a("NeutralLoop") };
 
-    t.misc_crouch  = { State::Crouch,  2u, a("CrouchLoop"), nullptr };
-    t.misc_falling = { State::Falling, 2u, a("FallingLoop"), nullptr };
-    t.misc_neutral = { State::Neutral, 2u, a("NeutralLoop"), nullptr };
-    t.misc_shield  = { State::Shield,  2u, a("ShieldLoop"), nullptr };
-    t.misc_vertigo = { State::Neutral, 2u, a("VertigoLoop"), nullptr };
+    t.neutral_turn = { State::Neutral, 1u, a("Turn"), a("NeutralLoop") };
+
+    t.brake_turn_dash = { State::Brake, 2u, a("TurnDash"), nullptr };
+    t.brake_turn_brake = { State::Brake, 0u, a("TurnBrake"), nullptr };
+
+    t.instant_crouch  = { State::Crouch,  0u, a("CrouchLoop"), nullptr };
+    t.instant_falling = { State::Falling, 0u, a("FallingLoop"), nullptr };
+    t.instant_neutral = { State::Neutral, 0u, a("NeutralLoop"), nullptr };
+    t.instant_shield  = { State::Shield,  0u, a("ShieldLoop"), nullptr };
+    t.instant_dashing = { State::Dashing, 0u, a("DashingLoop"), nullptr };
+
+    t.misc_vertigo = { State::Neutral, 2u, a("VertigoStart"), a("VertigoLoop") };
 
     t.neutral_attack = { State::Attack, 1u, a("NeutralFirst"), nullptr };
 
@@ -224,22 +261,46 @@ void PrivateFighter::initialise_stats(const String& path)
     stats.air_hop_height = json.at("air_hop_height");
     stats.gravity        = json.at("gravity");
     stats.fall_speed     = json.at("fall_speed");
-    stats.evade_distance = json.at("evade_distance");
 
     stats.dodge_finish     = json.at("dodge_finish");
     stats.dodge_safe_start = json.at("dodge_safe_start");
     stats.dodge_safe_end   = json.at("dodge_safe_end");
 
-    stats.evade_finish     = json.at("evade_finish");
-    stats.evade_safe_start = json.at("evade_safe_start");
-    stats.evade_safe_end   = json.at("evade_safe_end");
+    stats.evade_back_finish     = json.at("evade_back_finish");
+    stats.evade_back_safe_start = json.at("evade_back_safe_start");
+    stats.evade_back_safe_end   = json.at("evade_back_safe_end");
+
+    stats.evade_forward_finish     = json.at("evade_forward_finish");
+    stats.evade_forward_safe_start = json.at("evade_forward_safe_start");
+    stats.evade_forward_safe_end   = json.at("evade_forward_safe_end");
 
     stats.air_dodge_finish     = json.at("air_dodge_finish");
     stats.air_dodge_safe_start = json.at("air_dodge_safe_start");
     stats.air_dodge_safe_end   = json.at("air_dodge_safe_end");
 
+    stats.ledge_climb_finish = json.at("ledge_climb_finish");
+
     stats.anim_walk_stride = json.at("anim_walk_stride");
     stats.anim_dash_stride = json.at("anim_dash_stride");
+
+    //stats.anim_evade_distance       = json.at("anim_evade_distance");
+    //stats.anim_ledge_climb_distance = json.at("anim_ledge_climb_distance");
+
+    //SQASSERT(stats.dodge_finish == fighter.animations.at("Dodge").anim.totalTime, "");
+    SQASSERT(stats.dodge_safe_start < stats.dodge_safe_end, "");
+    SQASSERT(stats.dodge_safe_end < stats.dodge_finish, "");
+
+    //SQASSERT(stats.evade_back_finish == fighter.animations.at("EvadeBack").anim.totalTime, "");
+    SQASSERT(stats.evade_back_safe_start < stats.evade_back_safe_end, "");
+    SQASSERT(stats.evade_back_safe_end < stats.evade_back_finish, "");
+
+    //SQASSERT(stats.evade_forward_finish == fighter.animations.at("EvadeForward").anim.totalTime, "");
+    SQASSERT(stats.evade_forward_safe_start < stats.evade_forward_safe_end, "");
+    SQASSERT(stats.evade_forward_safe_end < stats.evade_forward_finish, "");
+
+    //SQASSERT(stats.air_dodge_finish == fighter.animations.at("AirDodge").anim.totalTime, "");
+    SQASSERT(stats.air_dodge_safe_start < stats.air_dodge_safe_end, "");
+    SQASSERT(stats.air_dodge_safe_end < stats.air_dodge_finish, "");
 }
 
 //============================================================================//
@@ -264,55 +325,115 @@ void PrivateFighter::handle_input_movement(const Controller::Input& input)
 
     State& state = fighter.current.state;
     Facing& facing = fighter.current.facing;
+
     Vec2F& velocity = fighter.mVelocity;
+    Vec2F& translate = fighter.mTranslate;
+
+    Status& status = fighter.status;
+
+    Stage& stage = get_world().get_stage();
 
     //--------------------------------------------------------//
 
     mMoveAxisX = input.int_axis.x;
     mMoveAxisY = input.int_axis.y;
 
-    //--------------------------------------------------------//
+    //-- catching ledges takes priority, so we do it first ---//
 
-    const auto start_jump = [&]()
+    if (status.timeSinceLedge > STS_NO_LEDGE_CATCH_TIME)
     {
-        mJumpHeld = true;
-    };
+        if (state == State::Jumping || state == State::Falling)
+        {
+            // todo: unsure if position should be fighter's origin, or the centre of it's diamond
+            status.ledge = stage.find_ledge(current.position, mMoveAxisX);
+            if (status.ledge != nullptr)
+            {
+                // steal the ledge from some other fighter
+                if (status.ledge->grabber != nullptr)
+                    status.ledge->grabber->status.ledge = nullptr;
 
-    const auto start_air_hop = [&]()
-    {
-        mJumpHeld = false;
+                status.ledge->grabber = &fighter;
+                facing = Facing(-status.ledge->direction);
+            }
+        }
+    }
 
-        const float height = stats.air_hop_height * STS_AIR_HOP_HEIGHT;
-        const float gravity = stats.gravity * STS_GRAVITY;
-
-        velocity.y = std::sqrt(2.f * height * gravity * STS_TICK_RATE);
-        velocity.y += gravity * 0.5f;
-    };
-
-    //--------------------------------------------------------//
+    //-- apply other pre-transition updates ------------------//
 
     if (input.press_jump == true)
     {
+        const auto start_jump = [&]()
+        {
+            mJumpHeld = true;
+        };
+
+        const auto start_air_hop = [&]()
+        {
+            mJumpHeld = false;
+
+            const float height = stats.air_hop_height * STS_AIR_HOP_HEIGHT;
+            const float gravity = stats.gravity * STS_GRAVITY;
+
+            mJumpVelocity = std::sqrt(2.f * gravity * height * STS_TICK_RATE);
+            velocity.y = mJumpVelocity + gravity * 0.5f;
+        };
+
         SWITCH (state) {
             CASE ( Walking, Dashing ) start_jump(); // moving jump
             CASE ( Neutral, Crouch, Brake, Shield ) start_jump(); // standing jump
-            CASE ( Jumping, Falling ) start_air_hop(); // aerial jump
+            CASE ( Jumping, Falling, LedgeHang ) start_air_hop(); // aerial jump
             CASE_DEFAULT {} // no jump allowed
         } SWITCH_END;
     }
 
-    else if (input.hold_shield == true)
-    {
-        if (state == State::Shield && input.mash_axis.x != 0)
-            facing = Facing(-input.mash_axis.x);
-    }
-
+    // if we are about to start moving, then face that direction
     else if (state == State::Neutral)
     {
         if (input.float_axis.x < -0.f) facing = Facing::Left;
         if (input.float_axis.x > +0.f) facing = Facing::Right;
     }
 
+    // we can drop from ledge by pressing either down or back
+    else if (state == State::LedgeHang)
+    {
+        if ( status.ledge == nullptr || // someone else stole the ledge
+             (input.int_axis.y < +2 && (input.int_axis.y == -2 || input.int_axis.x / 2 == status.ledge->direction)) )
+        {
+            translate.x = (current.pose[0].offset.z - fighter.diamond.halfWidth) * float(facing);
+            translate.y = current.pose[0].offset.y;
+            velocity.x = STS_LEDGE_DROP_VELOCITY * -float(facing);
+            status.timeSinceLedge = 0u;
+        }
+    }
+
+    // we can turn around while braking, then dash in the other direction
+    else if (state == State::Brake)
+    {
+        if (mDoBrakeTurn == 0)
+        {
+            if (input.int_axis.x == -int8_t(facing))
+            {
+                mDoBrakeTurn = -int8_t(facing);
+                state_transition(transitions.brake_turn_dash);
+            }
+        }
+
+        else if (mDoTurnDash == false && Facing(mDoBrakeTurn) != facing)
+        {
+            if (mStateProgress < STS_DASH_TURN_LIMIT)
+            {
+                if (input.mash_axis.x == mDoBrakeTurn)
+                    mDoTurnDash = true;
+            }
+
+            else if (mStateProgress == STS_DASH_TURN_LIMIT)
+            {
+                facing = Facing(mDoBrakeTurn);
+                mBrakeVelocity = std::abs(velocity.x);
+                state_transition(transitions.brake_turn_brake);
+            }
+        }
+    }
 
     //-- transitions in response to input --------------------//
 
@@ -323,10 +444,10 @@ void PrivateFighter::handle_input_movement(const Controller::Input& input)
     CASE ( Neutral ) //=======================================//
     {
         if (input.press_jump == true)
-            state_transition(transitions.misc_jump);
+            state_transition(transitions.misc_prejump);
 
         else if (input.hold_shield == true)
-            state_transition(transitions.misc_shield);
+            state_transition(transitions.neutral_shield);
 
         else if (input.float_axis.y == -1.f)
             state_transition(transitions.neutral_crouch);
@@ -338,10 +459,10 @@ void PrivateFighter::handle_input_movement(const Controller::Input& input)
     CASE ( Walking ) //=======================================//
     {
         if (input.press_jump == true)
-            state_transition(transitions.misc_jump);
+            state_transition(transitions.misc_prejump);
 
         else if (input.press_shield == true)
-            state_transition(transitions.misc_shield);
+            state_transition(transitions.walking_shield);
 
         else if (input.float_axis.y == -1.f)
             state_transition(transitions.walking_crouch);
@@ -356,31 +477,40 @@ void PrivateFighter::handle_input_movement(const Controller::Input& input)
     CASE ( Dashing ) //=======================================//
     {
         if (input.press_jump == true)
-            state_transition(transitions.misc_jump);
+            state_transition(transitions.misc_prejump);
 
         else if (input.press_shield == true)
-            state_transition(transitions.misc_shield);
+            state_transition(transitions.dashing_shield);
 
-        else if (input.float_axis.x == 0.f)
+        else if (input.norm_axis.x != int8_t(facing))
+        {
+            mBrakeVelocity = std::abs(velocity.x);
             state_transition(transitions.dashing_brake);
+        }
     }
 
     CASE ( Brake ) //=========================================//
     {
         if (input.press_jump == true)
-            state_transition(transitions.misc_jump);
+            state_transition(transitions.misc_prejump);
+
+        //else if (input.int_axis.x == int8_t(facing) * -1)
+        //    state_transition(transitions.brake_turn_brake);
+
+        //else if (input.mash_axis.x == -int8_t(facing))
+        //    state_transition(transitions.brake_turn_dash);
     }
 
     CASE ( Crouch ) //========================================//
     {
         if (input.press_jump == true)
-            state_transition(transitions.misc_jump);
+            state_transition(transitions.misc_prejump);
 
         if (input.press_shield == true)
-            state_transition(transitions.misc_shield);
+            state_transition(transitions.crouch_shield);
 
         else if (input.float_axis.y != -1.f)
-            state_transition(transitions.crouch_stand);
+            state_transition(transitions.crouch_neutral);
     }
 
     CASE ( PreJump ) //=======================================//
@@ -392,41 +522,67 @@ void PrivateFighter::handle_input_movement(const Controller::Input& input)
     {
         mJumpHeld &= input.hold_jump;
 
-        if (input.press_jump == true)
-            state_transition(transitions.jumping_hop);
+        if (status.ledge != nullptr)
+            state_transition(transitions.air_ledge);
+
+        else if (input.press_jump == true)
+            state_transition(transitions.air_hop);
 
         else if (input.press_shield == true)
-            state_transition(transitions.jumping_dodge);
+            state_transition(transitions.air_dodge);
     }
 
     CASE ( Falling ) //=======================================//
     {
-        if (input.press_jump == true)
-            state_transition(transitions.falling_hop);
+        if (status.ledge != nullptr)
+            state_transition(transitions.air_ledge);
+
+        else if (input.press_jump == true)
+            state_transition(transitions.air_hop);
 
         else if (input.press_shield == true)
-            state_transition(transitions.falling_dodge);
+            state_transition(transitions.air_dodge);
     }
 
     CASE ( Shield ) //========================================//
     {
         if (input.press_jump == true)
-            state_transition(transitions.misc_jump);
+            state_transition(transitions.misc_prejump);
 
         else if (input.hold_shield == false)
             state_transition(transitions.shield_neutral);
 
-        else if (input.mash_axis.x != 0)
-            state_transition(transitions.shield_evade);
+        else if (input.mash_axis.x == -int8_t(facing))
+            state_transition(transitions.shield_evade_back);
+
+        else if (input.mash_axis.x == +int8_t(facing))
+            state_transition(transitions.shield_evade_forward);
 
         else if (input.mash_axis.y != 0)
             state_transition(transitions.shield_dodge);
     }
 
+    CASE ( LedgeHang ) //=====================================//
+    {
+        if (input.press_jump == true)
+            state_transition(transitions.ledge_jump);
+
+        else if (input.int_axis.y == +2)
+            state_transition(transitions.ledge_climb);
+
+        else if (status.ledge == nullptr)
+            state_transition(transitions.ledge_drop);
+
+        else if (input.int_axis.y == -2 || input.int_axis.x / 2 == status.ledge->direction)
+            state_transition(transitions.ledge_drop);
+
+    }
+
     //== Nothing to do here ==================================//
 
     CASE ( Attack, AirAttack, Special, AirSpecial ) {}
-    CASE ( Landing, Charge, Dodge, Evade, AirDodge ) {}
+    CASE ( Landing, Charge, Dodge, EvadeBack, EvadeForward, AirDodge ) {}
+    CASE ( LedgeClimb ) {}
 
     CASE ( EditorPreview ) {}
 
@@ -472,6 +628,14 @@ void PrivateFighter::handle_input_movement(const Controller::Input& input)
     if (state == State::AirAttack) apply_horizontal_move(airMobility, airTargetSpeed);
     if (state == State::AirSpecial) apply_horizontal_move(airMobility, airTargetSpeed);
     if (state == State::AirDodge) apply_horizontal_move(airMobility, airTargetSpeed);
+
+    //-- clear ungrabbed ledge -------------------------------//
+
+    if (state != State::LedgeHang && status.ledge != nullptr)
+    {
+        status.ledge->grabber = nullptr;
+        status.ledge = nullptr;
+    }
 }
 
 //============================================================================//
@@ -597,10 +761,16 @@ void PrivateFighter::handle_input_actions(const Controller::Input& input)
         // will want to share most input data here
     }
 
+    CASE ( LedgeHang ) //=====================================//
+    {
+        // ledge attacks go here
+    }
+
     //== Nothing to do here ==================================//
 
     CASE ( PreJump, Landing, Knocked, Stunned ) {}
-    CASE ( Shield, Dodge, Evade, AirDodge ) {}
+    CASE ( Shield, Dodge, EvadeBack, EvadeForward, AirDodge ) {}
+    CASE ( LedgeClimb ) {}
 
     CASE ( EditorPreview ) {}
 
@@ -613,11 +783,20 @@ void PrivateFighter::handle_input_actions(const Controller::Input& input)
 
 //============================================================================//
 
-void PrivateFighter::state_transition(const Transition& transition)
+void PrivateFighter::state_transition(const Transition& transition, bool keepTime)
 {
     fighter.current.state = transition.newState;
 
+    if (keepTime == false)
+    {
+        mAnimTimeDiscrete = 0u;
+        mAnimTimeContinuous = 0.f;
+    }
+
+    mFadeProgress = 0u;
     mStateProgress = 0u;
+
+    mVertigoActive = false;
 
     mAnimation = transition.animation;
     mNextAnimation = transition.loop;
@@ -627,10 +806,6 @@ void PrivateFighter::state_transition(const Transition& transition)
         mFadeFrames = 0u;
 
     mStaticPose = nullptr;
-
-    mAnimTimeDiscrete = 0u;
-    mAnimTimeContinuous = 0.f;
-    mFadeProgress = 0u;
 
     mFadeStartPose = current.pose;
 }
@@ -681,16 +856,16 @@ void PrivateFighter::switch_action(ActionType type)
         SWITCH ( fighter.current.action->get_type() ) {
 
         CASE ( Neutral_First, Tilt_Forward, Tilt_Up, Smash_Down, Smash_Forward, Smash_Up, Dash_Attack )
-        state_transition(transitions.misc_neutral);
+        state_transition(transitions.instant_neutral);
 
         CASE ( Tilt_Down )
-        state_transition(transitions.misc_crouch);
+        state_transition(transitions.instant_crouch);
 
         CASE ( Air_Back, Air_Down, Air_Forward, Air_Neutral, Air_Up )
-        state_transition(transitions.misc_falling);
+        state_transition(transitions.instant_falling);
 
         CASE ( Special_Down, Special_Forward, Special_Neutral, Special_Up )
-        state_transition(transitions.misc_neutral); // todo
+        state_transition(transitions.instant_neutral); // todo
 
         CASE ( None ) SQASSERT(false, "switch from None to None");
 
@@ -722,27 +897,41 @@ void PrivateFighter::update_after_input()
     State& state = fighter.current.state;
     Facing& facing = fighter.current.facing;
 
+    Vec2F& velocity = fighter.mVelocity;
+    Vec2F& translate = fighter.mTranslate;
+
     Status& status = fighter.status;
 
-    Vec2F& velocity = fighter.mVelocity;
+    mStateProgress += 1u;
 
-    auto& localDiamond = fighter.mLocalDiamond;
-    auto& worldDiamond = fighter.mWorldDiamond;
+    //-- most updates don't apply when ledge hanging ---------//
 
-    //-- update physics diamond to previous frame ------------//
+    if (state == State::LedgeHang)
+    {
+        SQASSERT(status.ledge != nullptr, "nope");
 
-    worldDiamond.negX = current.position.x - localDiamond.halfWidth;
-    worldDiamond.posX = current.position.x + localDiamond.halfWidth;
-    worldDiamond.negY = current.position.y;
-    worldDiamond.posY = current.position.y + localDiamond.offsetTop;
-    worldDiamond.crossX = current.position.x;
-    worldDiamond.crossY = current.position.y + localDiamond.offsetMiddle;
+        // this will be the case only if we just grabbed the ledge
+        if (velocity != Vec2F())
+        {
+            current.position = (current.position + status.ledge->position) / 2.f;
+            velocity = Vec2F();
+        }
+        else current.position = status.ledge->position;
+
+        return; // EARLY RETURN
+    }
+
+    //--------------------------------------------------------//
+
+    Vec2F targetPosition = current.position;
+
+    status.timeSinceLedge += 1u;
 
     //-- apply friction --------------------------------------//
 
     SWITCH ( state ) {
 
-    CASE ( Neutral, Walking, Dashing, Brake, Crouch, Charge, Attack, Special, Landing, Shield, Dodge )
+    CASE ( Neutral, Walking, Dashing, Brake, Crouch, Charge, Attack, Special, Landing, Shield, Dodge, EvadeBack, EvadeForward )
     {
         const float friction = stats.traction * STS_LAND_FRICTION;
 
@@ -758,7 +947,7 @@ void PrivateFighter::update_after_input()
         if (velocity.x > +0.f) velocity.x = maths::max(velocity.x - friction, +0.f);
     }
 
-    CASE ( Evade, PreJump, Knocked, Stunned ) {}
+    CASE ( PreJump, Knocked, Stunned, LedgeHang, LedgeClimb ) {}
 
     CASE ( EditorPreview ) {}
 
@@ -768,63 +957,99 @@ void PrivateFighter::update_after_input()
 
     constexpr auto in_range = [](uint value, uint min, uint max) { return value >= min && value < max; };
 
-    if (state == State::Evade)
+    if (state == State::Dodge)
     {
-        status.intangible = in_range(++mStateProgress, stats.evade_safe_start, stats.evade_safe_end);
+        status.intangible = in_range(mStateProgress, stats.dodge_safe_start, stats.dodge_safe_end);
 
-        if (mStateProgress <= stats.evade_finish)
-        {
-            const float distance = stats.evade_distance * STS_EVADE_DISTANCE;
-            const float speed = distance / float(stats.evade_finish);
-
-            velocity.x = speed * -float(facing) * 48.f;
-        }
-
-        else { state = State::Neutral; velocity.x = 0.f; }
+        if (mStateProgress > stats.dodge_finish)
+            state_transition(transitions.instant_neutral);
     }
 
-    else if (state == State::Dodge)
+    else if (state == State::EvadeBack)
     {
-        status.intangible = in_range(++mStateProgress, stats.dodge_safe_start, stats.dodge_safe_end);
-        if (mStateProgress > stats.dodge_finish) state = State::Neutral;
+        status.intangible = in_range(mStateProgress, stats.evade_back_safe_start, stats.evade_back_safe_end);
+
+        if (mStateProgress > stats.evade_back_finish)
+            state_transition(transitions.instant_neutral);
+    }
+
+    else if (state == State::EvadeForward)
+    {
+        status.intangible = in_range(mStateProgress, stats.evade_forward_safe_start, stats.evade_forward_safe_end);
+
+        if (mStateProgress > stats.evade_forward_finish)
+        {
+            facing = Facing(-int8_t(facing));
+            state_transition(transitions.instant_neutral);
+        }
     }
 
     else if (state == State::AirDodge)
     {
-        status.intangible = in_range(++mStateProgress, stats.air_dodge_safe_start, stats.air_dodge_safe_end);
-        if (mStateProgress > stats.air_dodge_finish) state = State::Neutral;
+        status.intangible = in_range(mStateProgress, stats.air_dodge_safe_start, stats.air_dodge_safe_end);
+
+        // change to Falling instead of neutral to disable L-canceling
+        if (mStateProgress > stats.air_dodge_finish)
+            state_transition(transitions.instant_neutral);
+    }
+
+    else if (state == State::LedgeClimb)
+    {
+        if (mStateProgress > stats.ledge_climb_finish)
+            state_transition(transitions.instant_neutral);
     }
 
     else if (state == State::Landing)
     {
-        if (++mStateProgress == STS_LANDING_LAG) state = State::Neutral;
+        // no transition, neutral loop will play after landing animation
+        if (mStateProgress == STS_LANDING_LAG)
+            state = State::Neutral;
     }
 
     else if (state == State::PreJump)
     {
-        if (++mStateProgress == STS_JUMP_DELAY)
+        // todo: move as much of this as possible into handle_input_movement
+        if (mStateProgress == STS_JUMP_DELAY)
         {
+            if (mMoveAxisX == -int8_t(facing)) state_transition(transitions.jump_back);
+            else if (mMoveAxisX == -int8_t(facing) * 2) state_transition(transitions.jump_back);
+            else state_transition(transitions.jump_forward);
+
             const float hopHeight = stats.hop_height * STS_HOP_HEIGHT;
             const float jumpHeight = stats.jump_height * STS_JUMP_HEIGHT;
             const float gravity = stats.gravity * STS_GRAVITY;
 
-            if (mJumpHeld == true) velocity.y = std::sqrt(2.f * jumpHeight * gravity * STS_TICK_RATE);
-            if (mJumpHeld == false) velocity.y = std::sqrt(2.f * hopHeight * gravity * STS_TICK_RATE);
+            mJumpVelocity = std::sqrt(2.f * (mJumpHeld ? jumpHeight : hopHeight) * gravity * STS_TICK_RATE);
 
-            state = State::Jumping;
+            velocity.y = mJumpVelocity;
         }
     }
 
     else if (state == State::Jumping)
     {
+        // no transition, falling loop will play after jumping animation
         if (velocity.y <= 0.f)
-            state_transition(transitions.jumping_falling);
+            state = State::Falling;
     }
 
     else if (state == State::Brake)
     {
         if (velocity.x == 0.f)
-            state = State::Neutral;
+        {
+            if (mDoTurnDash == false)
+            {
+                mDoBrakeTurn = 0;
+                state_transition(transitions.instant_neutral);
+            }
+            else
+            {
+                facing = Facing(mDoBrakeTurn);
+                velocity.x = float(facing) * stats.traction * STS_DASH_MOBILITY * 2.f;
+                mDoBrakeTurn = 0;
+                mDoTurnDash = false;
+                state_transition(transitions.instant_dashing);
+            }
+        }
     }
 
     else if (state == State::Knocked)
@@ -840,45 +1065,54 @@ void PrivateFighter::update_after_input()
 
     //-- update position -------------------------------------//
 
-    const Vec2F targetPosition = current.position + velocity / 48.f;
+    targetPosition += velocity / STS_TICK_RATE + translate;
+    translate = Vec2F();
 
-    MoveAttempt moveAttempt = stage.attempt_move(worldDiamond, velocity / 48.f);
+    const bool edgeStop = ( state == State::EvadeBack || state == State::EvadeForward || state == State::Attack ||
+                            state == State::Special || state == State::Shield ) ||
+                          ( (state == State::Walking || state == State::Brake || state == State::Neutral) &&
+                            std::abs(mMoveAxisX) < 2 );
 
-    if (moveAttempt.edge != 0)
+    MoveAttempt moveAttempt = stage.attempt_move(fighter.diamond, current.position, targetPosition, edgeStop);
+
+    if ( moveAttempt.edge == int8_t(facing) && mVertigoActive == false &&
+         (state == State::Walking || state == State::Brake || state == State::Neutral) )
     {
-        if (state == State::Evade || state == State::Attack || state == State::Special)
-            current.position = moveAttempt.result;
-
-        else if (state == State::Knocked || state == State::Jumping || std::abs(mMoveAxisX) == 2)
-            current.position = targetPosition;
+        // vertigo is just neutral with a different animation
+        state_transition(transitions.misc_vertigo);
+        mVertigoActive = true;
     }
 
-    else current.position = moveAttempt.result;
+    current.position = moveAttempt.result;
 
     //-- check if fallen or moved off an edge ----------------//
 
-    if (current.position.y <= targetPosition.y)
+    if (moveAttempt.collideFloor == false)
     {
         SWITCH (state) {
             CASE (Walking) { state_transition(transitions.walking_dive); }
             CASE (Dashing) { state_transition(transitions.dashing_dive); }
             CASE (Special) {} // todo
-            CASE (PreJump, Jumping, Falling, AirAttack, AirSpecial, AirDodge, Knocked) {}
-            CASE_DEFAULT { state_transition(transitions.misc_falling); }
+            CASE (PreJump, Jumping, Falling, AirAttack, AirSpecial, AirDodge, Knocked, LedgeHang) {}
+            CASE_DEFAULT { state_transition(transitions.instant_falling); }
         } SWITCH_END;
     }
 
     //-- check if landed on the ground -----------------------//
 
-    if (current.position.y > targetPosition.y)
+    if (moveAttempt.collideFloor == true)
     {
-        if (state == State::AirDodge) state_transition(transitions.misc_land);
-        else if (state == State::Jumping) state_transition(transitions.misc_land);
-        else if (state == State::Falling) state_transition(transitions.misc_land);
+        // being on solid floor always clears velocity
+        velocity.y = 0.f;
+
+        if (state == State::AirDodge || state == State::Jumping || state == State::Falling)
+        {
+            state_transition(transitions.land_clean);
+        }
 
         else if (state == State::AirAttack)
         {
-            state_transition(transitions.misc_land);
+            state_transition(transitions.land_clean);
             switch_action(ActionType::None);
         }
 
@@ -893,27 +1127,29 @@ void PrivateFighter::update_after_input()
             {
                 // todo
             }
-
-            state_transition(transitions.misc_land);
+            state_transition(transitions.land_clean);
         }
     }
 
-    //-- check if walls, ceiling, or floor reached -----------//
+    //-- check if we've hit our head on the ceiling ----------//
 
-    if (current.position.x > targetPosition.x || current.position.x < targetPosition.x)
+    if (moveAttempt.collideCeiling == true)
     {
-        if (state == State::Walking || state == State::Dashing)
-            state_transition(transitions.misc_neutral);
-        velocity.x = 0.f;
+        // todo: not sure how to handle this, maybe we should keep velocity to
+        // make sliding up from under the stage easier, will need to test
+        velocity.y = 0.f;
     }
 
-    if (current.position.y < targetPosition.y) velocity.y = 0.f;
-    if (current.position.y > targetPosition.y) velocity.y = 0.f;
+    //-- check if moving into a wall -------------------------//
 
-    //--------------------------------------------------------//
+    if (moveAttempt.collideWall == true)
+    {
+        if (state == State::Walking || state == State::Dashing)
+            state_transition(transitions.instant_neutral);
 
-    if (state == State::Neutral && velocity.x == 0.f && moveAttempt.edge == int8_t(facing))
-        state_transition(transitions.misc_vertigo);
+        // todo: we may want to keep velocity in the air, will need to test
+        velocity.x = 0.f;
+    }
 
     //-- update the active action ----------------------------//
 
@@ -981,15 +1217,12 @@ void PrivateFighter::base_tick_animation()
 
     if (mAnimation != nullptr)
     {
-        const auto update_movement_cycle = [&](float stride, float distance)
-        {
-            const float animSpeed = stride / float(mAnimation->anim.totalTime);
-            mAnimTimeContinuous += distance / animSpeed / STS_TICK_RATE;
-            current.pose = armature.compute_pose(mAnimation->anim, mAnimTimeContinuous);
-        };
+        SWITCH (mAnimation->mode) {
 
-        // update all standard animations based on time
-        if (mAnimation->mode == AnimMode::Standard)
+        //--------------------------------------------------------//
+
+        // standard animations, these can loop, and support mAnimEndRootMotion and mAnimEndAboutFace
+        CASE (Standard)
         {
             current.pose = armature.compute_pose(mAnimation->anim, float(mAnimTimeDiscrete));
 
@@ -1011,16 +1244,133 @@ void PrivateFighter::base_tick_animation()
         }
 
         // update these animations based on horizontal velocity
-        else if (mAnimation->mode == AnimMode::WalkCycle)
-            update_movement_cycle(fighter.stats.anim_walk_stride, std::abs(fighter.mVelocity.x));
-        else if (mAnimation->mode == AnimMode::DashCycle)
-            update_movement_cycle(fighter.stats.anim_dash_stride, std::abs(fighter.mVelocity.x));
-
-        // if mode is manual, then we don't increment the anim time
-        else if (mAnimation->mode == AnimMode::Manual)
+        CASE (WalkCycle, DashCycle)
         {
-            current.pose = mAnimation->anim.poses.back();
+            const auto update_movement_cycle = [&](float stride)
+            {
+                const float distance = std::abs(fighter.mVelocity.x);
+                const float animSpeed = stride / float(mAnimation->anim.totalTime);
+
+                mAnimTimeContinuous += distance / animSpeed / STS_TICK_RATE;
+                current.pose = armature.compute_pose(mAnimation->anim, mAnimTimeContinuous);
+            };
+
+            if (mAnimation->mode == AnimMode::WalkCycle)
+                update_movement_cycle(fighter.stats.anim_walk_stride);
+
+            if (mAnimation->mode == AnimMode::DashCycle)
+                update_movement_cycle(fighter.stats.anim_dash_stride);
         }
+
+        // update these animations based vertical velocity difference from jump velocity
+        CASE (JumpAscend)
+        {
+            const float range = mJumpVelocity + fighter.stats.fall_speed * STS_FALL_SPEED * 0.75f;
+            const float progress = (mJumpVelocity - fighter.mVelocity.y) / range;
+
+            mAnimTimeContinuous = progress * float(mAnimation->anim.totalTime);
+
+            //sq::log_info("init: %.6f | range: %.6f | velocity: %.6f | progress: %.6f | time: %.6f | end: %.6f", mJumpVelocity, range, fighter.mVelocity.y, progress, mAnimTimeContinuous, progress + fighter.stats.gravity * STS_GRAVITY / range);
+
+            current.pose = armature.compute_pose(mAnimation->anim, mAnimTimeContinuous);
+
+            // if we reach fall speed next frame, then we end the animation
+            if (progress + fighter.stats.gravity * STS_GRAVITY / range >= 1.f)
+            {
+                SQASSERT(mAnimation->anim.times.back() == 0u, "JumpAscend anims cannot loop");
+                SQASSERT(mNextAnimation != nullptr, "JumpAscend anims cannot end with a static pose");
+
+                mAnimation = mNextAnimation;
+                mNextAnimation = nullptr;
+
+                mAnimTimeDiscrete = 0;
+                mAnimTimeContinuous = 0.f;
+            }
+        }
+
+        // update these animations based horizontal velocity difference from brake velocity
+        CASE (BrakeSlow)
+        {
+            const float progress = ((mBrakeVelocity - std::abs(fighter.mVelocity.x)) / mBrakeVelocity);
+
+            mAnimTimeContinuous = progress * float(mAnimation->anim.totalTime);
+
+            //sq::log_info("%d | init: %.6f | velocity: %.6f | progress: %.6f | time: %.6f", mAnimation, mBrakeVelocity, fighter.mVelocity.x, progress, mAnimTimeContinuous);
+
+            current.pose = armature.compute_pose(mAnimation->anim, mAnimTimeContinuous);
+
+            // we don't need to end this animation, as we will always switch out of it when velocity reaches zero
+        }
+
+        // continuously apply root motion to the fighter
+        CASE (ApplyMotion)
+        {
+            if (mAnimTimeDiscrete == 0u) mPrevRootMotionOffset = Vec2F();
+
+            current.pose = armature.compute_pose(mAnimation->anim, float(mAnimTimeDiscrete));
+
+            const Vec3F rootOffsetLocal = current.pose.front().offset;
+            const Vec3F rootOffsetWorld = { -rootOffsetLocal.z, rootOffsetLocal.x, rootOffsetLocal.y };
+
+            fighter.mTranslate = Vec2F(rootOffsetWorld) - mPrevRootMotionOffset;
+            fighter.mTranslate.x *= -float(fighter.current.facing);
+
+            mPrevRootMotionOffset = Vec2F(rootOffsetWorld);
+
+            //sq::log_info("%s", rootOffsetLocal);
+
+            current.pose[0].offset = Vec3F();
+
+            if (++mAnimTimeDiscrete >= int(mAnimation->anim.totalTime))
+            {
+                if (mAnimation->anim.times.back() == 0u)
+                {
+                    if (mNextAnimation == nullptr)
+                        mStaticPose = &mAnimation->anim.poses.back();
+
+                    mAnimation = mNextAnimation;
+                    mNextAnimation = nullptr;
+
+                    mAnimTimeDiscrete = 0;
+                    mAnimTimeContinuous = 0.f;
+                }
+                else mAnimTimeDiscrete = 0;
+            }
+        }
+
+        // Apply root motion at the end of the animation
+        CASE (FixedMotion)
+        {
+            current.pose = armature.compute_pose(mAnimation->anim, float(mAnimTimeDiscrete));
+
+            if (++mAnimTimeDiscrete >= int(mAnimation->anim.totalTime))
+            {
+                SQASSERT(mAnimation->anim.times.back() == 0u, "FixedMotion does not work for loop anims");
+
+                const Mat4F rootTransform = armature.compute_transform(mAnimation->anim.poses.back(), 0u);
+
+                fighter.mTranslate = Vec2F(rootTransform[3]);
+                fighter.mTranslate.x *= -float(fighter.current.facing);
+
+                //sq::log_info("%s", rootTransform[3]);
+
+                if (mNextAnimation == nullptr)
+                    mStaticPose = &mAnimation->anim.poses.back();
+
+                mAnimation = mNextAnimation;
+                mNextAnimation = nullptr;
+
+                mAnimTimeDiscrete = 0;
+                mAnimTimeContinuous = 0.f;
+            }
+        }
+
+        // currently only used in the editor
+        CASE (Manual) current.pose = mAnimation->anim.poses.back();
+
+        //--------------------------------------------------------//
+
+        } SWITCH_END;
     }
 
     // if we haven't an animation, we have a static pose

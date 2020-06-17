@@ -4,6 +4,8 @@
 
 #include <sqee/maths/Culling.hpp>
 
+#include <sqee/misc/StringCast.hpp>
+
 namespace maths = sq::maths;
 using namespace sts;
 
@@ -15,59 +17,156 @@ Stage::~Stage() = default;
 
 //============================================================================//
 
-MoveAttempt Stage::attempt_move(WorldDiamond diamond, Vec2F translation)
+MoveAttempt Stage::attempt_move(const LocalDiamond& diamond, Vec2F current, Vec2F target, bool edgeStop)
 {
-    const WorldDiamond targetDiamond = diamond.translated(translation);
-    const Vec2F target = targetDiamond.origin();
+//    const WorldDiamond targetDiamond = diamond.translate(translation);
+//    const Vec2F target = targetDiamond.origin();
 
     //--------------------------------------------------------//
 
     MoveAttempt attempt;
-    attempt.result = target;
 
-    Vec2F& result = attempt.result;
+    attempt.result = target;
 
     //--------------------------------------------------------//
 
     for (const auto& block : mAlignedBlocks)
     {
-        const bool originNegX = diamond.negX >= block.maximum.x; // left is right of right
-        const bool originNegY = diamond.negY >= block.maximum.y; // bottom is above top
-        const bool originPosX = diamond.posX <= block.minimum.x; // right is left of left
-        const bool originPosY = diamond.posY <= block.minimum.y; // top is below bottom
-
-        const bool targetNegX = targetDiamond.negX >= block.maximum.x; // left is right of right
-        const bool targetNegY = targetDiamond.negY >= block.maximum.y; // bottom is above top
-        const bool targetPosX = targetDiamond.posX <= block.minimum.x; // right is left of left
-        const bool targetPosY = targetDiamond.posY <= block.minimum.y; // top is below bottom
-
-        const bool crossInX = targetDiamond.crossX >= block.minimum.x && targetDiamond.crossX <= block.maximum.x;
-        const bool crossInY = targetDiamond.crossY >= block.minimum.y && targetDiamond.crossY <= block.maximum.y;
-
-        SQASSERT(!(originNegX && originPosX), "");
-        SQASSERT(!(originNegY && originPosY), "");
-        SQASSERT(!(targetNegX && targetPosX), "");
-        SQASSERT(!(targetNegY && targetPosY), "");
-
-        if (crossInX && originNegY && !targetNegY) // test bottom into floor
+        const auto point_in_block = [&block](Vec2F point) -> auto
         {
-            result.y = maths::max(result.y, block.maximum.y);
-            attempt.floor = MoveAttempt::Floor::Solid;
+            struct Result { int8_t x=0, y=0; } result;
+            if (point.x < block.minimum.x) result.x = -1;
+            if (point.x > block.maximum.x) result.x = +1;
+            if (point.y < block.minimum.y) result.y = -1;
+            if (point.y > block.maximum.y) result.y = +1;
+            return result;
+        };
+
+        const auto currentMin = point_in_block(current + diamond.min());
+        const auto currentMax = point_in_block(current + diamond.max());
+
+        const auto targetMin = point_in_block(target + diamond.min());
+        const auto targetMax = point_in_block(target + diamond.max());
+
+        const auto targetCross = point_in_block(target + diamond.cross());
+
+        // note: this probably does weird stuff if we collide with more than one thing at a time
+
+        if (edgeStop == true)
+        {
+            if (current.y >= block.maximum.y && target.y < block.maximum.y)
+            {
+                if (current.x >= block.minimum.x && target.x <= block.minimum.x) // check for left edge
+                {
+                    attempt.result = { block.minimum.x, block.maximum.y };
+                    attempt.edge = -1;
+                    attempt.collideFloor = true;
+                }
+
+                if (current.x <= block.maximum.x && target.x >= block.maximum.x) // check for right edge
+                {
+                    attempt.result = { block.maximum.x, block.maximum.y };
+                    attempt.edge = +1;
+                    attempt.collideFloor = true;
+                }
+            }
         }
 
-        if (crossInX && originPosY && !targetPosY) // test top into ceiling
+        if (targetCross.x == 0)
         {
-            result.y = maths::min(result.y, block.minimum.y + (diamond.negY - diamond.posY));
+            if (currentMin.y != -1 && targetMin.y != +1) // test bottom into floor
+            {
+                attempt.result.y = maths::max(attempt.result.y, block.maximum.y);
+                attempt.collideFloor = true;
+            }
+            if (currentMax.y != +1 && targetMax.y != -1) // test top into ceiling
+            {
+                attempt.result.y = maths::min(attempt.result.y, block.minimum.y - diamond.offsetTop);
+                attempt.collideCeiling = true;
+            }
         }
 
-        if (crossInY && originNegX && !targetNegX) // test left into wall
+        if (targetCross.y == 0)
         {
-            result.x = maths::max(result.x, block.maximum.x + (diamond.crossX - diamond.negX));
+            if (currentMin.x != -1 && targetMin.x != +1) // test left into wall
+            {
+                attempt.result.x = maths::max(attempt.result.x, block.maximum.x + diamond.halfWidth);
+                attempt.collideWall = true;
+            }
+            if (currentMax.x != +1 && targetMax.x != -1) // test right into wall
+            {
+                attempt.result.x = maths::min(attempt.result.x, block.minimum.x - diamond.halfWidth);
+                attempt.collideWall = true;
+            }
         }
 
-        if (crossInY && originPosX && !targetPosX) // test right into wall
+        // todo: this can probably be cleaned up and optimised
+
+        if (edgeStop == false)
         {
-            result.x = maths::min(result.x, block.minimum.x + (diamond.crossX - diamond.posX));
+            if (targetCross.x == +1 && targetCross.y == +1 && targetMin.x != +1 && targetMin.y != +1)
+            {
+                const Vec2F corner = { block.maximum.x, block.maximum.y };
+                const Vec2F point = { target.x, target.y };
+
+                const float offsetCorner = maths::dot(diamond.normLeftDown, corner);
+                const float offsetPoint = maths::dot(diamond.normLeftDown, point);
+
+                if (const float difference = offsetCorner - offsetPoint; difference < 0.f)
+                {
+                    attempt.result.x = maths::max(attempt.result.x, attempt.result.x + diamond.normLeftDown.x * difference);
+                    attempt.result.y = maths::max(attempt.result.y, attempt.result.y + diamond.normLeftDown.y * difference);
+                    attempt.collideCorner = true;
+                }
+            }
+
+            if (targetCross.x == -1 && targetCross.y == +1 && targetMax.x != -1 && targetMin.y != +1)
+            {
+                const Vec2F corner = { block.minimum.x, block.maximum.y };
+                const Vec2F point = { target.x, target.y };
+
+                const float offsetCorner = maths::dot(diamond.normRightDown, corner);
+                const float offsetPoint = maths::dot(diamond.normRightDown, point);
+
+                if (const float difference = offsetCorner - offsetPoint; difference < 0.f)
+                {
+                    attempt.result.x = maths::min(attempt.result.x, attempt.result.x + diamond.normRightDown.x * difference);
+                    attempt.result.y = maths::max(attempt.result.y, attempt.result.y + diamond.normRightDown.y * difference);
+                    attempt.collideCorner = true;
+                }
+            }
+
+            if (targetCross.x == +1 && targetCross.y == -1 && targetMin.x != +1 && targetMax.y != -1)
+            {
+                const Vec2F corner = { block.maximum.x, block.minimum.y };
+                const Vec2F point = { target.x, target.y + diamond.offsetTop };
+
+                const float offsetCorner = maths::dot(diamond.normLeftUp, corner);
+                const float offsetPoint = maths::dot(diamond.normLeftUp, point);
+
+                if (const float difference = offsetCorner - offsetPoint; difference < 0.f)
+                {
+                    attempt.result.x = maths::max(attempt.result.x, attempt.result.x + diamond.normLeftUp.x * difference);
+                    attempt.result.y = maths::min(attempt.result.y, attempt.result.y + diamond.normLeftUp.y * difference);
+                    attempt.collideCorner = true;
+                }
+            }
+
+            if (targetCross.x == -1 && targetCross.y == -1 && targetMax.x != -1 && targetMax.y != -1)
+            {
+                const Vec2F corner = { block.minimum.x, block.minimum.y };
+                const Vec2F point = { target.x, target.y + diamond.offsetTop };
+
+                const float offsetCorner = maths::dot(diamond.normRightUp, corner);
+                const float offsetPoint = maths::dot(diamond.normRightUp, point);
+
+                if (const float difference = offsetCorner - offsetPoint; difference < 0.f)
+                {
+                    attempt.result.x = maths::min(attempt.result.x, attempt.result.x + diamond.normRightUp.x * difference);
+                    attempt.result.y = maths::min(attempt.result.y, attempt.result.y + diamond.normRightUp.y * difference);
+                    attempt.collideCorner = true;
+                }
+            }
         }
     }
 
@@ -75,32 +174,39 @@ MoveAttempt Stage::attempt_move(WorldDiamond diamond, Vec2F translation)
 
     for (const auto& platform : mPlatforms)
     {
-        const bool originNegY = diamond.negY >= platform.originY;
-        const bool targetNegY = targetDiamond.negY >= platform.originY;
+        const Vec2F currentMin = current + diamond.min();
+        //const Vec2F currentMax = current + diamond.max();
+        const Vec2F currentCross = current + diamond.cross();
 
-        if (diamond.negY == platform.originY)
+        const Vec2F targetMin = target + diamond.min();
+        //const Vec2F targetMax = target + diamond.max();
+        const Vec2F targetCross = target + diamond.cross();
+
+        if (currentMin.y >= platform.originY && targetMin.y < platform.originY)
         {
-            if (diamond.crossX >= platform.minX && targetDiamond.crossX <= platform.minX)
+            if (edgeStop == true)
             {
-                result = { platform.minX, platform.originY };
-                attempt.type = MoveAttempt::Type::EdgeStop;
-                attempt.edge = -1;
+                if (currentCross.x >= platform.minX && targetCross.x <= platform.minX)
+                {
+                    attempt.result = { platform.minX, platform.originY };
+                    attempt.type = MoveAttempt::Type::EdgeStop;
+                    attempt.edge = -1;
+                    attempt.collideFloor = true; // fighter allowed to ignore this
+                }
+                if (currentCross.x <= platform.maxX && targetCross.x >= platform.maxX)
+                {
+                    attempt.result = { platform.maxX, platform.originY };
+                    attempt.type = MoveAttempt::Type::EdgeStop;
+                    attempt.edge = +1;
+                    attempt.collideFloor = true; // fighter allowed to ignore this
+                }
             }
 
-            if (diamond.crossX <= platform.maxX && targetDiamond.crossX >= platform.maxX)
+            if (targetCross.x >= platform.minX && targetCross.x <= platform.maxX)
             {
-                result = { platform.maxX, platform.originY };
-                attempt.type = MoveAttempt::Type::EdgeStop;
-                attempt.edge = +1;
-            }
-        }
-
-        if (originNegY && !targetNegY)
-        {
-            if (targetDiamond.crossX >= platform.minX && targetDiamond.crossX <= platform.maxX)
-            {
-                result.y = maths::max(result.y, target.y, platform.originY);
-                attempt.floor = MoveAttempt::Floor::Platform;
+                // todo: convey that this is a platform that can be dropped through
+                attempt.result.y = maths::max(attempt.result.y, target.y, platform.originY);
+                attempt.collideFloor = true;
             }
         }
     }
@@ -112,12 +218,40 @@ MoveAttempt Stage::attempt_move(WorldDiamond diamond, Vec2F translation)
 
 //============================================================================//
 
+Ledge* Stage::find_ledge(Vec2F position, int8_t direction)
+{
+    constexpr const float GRAB_DISTANCE = 1.2f;
+
+    for (auto& ledge : mLedges)
+    {
+        if (ledge.direction == direction)
+            continue;
+        if (position.y >= ledge.position.y)
+            continue;
+
+        if (maths::distance_squared(position, ledge.position) > GRAB_DISTANCE * GRAB_DISTANCE)
+            continue;
+
+        if (direction > 0)
+            if (position.x < ledge.position.x)
+                return &ledge;
+
+        if (direction < 0)
+            if (position.x > ledge.position.x)
+                return &ledge;
+    }
+
+    return nullptr;
+}
+
+//============================================================================//
+
 void Stage::check_boundary(Fighter& fighter)
 {
-    const Vec2F position = fighter.get_diamond().centre();
+    const Vec2F centre = fighter.get_position() + fighter.diamond.cross();
 
-    if ( position.x < mOuterBoundary.min.x || position.x > mOuterBoundary.max.x ||
-         position.y < mOuterBoundary.min.y || position.y > mOuterBoundary.max.y )
+    if ( centre.x < mOuterBoundary.min.x || centre.x > mOuterBoundary.max.x ||
+         centre.y < mOuterBoundary.min.y || centre.y > mOuterBoundary.max.y )
     {
         fighter.pass_boundary();
     }

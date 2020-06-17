@@ -7,9 +7,7 @@ using namespace sts;
 Sara_Fighter::Sara_Fighter(uint8_t index, FightWorld& world)
     : Fighter(index, world, FighterEnum::Sara)
 {
-    mLocalDiamond.offsetTop = 1.4f;
-    mLocalDiamond.offsetMiddle = 0.8f;
-    mLocalDiamond.halfWidth = 0.3f;
+    diamond = LocalDiamond(0.3f, 1.4f, 0.8f);
 }
 
 //============================================================================//
@@ -26,7 +24,7 @@ void Sara_Fighter::tick()
 
     emitter.shape = ParticleEmitter::DiscShape();
 
-    emitter.emitPosition = Vec3F(get_diamond().origin(), 0.f);
+    emitter.emitPosition = Vec3F(get_position(), 0.f);
     emitter.emitVelocity = Vec3F(get_velocity().x * 0.2f, 0.f, 0.f);
     emitter.direction = Vec3F(0.f, 1.f, 0.f);
 

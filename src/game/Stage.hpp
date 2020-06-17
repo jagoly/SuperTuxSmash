@@ -21,17 +21,28 @@ struct AlignedBlock
     Vec2F maximum;
 };
 
+struct Ledge
+{
+    Vec2F position;
+    int8_t direction;
+
+    Fighter* grabber = nullptr;
+};
+
 //============================================================================//
 
 struct MoveAttempt
 {
     enum class Type { Simple, Slope, EdgeStop };
-    enum class Floor { None, Platform, Solid, Slope };
+
+    // todo: I made a FlagSet class at some point, why not use it?
+    bool collideFloor = false;
+    bool collideWall = false;
+    bool collideCeiling = false;
+    bool collideCorner = false;
 
     Type type = Type::Simple;
     Vec2F result;
-
-    Floor floor = Floor::None;
 
     // non-zero if platform edge reached
     int8_t edge = 0;
@@ -51,7 +62,9 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    MoveAttempt attempt_move(WorldDiamond diamond, Vec2F translation);
+    MoveAttempt attempt_move(const LocalDiamond& diamond, Vec2F current, Vec2F target, bool edgeStop);
+
+    Ledge* find_ledge(Vec2F position, int8_t direction);
 
     void check_boundary(Fighter& fighter);
 
@@ -71,6 +84,8 @@ protected: //=================================================//
 
     Vector<AlignedBlock> mAlignedBlocks;
 
+    Vector<Ledge> mLedges;
+
     //--------------------------------------------------------//
 
     FightWorld& mFightWorld;
@@ -83,5 +98,3 @@ protected: //=================================================//
 //============================================================================//
 
 SQEE_ENUM_HELPER(sts::MoveAttempt::Type, Simple, Slope, EdgeStop)
-
-SQEE_ENUM_HELPER(sts::MoveAttempt::Floor, None, Platform, Solid, Slope)

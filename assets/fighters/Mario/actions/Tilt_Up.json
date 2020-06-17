@@ -1,0 +1,16 @@
+{
+  "blobs": 
+  {
+  },
+  "emitters": 
+  {
+  },
+  "procedures": 
+  {
+    "FinishAction": 
+    {
+      "frames": [ 30 ],
+      "source": "finish_action"
+    }
+  }
+}

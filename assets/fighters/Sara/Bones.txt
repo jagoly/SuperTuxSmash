@@ -1,4 +1,5 @@
-Torso
+Root
+Torso Root
 LegA.L Torso
 LegA.R Torso
 SpineA Torso

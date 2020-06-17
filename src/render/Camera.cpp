@@ -28,6 +28,7 @@ void StandardCamera::update_from_scene_data(const SceneData& sceneData)
 
     MinMax averageView = { sceneData.view.min, sceneData.view.max };
 
+    //for (uint i = 0u; i < 1u; ++i)
     for (uint i = 0u; i < 15u; ++i)
     {
         averageView.min += mViewHistory[i].min;
@@ -35,8 +36,11 @@ void StandardCamera::update_from_scene_data(const SceneData& sceneData)
         mViewHistory[i] = mViewHistory[i + 1];
     }
 
+    //mViewHistory[1] = { sceneData.view.min, sceneData.view.max };
     mViewHistory.back() = { sceneData.view.min, sceneData.view.max };
 
+    //mCurrentView.min = averageView.min / 2.f;
+    //mCurrentView.max = averageView.max / 2.f;
     mCurrentView.min = averageView.min / 16.f;
     mCurrentView.max = averageView.max / 16.f;
 

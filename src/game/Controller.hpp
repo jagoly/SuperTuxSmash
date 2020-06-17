@@ -35,6 +35,7 @@ public: //====================================================//
         struct { int8_t x=0, y=0; } int_axis;
         struct { int8_t x=0, y=0; } mash_axis;
         struct { int8_t x=0, y=0; } mod_axis;
+        struct { int8_t x=0, y=0; } norm_axis;
     };
 
     //--------------------------------------------------------//

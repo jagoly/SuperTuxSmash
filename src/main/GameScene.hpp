@@ -56,6 +56,10 @@ private: //===================================================//
 
     void impl_show_general_window();
     void impl_show_fighters_window();
+
+    //--------------------------------------------------------//
+
+    bool mGamePaused = false;
 };
 
 } // namespace sts

@@ -18,25 +18,28 @@ namespace sts {
 
 //============================================================================//
 
-struct LocalDiamond { float offsetTop, offsetMiddle, halfWidth; };
-
-struct WorldDiamond
+struct LocalDiamond
 {
-    float negX, posX, negY, posY, crossX, crossY;
+    LocalDiamond() = default;
 
-    Vec2F neg_x() const { return { negX, crossY }; }
-    Vec2F pos_x() const { return { posX, crossY }; }
-    Vec2F neg_y() const { return { crossX, negY }; }
-    Vec2F pos_y() const { return { crossX, posY }; }
-
-    Vec2F origin() const { return { crossX, negY }; }
-    Vec2F centre() const { return { crossX, crossY }; }
-
-    WorldDiamond translated(Vec2F vec) const
+    LocalDiamond(float _halfWidth, float _offsetTop, float _offsetCross)
     {
-        return { negX + vec.x, posX + vec.x, negY + vec.y, posY + vec.y,
-                 crossX + vec.x, crossY + vec.y };
+        halfWidth = _halfWidth;
+        offsetTop = _offsetTop;
+        offsetCross = _offsetCross;
+
+        normLeftDown = sq::maths::normalize(Vec2F(-_offsetCross, -_halfWidth));
+        normLeftUp = sq::maths::normalize(Vec2F(-_offsetCross, +_halfWidth));
+        normRightDown = sq::maths::normalize(Vec2F(+_offsetCross, -_halfWidth));
+        normRightUp = sq::maths::normalize(Vec2F(+_offsetCross, +_halfWidth));
     }
+
+    float halfWidth, offsetTop, offsetCross;
+    Vec2F normLeftDown, normLeftUp, normRightDown, normRightUp;
+
+    Vec2F min() const { return { -halfWidth, 0.f }; }
+    Vec2F max() const { return { +halfWidth, offsetTop }; }
+    Vec2F cross() const { return { 0.f, offsetCross }; }
 };
 
 //============================================================================//

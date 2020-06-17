@@ -12,19 +12,24 @@
 "gravity":        1.0,
 "fall_speed":     1.0,
 "weight":         1.0,
-"evade_distance": 1.0,
 
 "dodge_finish":     22,
 "dodge_safe_start": 2,
 "dodge_safe_end":   14,
 
-"evade_finish":     24,
-"evade_safe_start": 3,
-"evade_safe_end":   13,
+"evade_back_finish":     24,
+"evade_back_safe_start": 3,
+"evade_back_safe_end":   13,
+
+"evade_forward_finish":     24,
+"evade_forward_safe_start": 3,
+"evade_forward_safe_end":   13,
 
 "air_dodge_finish":     26,
 "air_dodge_safe_start": 2,
 "air_dodge_safe_end":   22,
+
+"ledge_climb_finish": 34,
 
 "anim_walk_stride": 1.0,
 "anim_dash_stride": 2.0

@@ -26,6 +26,9 @@ TestZone_Stage::TestZone_Stage(FightWorld& world) : Stage(world)
     mPlatforms.push_back({2.5f, +1.7f, +5.3f});
 
     mPlatforms.push_back({5.0f, -1.8f, +1.8f});
+
+    mLedges.push_back({{-8.f, 0.f}, -1, nullptr});
+    mLedges.push_back({{+8.f, 0.f}, +1, nullptr});
 }
 
 //============================================================================//

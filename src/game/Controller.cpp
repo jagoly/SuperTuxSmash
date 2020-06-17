@@ -39,7 +39,7 @@ void Controller::handle_event(sq::Event event)
 
             if (button == config.button_attack) mInput.press_attack = true;
             if (button == config.button_jump)   mInput.press_jump   = true;
-            if (button == config.button_shield) mInput.press_shield   = true;
+            if (button == config.button_shield) mInput.press_shield = true;
         }
     }
 
@@ -177,6 +177,16 @@ Controller::Input Controller::get_input()
     //--------------------------------------------------------//
 
     ENABLE_WARNING_FLOAT_EQUALITY;
+
+    //--------------------------------------------------------//
+
+    mInput.norm_axis = { mInput.int_axis.x, mInput.int_axis.y };
+
+    if (mInput.norm_axis.x == -2) mInput.norm_axis.x = -1;
+    else if (mInput.norm_axis.x == +2) mInput.norm_axis.x = +1;
+
+    if (mInput.norm_axis.y == -2) mInput.norm_axis.y = -1;
+    else if (mInput.norm_axis.y == +2) mInput.norm_axis.y = +1;
 
     //--------------------------------------------------------//
 
