@@ -1,7 +1,6 @@
 #pragma once
 
-#include <functional>
-#include <map>
+#include <sqee/redist/sol.hpp>
 
 #include <sqee/macros.hpp>
 #include <sqee/misc/PoolTools.hpp>
@@ -17,23 +16,27 @@ namespace sts {
 enum class ActionType : int8_t
 {
     None = -1,
-    Neutral_First,
-    Tilt_Down,
-    Tilt_Forward,
-    Tilt_Up,
-    Air_Back,
-    Air_Down,
-    Air_Forward,
-    Air_Neutral,
-    Air_Up,
-    Dash_Attack,
-    Smash_Down,
-    Smash_Forward,
-    Smash_Up,
-    Special_Down,
-    Special_Forward,
-    Special_Neutral,
-    Special_Up
+    NeutralFirst,
+    TiltDown,
+    TiltForward,
+    TiltUp,
+    AirBack,
+    AirDown,
+    AirForward,
+    AirNeutral,
+    AirUp,
+    DashAttack,
+    SmashDown,
+    SmashForward,
+    SmashUp,
+    SpecialDown,
+    SpecialForward,
+    SpecialNeutral,
+    SpecialUp,
+    EvadeBack,
+    EvadeForward,
+    Dodge,
+    AirDodge
 };
 
 //============================================================================//
@@ -42,22 +45,11 @@ class Action : private sq::NonCopyable
 {
 public: //====================================================//
 
-    using Command = std::function<void(Action& action)>;
+    FightWorld& world;
+    Fighter& fighter;
 
-    struct Procedure
-    {
-        Vector<Command> commands;
-
-        struct Meta {
-            String source;
-            Vector<uint16_t> frames;
-        } meta;
-
-        bool operator==(const Procedure& other) const
-        {
-            return meta.source == other.meta.source && meta.frames == other.meta.frames;
-        }
-    };
+    const ActionType type;
+    const String path;
 
     //--------------------------------------------------------//
 
@@ -77,46 +69,55 @@ public: //====================================================//
 
     bool do_tick();
 
-    void do_finish();
+    void do_cancel();
 
     //--------------------------------------------------------//
 
-    void rebuild_timeline();
+    void load_from_json();
 
-protected: //=================================================//
+    void load_lua_from_file();
 
-    bool finished = false;
-
-    FightWorld& world;
-    Fighter& fighter;
-
-    const ActionType type;
-    const String path;
+    void load_lua_from_string(StringView source);
 
     //--------------------------------------------------------//
 
-    sq::PoolMap<TinyString, HitBlob> blobs;
+    void lua_func_wait_until(uint frame);
 
-    sq::PoolMap<TinyString, ParticleEmitter> emitters;
+    void lua_func_finish_action();
 
-    std::map<TinyString, Procedure> procedures;
+    void lua_func_enable_blob(TinyString key);
 
-    //--------------------------------------------------------//
+    void lua_func_disable_blob(TinyString key);
 
-    struct TimelineItem
-    {
-        Vector<std::reference_wrapper<const Procedure>> procedures;
-    };
-
-    Vector<TimelineItem> timeline;
+    void lua_func_emit_particles(TinyString key, uint count);
 
 private: //===================================================//
 
-    uint16_t mCurrentFrame = 0u;
+    sq::PoolMap<TinyString, HitBlob> mBlobs;
+
+    sq::PoolMap<TinyString, ParticleEmitter> mEmitters;
+
+    String mLuaSource; // only used for editor
 
     //--------------------------------------------------------//
 
-    // for the action editor
+    uint mCurrentFrame = 0u;
+    uint mWaitingUntil = 0u;
+
+    bool mFinished = false;
+
+    //--------------------------------------------------------//
+
+    sol::environment mEnvironment;
+
+    sol::function mTickFunction;
+    sol::coroutine mTickCoroutine;
+
+    sol::function mCancelFunction;
+
+    sol::thread mThread;
+
+    //--------------------------------------------------------//
 
     bool has_changes(const Action& reference) const;
 
@@ -126,14 +127,8 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
-    friend class Fighter;
-    friend class Actions;
-
-    friend class ActionBuilder;
+    friend struct DebugGui;
     friend class EditorScene;
-
-    friend struct ActionFuncs;
-    friend struct ActionFuncsValidate;
 };
 
 //============================================================================//
@@ -142,6 +137,26 @@ private: //===================================================//
 
 //============================================================================//
 
-SQEE_ENUM_HELPER(sts::ActionType, None, Neutral_First, Tilt_Down, Tilt_Forward, Tilt_Up, Air_Back, Air_Down,
-                 Air_Forward, Air_Neutral, Air_Up, Dash_Attack, Smash_Down, Smash_Forward, Smash_Up, Special_Down,
-                 Special_Forward, Special_Neutral, Special_Up)
+SQEE_ENUM_HELPER(sts::ActionType,
+                 None,
+                 NeutralFirst,
+                 TiltDown,
+                 TiltForward,
+                 TiltUp,
+                 AirBack,
+                 AirDown,
+                 AirForward,
+                 AirNeutral,
+                 AirUp,
+                 DashAttack,
+                 SmashDown,
+                 SmashForward,
+                 SmashUp,
+                 SpecialDown,
+                 SpecialForward,
+                 SpecialNeutral,
+                 SpecialUp,
+                 EvadeBack,
+                 EvadeForward,
+                 Dodge,
+                 AirDodge)

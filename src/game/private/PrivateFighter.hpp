@@ -18,91 +18,81 @@ public: //====================================================//
     //--------------------------------------------------------//
 
     using State = Fighter::State;
-    using Facing = Fighter::Facing;
-    using Stats = Fighter::Stats;
-    using Status = Fighter::Status;
     using AnimMode = Fighter::AnimMode;
-
     using Animation = Fighter::Animation;
-    using Transition = Fighter::Transition;
 
     //--------------------------------------------------------//
 
-    struct Transitions
+    struct Animations
     {
-        Transition neutral_crouch;
-        Transition neutral_shield;
-        Transition neutral_walking;
+        Animation* begin() { return static_cast<Animation*>(static_cast<void*>(this)); }
+        Animation* end() { return begin() + sizeof(Animations) / sizeof(Animation); }
 
-        Transition walking_crouch;
-        Transition walking_shield;
-        Transition walking_dashing;
-        Transition walking_dive;
-        Transition walking_neutral;
+        Animation DashingLoop;
+        Animation FallingLoop;
+        Animation NeutralLoop;
+        Animation VertigoLoop;
+        Animation WalkingLoop;
 
-        Transition dashing_shield;
-        Transition dashing_brake;
-        Transition dashing_dive;
+        Animation ShieldOn;
+        Animation ShieldOff;
+        Animation ShieldLoop;
 
-        Transition neutral_turn;
+        Animation CrouchOn;
+        Animation CrouchOff;
+        Animation CrouchLoop;
 
-        Transition brake_turn_brake;
-        Transition brake_turn_dash;
+        Animation DashStart;
+        Animation VertigoStart;
 
-        Transition crouch_shield;
-        Transition crouch_neutral;
+        Animation Brake;
+        Animation LandLight;
+        Animation LandHeavy;
+        Animation PreJump;
+        Animation Turn;
+        Animation TurnBrake;
+        Animation TurnDash;
 
-        Transition air_dodge;
-        Transition air_hop;
-        Transition air_ledge;
+        Animation JumpBack;
+        Animation JumpForward;
+        Animation AirHopBack;
+        Animation AirHopForward;
 
-        Transition jumping_falling;
+        Animation LedgeCatch;
+        Animation LedgeLoop;
+        Animation LedgeClimb;
+        Animation LedgeJump;
 
-        Transition shield_dodge;
-        Transition shield_evade_back;
-        Transition shield_evade_forward;
-        Transition shield_neutral;
+        Animation EvadeBack;
+        Animation EvadeForward;
+        Animation Dodge;
+        Animation AirDodge;
 
-        Transition ledge_climb;
-        Transition ledge_jump;
-        Transition ledge_drop;
+        Animation NeutralFirst;
 
-        Transition misc_vertigo;
-        Transition misc_prejump;
+        Animation TiltDown;
+        Animation TiltForward;
+        Animation TiltUp;
 
-        Transition jump_back;
-        Transition jump_forward;
-        Transition land_clean;
+        Animation AirBack;
+        Animation AirDown;
+        Animation AirForward;
+        Animation AirNeutral;
+        Animation AirUp;
 
-        Transition instant_crouch;
-        Transition instant_falling;
-        Transition instant_neutral;
-        Transition instant_shield;
-        Transition instant_dashing;
+        Animation DashAttack;
 
-        Transition neutral_attack;
+        Animation SmashDownStart;
+        Animation SmashForwardStart;
+        Animation SmashUpStart;
 
-        Transition tilt_down_attack;
-        Transition tilt_forward_attack;
-        Transition tilt_up_attack;
+        Animation SmashDownCharge;
+        Animation SmashForwardCharge;
+        Animation SmashUpCharge;
 
-        Transition air_back_attack;
-        Transition air_down_attack;
-        Transition air_forward_attack;
-        Transition air_neutral_attack;
-        Transition air_up_attack;
-
-        Transition dash_attack;
-
-        Transition smash_down_start;
-        Transition smash_forward_start;
-        Transition smash_up_start;
-
-        Transition smash_down_attack;
-        Transition smash_forward_attack;
-        Transition smash_up_attack;
-
-        Transition editor_preview;
+        Animation SmashDownAttack;
+        Animation SmashForwardAttack;
+        Animation SmashUpAttack;
     };
 
     //--------------------------------------------------------//
@@ -110,6 +100,7 @@ public: //====================================================//
     struct InterpolationData
     {
         Vec2F position { 0.f, 1.f };
+        QuatF rotation;
         sq::Armature::Pose pose;
     }
     previous, current;
@@ -118,7 +109,7 @@ public: //====================================================//
 
     Controller* controller = nullptr;
 
-    Transitions transitions;
+    Animations animations;
 
     sq::Armature armature;
 
@@ -136,55 +127,68 @@ public: //====================================================//
 
     void base_tick_fighter();
 
-    void base_tick_animation();
-
     //-- used internally and by the action editor ------------//
 
-    void state_transition(const Transition& transition, bool keepTime = false);
+    /// Transition from one state to another and play animations
+    ///
+    /// @param newState     the state to change to
+    /// @param fadeNow      fade into animNow over this many frames
+    /// @param animNow      play this animation immediately
+    /// @param fadeAfter    fade into animAfter over this many frames
+    /// @param animAfter    play after the current anim finishes
+
+    void state_transition(State newState, uint fadeNow, const Animation* animNow,
+                          uint fadeAfter, const Animation* animAfter);
 
     void switch_action(ActionType type);
 
 private: //===================================================//
 
-    int8_t mMoveAxisX = 0;
-    int8_t mMoveAxisY = 0;
-
-    int8_t mDoBrakeTurn = 0;
-
     bool mJumpHeld = false;
-    bool mDoTurnDash = false;
-
-    float mJumpVelocity = 0.f;
-    float mBrakeVelocity = 0.f;
 
     uint mStateProgress = 0u;
+
+    uint mExtraJumps = 0u;
+
+    uint mLandingLag = 0u;
+
+    uint mTimeSinceLedge = 0u;
 
     //--------------------------------------------------------//
 
     const Animation* mAnimation = nullptr;
+
+    uint mNextFadeFrames = 0u;
     const Animation* mNextAnimation = nullptr;
-    const sq::Armature::Pose* mStaticPose = nullptr;
 
-    int mAnimTimeDiscrete = 0;
+    uint mAnimTimeDiscrete = 0u;
     float mAnimTimeContinuous = 0.f;
-    float mAnimScaleTime = 1.f;
 
-    bool mVertigoActive = false;
+    bool mAnimChangeFacing = false;
 
-    Vec2F mPrevRootMotionOffset = Vec2F();
+    Vec3F mPrevRootMotionOffset = Vec3F();
 
     sq::Armature::Pose mFadeStartPose;
 
-    uint mFadeFrames = 0u;
     uint mFadeProgress = 0u;
+    uint mFadeFrames = 0u;
+
+    bool mVertigoActive = false;
+
+    // these are only used for debug
+    const Animation* mPreviousAnimation = nullptr;
+    uint mPreviousAnimTimeDiscrete = 0u;
+    float mPreviousAnimTimeContinuous = 0.f;
 
     //--------------------------------------------------------//
 
-    void handle_input_movement(const Controller::Input& input);
+    void update_commands(const Controller::Input& input);
 
-    void handle_input_actions(const Controller::Input& input);
+    void update_transitions(const Controller::Input& input);
 
-    void update_after_input();
+    void update_states(const Controller::Input& input);
+
+    void update_animation();
 
     //--------------------------------------------------------//
 
@@ -193,6 +197,8 @@ private: //===================================================//
     //--------------------------------------------------------//
 
     Fighter& fighter;
+
+    friend struct DebugGui;
 };
 
 //============================================================================//

@@ -152,7 +152,12 @@ void EditorScene::impl_show_widget_hurtblobs()
 
             const auto& boneNames = fighter.get_armature().get_bone_names();
             if (ImPlus::Button(" # ") && blob.bone >= 0)
-                blob.originA = blob.originB = fighter.get_armature().get_rest_pose().at(blob.bone).offset;
+            {
+                const auto boneMats = fighter.get_armature().compute_skeleton_matrices(fighter.get_armature().get_rest_pose());
+                //const Mat4F boneMatrix = fighter.get_armature().compute_bone_matrix(fighter.get_armature().get_rest_pose(), blob.bone);
+                const Mat4F boneMatrix = boneMats[blob.bone];
+                blob.originA = blob.originB = Vec3F(boneMatrix[3]);
+            }
             ImPlus::HoverTooltip("snap origins to bone");
             ImGui::SameLine();
             ImPlus::Combo(" Bone", boneNames, blob.bone, "(None)");

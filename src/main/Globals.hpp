@@ -15,7 +15,10 @@ public: //====================================================//
 
     bool disableInput = false;
 
-    bool renderBlobs = false;
+    bool renderHitBlobs = false;
+    bool renderHurtBlobs = false;
+    bool renderDiamonds = false;
+    bool renderSkeletons = false;
 
     bool editorMode = false;
 };

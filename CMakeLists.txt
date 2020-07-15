@@ -25,8 +25,6 @@ target_include_directories(sts-game PRIVATE "${PROJECT_SOURCE_DIR}/src")
 set_property(TARGET sts-game PROPERTY CXX_STANDARD 17)
 set_property(TARGET sts-game PROPERTY CXX_STANDARD_REQUIRED True)
 
-set_property(TARGET sts-game PROPERTY RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-
 ################################################################################
 
 include("${SQEE_BUILD_ROOT}/sqee-exports.cmake")

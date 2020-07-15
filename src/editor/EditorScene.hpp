@@ -15,9 +15,9 @@
 
 #include <set>
 
-//============================================================================//
-
 namespace sts {
+
+//============================================================================//
 
 class EditorScene final : public sq::Scene
 {
@@ -73,8 +73,10 @@ private: //===================================================//
         Vector<UniquePtr<Action>> undoStack;
         size_t undoIndex = 0u;
 
-        Vector<decltype(Action::procedures)::iterator> sortedProcedures;
         std::map<TinyString, Vector<String>> buildErrors;
+
+        int timelineLength = 0;
+        int currentFrame = 0;
     };
 
     struct HurtblobsContext : public BaseContext
@@ -105,9 +107,11 @@ private: //===================================================//
 
     sq::GuiWidget widget_hitblobs;
     sq::GuiWidget widget_emitters;
-    sq::GuiWidget widget_procedures;
-    sq::GuiWidget widget_timeline;
+    sq::GuiWidget widget_script;
     sq::GuiWidget widget_hurtblobs;
+    sq::GuiWidget widget_timeline;
+
+    sq::GuiWidget widget_fighter;
 
     void impl_setup_docks();
 
@@ -116,9 +120,11 @@ private: //===================================================//
 
     void impl_show_widget_hitblobs();
     void impl_show_widget_emitters();
-    void impl_show_widget_procedures();
-    void impl_show_widget_timeline();
+    void impl_show_widget_script();
     void impl_show_widget_hurtblobs();
+    void impl_show_widget_timeline();
+
+    void impl_show_widget_fighter();
 
     //--------------------------------------------------------//
 
@@ -149,18 +155,15 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
-    bool build_working_procedures(ActionContext& ctx);
-
-    void scrub_to_frame(ActionContext& ctx, uint16_t frame);
+    void scrub_to_frame(ActionContext& ctx, int frame);
     void scrub_to_frame_current(ActionContext& ctx);
+
+    void tick_action_context(ActionContext& ctx);
 
     //--------------------------------------------------------//
 
     ActionContext* mConfirmCloseActionCtx = nullptr;
     HurtblobsContext* mConfirmCloseHurtblobsCtx = nullptr;
-
-    bool mRenderBlobsEnabled = true;
-    bool mSortProceduresEnabled = true;
 
     PreviewMode mPreviewMode = PreviewMode::Pause;
 
@@ -182,9 +185,17 @@ private: //===================================================//
     bool mDoResetDockNavigator = false;
     bool mDoResetDockHitblobs = false;
     bool mDoResetDockEmitters = false;
-    bool mDoResetDockProcedures = false;
-    bool mDoResetDockTimeline = false;
+    bool mDoResetDockScript = false;
     bool mDoResetDockHurtblobs = false;
+    bool mDoResetDockTimeline = false;
+    bool mDoResetDockFighter = false;
+
+    bool mDoRestartAction = false;
+
+    //--------------------------------------------------------//
+
+    // instead of using static variables
+    Vec3F mTempVec3F;
 };
 
 } // namespace sts

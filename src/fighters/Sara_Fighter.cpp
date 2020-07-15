@@ -16,8 +16,6 @@ void Sara_Fighter::tick()
 {
     base_tick_fighter();
 
-    base_tick_animation();
-
     //--------------------------------------------------------//
 
     ParticleEmitter emitter;

@@ -13,7 +13,7 @@ using namespace sts;
 
 //============================================================================//
 
-void EditorScene::impl_show_widget_procedures()
+void EditorScene::impl_show_widget_script()
 {
     if (mActiveActionContext == nullptr) return;
 
@@ -21,17 +21,24 @@ void EditorScene::impl_show_widget_procedures()
     //Fighter& fighter = *ctx.fighter;
     Action& action = *ctx.fighter->get_action(ctx.key.action);
 
-    if (mDoResetDockProcedures) ImGui::SetNextWindowDockID(mDockRightId);
-    mDoResetDockProcedures = false;
+    if (mDoResetDockScript) ImGui::SetNextWindowDockID(mDockRightId);
+    mDoResetDockScript = false;
 
     const ImPlus::ScopeWindow window = { "Procedures", 0 };
     if (window.show == false) return;
+
+    auto font = ImPlus::ScopeFont(ImPlus::FONT_MONO);
+
+    ImGui::SetNextItemWidth(-1);
+    ImPlus::InputStringMultiline("##Script", action.mLuaSource, {});
+
+    /*
 
     const ImPlus::ScopeID ctxKeyIdScope = ctx.key.hash();
 
     //--------------------------------------------------------//
 
-    if (ImGui::Button("New...")) ImGui::OpenPopup("new_procedure");
+//    if (ImGui::Button("New...")) ImGui::OpenPopup("new_procedure");
 
     ImGui::SameLine();
     const bool collapseAll = ImGui::Button("Collapse All");
@@ -175,7 +182,7 @@ void EditorScene::impl_show_widget_procedures()
             action.procedures.emplace(toCopy->second, iter->second);
             build_working_procedures(ctx);
         }
-    }
+    }*/
 }
 
 //============================================================================//
@@ -186,7 +193,7 @@ void EditorScene::impl_show_widget_timeline()
 
     ActionContext& ctx = *mActiveActionContext;
     //Fighter& fighter = *ctx.fighter;
-    Action& action = *ctx.fighter->get_action(ctx.key.action);
+    //Action& action = *ctx.fighter->get_action(ctx.key.action);
 
     if (mDoResetDockTimeline) ImGui::SetNextWindowDockID(mDockDownId);
     mDoResetDockTimeline = false;
@@ -198,100 +205,28 @@ void EditorScene::impl_show_widget_timeline()
 
     //--------------------------------------------------------//
 
-    const size_t actionLength = action.timeline.size();
-
-    const uint16_t currentFrame = action.mCurrentFrame;
-
-    //--------------------------------------------------------//
-
-    // todo: atm you can only toggle/insert one item/frame at a time,
-    // but would be good to be able to shift-click a range of frames
-
-    Vector<Tuple<Action::Procedure&, uint16_t>> framesToToggle;
-    Vector<Tuple<Action::Procedure&, uint16_t>> framesToInsert;
-
-    //--------------------------------------------------------//
-
     const ImPlus::ScopeFont font = ImPlus::FONT_MONO;
     const ImPlus::Style_ButtonTextAlign align = {0.f, 0.f};
-
-    ImGui::Columns(2, nullptr, false);
-    ImGui::SetColumnWidth(0, 160.f);
-
-    for (const auto& itemIter : ctx.sortedProcedures)
-    {
-        // c++20: lambda capture structured bindings
-        // auto& [key, procedure] = *itemIter;
-        auto& key = itemIter->first; auto& procedure = itemIter->second;
-
-        const ImPlus::ScopeID procedureIdScope = { key };
-
-        ImPlus::Text("%s: "_fmt_(key));
-
-        ImGui::NextColumn();
-        ImGui::Spacing();
-
-        for (uint16_t i = 0u; i < actionLength; ++i)
-        {
-            ImGui::SameLine();
-
-            const bool selected = algo::any_of(procedure.meta.frames, algo::pred_equal_to(i));
-
-            if (ImPlus::Selectable("##%d"_fmt_(i), selected, 0, {20u, 20u}))
-                framesToToggle.emplace_back(procedure, i);
-            ImPlus::HoverTooltip("Frame: %d"_fmt_(i));
-
-            const ImVec2 rectMin = ImGui::GetItemRectMin();
-            const ImVec2 rectMax = ImGui::GetItemRectMax();
-
-            ImDrawList* drawList = ImGui::GetWindowDrawList();
-
-            if (selected == false) drawList->AddRectFilled(rectMin, rectMax, ImGui::GetColorU32(ImGuiCol_FrameBg));
-            drawList->AddRect(rectMin, rectMax, ImGui::GetColorU32(ImGuiCol_Border)); // inefficient, lots of overlap
-        }
-
-        ImGui::NextColumn();
-        ImGui::Separator();
-    }
-
-    ImGui::NextColumn();
-    ImGui::Spacing();
 
     //--------------------------------------------------------//
 
     const auto selectableAlign = ImPlus::Style_SelectableTextAlign(0.5f, 0.f);
 
-    for (uint16_t i = 0u; i < actionLength; ++i)
+    for (int i = -1; i < int(ctx.timelineLength); ++i)
     {
         ImGui::SameLine();
 
         const String label = "%d"_fmt_(i);
 
-        const bool active = currentFrame == i;
+        const bool active = ctx.currentFrame == i;
         const bool open = ImPlus::IsPopupOpen(label);
 
         if (ImPlus::Selectable(label, active || open, 0, {20u, 20u}))
             ImPlus::OpenPopup(label);
 
-        if (currentFrame != i)
+        if (ctx.currentFrame != i)
             if (ImGui::IsItemHovered() && ImGui::IsMouseDown(ImPlus::MOUSE_RIGHT))
                scrub_to_frame(ctx, i);
-
-        ImPlus::if_Popup(label, 0, [&]()
-        {
-            const auto align = ImPlus::Style_SelectableTextAlign(0.f, 0.f);
-
-            if (ImGui::MenuItem("insert frame before"))
-            {
-                for (auto& [key, procedure] : action.procedures)
-                    framesToInsert.emplace_back(procedure, i);
-            }
-            if (ImGui::MenuItem("insert frame after"))
-            {
-                for (auto& [key, procedure] : action.procedures)
-                    framesToInsert.emplace_back(procedure, i + 1u);
-            }
-        });
 
         const ImVec2 rectMin = ImGui::GetItemRectMin();
         const ImVec2 rectMax = ImGui::GetItemRectMax();
@@ -300,7 +235,7 @@ void EditorScene::impl_show_widget_timeline()
 
         drawList->AddRect(rectMin, rectMax, ImGui::GetColorU32(ImGuiCol_Border)); // inefficient, lots of overlap
 
-        if (i == currentFrame)
+        if (i == ctx.currentFrame)
         {
             const float blend = mPreviewMode == PreviewMode::Pause ? mBlendValue : float(mAccumulation / mTickTime);
             const float middle = maths::mix(rectMin.x, rectMax.x, blend);
@@ -311,29 +246,5 @@ void EditorScene::impl_show_widget_timeline()
 
             drawList->AddTriangleFilled(scrubberTop, scrubberLeft, scrubberRight, ImGui::GetColorU32(ImGuiCol_Border));
         }
-    }
-
-    ImGui::Columns();
-
-    //--------------------------------------------------------//
-
-    for (auto& [procedure, when] : framesToToggle)
-    {
-        const auto iter = algo::find_if(procedure.meta.frames, algo::pred_greater_equal(when));
-
-        // frame is after all existing frames
-        if (iter == procedure.meta.frames.end()) procedure.meta.frames.push_back(when);
-
-        // frame is already enabled
-        else if (*iter == when) procedure.meta.frames.erase(iter);
-
-        // insert the frame before the iterator
-        else procedure.meta.frames.insert(iter, when);
-    }
-
-    for (auto& [procedure, when] : framesToInsert)
-    {
-        for (uint16_t& frame : procedure.meta.frames)
-            if (frame >= when) ++frame;
     }
 }

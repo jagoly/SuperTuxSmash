@@ -6,13 +6,36 @@
 #include "game/private/PrivateWorld.hpp"
 
 #include <sqee/debug/Assert.hpp>
-#include <sqee/maths/Culling.hpp>
 #include <sqee/misc/Algorithms.hpp>
 
 namespace algo = sq::algo;
 namespace maths = sq::maths;
 
 using namespace sts;
+
+//============================================================================//
+
+// todo: might want to move the lua setup stuff to a different file
+
+template <class Handler>
+bool sol_lua_check(sol::types<TinyString>, lua_State* L, int index, Handler&& handler, sol::stack::record& tracking)
+{
+    const int absIndex = sol::absolute_index(L, index);
+    const bool success = sol::stack::check<const char*>(L, absIndex, handler);
+    tracking.use(1); return success;
+}
+
+TinyString sol_lua_get(sol::types<TinyString>, lua_State* L, int index, sol::stack::record& tracking)
+{
+    const int absIndex = sol::absolute_index(L, index);
+    const char* const result = sol::stack::get<const char*>(L, absIndex);
+    tracking.use(1); return result;
+}
+
+int sol_lua_push(sol::types<TinyString>, lua_State* L, const TinyString& str)
+{
+    return sol::stack::push(L, str.c_str());
+}
 
 //============================================================================//
 
@@ -23,6 +46,24 @@ FightWorld::FightWorld(const Globals& globals)
     , mEmitterAlloc(globals.editorMode ? 1024 * 64 : 1024)
 {
     mMessageBus.add_message_source<message::fighter_action_finished>();
+
+    lua.open_libraries(sol::lib::base, sol::lib::coroutine);
+
+    sol::usertype<Action> actionType = lua.new_usertype<Action>("Action", sol::no_constructor);
+
+    actionType.set_function("wait_until", sol::yielding(&Action::lua_func_wait_until));
+    actionType.set_function("finish_action", &Action::lua_func_finish_action);
+    actionType.set_function("enable_blob", &Action::lua_func_enable_blob);
+    actionType.set_function("disable_blob", &Action::lua_func_disable_blob);
+    actionType.set_function("emit_particles", &Action::lua_func_emit_particles);
+
+    sol::usertype<Fighter> fighterType = lua.new_usertype<Fighter>("Fighter", sol::no_constructor);
+
+    fighterType.set("intangible", sol::property(&Fighter::lua_get_intangible, &Fighter::lua_set_intangible));
+    fighterType.set("velocity_x", sol::property(&Fighter::lua_get_velocity_x, &Fighter::lua_set_velocity_x));
+    fighterType.set("velocity_y", sol::property(&Fighter::lua_get_velocity_y, &Fighter::lua_set_velocity_y));
+
+    fighterType.set("change_facing", &Fighter::lua_func_change_facing);
 
     impl = std::make_unique<PrivateWorld>(*this);
 }
@@ -78,8 +119,7 @@ const Vector<HurtBlob*>& FightWorld::get_hurt_blobs() const
 
 //============================================================================//
 
-// for now these can silently fail, so as to not crash in the action editor
-// possibly these could throw exceptions which the editor can catch and display
+// for now these can silently fail, they may throw in the future
 
 void FightWorld::enable_hit_blob(HitBlob* blob)
 {

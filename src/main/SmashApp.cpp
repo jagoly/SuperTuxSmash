@@ -45,13 +45,16 @@ void SmashApp::update(double elapsed)
 
     //-- fetch and handle events -----------------------------//
 
-    for (auto event : mWindow->fetch_events())
+    if (mWindow->has_focus() == true)
     {
-        if (guiSystem.handle_event(event)) continue;
-        handle_event(event);
+        for (auto event : mWindow->fetch_events())
+        {
+            if (guiSystem.handle_event(event)) continue;
+            handle_event(event);
+        }
+        guiSystem.finish_handle_events(true);
     }
-
-    guiSystem.finish_handle_events();
+    else guiSystem.finish_handle_events(false);
 
     //-- update and render the active scene ------------------//
 

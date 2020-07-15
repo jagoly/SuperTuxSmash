@@ -12,8 +12,9 @@
 
 #include "render/DebugRender.hpp"
 
-#include "game/ActionBuilder.hpp"
 #include "game/private/PrivateFighter.hpp"
+
+#include "main/DebugGui.hpp"
 
 #include <sqee/macros.hpp>
 #include <sqee/app/GuiWidgets.hpp>
@@ -34,7 +35,7 @@ using namespace sts;
 //============================================================================//
 
 constexpr const float WIDTH_EDITORS   = 480;
-constexpr const float HEIGHT_TIMELINE = 280;
+constexpr const float HEIGHT_TIMELINE = 80;
 constexpr const float WIDTH_NAVIGATOR = 240;
 
 //============================================================================//
@@ -46,13 +47,18 @@ EditorScene::EditorScene(SmashApp& smashApp)
     widget_navigator.func = [this]() { impl_show_widget_navigator(); };
     widget_hitblobs.func = [this]() { impl_show_widget_hitblobs(); };
     widget_emitters.func = [this]() { impl_show_widget_emitters(); };
-    widget_procedures.func = [this]() { impl_show_widget_procedures(); };
-    widget_timeline.func = [this]() { impl_show_widget_timeline(); };
+    widget_script.func = [this]() { impl_show_widget_script(); };
     widget_hurtblobs.func = [this]() { impl_show_widget_hurtblobs(); };
+    widget_timeline.func = [this]() { impl_show_widget_timeline(); };
+    widget_fighter.func = [this]() { impl_show_widget_fighter(); };
 
     //--------------------------------------------------------//
 
-    smashApp.get_globals().renderBlobs = true;
+    smashApp.get_globals().renderHitBlobs = true;
+    smashApp.get_globals().renderHurtBlobs = true;
+    smashApp.get_globals().renderDiamonds = true;
+    smashApp.get_globals().renderSkeletons = true;
+
     smashApp.get_globals().editorMode = true;
 
     smashApp.get_window().set_key_repeat(true);
@@ -70,8 +76,8 @@ void EditorScene::handle_event(sq::Event event)
         {
             if (mPreviewMode == PreviewMode::Pause)
             {
-                if (mActiveContext != nullptr)
-                    mActiveContext->world->tick();
+                if (mActiveActionContext != nullptr)
+                    tick_action_context(*mActiveActionContext);
             }
             else mPreviewMode = PreviewMode::Pause;
         }
@@ -114,9 +120,17 @@ void EditorScene::update()
     if (mActiveHurtblobsContext != nullptr)
         apply_working_changes(*mActiveHurtblobsContext);
 
-    if (mActiveContext != nullptr)
+    if (mActiveActionContext != nullptr)
+    {
+        if (mDoRestartAction == true)
+        {
+            scrub_to_frame(*mActiveActionContext, -1);
+            mDoRestartAction = false;
+        }
+
         if (mPreviewMode != PreviewMode::Pause)
-            mActiveContext->world->tick();
+            tick_action_context(*mActiveActionContext);
+    }
 }
 
 //============================================================================//
@@ -167,11 +181,19 @@ void EditorScene::render(double elapsed)
 
     auto& debugRenderer = ctx.renderer->get_debug_renderer();
 
-    if (mRenderBlobsEnabled == true)
-    {
+    if (mSmashApp.get_globals().renderHitBlobs == true)
         debugRenderer.render_hit_blobs(ctx.world->get_hit_blobs());
+
+    if (mSmashApp.get_globals().renderHurtBlobs == true)
         debugRenderer.render_hurt_blobs(ctx.world->get_hurt_blobs());
-    }
+
+    if (mSmashApp.get_globals().renderDiamonds == true)
+        for (const auto fighter : ctx.world->get_fighters())
+            debugRenderer.render_diamond(fighter->get_position(), fighter->diamond);
+
+    if (mSmashApp.get_globals().renderSkeletons == true)
+        for (const auto fighter : ctx.world->get_fighters())
+            debugRenderer.render_skeleton(*fighter);
 
     ctx.renderer->finish_rendering();
 }
@@ -198,9 +220,9 @@ void EditorScene::impl_show_widget_toolbar()
         mDoResetDockNavigator = true;
         mDoResetDockHitblobs = true;
         mDoResetDockEmitters = true;
-        mDoResetDockProcedures = true;
-        mDoResetDockTimeline = true;
+        mDoResetDockScript = true;
         mDoResetDockHurtblobs = true;
+        mDoResetDockTimeline = true;
 
         const auto viewSize = ImGui::GetWindowViewport()->Size;
 
@@ -246,21 +268,23 @@ void EditorScene::impl_show_widget_toolbar()
 
         //--------------------------------------------------------//
 
-        if (mActiveActionContext != nullptr)
+        ImPlus::if_Menu("Render", true, [&]()
         {
-            ImPlus::if_Menu("Action", true, [&]()
-            {
-                if (ImGui::MenuItem("Save", "Ctrl+S", false, mActiveActionContext->modified))
-                    save_changes(*mActiveActionContext);
-                ImPlus::HoverTooltip("Save changes to the active action");
-            });
+            Globals& globals = mSmashApp.get_globals();
+            ImPlus::Checkbox("hit blobs", &globals.renderHitBlobs);
+            ImPlus::Checkbox("hurt blobs", &globals.renderHurtBlobs);
+            ImPlus::Checkbox("diamonds", &globals.renderDiamonds);
+            ImPlus::Checkbox("skeletons", &globals.renderSkeletons);
+        });
 
-            ImGui::Separator();
+        //--------------------------------------------------------//
 
-            if (ImGui::Checkbox("Sort Procedures", &mSortProceduresEnabled))
-                build_working_procedures(*mActiveActionContext);
-            ImPlus::HoverTooltip("when enabled, sort procedures by their timeline, otherwise sort by name");
-        }
+        ImPlus::if_Menu("Action", mActiveActionContext != nullptr, [&]()
+        {
+            if (ImGui::MenuItem("Save", "Ctrl+S", false, mActiveActionContext->modified))
+                save_changes(*mActiveActionContext);
+            ImPlus::HoverTooltip("Save changes to the active action");
+        });
 
         //--------------------------------------------------------//
 
@@ -301,11 +325,6 @@ void EditorScene::impl_show_widget_toolbar()
 //        }
 
         //--------------------------------------------------------//
-
-        ImGui::Separator();
-
-        ImGui::Checkbox("Render Blobs", &mRenderBlobsEnabled);
-        ImPlus::HoverTooltip("when enabled, action hit blobs and fighter hurt blobs are rendered");
 
         ImGui::Separator();
 
@@ -481,18 +500,34 @@ void EditorScene::impl_show_widget_navigator()
     }
 }
 
+//============================================================================//1
+
+void EditorScene::impl_show_widget_fighter()
+{
+    if (mActiveContext == nullptr) return;
+
+    BaseContext& ctx = *mActiveContext;
+    Fighter& fighter = *ctx.fighter;
+
+    if (mDoResetDockFighter) ImGui::SetNextWindowDockID(mDockRightId);
+    mDoResetDockFighter = false;
+
+    const ImPlus::ScopeWindow window = { "Fighter", 0 };
+    if (window.show == false) return;
+
+    DebugGui::show_widget_fighter(fighter);
+}
+
 //============================================================================//
 
 void EditorScene::handle_message(const message::fighter_action_finished& /*msg*/)
 {
     SQASSERT(mActiveActionContext != nullptr, "where did this message come from");
 
-    const ActionContext& ctx = *mActiveActionContext;
-
     if (mIncrementSeed) ++mRandomSeed;
 
-    ParticleEmitter::reset_random_seed(mRandomSeed);
-    ctx.privateFighter->switch_action(ctx.key.action);
+    // we defer this so that we don't call tick inside of tick
+    //mDoRestartAction = true;
 }
 
 //============================================================================//
@@ -560,11 +595,47 @@ EditorScene::ActionContext& EditorScene::get_action_context(ActionKey key)
 
     ctx.key = key;
 
-    build_working_procedures(ctx);
+    //build_working_procedures(ctx);
     scrub_to_frame_current(ctx);
 
     ctx.savedData = ctx.fighter->get_action(key.action)->clone();
     ctx.undoStack.push_back(ctx.fighter->get_action(key.action)->clone());
+
+    /*const auto& anims = ctx.fighter->animations;
+
+    SWITCH (key.action) {
+
+        CASE (Neutral_First) ctx.timelineLength =  anims.at("NeutralFirst").anim.totalTime;
+        CASE (Tilt_Down)     ctx.timelineLength = anims.at("TiltDown").anim.totalTime;
+        CASE (Tilt_Forward)  ctx.timelineLength = anims.at("TiltForward").anim.totalTime;
+        CASE (Tilt_Up)       ctx.timelineLength = anims.at("TiltUp").anim.totalTime;
+        CASE (Air_Back)      ctx.timelineLength = anims.at("AirBack").anim.totalTime;
+        CASE (Air_Down)      ctx.timelineLength = anims.at("AirDown").anim.totalTime;
+        CASE (Air_Forward)   ctx.timelineLength = anims.at("AirForward").anim.totalTime;
+        CASE (Air_Neutral)   ctx.timelineLength = anims.at("AirNeutral").anim.totalTime;
+        CASE (Air_Up)        ctx.timelineLength = anims.at("AirUp").anim.totalTime;
+        CASE (Dash_Attack)   ctx.timelineLength = anims.at("DashAttack").anim.totalTime;
+
+        CASE (Smash_Down)    ctx.timelineLength = anims.at("SmashDownStart").anim.totalTime
+                                                + anims.at("SmashDownCharge").anim.totalTime
+                                                + anims.at("SmashDownAttack").anim.totalTime;
+
+        CASE (Smash_Forward) ctx.timelineLength = anims.at("SmashForwardStart").anim.totalTime
+                                                + anims.at("SmashForwardCharge").anim.totalTime
+                                                + anims.at("SmashForwardAttack").anim.totalTime;
+
+        CASE (Smash_Up)      ctx.timelineLength = anims.at("SmashUpStart").anim.totalTime
+                                                + anims.at("SmashUpCharge").anim.totalTime
+                                                + anims.at("SmashUpAttack").anim.totalTime;
+
+        CASE (Special_Down)    ctx.timelineLength = 32u;
+        CASE (Special_Forward) ctx.timelineLength = 32u;
+        CASE (Special_Neutral) ctx.timelineLength = 32u;
+        CASE (Special_Up)      ctx.timelineLength = 32u;
+
+        CASE (None) SQASSERT(false, "");
+
+    } SWITCH_END;*/
 
     return ctx;
 }
@@ -582,7 +653,7 @@ EditorScene::HurtblobsContext& EditorScene::get_hurtblobs_context(FighterEnum ke
 
     ctx.key = key;
 
-    ctx.privateFighter->state_transition(ctx.privateFighter->transitions.editor_preview);
+    ctx.privateFighter->state_transition(Fighter::State::EditorPreview, 0u, nullptr, 0u, nullptr);
     ctx.world->tick();
 
     ctx.savedData = std::make_unique<decltype(Fighter::hurtBlobs)>(ctx.fighter->hurtBlobs);
@@ -602,7 +673,7 @@ void EditorScene::apply_working_changes(ActionContext& ctx)
 
     if (action.has_changes(*ctx.undoStack[ctx.undoIndex]))
     {
-        build_working_procedures(ctx);
+        //build_working_procedures(ctx);
         scrub_to_frame_current(ctx);
 
         ctx.undoStack.erase(ctx.undoStack.begin() + ++ctx.undoIndex, ctx.undoStack.end());
@@ -644,7 +715,7 @@ void EditorScene::do_undo_redo(ActionContext &ctx, bool redo)
         Action& action = *ctx.fighter->get_action(ctx.key.action);
         action.apply_changes(*ctx.undoStack[ctx.undoIndex]);
 
-        build_working_procedures(ctx);
+        //build_working_procedures(ctx);
         scrub_to_frame_current(ctx);
 
         ctx.modified = action.has_changes(*ctx.savedData);
@@ -679,9 +750,19 @@ void EditorScene::save_changes(ActionContext& ctx)
 {
     const Action& action = *ctx.fighter->get_action(ctx.key.action);
 
-    const JsonValue json = ctx.world->get_action_builder().serialise_as_json(action);
+    JsonValue json;
 
-    sq::save_string_to_file(action.path, json.dump(2));
+    auto& blobs = json["blobs"] = JsonValue::object();
+    auto& emitters = json["emitters"] = JsonValue::object();
+
+    for (const auto& [key, blob] : action.mBlobs)
+        blob.to_json(blobs[key]);
+
+    for (const auto& [key, emitter] : action.mEmitters)
+        emitter.to_json(emitters[key]);
+
+    sq::save_string_to_file(action.path + ".json", json.dump(2));
+    sq::save_string_to_file(action.path + ".lua", action.mLuaSource);
 
     ctx.savedData = action.clone();
     ctx.modified = false;
@@ -701,49 +782,7 @@ void EditorScene::save_changes(HurtblobsContext& ctx)
 
 //============================================================================//
 
-bool EditorScene::build_working_procedures(ActionContext& ctx)
-{
-    ActionBuilder& actionBuilder = ctx.world->get_action_builder();
-    Action& action = *ctx.fighter->get_action(ctx.key.action);
-
-    bool success = true;
-
-    for (auto& [key, procedure] : action.procedures)
-    {
-        Vector<String>& errors = ctx.buildErrors[key];
-        errors.clear();
-        procedure.commands = actionBuilder.build_procedure(action, procedure.meta.source, errors);
-        success &= errors.empty();
-    }
-
-    action.rebuild_timeline();
-
-    ctx.sortedProcedures.clear();
-    ctx.sortedProcedures.reserve(action.procedures.size());
-
-    for (auto iter = action.procedures.begin(); iter != action.procedures.end(); ++iter)
-        ctx.sortedProcedures.push_back(iter);
-
-    if (mSortProceduresEnabled == true)
-    {
-        const auto compare = [](const auto& lhs, const auto& rhs) -> bool
-        {
-            if (lhs->second.meta.frames < rhs->second.meta.frames)
-                return true;
-            if (lhs->second.meta.frames == rhs->second.meta.frames)
-                return lhs->first < rhs->first;
-            return false;
-        };
-
-        std::sort(ctx.sortedProcedures.begin(), ctx.sortedProcedures.end(), compare);
-    }
-
-    return success;
-}
-
-//----------------------------------------------------------------------------//
-
-void EditorScene::scrub_to_frame(ActionContext& ctx, uint16_t frame)
+void EditorScene::scrub_to_frame(ActionContext& ctx, int frame)
 {
     if (ctx.fighter->current.action != nullptr)
         ctx.privateFighter->switch_action(ActionType::None);
@@ -753,12 +792,36 @@ void EditorScene::scrub_to_frame(ActionContext& ctx, uint16_t frame)
 
     ctx.privateFighter->switch_action(ctx.key.action);
 
-    for (uint16_t i = 0u; i < frame; ++i)
-        ctx.world->tick();
+    /*SWITCH (ctx.key.action)
+    {
+        CASE (Air_Back, Air_Down, Air_Forward, Air_Neutral, Air_Up)
+        {
+            ctx.fighter->edit_position() = { 0.f, 10.f };
+        }
+    }
+    SWITCH_END;*/
+
+    ctx.currentFrame = -1;
+
+    for (int i = -1; i < frame; ++i)
+        tick_action_context(ctx);
+
+    SQASSERT(ctx.fighter->current.action == nullptr ||
+             int(ctx.fighter->current.action->mCurrentFrame)-1 == ctx.currentFrame,
+             "out of sync: %d | %d"_fmt_(int(ctx.fighter->current.action->mCurrentFrame)-1, ctx.currentFrame));
 }
 
-void EditorScene::scrub_to_frame_current(ActionContext &ctx)
+void EditorScene::scrub_to_frame_current(ActionContext& ctx)
 {
     Action& action = *ctx.fighter->get_action(ctx.key.action);
-    scrub_to_frame(ctx, action.mCurrentFrame);
+    scrub_to_frame(ctx, action.mCurrentFrame - 1u);
+}
+
+void EditorScene::tick_action_context(ActionContext& ctx)
+{
+    ctx.currentFrame += 1;
+    ctx.world->tick();
+
+    if (ctx.currentFrame == ctx.timelineLength)
+        mDoRestartAction = true;
 }

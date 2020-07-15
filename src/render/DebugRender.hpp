@@ -22,6 +22,8 @@ public: //====================================================//
 
     void render_diamond(Vec2F position, const struct LocalDiamond& diamond);
 
+    void render_skeleton(const Fighter& fighter);
+
 private: //===================================================//
 
     sq::Program mBlobShader;

@@ -1,37 +1,31 @@
 {
 
-"walk_speed":     1.1,
-"dash_speed":     1.5,
-"air_speed":      1.1,
-"traction":       1.0,
-"air_mobility":   1.1,
-"air_friction":   0.9,
-"hop_height":     1.1,
-"jump_height":    1.2,
-"air_hop_height": 1.0,
-"gravity":        1.0,
-"fall_speed":     1.0,
-"weight":         1.0,
+"comment": "these values are from sm4sh, so might look weird with anims from brawl",
 
-"dodge_finish":     22,
-"dodge_safe_start": 2,
-"dodge_safe_end":   15,
+"walk_speed":        0.11,
+"dash_speed":        0.16,
+"air_speed":         0.115,
+"traction":          0.0045,
+"air_mobility":      0.008,
+"air_friction":      0.0015,
+"hop_height":        1.75,
+"jump_height":       3.63,
+"air_hop_height":    3.63,
+"ledge_jump_height": 3.63,
+"gravity":           0.008715,
+"fall_speed":        0.15,
+"weight":            1.0,
 
-"evade_back_finish":     33,
-"evade_back_safe_start": 4,
-"evade_back_safe_end":   20,
+"extra_jumps": 10,
 
-"evade_forward_finish":     35,
-"evade_forward_safe_start": 4,
-"evade_forward_safe_end":   20,
-
-"air_dodge_finish":     49,
-"air_dodge_safe_start": 4,
-"air_dodge_safe_end":   29,
-
-"ledge_climb_finish": 34,
+"dash_start_time":  11,
+"dash_brake_time":  12,
+"dash_turn_time":   14,
+"ledge_climb_time": 34,
 
 "anim_walk_stride": 2.87,
-"anim_dash_stride": 3.3
+"anim_dash_stride": 3.3,
+
+"land_heavy_min_time": 42
 
 }

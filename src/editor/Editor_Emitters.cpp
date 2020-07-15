@@ -40,7 +40,7 @@ void EditorScene::impl_show_widget_emitters()
         TinyString newKey;
         if (ImGui::InputText("", newKey.data(), sizeof(TinyString), ImGuiInputTextFlags_EnterReturnsTrue))
         {
-            if (auto [iter, ok] = action.emitters.try_emplace(newKey); ok)
+            if (auto [iter, ok] = action.mEmitters.try_emplace(newKey); ok)
             {
                 ParticleEmitter& emitter = iter->second;
                 emitter.fighter = &fighter;
@@ -60,8 +60,8 @@ void EditorScene::impl_show_widget_emitters()
     //--------------------------------------------------------//
 
     // c++20: lambda capture structured bindings
-    //for (auto& [key, emitter] : action.emitters)
-    for (auto& item : action.emitters)
+    //for (auto& [key, emitter] : action.mEmitters)
+    for (auto& item : action.mEmitters)
     {
         auto& key = item.first; auto& emitter = item.second;
 
@@ -210,27 +210,27 @@ void EditorScene::impl_show_widget_emitters()
 
     if (toDelete.has_value() == true)
     {
-        const auto iter = action.emitters.find(*toDelete);
-        SQASSERT(iter != action.emitters.end(), "");
-        action.emitters.erase(iter);
+        const auto iter = action.mEmitters.find(*toDelete);
+        SQASSERT(iter != action.mEmitters.end(), "");
+        action.mEmitters.erase(iter);
     }
 
     if (toRename.has_value() == true)
     {
-        const auto iter = action.emitters.find(toRename->first);
-        SQASSERT(iter != action.emitters.end(), "");
-        if (action.emitters.find(toRename->second) == action.emitters.end())
+        const auto iter = action.mEmitters.find(toRename->first);
+        SQASSERT(iter != action.mEmitters.end(), "");
+        if (action.mEmitters.find(toRename->second) == action.mEmitters.end())
         {
-            auto node = action.emitters.extract(iter);
+            auto node = action.mEmitters.extract(iter);
             node.key() = toRename->second;
-            action.emitters.insert(std::move(node));
+            action.mEmitters.insert(std::move(node));
         }
     }
 
     if (toCopy.has_value() == true)
     {
-        const auto iter = action.emitters.find(toCopy->first);
-        SQASSERT(iter != action.emitters.end(), "");
-        action.emitters.try_emplace(toCopy->second, iter->second);
+        const auto iter = action.mEmitters.find(toCopy->first);
+        SQASSERT(iter != action.mEmitters.end(), "");
+        action.mEmitters.try_emplace(toCopy->second, iter->second);
     }
 }

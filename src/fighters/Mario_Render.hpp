@@ -28,19 +28,22 @@ public: //====================================================//
 private: //===================================================//
 
     MeshHandle MESH_Body;
-    MeshHandle MESH_Eyes;
     MeshHandle MESH_HairHat;
     MeshHandle MESH_Head;
+    MeshHandle MESH_EyesWhite;
+    MeshHandle MESH_EyesIris;
 
     TextureHandle TX_BodyA_diff;
     TextureHandle TX_BodyB_diff;
+    TextureHandle TX_EyeWhite_diff;
     TextureHandle TX_EyeIris_diff;
+    TextureHandle TX_EyeIris_mask;
 
     ProgramHandle PROG_Main;
 
     //--------------------------------------------------------//
 
-    CharacterBlock<56> mCharacterBlock;
+    CharacterBlock<54> mCharacterBlock;
 
     sq::UniformBuffer mUbo;
 

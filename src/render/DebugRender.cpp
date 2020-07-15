@@ -30,8 +30,8 @@ DebugRenderer::DebugRenderer(Renderer& renderer) : renderer(renderer)
     mLineVertexArray.set_vertex_buffer(mLineVertexBuffer, sizeof(Vec4F));
     mLineVertexArray.add_float_attribute(0u, 4u, gl::FLOAT, false, 0u);
 
-    // allocate space for up to 32 lines
-    mLineVertexBuffer.allocate_dynamic(sizeof(Vec4F) * 64u, nullptr);
+    // allocate space for up to 128 lines
+    mLineVertexBuffer.allocate_dynamic(sizeof(Vec4F) * 256u, nullptr);
 }
 
 //============================================================================//
@@ -67,13 +67,14 @@ void DebugRenderer::render_hit_blobs(const Vector<HitBlob*>& blobs)
     context.bind_FrameBuffer(renderer.fbos.Resolve);
 
     context.set_state(Context::Blend_Mode::Alpha);
-    context.set_state(Context::Cull_Face::Disable);
-    context.set_state(Context::Depth_Test::Keep);
-    context.set_state(Context::Depth_Compare::Less);
+    context.set_state(Context::Cull_Face::Back);
+    context.set_state(Context::Depth_Test::Disable);
 
     context.bind_Program(mBlobShader);
 
     context.bind_VertexArray(mSphereMesh.get_vao());
+
+    mBlobShader.update(2, 0.25f);
 
     //--------------------------------------------------------//
 
@@ -136,12 +137,14 @@ void DebugRenderer::render_hurt_blobs(const Vector<HurtBlob*>& blobs)
     context.bind_FrameBuffer(renderer.fbos.Resolve);
 
     context.set_state(Context::Blend_Mode::Alpha);
-    context.set_state(Context::Cull_Face::Disable);
+    context.set_state(Context::Cull_Face::Back);
     context.set_state(Context::Depth_Test::Disable);
 
     context.bind_Program(mBlobShader);
 
     context.bind_VertexArray(mCapsuleMesh.get_vao());
+
+    mBlobShader.update(2, 0.25f);
 
     //--------------------------------------------------------//
 
@@ -188,12 +191,14 @@ void DebugRenderer::render_diamond(Vec2F position, const LocalDiamond& diamond)
     context.bind_FrameBuffer(renderer.fbos.Resolve);
 
     context.set_state(Context::Blend_Mode::Alpha);
-    context.set_state(Context::Cull_Face::Disable);
+    context.set_state(Context::Cull_Face::Back);
     context.set_state(Context::Depth_Test::Disable);
 
     context.bind_Program(mBlobShader);
 
     context.bind_VertexArray(mDiamondMesh.get_vao());
+
+    mBlobShader.update(2, 0.25f);
 
     //--------------------------------------------------------//
 
@@ -211,4 +216,67 @@ void DebugRenderer::render_diamond(Vec2F position, const LocalDiamond& diamond)
 
     mBlobShader.update(0, projViewMat * topMat);
     mDiamondMesh.draw_partial(1u);
+}
+
+//============================================================================//
+
+void DebugRenderer::render_skeleton(const Fighter& fighter)
+{
+    auto& context = renderer.context;
+
+    const Mat4F projViewMat = renderer.get_camera().get_combo_matrix();
+
+    //--------------------------------------------------------//
+
+    context.bind_FrameBuffer(renderer.fbos.Resolve);
+
+    context.set_state(Context::Blend_Mode::Alpha);
+    context.set_state(Context::Cull_Face::Back);
+    context.set_state(Context::Depth_Test::Disable);
+
+    context.bind_Program(mBlobShader);
+
+    context.bind_VertexArray(mSphereMesh.get_vao());
+
+    mBlobShader.update(1, Vec3F(1.f, 1.f, 1.f));
+    mBlobShader.update(2, 0.5f);
+
+    //--------------------------------------------------------//
+
+    const Vector<Mat4F> mats = fighter.debug_get_skeleton_mats();
+
+    Vector<Vec4F> lineData;
+    lineData.reserve(mats.size() - 1u);
+
+    const Mat4F projViewModelMat = projViewMat * fighter.get_model_matrix();
+
+    //--------------------------------------------------------//
+
+    for (uint i = 0u; i < mats.size(); ++i)
+    {
+        mBlobShader.update(0, projViewModelMat * maths::scale(mats[i], Vec3F(0.02f)));
+        mSphereMesh.draw_complete();
+
+        if (int8_t parent = fighter.get_armature().get_bone_parent(i); parent != -1)
+        {
+            const Vec4F pA = (projViewModelMat * mats[parent])[3];
+            const Vec4F pB = (projViewModelMat * mats[i])[3];
+
+            lineData.insert(lineData.end(), {pA, pB});
+        }
+    }
+
+    //--------------------------------------------------------//
+
+    context.set_state(Context::Blend_Mode::Disable);
+
+    gl::LineWidth(2.f);
+
+    context.bind_Program(mArrowShader);
+
+    context.bind_VertexArray(mLineVertexArray);
+
+    mLineVertexBuffer.update(0u, uint(sizeof(Vec4F) * lineData.size()), lineData.data());
+
+    gl::DrawArrays(gl::LINES, 0, int(lineData.size()));
 }

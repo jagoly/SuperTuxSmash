@@ -1,0 +1,45 @@
+{
+  "blobs": 
+  {
+    "Hip": 
+    {
+      "bone": "HipN",
+      "damage": 0.0,
+      "flavour": "Sour",
+      "group": 0,
+      "knockAngle": 0.0,
+      "knockBase": 0.0,
+      "knockScale": 0.0,
+      "origin": [ 0.0, 0.47493994, 0.0 ],
+      "priority": "Low",
+      "radius": 0.234
+    },
+    "Knee": 
+    {
+      "bone": "RKneeJ",
+      "damage": 0.0,
+      "flavour": "Tangy",
+      "group": 0,
+      "knockAngle": 0.0,
+      "knockBase": 0.0,
+      "knockScale": 0.0,
+      "origin": [ 0.12462002, 0.33975, -0.0009299854 ],
+      "priority": "Low",
+      "radius": 0.391
+    },
+    "Leg": 
+    {
+      "bone": "RLegJ",
+      "damage": 0.0,
+      "flavour": "Sweet",
+      "group": 0,
+      "knockAngle": 0.0,
+      "knockBase": 0.0,
+      "knockScale": 0.0,
+      "origin": [ 0.24614003, 0.3772, 2.9336661e-08 ],
+      "priority": "Low",
+      "radius": 0.313
+    }
+  },
+  "emitters": {}
+}

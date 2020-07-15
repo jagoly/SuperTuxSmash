@@ -1,6 +1,9 @@
 {
 
 "BodyA_diff": { "format": "RGB8_UN", "wrap": "RR", "swizzle": "RGB1", "filter": true, "mipmaps": true },
-"BodyB_diff": { "format": "RGB8_UN", "wrap": "RR", "swizzle": "RGB1", "filter": true, "mipmaps": true }
+"BodyB_diff": { "format": "RGB8_UN", "wrap": "RR", "swizzle": "RGB1", "filter": true, "mipmaps": true },
+"EyeWhite_diff": { "format": "RGB8_UN", "wrap": "CC", "swizzle": "RGB1", "filter": true, "mipmaps": true },
+"EyeIris_diff": { "format": "RGB8_UN", "wrap": "CC", "swizzle": "RGB1", "filter": true, "mipmaps": true },
+"EyeIris_mask": { "format": "R8_UN", "wrap": "CC", "swizzle": "000R", "filter": true, "mipmaps": true }
 
 }

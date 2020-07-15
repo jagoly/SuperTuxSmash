@@ -52,6 +52,8 @@ public: //====================================================//
 
     void intergrate(float blend) override;
 
+    float zoomOut = 0.f;
+
 private: //===================================================//
 
     struct MinMax { Vec2F min, max; };

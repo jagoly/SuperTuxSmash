@@ -68,7 +68,7 @@ void StandardCamera::intergrate(float blend)
         float distanceY = (maxView.y - minView.y + 4.f) * 0.5f / std::tan(0.5f);
         return maths::max(distanceX, distanceY); }();
 
-    Vec3F cameraTarget = Vec3F((minView + maxView) * 0.5f, 0.f);
+    Vec3F cameraTarget = Vec3F((minView + maxView) * 0.5f, -zoomOut);
     mBlock.position = cameraTarget - mBlock.direction * cameraDistance;
 
     mBlock.viewMat = maths::look_at_LH(mBlock.position, cameraTarget, Vec3F(0.f, 1.f, 0.f));
@@ -108,7 +108,7 @@ void StandardCamera::intergrate(float blend)
 void EditorCamera::update_from_scroll(float delta)
 {
     mZoom -= delta / 4.f;
-    mZoom = maths::clamp(mZoom, 1.f, 8.f);
+    mZoom = maths::clamp(mZoom, 1.f, 16.f);
 }
 
 void EditorCamera::update_from_mouse(bool left, bool right, Vec2F position)
@@ -117,16 +117,16 @@ void EditorCamera::update_from_mouse(bool left, bool right, Vec2F position)
     {
         mYaw -= (position.x - mPrevMousePosition.x) / 600.f;
         mPitch += (position.y - mPrevMousePosition.y) / 800.f;
-        mYaw = maths::clamp(mYaw, -0.2f, 0.2f);
-        mPitch = maths::clamp(mPitch, -0.05f, 0.2f);
+        mYaw = maths::clamp(mYaw, -0.25f, 0.25f);
+        mPitch = maths::clamp(mPitch, -0.25f, 0.25f);
     }
 
     if (right && !left)
     {
         mCentre.x -= (position.x - mPrevMousePosition.x) / 250.f;
         mCentre.y -= (position.y - mPrevMousePosition.y) / 250.f;
-        mCentre.x = maths::clamp(mCentre.x, -3.f, 3.f);
-        mCentre.y = maths::clamp(mCentre.y, -1.f, 3.f);
+        mCentre.x = maths::clamp(mCentre.x, -4.f, 4.f);
+        mCentre.y = maths::clamp(mCentre.y, -1.f, 6.f);
     }
 
     mPrevMousePosition = position;

@@ -40,7 +40,7 @@ void EditorScene::impl_show_widget_hitblobs()
         TinyString newKey;
         if (ImGui::InputText("", newKey.data(), sizeof(TinyString), ImGuiInputTextFlags_EnterReturnsTrue))
         {
-            if (auto [iter, ok] = action.blobs.try_emplace(newKey); ok)
+            if (auto [iter, ok] = action.mBlobs.try_emplace(newKey); ok)
             {
                 HitBlob& blob = iter->second;
                 blob.fighter = &fighter;
@@ -57,11 +57,14 @@ void EditorScene::impl_show_widget_hitblobs()
     Optional<Pair<TinyString, TinyString>> toRename;
     Optional<Pair<TinyString, TinyString>> toCopy;
 
+    const auto boneMats = fighter.get_armature().compute_skeleton_matrices(fighter.get_armature().get_rest_pose());
+    const auto& boneNames = fighter.get_armature().get_bone_names();
+
     //--------------------------------------------------------//
 
     // c++20: lambda capture structured bindings
-    //for (auto& [key, blob] : action.blobs)
-    for (auto& item : action.blobs)
+    //for (auto& [key, blob] : action.mBlobs)
+    for (auto& item : action.mBlobs)
     {
         auto& key = item.first; auto& blob = item.second;
 
@@ -125,12 +128,19 @@ void EditorScene::impl_show_widget_hitblobs()
         {
             const ImPlus::ScopeItemWidth widthScope = -100.f;
 
+            if (ImPlus::Button(" # ##1") && blob.bone >= 0)
+            {
+                mTempVec3F = Vec3F(maths::inverse(boneMats[blob.bone]) * Vec4F(blob.origin, 1.f));
+                ImGui::OpenPopup("input_bone_origin");
+            }
+            ImPlus::HoverTooltip("input origin in bone space");
+            ImGui::SameLine();
             ImPlus::InputVector(" Origin", blob.origin, 0, "%.4f");
+
             ImPlus::SliderValue(" Radius", blob.radius, 0.05f, 2.0f, "%.3f metres");
 
-            const auto& boneNames = fighter.get_armature().get_bone_names();
-            if (ImPlus::Button(" # ") && blob.bone >= 0)
-                blob.origin = fighter.get_armature().get_rest_pose().at(blob.bone).offset;
+            if (ImPlus::Button(" #  ##2") && blob.bone >= 0)
+                blob.origin = Vec3F(boneMats[blob.bone][3]);
             ImPlus::HoverTooltip("snap origin to bone");
             ImGui::SameLine();
             ImPlus::Combo(" Bone", boneNames, blob.bone, "(None)");
@@ -142,6 +152,16 @@ void EditorScene::impl_show_widget_hitblobs()
             ImPlus::InputValue(" Damage", blob.damage, 0.01f, "%.4f");
             ImPlus::ComboEnum(" Flavour", blob.flavour);
             ImPlus::ComboEnum(" Priority", blob.priority);
+
+            ImPlus::if_Popup("input_bone_origin", 0, [&]()
+            {
+                ImPlus::InputVector("", mTempVec3F, 0, "%.4f");
+                if (ImPlus::Button("Confirm"))
+                {
+                    blob.origin = Vec3F(boneMats[blob.bone] * Vec4F(mTempVec3F, 1.f));
+                    ImGui::CloseCurrentPopup();
+                }
+            });
         }
     }
 
@@ -149,27 +169,27 @@ void EditorScene::impl_show_widget_hitblobs()
 
     if (toDelete.has_value() == true)
     {
-        const auto iter = action.blobs.find(*toDelete);
-        SQASSERT(iter != action.blobs.end(), "");
-        action.blobs.erase(iter);
+        const auto iter = action.mBlobs.find(*toDelete);
+        SQASSERT(iter != action.mBlobs.end(), "");
+        action.mBlobs.erase(iter);
     }
 
     if (toRename.has_value() == true)
     {
-        const auto iter = action.blobs.find(toRename->first);
-        SQASSERT(iter != action.blobs.end(), "");
-        if (action.blobs.find(toRename->second) == action.blobs.end())
+        const auto iter = action.mBlobs.find(toRename->first);
+        SQASSERT(iter != action.mBlobs.end(), "");
+        if (action.mBlobs.find(toRename->second) == action.mBlobs.end())
         {
-            auto node = action.blobs.extract(iter);
+            auto node = action.mBlobs.extract(iter);
             node.key() = toRename->second;
-            action.blobs.insert(std::move(node));
+            action.mBlobs.insert(std::move(node));
         }
     }
 
     if (toCopy.has_value() == true)
     {
-        const auto iter = action.blobs.find(toCopy->first);
-        SQASSERT(iter != action.blobs.end(), "");
-        action.blobs.try_emplace(toCopy->second, iter->second);
+        const auto iter = action.mBlobs.find(toCopy->first);
+        SQASSERT(iter != action.mBlobs.end(), "");
+        action.mBlobs.try_emplace(toCopy->second, iter->second);
     }
 }

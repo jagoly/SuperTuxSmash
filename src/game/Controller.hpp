@@ -30,12 +30,12 @@ public: //====================================================//
         bool press_shield = false;
         bool hold_shield = false;
 
-        Vec2F float_axis {};
+        Vec2F float_axis {}; ///< -1, -0.5, -0, +0, +0.5, +1
 
-        struct { int8_t x=0, y=0; } int_axis;
-        struct { int8_t x=0, y=0; } mash_axis;
-        struct { int8_t x=0, y=0; } mod_axis;
-        struct { int8_t x=0, y=0; } norm_axis;
+        struct { int8_t x=0, y=0; } int_axis;  ///< in the range of -2 to +2
+        struct { int8_t x=0, y=0; } mash_axis; ///< true for one frame if you quickly push all the way
+        struct { int8_t x=0, y=0; } mod_axis;  ///< same as mash_axis but lasts for a few frames
+        struct { int8_t x=0, y=0; } norm_axis; ///< just int_axis but normalised
     };
 
     //--------------------------------------------------------//

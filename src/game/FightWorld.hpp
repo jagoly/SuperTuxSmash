@@ -1,7 +1,10 @@
 #pragma once
 
+#include <sqee/redist/sol.hpp>
+
 #include <sqee/debug/Assert.hpp>
 #include <sqee/misc/Builtins.hpp>
+#include <sqee/misc/PoolTools.hpp>
 #include <sqee/app/MessageBus.hpp>
 
 #include "main/Enumerations.hpp"
@@ -12,7 +15,8 @@
 #include "game/Blobs.hpp"
 #include "game/ParticleSystem.hpp"
 #include "game/ParticleEmitter.hpp"
-#include "game/ActionBuilder.hpp"
+
+struct WrenVM;
 
 namespace sts {
 
@@ -55,6 +59,8 @@ public: //====================================================//
     //--------------------------------------------------------//
 
     const Globals& globals;
+
+    sol::state lua;
 
     //--------------------------------------------------------//
 
@@ -141,9 +147,6 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    /// Access the ActionBuilder.
-    ActionBuilder& get_action_builder() { return mActionBuilder; }
-
     /// Access the ParticleSystem.
     ParticleSystem& get_particle_system() { return mParticleSystem; }
 
@@ -164,8 +167,6 @@ private: //===================================================//
     sq::PoolAllocatorStore<Pair<const TinyString, ParticleEmitter>> mEmitterAlloc;
 
     //--------------------------------------------------------//
-
-    ActionBuilder mActionBuilder;
 
     ParticleSystem mParticleSystem;
 

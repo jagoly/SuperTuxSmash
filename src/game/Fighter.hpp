@@ -15,32 +15,57 @@ class Fighter : sq::NonCopyable
 {
 public: //====================================================//
 
-    enum class State
+    enum class Command
     {
-        Neutral, Walking, Dashing, Brake, Crouch,
-        Charge, Attack, Special, Landing, PreJump, Jumping,
-        Falling, AirAttack, AirSpecial, Knocked, Stunned,
-        Shield, Dodge, EvadeBack, EvadeForward, AirDodge,
-        LedgeHang, LedgeClimb,
-        EditorPreview
+        Shield,
+        Jump,
+        MashDown,
+        MashUp,
+        MashLeft,
+        MashRight,
+        TurnLeft,
+        TurnRight,
+        SmashDown,
+        SmashUp,
+        SmashLeft,
+        SmashRight,
+        AttackDown,
+        AttackUp,
+        AttackLeft,
+        AttackRight,
+        AttackNeutral
     };
 
-    enum class Facing
+    enum class State
     {
-        Left = -1, Right = +1
+        Neutral,
+        Walking,
+        Dashing,
+        Brake,
+        Crouch,
+        Charge,
+        Action,
+        AirAction,
+        Landing,
+        PreJump,
+        Jumping,
+        Helpless,
+        Knocked,
+        Stunned,
+        Shield,
+        LedgeHang,
+        LedgeClimb,
+        EditorPreview
     };
 
     enum class AnimMode
     {
         Standard,    ///< non-looping, without root motion
-        //Looping,     ///< looping, without root motion
-        ApplyMotion, ///< non-looping, apply root motion continuously
-        FixedMotion, ///< non-looping, apply root motion at end of animation
+        Looping,     ///< looping, without root motion
         WalkCycle,   ///< looping, update using velocity and anim_walk_stride
         DashCycle,   ///< looping, update using velocity and anim_dash_stride
-        JumpAscend,  ///< non-looping, update using difference from jump velocity
-        BrakeSlow,   ///< non-looping, update using difference from brake velocity
-        //AboutFace,   ///< non-looping, change facing at end of animation
+        ApplyMotion, ///< non-looping, apply root motion continuously
+        FixedMotion, ///< non-looping, apply root motion at end of animation
         Manual       ///< used by the editor
     };
 
@@ -48,56 +73,38 @@ public: //====================================================//
     {
         sq::Armature::Animation anim;
         AnimMode mode;
-    };
-
-    struct Transition
-    {
-        State newState;
-        uint fadeFrames;
-        const Animation* animation;
-        const Animation* loop;
+        String key;
     };
 
     //--------------------------------------------------------//
 
     struct Stats
     {
-        float walk_speed     = 1.f;
-        float dash_speed     = 1.f;
-        float air_speed      = 1.f;
-        float traction       = 1.f;
-        float air_mobility   = 1.f;
-        float air_friction   = 1.f;
-        float hop_height     = 1.f;
-        float jump_height    = 1.f;
-        float air_hop_height = 1.f;
-        float gravity        = 1.f;
-        float fall_speed     = 1.f;
-        float weight         = 1.f;
+        float walk_speed        = 1.f;
+        float dash_speed        = 1.f;
+        float air_speed         = 1.f;
+        float traction          = 1.f;
+        float air_mobility      = 1.f;
+        float air_friction      = 1.f;
+        float hop_height        = 1.f;
+        float jump_height       = 1.f;
+        float air_hop_height    = 1.f;
+        float ledge_jump_height = 1.f;
+        float gravity           = 1.f;
+        float fall_speed        = 1.f;
+        float weight            = 1.f;
 
-        uint dodge_finish     = 22u;
-        uint dodge_safe_start = 2u;
-        uint dodge_safe_end   = 14u;
+        uint extra_jumps = 2u;
 
-        uint evade_back_finish     = 24u;
-        uint evade_back_safe_start = 3u;
-        uint evade_back_safe_end   = 13u;
+        uint dash_start_time  = 12u;
+        uint dash_brake_time  = 12u;
+        uint dash_turn_time   = 14u;
+        uint ledge_climb_time = 34u;
 
-        uint evade_forward_finish     = 24u;
-        uint evade_forward_safe_start = 3u;
-        uint evade_forward_safe_end   = 13u;
-
-        uint air_dodge_finish     = 26u;
-        uint air_dodge_safe_start = 2u;
-        uint air_dodge_safe_end   = 22u;
-
-        uint ledge_climb_finish = 34u;
+        uint land_heavy_min_time = 4u;
 
         float anim_walk_stride = 2.f;
         float anim_dash_stride = 3.f;
-
-        //float anim_evade_distance       = 2.f;
-        //float anim_ledge_climb_distance = 0.5f;
     };
 
     //--------------------------------------------------------//
@@ -105,7 +112,6 @@ public: //====================================================//
     struct Status
     {
         bool intangible = false;
-        uint timeSinceLedge = 0u;
         float damage = 0.f;
         float shield = 0.f;
         struct Ledge* ledge = nullptr;
@@ -136,8 +142,6 @@ public: //====================================================//
 
     Array<UniquePtr<Action>, sq::enum_count_v<ActionType>> actions;
 
-    std::unordered_map<SmallString, Animation> animations;
-
     sq::PoolMap<TinyString, HurtBlob> hurtBlobs;
 
     LocalDiamond diamond;
@@ -147,7 +151,7 @@ public: //====================================================//
     struct {
 
         State state = State::Neutral;
-        Facing facing = Facing::Right;
+        int8_t facing = +1;
 
         Action* action = nullptr;
 
@@ -159,16 +163,12 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    // temporary, for debug
-
     void set_controller(Controller* controller);
     Controller* get_controller();
 
     //--------------------------------------------------------//
 
     Action* get_action(ActionType type);
-
-    //Animation* get_animation(AnimationType type);
 
     //--------------------------------------------------------//
 
@@ -198,11 +198,22 @@ public: //====================================================//
     /// Compute interpolated armature pose matrices.
     void interpolate_bone_matrices(float blend, Mat34F* out, size_t len) const;
 
-    //-- interface used by ActionFuncs -----------------------//
+    //-- lua properties and methods --------------------------//
 
-    Vec2F& edit_position();
+    bool lua_get_intangible() const { return status.intangible; }
+    void lua_set_intangible(bool value) { status.intangible = value; }
 
-    Vec2F& edit_velocity();
+    float lua_get_velocity_x() const { return mVelocity.x; }
+    void lua_set_velocity_x(float value) { mVelocity.x = value; }
+
+    float lua_get_velocity_y() const { return mVelocity.y; }
+    void lua_set_velocity_y(float value) { mVelocity.y = value; }
+
+    void lua_func_change_facing();
+
+    //-- debug stuff -----------------------------------------//
+
+    Vector<Mat4F> debug_get_skeleton_mats() const;
 
 protected: //=================================================//
 
@@ -219,7 +230,17 @@ protected: //=================================================//
 
     void base_tick_fighter();
 
-    void base_tick_animation();
+    //--------------------------------------------------------//
+
+    Array<Vector<Command>, 8u> mCommands;
+
+    bool consume_command(Command cmd);
+
+    bool consume_command_oldest(InitList<Command> cmds);
+
+    bool consume_command_facing(Command leftCmd, Command rightCmd);
+
+    bool consume_command_oldest_facing(InitList<Command> leftCmds, InitList<Command> rightCmds);
 
 private: //===================================================//
 
@@ -234,11 +255,11 @@ private: //===================================================//
 
 public: //== debug and editor interfaces =====================//
 
-    void debug_show_fighter_widget();
-
     void debug_reload_actions();
 
     PrivateFighter* editor_get_private() { return impl.get(); }
+
+    friend struct DebugGui;
 };
 
 //============================================================================//
@@ -248,9 +269,40 @@ public: //== debug and editor interfaces =====================//
 //============================================================================//
 
 SQEE_ENUM_HELPER(sts::Fighter::State,
-                 Neutral, Walking, Dashing, Brake, Crouch,
-                 Charge, Attack, Special, Landing, PreJump, Jumping,
-                 Falling, AirAttack, AirSpecial, Knocked, Stunned,
-                 Shield, Dodge, EvadeBack, EvadeForward, AirDodge,
-                 LedgeHang, LedgeClimb,
+                 Neutral,
+                 Walking,
+                 Dashing,
+                 Brake,
+                 Crouch,
+                 Charge,
+                 Action,
+                 AirAction,
+                 Landing,
+                 PreJump,
+                 Jumping,
+                 Helpless,
+                 Knocked,
+                 Stunned,
+                 Shield,
+                 LedgeHang,
+                 LedgeClimb,
                  EditorPreview)
+
+SQEE_ENUM_HELPER(sts::Fighter::Command,
+                 Shield,
+                 Jump,
+                 MashDown,
+                 MashUp,
+                 MashLeft,
+                 MashRight,
+                 TurnLeft,
+                 TurnRight,
+                 SmashDown,
+                 SmashUp,
+                 SmashLeft,
+                 SmashRight,
+                 AttackDown,
+                 AttackUp,
+                 AttackLeft,
+                 AttackRight,
+                 AttackNeutral)

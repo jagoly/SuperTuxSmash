@@ -12,7 +12,7 @@
 
 #include "render/DebugRender.hpp"
 
-#include "game/ActionBuilder.hpp"
+#include "main/DebugGui.hpp"
 
 #include <sqee/macros.hpp>
 #include <sqee/app/GuiWidgets.hpp>
@@ -28,6 +28,15 @@ GameScene::GameScene(SmashApp& smashApp, GameSetup setup)
     mFightersWidget.func = [this]() { impl_show_fighters_window(); };
 
     mSmashApp.get_window().set_key_repeat(false);
+
+    // todo: these "globals" are dumb and not really needed, clean it up
+
+    smashApp.get_globals().renderHitBlobs = false;
+    smashApp.get_globals().renderHurtBlobs = false;
+    smashApp.get_globals().renderDiamonds = false;
+    smashApp.get_globals().renderSkeletons = false;
+
+    smashApp.get_globals().editorMode = false;
 
     //--------------------------------------------------------//
 
@@ -128,6 +137,12 @@ void GameScene::handle_event(sq::Event event)
     {
         if (event.data.keyboard.key == sq::Keyboard_Key::F1)
             mGamePaused = !mGamePaused;
+
+        if (mGamePaused == true)
+        {
+            if (event.data.keyboard.key == sq::Keyboard_Key::F2)
+                mFightWorld->tick();
+        }
     }
 }
 
@@ -156,14 +171,19 @@ void GameScene::render(double elapsed)
 
     auto& debugRenderer = mRenderer->get_debug_renderer();
 
-    if (mSmashApp.get_globals().renderBlobs == true)
-    {
+    if (mSmashApp.get_globals().renderHitBlobs == true)
         debugRenderer.render_hit_blobs(mFightWorld->get_hit_blobs());
+
+    if (mSmashApp.get_globals().renderHurtBlobs == true)
         debugRenderer.render_hurt_blobs(mFightWorld->get_hurt_blobs());
 
+    if (mSmashApp.get_globals().renderDiamonds == true)
         for (const auto fighter : mFightWorld->get_fighters())
             debugRenderer.render_diamond(fighter->get_position(), fighter->diamond);
-    }
+
+    if (mSmashApp.get_globals().renderSkeletons == true)
+        for (const auto fighter : mFightWorld->get_fighters())
+            debugRenderer.render_skeleton(*fighter);
 
     mRenderer->finish_rendering();
 }
@@ -172,7 +192,8 @@ void GameScene::render(double elapsed)
 
 void GameScene::impl_show_general_window()
 {
-    const ImGuiWindowFlags flags = ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove;
+    const ImGuiWindowFlags flags = ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize |
+                                   ImGuiWindowFlags_NoMove | ImGuiWindowFlags_MenuBar;
     ImGui::SetNextWindowSizeConstraints({300, 0}, {300, 200});
     ImGui::SetNextWindowPos({20, 20});
 
@@ -180,6 +201,8 @@ void GameScene::impl_show_general_window()
     if (window.show == false) return;
 
     //--------------------------------------------------------//
+
+    auto& globals = mSmashApp.get_globals();
 
     if (ImGui::Button("reload actions"))
     {
@@ -203,17 +226,35 @@ void GameScene::impl_show_general_window()
     }
     ImPlus::HoverTooltip("cycle the controllers");
 
-    ImGui::Checkbox("disable input", &mSmashApp.get_globals().disableInput);
-    ImGui::SameLine();
-    ImGui::Checkbox("render blobs", &mSmashApp.get_globals().renderBlobs);
+    ImGui::Checkbox("disable input", &globals.disableInput);
+    ImPlus::HoverTooltip("disable game input completely");
 
-    ImPlus::RadioButton("0.125×", mTickTime, 1.0 / 6.0);
-    ImGui::SameLine();
-    ImPlus::RadioButton("0.5×", mTickTime, 1.0 / 24.0);
-    ImGui::SameLine();
-    ImPlus::RadioButton("1×", mTickTime, 1.0 / 48.0);
-    ImGui::SameLine();
-    ImPlus::RadioButton("2×", mTickTime, 1.0 / 96.0);
+    ImPlus::if_MenuBar([&]()
+    {
+        ImPlus::if_Menu("render...", true, [&]()
+        {
+           ImPlus::Checkbox("hit blobs", &globals.renderHitBlobs);
+           ImPlus::Checkbox("hurt blobs", &globals.renderHurtBlobs);
+           ImPlus::Checkbox("diamonds", &globals.renderDiamonds);
+           ImPlus::Checkbox("skeletons", &globals.renderSkeletons);
+        });
+        ImPlus::HoverTooltip("change debug rendering");
+
+        ImPlus::if_Menu("speed...", true, [&]()
+        {
+            ImPlus::RadioButton("0.03125×", mTickTime, 1.0 / 1.5);
+            ImPlus::RadioButton("0.125×", mTickTime, 1.0 / 6.0);
+            ImPlus::RadioButton("0.5×", mTickTime, 1.0 / 24.0);
+            ImPlus::RadioButton("1×", mTickTime, 1.0 / 48.0);
+            ImPlus::RadioButton("2×", mTickTime, 1.0 / 96.0);
+        });
+        ImPlus::HoverTooltip("change game speed");
+    });
+
+    float& zoomRef = static_cast<StandardCamera&>(mRenderer->get_camera()).zoomOut;
+    ImGui::SetNextItemWidth(-1.f);
+    ImPlus::SliderValue("##zoom", zoomRef, -1.f, 8.f, "zoom: %.2f");
+    zoomRef = std::round(zoomRef * 2.f) * 0.5f;
 }
 
 //============================================================================//
@@ -221,15 +262,15 @@ void GameScene::impl_show_general_window()
 void GameScene::impl_show_fighters_window()
 {
     const ImGuiWindowFlags flags = ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove;
-    ImGui::SetNextWindowSizeConstraints({380, 0}, {380, ImPlus::FromScreenBottom(20+20)});
-    ImGui::SetNextWindowPos({ImPlus::FromScreenRight(380+20), 20});
+    ImGui::SetNextWindowSizeConstraints({420, 0}, {420, ImPlus::FromScreenBottom(20+20)});
+    ImGui::SetNextWindowPos({ImPlus::FromScreenRight(420+20), 20});
 
     if (ImGui::Begin("Fighter Debug", nullptr, flags))
     {
         //--------------------------------------------------------//
 
         for (Fighter* fighter : mFightWorld->get_fighters())
-            fighter->debug_show_fighter_widget();
+            DebugGui::show_widget_fighter(*fighter);
     }
 
     ImGui::End();
