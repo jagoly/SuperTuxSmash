@@ -33,7 +33,7 @@ public: //====================================================//
         AttackUp,
         AttackLeft,
         AttackRight,
-        AttackNeutral
+        AttackNeutral,
     };
 
     enum class State
@@ -55,7 +55,7 @@ public: //====================================================//
         Shield,
         LedgeHang,
         LedgeClimb,
-        EditorPreview
+        EditorPreview,
     };
 
     enum class AnimMode
@@ -64,9 +64,7 @@ public: //====================================================//
         Looping,     ///< looping, without root motion
         WalkCycle,   ///< looping, update using velocity and anim_walk_stride
         DashCycle,   ///< looping, update using velocity and anim_dash_stride
-        ApplyMotion, ///< non-looping, apply root motion continuously
-        FixedMotion, ///< non-looping, apply root motion at end of animation
-        Manual       ///< used by the editor
+        ApplyMotion, ///< non-looping, extract root motion to object
     };
 
     struct Animation

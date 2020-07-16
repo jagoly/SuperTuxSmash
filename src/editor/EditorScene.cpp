@@ -223,6 +223,7 @@ void EditorScene::impl_show_widget_toolbar()
         mDoResetDockScript = true;
         mDoResetDockHurtblobs = true;
         mDoResetDockTimeline = true;
+        mDoResetDockFighter = true;
 
         const auto viewSize = ImGui::GetWindowViewport()->Size;
 

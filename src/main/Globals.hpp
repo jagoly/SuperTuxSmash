@@ -21,6 +21,9 @@ public: //====================================================//
     bool renderSkeletons = false;
 
     bool editorMode = false;
+
+    bool debugToggle1 = false;
+    bool debugToggle2 = false;
 };
 
 } // namespace sts

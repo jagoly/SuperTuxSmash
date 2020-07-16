@@ -169,23 +169,19 @@ void SmashApp::handle_event(sq::Event event)
             refresh_options();
         }
 
-        #ifdef SQEE_DEBUG
-
         if (data.keyboard.key == Key::Num_1)
         {
-            sqeeDebugToggle1 = !sqeeDebugToggle1;
-            notify(sqeeDebugToggle1, "sqeeDebugToggle1 set to ", {"false", "true"});
+            mGlobals.debugToggle1 = !mGlobals.debugToggle1;
+            notify(mGlobals.debugToggle1, "debugToggle1 set to ", {"false", "true"});
             refresh_options();
         }
 
         if (data.keyboard.key == Key::Num_2)
         {
-            sqeeDebugToggle2 = !sqeeDebugToggle2;
-            notify(sqeeDebugToggle2, "sqeeDebugToggle2 set to ", {"false", "true"});
+            mGlobals.debugToggle2 = !mGlobals.debugToggle2;
+            notify(mGlobals.debugToggle2, "debugToggle2 set to ", {"false", "true"});
             refresh_options();
         }
-
-        #endif
     }
 
     //--------------------------------------------------------//

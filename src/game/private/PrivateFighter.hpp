@@ -169,6 +169,7 @@ private: //===================================================//
     Vec3F mPrevRootMotionOffset = Vec3F();
 
     sq::Armature::Pose mFadeStartPose;
+    QuatF mFadeStartRotation;
 
     uint mFadeProgress = 0u;
     uint mFadeFrames = 0u;

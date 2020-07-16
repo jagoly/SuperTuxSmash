@@ -92,7 +92,7 @@ void PrivateFighter::initialise_armature(const String& path)
 
     animations.LedgeCatch = load_anim("LedgeCatch", AnimMode::Standard);
     animations.LedgeLoop = load_anim("LedgeLoop", AnimMode::Looping);
-    animations.LedgeClimb = load_anim("LedgeClimb", AnimMode::FixedMotion);
+    animations.LedgeClimb = load_anim("LedgeClimb", AnimMode::ApplyMotion);
     animations.LedgeJump = load_anim("LedgeJump", AnimMode::Standard);
 
     animations.EvadeBack = load_anim("EvadeBack", AnimMode::ApplyMotion);
@@ -218,7 +218,7 @@ void PrivateFighter::state_transition(State newState, uint fadeNow, const Animat
 {
     SQASSERT(fadeNow == 0u || animNow != nullptr, "");
     SQASSERT(fadeAfter == 0u || animAfter != nullptr, "");
-    SQASSERT(animNow != nullptr || animAfter != nullptr, "");
+    SQASSERT(newState == State::EditorPreview || animNow != nullptr || animAfter != nullptr, "");
 
     fighter.current.state = newState;
     mStateProgress = 0u;
@@ -238,6 +238,7 @@ void PrivateFighter::state_transition(State newState, uint fadeNow, const Animat
 
             mFadeProgress = 0u;
             mFadeStartPose = current.pose;
+            mFadeStartRotation = current.rotation;
 
             mAnimChangeFacing = false;
         }
@@ -445,6 +446,12 @@ void PrivateFighter::update_transitions(const Controller::Input& input)
         mJumpHeld = true;
     };
 
+    const auto do_animated_facing_change = [&]()
+    {
+        mAnimChangeFacing = true;
+        facing = -facing;
+    };
+
     //--------------------------------------------------------//
 
     // This is the heart of the fighter state machine. Each tick this should do
@@ -488,8 +495,7 @@ void PrivateFighter::update_transitions(const Controller::Input& input)
         else if (fighter.consume_command_facing(Command::TurnRight, Command::TurnLeft))
         {
             state_transition(State::Neutral, 0u, &animations.Turn, 0u, &animations.NeutralLoop);
-            mAnimChangeFacing = true;
-            facing = -facing;
+            do_animated_facing_change();
         }
 
         else if (input.norm_axis.x == int8_t(facing))
@@ -606,16 +612,17 @@ void PrivateFighter::update_transitions(const Controller::Input& input)
             if (fighter.consume_command_facing(Command::TurnRight, Command::TurnLeft))
             {
                 state_transition(State::Brake, 0u, &animations.TurnDash, 0u, nullptr);
-                mAnimChangeFacing = true;
-                facing = -facing;
+                do_animated_facing_change();
             }
 
             else if (mStateProgress == stats.dash_brake_time)
                 state_transition(State::Neutral, 0u, nullptr, 0u, &animations.NeutralLoop);
         }
 
-        else if (mStateProgress == stats.dash_turn_time) // mAnimation == &animations.TurnDash
+        else if (mStateProgress == stats.dash_turn_time)
         {
+            SQASSERT(mAnimation == &animations.TurnDash, "");
+
             if (input.int_axis.x == int8_t(facing) * 2)
                 state_transition(State::Dashing, 0u, nullptr, 0u, &animations.DashingLoop);
             else
@@ -715,8 +722,7 @@ void PrivateFighter::update_transitions(const Controller::Input& input)
         else if (fighter.consume_command_facing(Command::MashLeft, Command::MashRight))
         {
             switch_action(ActionType::EvadeForward);
-            mAnimChangeFacing = true;
-            facing = -facing;
+            do_animated_facing_change();
         }
 
         else if (fighter.consume_command_facing(Command::MashRight, Command::MashLeft))
@@ -1067,15 +1073,16 @@ void PrivateFighter::base_tick_fighter()
 
     //--------------------------------------------------------//
 
+    const int8_t rotFacing = fighter.current.facing * (mAnimChangeFacing ? -1 : +1);
+    const float rotY = fighter.current.state == State::EditorPreview ? 0.5f : 0.25f * float(rotFacing);
+
+    current.rotation = QuatF(0.f, rotY, 0.f);
+
     update_animation();
 
-    const Vec3F position ( current.position, 0.f );
-    const float rotY = fighter.current.state == State::EditorPreview ? 0.5f : 0.25f * float(fighter.current.facing);
-    const QuatF rotation = QuatF(0.f, rotY, 0.f);
+    armature.compute_ubo_data(current.pose, fighter.mBoneMatrices.data(), fighter.mBoneMatrices.size());
 
-    current.rotation = current.rotation * rotation;
-
-    fighter.mModelMatrix = maths::transform(position, rotation, Vec3F(1.f));
+    fighter.mModelMatrix = maths::transform(Vec3F(current.position, 0.f), current.rotation, Vec3F(1.f));
 }
 
 //============================================================================//
@@ -1092,34 +1099,15 @@ void PrivateFighter::update_animation()
 
     //--------------------------------------------------------//
 
+    // todo: calculate this once when we load the armature
+    const QuatF rootInverseRestRotation = maths::inverse(armature.get_rest_pose().front().rotation);
+
     // helper to get the current pose of the root bone
     const auto root = [&]() -> sq::Armature::Bone& { return current.pose.front(); };
-
-    const auto set_current_pose_discrete = [&](const Animation& anim, uint time)
-    {
-        current.pose = armature.compute_pose_discrete(anim.anim, time);
-        sq::log_info("pose: %s - %d", anim.key, time);
-        mPreviousAnimation = &anim;
-        mPreviousAnimTimeDiscrete = time;
-    };
-
-    const auto set_current_pose_continuous = [&](const Animation& anim, float time)
-    {
-        current.pose = armature.compute_pose_continuous(anim.anim, time);
-        sq::log_info("pose: %s - %.4f", anim.key, time);
-        mPreviousAnimation = &anim;
-        mPreviousAnimTimeContinuous = time;
-    };
 
     // called when mAnimation finishes for non-looping animations
     const auto finish_animation = [&]()
     {
-        if (mAnimChangeFacing == true)
-        {
-            root().rotation = QuatF(0.f, 0.5f, 0.f) * root().rotation;
-            mAnimChangeFacing = false;
-        }
-
         mAnimation = mNextAnimation;
         mNextAnimation = nullptr;
 
@@ -1127,7 +1115,37 @@ void PrivateFighter::update_animation()
         mAnimTimeContinuous = 0.f;
 
         mFadeProgress = 0u;
+
         mFadeStartPose = current.pose;
+        mFadeStartRotation = current.rotation;
+
+        mAnimChangeFacing = false;
+    };
+
+    //--------------------------------------------------------//
+
+    const auto set_current_pose_discrete = [&](const Animation& anim, uint time)
+    {
+        current.pose = armature.compute_pose_discrete(anim.anim, time);
+        current.rotation = root().rotation * rootInverseRestRotation * current.rotation;
+        root().rotation = armature.get_rest_pose().front().rotation;
+
+        sq::log_info("pose: %s - %d", anim.key, time);
+
+        mPreviousAnimation = &anim;
+        mPreviousAnimTimeDiscrete = time;
+    };
+
+    const auto set_current_pose_continuous = [&](const Animation& anim, float time)
+    {
+        current.pose = armature.compute_pose_continuous(anim.anim, time);
+        current.rotation = root().rotation * rootInverseRestRotation * current.rotation;
+        root().rotation = armature.get_rest_pose().front().rotation;
+
+        sq::log_info("pose: %s - %.4f", anim.key, time);
+
+        mPreviousAnimation = &anim;
+        mPreviousAnimTimeContinuous = time;
     };
 
     //--------------------------------------------------------//
@@ -1208,36 +1226,8 @@ void PrivateFighter::update_animation()
                 finish_animation();
         }
 
-        CASE (FixedMotion) //=====================================//
-        {
-            SQASSERT(mAnimation->anim.looping() == false, "");
-
-            set_current_pose_discrete(*mAnimation, mAnimTimeDiscrete);
-
-            if (++mAnimTimeDiscrete == mAnimation->anim.totalTime)
-            {
-                const Vec3F offsetLocal = current.pose.front().offset;
-
-                fighter.mTranslate = { mAnimChangeFacing ? -offsetLocal.z : offsetLocal.z, offsetLocal.x };
-                fighter.mTranslate.x *= float(fighter.current.facing);
-
-                finish_animation();
-            }
-        }
-
-        CASE (Manual) //==========================================//
-        {
-            current.pose = mAnimation->anim.poses.back();
-        }
-
         } SWITCH_END;
     }
-
-    //--------------------------------------------------------//
-
-    // todo: facing changes are still a bit wonky when blending happens
-    if (mAnimChangeFacing == true)
-        root().rotation = QuatF(0.f, 0.5f, 0.f) * root().rotation;
 
     //-- blend from fade pose for smooth transitions ---------//
 
@@ -1245,21 +1235,16 @@ void PrivateFighter::update_animation()
     {
         const float blend = float(++mFadeProgress) / float(mFadeFrames + 1u);
         current.pose = armature.blend_poses(mFadeStartPose, current.pose, blend);
+        current.rotation = maths::slerp(mFadeStartRotation, current.rotation, blend);
         sq::log_info("blend - %d / %d - %.3f", mFadeProgress, mFadeFrames, blend);
     }
     else mFadeProgress = mFadeFrames = 0u;
+
+    //-- if an animation just finished, update fadeFrames ----//
 
     if (mNextAnimation == nullptr && mNextFadeFrames != 0u)
     {
         mFadeFrames = mNextFadeFrames;
         mNextFadeFrames = 0u;
     }
-
-    //-- extract rotation from pose --------------------------//
-
-    // todo: store inverse rest rotation to save some time
-    current.rotation = root().rotation * maths::inverse(armature.get_rest_pose().front().rotation);
-    root().rotation = armature.get_rest_pose().front().rotation;
-
-    armature.compute_ubo_data(current.pose, fighter.mBoneMatrices.data(), fighter.mBoneMatrices.size());
 }

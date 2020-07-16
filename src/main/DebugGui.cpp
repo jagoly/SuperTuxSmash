@@ -24,13 +24,18 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
         const ImPlus::ScopeFont font = ImPlus::FONT_MONO;
 
         ImPlus::Text("Position: %s"_fmt_(fighter.impl->current.position));
+        ImPlus::HoverTooltip("Previous: %s"_fmt_(fighter.impl->previous.position));
         ImPlus::Text("Rotation: %s"_fmt_(fighter.impl->current.rotation)); // todo: this line is too long
+        ImPlus::HoverTooltip("Previous: %s"_fmt_(fighter.impl->previous.rotation));
+
+        ImPlus::Text("state: %s"_fmt_(fighter.current.state));
+        ImPlus::HoverTooltip("Previous: %s"_fmt_(fighter.previous.state));
+        ImPlus::Text("facing: %d"_fmt_(fighter.current.facing));
+        ImPlus::HoverTooltip("Previous: %d"_fmt_(fighter.previous.facing));
+
         ImPlus::Text("Velocity: %s"_fmt_(fighter.mVelocity));
         ImPlus::Text("Translate: %s"_fmt_(fighter.mTranslate));
         ImPlus::Text("Damage: %0.f%%"_fmt_(fighter.status.damage));
-
-        ImPlus::Text("state: %s"_fmt_(fighter.current.state));
-        ImPlus::Text("facing: %d"_fmt_(fighter.current.facing));
 
         const char* const animation = [&]() {
             if (fighter.impl->mAnimation) return fighter.impl->mAnimation->key.c_str();
