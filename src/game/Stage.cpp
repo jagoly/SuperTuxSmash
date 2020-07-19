@@ -248,7 +248,7 @@ Ledge* Stage::find_ledge(Vec2F position, int8_t direction)
 
 void Stage::check_boundary(Fighter& fighter)
 {
-    const Vec2F centre = fighter.get_position() + fighter.diamond.cross();
+    const Vec2F centre = fighter.get_position() + fighter.get_diamond().cross();
 
     if ( centre.x < mOuterBoundary.min.x || centre.x > mOuterBoundary.max.x ||
          centre.y < mOuterBoundary.min.y || centre.y > mOuterBoundary.max.y )

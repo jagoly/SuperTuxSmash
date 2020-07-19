@@ -5,10 +5,7 @@ using namespace sts;
 //============================================================================//
 
 Sara_Fighter::Sara_Fighter(uint8_t index, FightWorld& world)
-    : Fighter(index, world, FighterEnum::Sara)
-{
-    diamond = LocalDiamond(0.3f, 1.4f, 0.8f);
-}
+    : Fighter(index, world, FighterEnum::Sara) {}
 
 //============================================================================//
 
@@ -40,13 +37,13 @@ void Sara_Fighter::tick()
 
     emitter.sprite = "Smoke";
 
-    auto& partilcles = mFightWorld.get_particle_system();
+    auto& partilcles = world.get_particle_system();
 
-    if (current.state == State::Landing && previous.state != State::Landing)
+    /*if (current.state == State::Landing && previous.state != State::Landing)
     {
         emitter.emitPosition.z = -0.2f;
         emitter.generate(partilcles, 20u);
         emitter.emitPosition.z = +0.2f;
         emitter.generate(partilcles, 20u);
-    }
+    }*/
 }

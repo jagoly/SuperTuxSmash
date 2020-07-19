@@ -12,8 +12,6 @@
 
 #include "render/DebugRender.hpp"
 
-#include "game/private/PrivateFighter.hpp"
-
 #include "main/DebugGui.hpp"
 
 #include <sqee/macros.hpp>
@@ -558,7 +556,6 @@ void EditorScene::create_base_context(FighterEnum fighterKey, BaseContext& ctx)
 
     ctx.fighter = fighter.get();
     ctx.renderFighter = renderFighter.get();
-    ctx.privateFighter = fighter->impl.get();
 
     ctx.world->set_stage(std::move(stage));
     ctx.renderer->add_object(std::move(renderStage));
@@ -585,7 +582,7 @@ EditorScene::ActionContext& EditorScene::get_action_context(ActionKey key)
     ctx.savedData = ctx.fighter->get_action(key.action)->clone();
     ctx.undoStack.push_back(ctx.fighter->get_action(key.action)->clone());
 
-    const auto& anims = ctx.privateFighter->animations;
+    const Fighter::Animations& anims = ctx.fighter->mAnimations;
 
     SWITCH (key.action) {
 
@@ -644,11 +641,11 @@ EditorScene::HurtblobsContext& EditorScene::get_hurtblobs_context(FighterEnum ke
 
     ctx.key = key;
 
-    ctx.privateFighter->state_transition(Fighter::State::EditorPreview, 0u, nullptr, 0u, nullptr);
+    ctx.fighter->state_transition(Fighter::State::EditorPreview, 0u, nullptr, 0u, nullptr);
     ctx.world->tick();
 
-    ctx.savedData = std::make_unique<decltype(Fighter::hurtBlobs)>(ctx.fighter->hurtBlobs);
-    ctx.undoStack.push_back(std::make_unique<decltype(Fighter::hurtBlobs)>(ctx.fighter->hurtBlobs));
+    ctx.savedData = std::make_unique<decltype(Fighter::mHurtBlobs)>(ctx.fighter->mHurtBlobs);
+    ctx.undoStack.push_back(std::make_unique<decltype(Fighter::mHurtBlobs)>(ctx.fighter->mHurtBlobs));
 
     return ctx;
 }
@@ -675,19 +672,19 @@ void EditorScene::apply_working_changes(ActionContext& ctx)
 
 void EditorScene::apply_working_changes(HurtblobsContext& ctx)
 {
-    if (ctx.fighter->hurtBlobs != *ctx.undoStack[ctx.undoIndex])
+    if (ctx.fighter->mHurtBlobs != *ctx.undoStack[ctx.undoIndex])
     {
         ctx.world->editor_disable_all_hurtblobs();
-        for (auto& [key, blob] : ctx.fighter->hurtBlobs)
+        for (auto& [key, blob] : ctx.fighter->mHurtBlobs)
             if (ctx.hiddenKeys.find(key) == ctx.hiddenKeys.end())
                 ctx.world->enable_hurt_blob(&blob);
 
         ctx.world->tick();
 
         ctx.undoStack.erase(ctx.undoStack.begin() + ++ctx.undoIndex, ctx.undoStack.end());
-        ctx.undoStack.push_back(std::make_unique<decltype(Fighter::hurtBlobs)>(ctx.fighter->hurtBlobs));
+        ctx.undoStack.push_back(std::make_unique<decltype(Fighter::mHurtBlobs)>(ctx.fighter->mHurtBlobs));
 
-        ctx.modified = ctx.fighter->hurtBlobs != *ctx.savedData;
+        ctx.modified = ctx.fighter->mHurtBlobs != *ctx.savedData;
     }
 }
 
@@ -720,16 +717,16 @@ void EditorScene::do_undo_redo(HurtblobsContext &ctx, bool redo)
 
     if (ctx.undoIndex != oldIndex)
     {
-        ctx.fighter->hurtBlobs = *ctx.undoStack[ctx.undoIndex];
+        ctx.fighter->mHurtBlobs = *ctx.undoStack[ctx.undoIndex];
 
         ctx.world->editor_disable_all_hurtblobs();
-        for (auto& [key, blob] : ctx.fighter->hurtBlobs)
+        for (auto& [key, blob] : ctx.fighter->mHurtBlobs)
             if (ctx.hiddenKeys.find(key) == ctx.hiddenKeys.end())
                 ctx.world->enable_hurt_blob(&blob);
 
         ctx.world->tick();
 
-        ctx.modified = ctx.fighter->hurtBlobs != *ctx.savedData;
+        ctx.modified = ctx.fighter->mHurtBlobs != *ctx.savedData;
     }
 }
 
@@ -760,12 +757,12 @@ void EditorScene::save_changes(ActionContext& ctx)
 void EditorScene::save_changes(HurtblobsContext& ctx)
 {
     JsonValue json;
-    for (const auto& [key, blob] : ctx.fighter->hurtBlobs)
+    for (const auto& [key, blob] : ctx.fighter->mHurtBlobs)
         blob.to_json(json[key]);
 
     sq::save_string_to_file("assets/fighters/%s/HurtBlobs.json"_fmt_(ctx.fighter->type), json.dump(2));
 
-    *ctx.savedData = ctx.fighter->hurtBlobs;
+    *ctx.savedData = ctx.fighter->mHurtBlobs;
     ctx.modified = false;
 }
 
@@ -778,29 +775,30 @@ void EditorScene::scrub_to_frame(ActionContext& ctx, int frame)
     ParticleEmitter::reset_random_seed(mRandomSeed);
     ctx.world->get_particle_system().clear();
 
-    if (ctx.fighter->current.action != nullptr)
-        ctx.privateFighter->switch_action(ActionType::None);
+    if (ctx.fighter->mActiveAction != nullptr)
+        ctx.fighter->switch_action(ActionType::None);
 
-    ctx.privateFighter->state_transition(Fighter::State::Neutral, 0u, &ctx.privateFighter->animations.NeutralLoop, 0u, nullptr);
-
-    ctx.privateFighter->current.position = Vec2F();
-    ctx.privateFighter->current.rotation = QuatF();
-    ctx.fighter->current.facing = +1;
-    ctx.fighter->mVelocity = Vec2F();
+    ctx.fighter->previous = ctx.fighter->current = Fighter::InterpolationData();
+    ctx.fighter->status = Fighter::Status();
     ctx.fighter->mTranslate = Vec2F();
 
+    // todo: need special handling for air actions
+    ctx.fighter->state_transition(Fighter::State::Neutral, 0u, &ctx.fighter->mAnimations.NeutralLoop, 0u, nullptr);
+
+    // need to tick twice so that fighter.previous has valid values
+    ctx.world->tick();
     ctx.world->tick();
 
     // start the action and scrub to the frame
 
-    ctx.privateFighter->switch_action(ctx.key.action);
+    ctx.fighter->switch_action(ctx.key.action);
 
     for (ctx.currentFrame = -1; ctx.currentFrame < frame;)
         tick_action_context(ctx);
 
-    SQASSERT(ctx.fighter->current.action == nullptr ||
-             int(ctx.fighter->current.action->mCurrentFrame)-1 == ctx.currentFrame,
-             "out of sync: %d | %d"_fmt_(int(ctx.fighter->current.action->mCurrentFrame)-1, ctx.currentFrame));
+    SQASSERT(ctx.fighter->mActiveAction == nullptr ||
+             int(ctx.fighter->mActiveAction->mCurrentFrame)-1 == ctx.currentFrame,
+             "out of sync: %d | %d"_fmt_(int(ctx.fighter->mActiveAction->mCurrentFrame)-1, ctx.currentFrame));
 }
 
 void EditorScene::scrub_to_frame_current(ActionContext& ctx)

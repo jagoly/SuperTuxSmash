@@ -44,7 +44,7 @@ void EditorScene::impl_show_widget_hurtblobs()
         TinyString newKey;
         if (ImGui::InputText("", newKey.data(), sizeof(TinyString), ImGuiInputTextFlags_EnterReturnsTrue))
         {
-            if (const auto [iter, ok] = fighter.hurtBlobs.try_emplace(newKey); ok)
+            if (const auto [iter, ok] = fighter.mHurtBlobs.try_emplace(newKey); ok)
             {
                 HurtBlob& blob = iter->second;
                 blob.fighter = &fighter;
@@ -63,8 +63,8 @@ void EditorScene::impl_show_widget_hurtblobs()
     //--------------------------------------------------------//
 
     // c++20: lambda capture structured bindings
-    //for (auto& [key, blob] : fighter.hurtBlobs)
-    for (auto& item : fighter.hurtBlobs)
+    //for (auto& [key, blob] : fighter.mHurtBlobs)
+    for (auto& item : fighter.mHurtBlobs)
     {
         auto& key = item.first; auto& blob = item.second;
 
@@ -168,21 +168,21 @@ void EditorScene::impl_show_widget_hurtblobs()
 
     if (toDelete.has_value() == true)
     {
-        const auto iter = fighter.hurtBlobs.find(*toDelete);
-        SQASSERT(iter != fighter.hurtBlobs.end(), "");
-        fighter.hurtBlobs.erase(iter);
+        const auto iter = fighter.mHurtBlobs.find(*toDelete);
+        SQASSERT(iter != fighter.mHurtBlobs.end(), "");
+        fighter.mHurtBlobs.erase(iter);
         ctx.hiddenKeys.erase(*toDelete);
     }
 
     if (toRename.has_value() == true)
     {
-        const auto iter = fighter.hurtBlobs.find(toRename->first);
-        SQASSERT(iter != fighter.hurtBlobs.end(), "");
-        if (fighter.hurtBlobs.find(toRename->second) == fighter.hurtBlobs.end())
+        const auto iter = fighter.mHurtBlobs.find(toRename->first);
+        SQASSERT(iter != fighter.mHurtBlobs.end(), "");
+        if (fighter.mHurtBlobs.find(toRename->second) == fighter.mHurtBlobs.end())
         {
-            auto node = fighter.hurtBlobs.extract(iter);
+            auto node = fighter.mHurtBlobs.extract(iter);
             node.key() = toRename->second;
-            fighter.hurtBlobs.insert(std::move(node));
+            fighter.mHurtBlobs.insert(std::move(node));
             if (ctx.hiddenKeys.erase(toRename->first) > 0u)
                 ctx.hiddenKeys.emplace(toRename->second);
         }
@@ -190,8 +190,8 @@ void EditorScene::impl_show_widget_hurtblobs()
 
     if (toCopy.has_value() == true)
     {
-        const auto iter = fighter.hurtBlobs.find(toCopy->first);
-        SQASSERT(iter != fighter.hurtBlobs.end(), "");
-        fighter.hurtBlobs.try_emplace(toCopy->second, iter->second);
+        const auto iter = fighter.mHurtBlobs.find(toCopy->first);
+        SQASSERT(iter != fighter.mHurtBlobs.end(), "");
+        fighter.mHurtBlobs.try_emplace(toCopy->second, iter->second);
     }
 }

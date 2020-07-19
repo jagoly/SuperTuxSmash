@@ -60,7 +60,6 @@ private: //===================================================//
 
         Fighter* fighter;
         RenderObject* renderFighter;
-        PrivateFighter* privateFighter;
     };
 
     struct ActionContext : public BaseContext
@@ -83,10 +82,10 @@ private: //===================================================//
     {
         FighterEnum key;
 
-        UniquePtr<decltype(Fighter::hurtBlobs)> savedData;
+        UniquePtr<decltype(Fighter::mHurtBlobs)> savedData;
         bool modified = false;
 
-        Vector<UniquePtr<decltype(Fighter::hurtBlobs)>> undoStack;
+        Vector<UniquePtr<decltype(Fighter::mHurtBlobs)>> undoStack;
         size_t undoIndex = 0u;
 
         std::set<TinyString> hiddenKeys;

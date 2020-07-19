@@ -16,8 +16,6 @@
 #include "game/ParticleSystem.hpp"
 #include "game/ParticleEmitter.hpp"
 
-struct WrenVM;
-
 namespace sts {
 
 //============================================================================//
@@ -140,10 +138,10 @@ public: //====================================================//
     auto get_emitter_allocator() { return mEmitterAlloc.get(); }
 
     /// Access the enabled HurtBlobs.
-    const Vector<HurtBlob*>& get_hurt_blobs() const;
+    const Vector<HurtBlob*>& get_hurt_blobs() const { return mEnabledHurtBlobs; };
 
     /// Access the enabled HitBlobs.
-    const Vector<HitBlob*>& get_hit_blobs() const;
+    const Vector<HitBlob*>& get_hit_blobs() const { return mEnabledHitBlobs; };
 
     //--------------------------------------------------------//
 
@@ -168,6 +166,10 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
+    void impl_update_collisions();
+
+    //--------------------------------------------------------//
+
     ParticleSystem mParticleSystem;
 
     sq::MessageBus mMessageBus;
@@ -178,10 +180,16 @@ private: //===================================================//
 
     Array<UniquePtr<Fighter>, 4> mFighters;
 
+    Vector<HitBlob*> mEnabledHitBlobs;
+    Vector<HurtBlob*> mEnabledHurtBlobs;
+
     //--------------------------------------------------------//
 
-    friend class PrivateWorld;
-    UniquePtr<PrivateWorld> impl;
+    Array<Array<uint32_t, 4>, 4> mHitBitsArray;
+
+    struct Collision { HitBlob* hit; HurtBlob* hurt; };
+
+    Array<Array<Vector<Collision>, 4u>, 4u> mCollisions;
 
 public: //== debug and editor interfaces =====================//
 

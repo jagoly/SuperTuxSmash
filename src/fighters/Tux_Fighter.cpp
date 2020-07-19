@@ -5,10 +5,7 @@ using namespace sts;
 //============================================================================//
 
 Tux_Fighter::Tux_Fighter(uint8_t index, FightWorld& world)
-    : Fighter(index, world, FighterEnum::Tux)
-{
-    diamond = LocalDiamond(0.4f, 1.f, 0.5f);
-}
+    : Fighter(index, world, FighterEnum::Tux) {}
 
 //============================================================================//
 

@@ -7,10 +7,7 @@ using namespace sts;
 //============================================================================//
 
 Mario_Fighter::Mario_Fighter(uint8_t index, FightWorld& world)
-    : Fighter(index, world, FighterEnum::Mario)
-{
-    diamond = LocalDiamond(0.4f, 1.4f, 0.8f);
-}
+    : Fighter(index, world, FighterEnum::Mario) {}
 
 //============================================================================//
 
@@ -40,7 +37,7 @@ void Mario_Fighter::tick()
 
     emitter.sprite = "Smoke";
 
-    auto& partilcles = mFightWorld.get_particle_system();
+    auto& partilcles = world.get_particle_system();
 
     const auto get_bone_pos = [&](const char* boneName) -> Vec3F
     {
@@ -49,23 +46,23 @@ void Mario_Fighter::tick()
         return Vec3F(matrix[3]);
     };
 
-    if (current.state == State::Landing && previous.state != State::Landing)
+    /*if (current.state == State::Landing && previous.state != State::Landing)
     {
         emitter.emitPosition = Vec3F(get_position(), 0.f);
         emitter.emitVelocity = Vec3F(get_velocity().x * 0.2f, 0.f, 0.f);
 
         emitter.generate(partilcles, 20u);
-    }
+    }*/
 
-    else if (current.state == State::Jumping && previous.state == State::PreJump)
+    /*else if (current.state == State::Jumping && previous.state == State::PreJump)
     {
         emitter.emitPosition = Vec3F(get_position() - get_velocity() / 48.f, 0.f);
         emitter.emitVelocity = Vec3F(get_velocity().x * 0.2f, 0.f, 0.f);
 
         emitter.generate(partilcles, 20u);
-    }
+    }*/
 
-    else if (current.state == State::Brake)
+    if (status.state == State::Brake)
     {
         const Vec3F leftFootPos = get_bone_pos("LFootJ");
         const Vec3F rightFootPos = get_bone_pos("RFootJ");

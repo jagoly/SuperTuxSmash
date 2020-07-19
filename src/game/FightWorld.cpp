@@ -3,9 +3,9 @@
 #include "game/Actions.hpp"
 #include "game/Fighter.hpp"
 #include "game/Stage.hpp"
-#include "game/private/PrivateWorld.hpp"
 
 #include <sqee/debug/Assert.hpp>
+#include <sqee/maths/Culling.hpp>
 #include <sqee/misc/Algorithms.hpp>
 
 namespace algo = sq::algo;
@@ -62,8 +62,6 @@ FightWorld::FightWorld(const Globals& globals)
     fighterType.set("velocity_y", sol::property(&Fighter::lua_get_velocity_y, &Fighter::lua_set_velocity_y));
 
     fighterType.set("facing", sol::readonly_property(&Fighter::lua_get_facing));
-
-    impl = std::make_unique<PrivateWorld>(*this);
 }
 
 FightWorld::~FightWorld() = default;
@@ -80,7 +78,7 @@ void FightWorld::tick()
             fighter->tick();
     }
 
-    impl->tick();
+    impl_update_collisions();
 
     for (auto& fighter : mFighters)
     {
@@ -89,6 +87,134 @@ void FightWorld::tick()
     }
 
     mParticleSystem.update_and_clean();
+}
+
+//============================================================================//
+
+void FightWorld::impl_update_collisions()
+{
+    //-- misc helper lambda functions ------------------------//
+
+    const auto check_hit_bit = [this](HitBlob* hit, HurtBlob* hurt) -> bool
+    {
+        uint32_t bits = mHitBitsArray[hit->fighter->index][hurt->fighter->index];
+        return (bits & (1u << hit->group)) != 0u;
+    };
+
+    const auto fill_hit_bit = [this](HitBlob* hit, HurtBlob* hurt) -> void
+    {
+        uint32_t& bits = mHitBitsArray[hit->fighter->index][hurt->fighter->index];
+        bits = (bits | (1u << hit->group));
+    };
+
+    //-- update world space shapes of hit and hurt blobs -----//
+
+    for (HitBlob* blob : mEnabledHitBlobs)
+    {
+        Mat4F matrix = blob->fighter->get_model_matrix();
+
+        if (blob->bone >= 0)
+        {
+            const auto& matrices = blob->fighter->get_bone_matrices();
+            const auto& boneMatrix = matrices[uint(blob->bone)];
+            matrix *= maths::transpose(Mat4F(boneMatrix));
+        }
+
+        blob->sphere.origin = Vec3F(matrix * Vec4F(blob->origin, 1.f));
+        blob->sphere.radius = blob->radius;// * matrix[0][0];
+    }
+
+    for (HurtBlob* blob : mEnabledHurtBlobs)
+    {
+        Mat4F matrix = blob->fighter->get_model_matrix();
+
+        if (blob->bone >= 0)
+        {
+            const auto& matrices = blob->fighter->get_bone_matrices();
+            const auto& boneMatrix = matrices[uint(blob->bone)];
+            matrix *= maths::transpose(Mat4F(boneMatrix));
+        }
+
+        blob->capsule.originA = Vec3F(matrix * Vec4F(blob->originA, 1.f));
+        blob->capsule.originB = Vec3F(matrix * Vec4F(blob->originB, 1.f));
+        blob->capsule.radius = blob->radius;// * matrix[0][0];
+    }
+
+
+    //-- find all collisions between hit and hurt blobs ------//
+
+    for (HitBlob* hit : mEnabledHitBlobs)
+    {
+        for (HurtBlob* hurt : mEnabledHurtBlobs)
+        {
+            // check if both blobs belong to the same fighter
+            if (hit->fighter == hurt->fighter) continue;
+
+            // check if the blobs are not intersecting
+            if (maths::intersect_sphere_capsule(hit->sphere, hurt->capsule) == -1) continue;
+
+            // check if the group has already hit the fighter
+            if (check_hit_bit(hit, hurt)) continue;
+
+            // add the collision to the appropriate vector
+            mCollisions[hit->fighter->index][hurt->fighter->index].push_back({hit, hurt});
+        }
+    }
+
+    //--------------------------------------------------------//
+
+    // the rest of this very bad, but somehow it works
+    // todo: make less suck
+
+    struct FinalResult
+    {
+        HitBlob* blob;
+        Fighter& other;
+    };
+
+    Vector<FinalResult> finalResultVec;
+
+    Array<HitBlob*, 32> bestHitBlobs {};
+    Array<HurtBlob*, 32> bestHurtBlobs {};
+
+    for (auto& collisionsArr : mCollisions)
+    {
+        for (auto& collisionsVec : collisionsArr)
+        {
+            for (auto [hit, hurt] : collisionsVec)
+            {
+                const uint8_t group = hit->group;
+
+                if ( bestHitBlobs[group] == nullptr ||
+                     hit->damage > bestHitBlobs[group]->damage )
+                {
+                    bestHitBlobs[group] = hit;
+                    bestHurtBlobs[group] = hurt;
+                }
+            }
+
+            for (uint i = 0u; i < 32u; ++i)
+            {
+                if (HitBlob* hitBlob = bestHitBlobs[i])
+                {
+                    finalResultVec.push_back({ hitBlob, *bestHurtBlobs[i]->fighter });
+
+                    fill_hit_bit(bestHitBlobs[i], bestHurtBlobs[i]);
+                }
+            }
+
+            bestHitBlobs.fill(nullptr);
+            bestHurtBlobs.fill(nullptr);
+
+            collisionsVec.clear();
+        }
+    }
+
+    for (auto& [blob, other] : finalResultVec)
+    {
+        //blob->action->on_collide(blob, other);
+        other.apply_hit_basic(*blob);
+    }
 }
 
 //============================================================================//
@@ -105,71 +231,59 @@ void FightWorld::add_fighter(UniquePtr<Fighter> fighter)
 
 //============================================================================//
 
-const Vector<HitBlob*>& FightWorld::get_hit_blobs() const
-{
-    return impl->enabledHitBlobs;
-}
-
-const Vector<HurtBlob*>& FightWorld::get_hurt_blobs() const
-{
-    return impl->enabledHurtBlobs;
-}
-
-//============================================================================//
-
 // for now these can silently fail, they may throw in the future
 
 void FightWorld::enable_hit_blob(HitBlob* blob)
 {
-    const auto iter = algo::find(impl->enabledHitBlobs, blob);
-    if (iter != impl->enabledHitBlobs.end()) return;
+    const auto iter = algo::find(mEnabledHitBlobs, blob);
+    if (iter != mEnabledHitBlobs.end()) return;
 
-    impl->enabledHitBlobs.push_back(blob);
+    mEnabledHitBlobs.push_back(blob);
 }
 
 void FightWorld::disable_hit_blob(HitBlob* blob)
 {
-    const auto iter = algo::find(impl->enabledHitBlobs, blob);
-    if (iter == impl->enabledHitBlobs.end()) return;
+    const auto iter = algo::find(mEnabledHitBlobs, blob);
+    if (iter == mEnabledHitBlobs.end()) return;
 
-    impl->enabledHitBlobs.erase(iter);
+    mEnabledHitBlobs.erase(iter);
 }
 
 void FightWorld::enable_hurt_blob(HurtBlob *blob)
 {
-    const auto iter = algo::find(impl->enabledHurtBlobs, blob);
-    if (iter != impl->enabledHurtBlobs.end()) return;
+    const auto iter = algo::find(mEnabledHurtBlobs, blob);
+    if (iter != mEnabledHurtBlobs.end()) return;
 
-    impl->enabledHurtBlobs.push_back(blob);
+    mEnabledHurtBlobs.push_back(blob);
 }
 
 void FightWorld::disable_hurt_blob(HurtBlob* blob)
 {
-    const auto iter = algo::find(impl->enabledHurtBlobs, blob);
-    if (iter == impl->enabledHurtBlobs.end()) return;
+    const auto iter = algo::find(mEnabledHurtBlobs, blob);
+    if (iter == mEnabledHurtBlobs.end()) return;
 
-    impl->enabledHurtBlobs.erase(iter);
+    mEnabledHurtBlobs.erase(iter);
 }
 
 //============================================================================//
 
 void FightWorld::reset_all_hit_blob_groups(Fighter& fighter)
 {
-    impl->hitBitsArray[fighter.index].fill(uint32_t(0u));
+    mHitBitsArray[fighter.index].fill(uint32_t(0u));
 }
 
 void FightWorld::disable_all_hit_blobs(Fighter& fighter)
 {
     const auto predicate = [&](HitBlob* blob) { return blob->fighter == &fighter; };
-    const auto end = std::remove_if(impl->enabledHitBlobs.begin(), impl->enabledHitBlobs.end(), predicate);
-    impl->enabledHitBlobs.erase(end, impl->enabledHitBlobs.end());
+    const auto end = std::remove_if(mEnabledHitBlobs.begin(), mEnabledHitBlobs.end(), predicate);
+    mEnabledHitBlobs.erase(end, mEnabledHitBlobs.end());
 }
 
 void FightWorld::disable_all_hurt_blobs(Fighter &fighter)
 {
     const auto predicate = [&](HurtBlob* blob) { return blob->fighter == &fighter; };
-    const auto end = std::remove_if(impl->enabledHurtBlobs.begin(), impl->enabledHurtBlobs.end(), predicate);
-    impl->enabledHurtBlobs.erase(end, impl->enabledHurtBlobs.end());
+    const auto end = std::remove_if(mEnabledHurtBlobs.begin(), mEnabledHurtBlobs.end(), predicate);
+    mEnabledHurtBlobs.erase(end, mEnabledHurtBlobs.end());
 }
 
 //============================================================================//
@@ -184,7 +298,7 @@ SceneData FightWorld::compute_scene_data() const
     {
         if (fighter == nullptr) continue;
 
-        const Vec2F centre = fighter->get_position() + fighter->diamond.cross();
+        const Vec2F centre = fighter->get_position() + fighter->get_diamond().cross();
 
         result.view.min = maths::min(result.view.min, centre);
         result.view.max = maths::max(result.view.max, centre);
@@ -203,5 +317,5 @@ SceneData FightWorld::compute_scene_data() const
 
 void FightWorld::editor_disable_all_hurtblobs()
 {
-    impl->enabledHurtBlobs.clear();
+    mEnabledHurtBlobs.clear();
 }

@@ -94,9 +94,9 @@ void DebugRenderer::render_hit_blobs(const Vector<HitBlob*>& blobs)
 
         mSphereMesh.draw_complete();
 
-        const float angleA = maths::radians(blob->knockAngle * float(blob->fighter->current.facing));
-        const float angleB = maths::radians((blob->knockAngle + 0.0625f) * float(blob->fighter->current.facing));
-        const float angleC = maths::radians((blob->knockAngle - 0.0625f) * float(blob->fighter->current.facing));
+        const float angleA = maths::radians(blob->knockAngle * float(blob->fighter->status.facing));
+        const float angleB = maths::radians((blob->knockAngle + 0.0625f) * float(blob->fighter->status.facing));
+        const float angleC = maths::radians((blob->knockAngle - 0.0625f) * float(blob->fighter->status.facing));
         const Vec3F offsetA = Vec3F(std::sin(angleA), std::cos(angleA), 0.f) * s.radius;
         const Vec3F offsetB = Vec3F(std::sin(angleB), std::cos(angleB), 0.f) * s.radius * 0.75f;
         const Vec3F offsetC = Vec3F(std::sin(angleC), std::cos(angleC), 0.f) * s.radius * 0.75f;
@@ -202,12 +202,12 @@ void DebugRenderer::render_diamond(const Fighter& fighter)
 
     //--------------------------------------------------------//
 
-    const Vec3F translate = Vec3F(fighter.get_position() + Vec2F(0.f, fighter.diamond.offsetCross), 0.f);
-    const float scaleBottom = fighter.diamond.offsetCross;
-    const float scaleTop = fighter.diamond.offsetTop - fighter.diamond.offsetCross;
+    const Vec3F translate = Vec3F(fighter.get_position() + Vec2F(0.f, fighter.get_diamond().offsetCross), 0.f);
+    const float scaleBottom = fighter.get_diamond().offsetCross;
+    const float scaleTop = fighter.get_diamond().offsetTop - fighter.get_diamond().offsetCross;
 
-    const Mat4F bottomMat = maths::transform(translate, Vec3F(fighter.diamond.halfWidth, scaleBottom, 0.1f));
-    const Mat4F topMat = maths::transform(translate, Vec3F(fighter.diamond.halfWidth, scaleTop, 0.1f));
+    const Mat4F bottomMat = maths::transform(translate, Vec3F(fighter.get_diamond().halfWidth, scaleBottom, 0.1f));
+    const Mat4F topMat = maths::transform(translate, Vec3F(fighter.get_diamond().halfWidth, scaleTop, 0.1f));
 
     mBlobShader.update(1, Vec3F(1.f, 1.f, 1.f));
 

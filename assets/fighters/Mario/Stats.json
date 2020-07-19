@@ -25,6 +25,10 @@
 "ledge_climb_time": 32,
 
 "anim_walk_stride": 2.87,
-"anim_dash_stride": 3.3
+"anim_dash_stride": 3.3,
+
+"diamond_halfWidth": 0.4,
+"diamond_offsetTop": 1.4,
+"diamond_offsetCross": 0.8
 
 }
