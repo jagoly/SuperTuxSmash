@@ -179,7 +179,7 @@ void GameScene::render(double elapsed)
 
     if (mSmashApp.get_globals().renderDiamonds == true)
         for (const auto fighter : mFightWorld->get_fighters())
-            debugRenderer.render_diamond(fighter->get_position(), fighter->diamond);
+            debugRenderer.render_diamond(*fighter);
 
     if (mSmashApp.get_globals().renderSkeletons == true)
         for (const auto fighter : mFightWorld->get_fighters())
@@ -229,6 +229,11 @@ void GameScene::impl_show_general_window()
     ImGui::Checkbox("disable input", &globals.disableInput);
     ImPlus::HoverTooltip("disable game input completely");
 
+    ImGui::SameLine();
+
+    ImGui::Checkbox("smooth camera", &static_cast<StandardCamera&>(mRenderer->get_camera()).smoothMoves);
+    ImPlus::HoverTooltip("smooth camera movement");
+
     ImPlus::if_MenuBar([&]()
     {
         ImPlus::if_Menu("render...", true, [&]()
@@ -252,9 +257,9 @@ void GameScene::impl_show_general_window()
     });
 
     float& zoomRef = static_cast<StandardCamera&>(mRenderer->get_camera()).zoomOut;
-    ImGui::SetNextItemWidth(-1.f);
-    ImPlus::SliderValue("##zoom", zoomRef, -1.f, 8.f, "zoom: %.2f");
     zoomRef = std::round(zoomRef * 2.f) * 0.5f;
+    ImGui::SetNextItemWidth(-1.f);
+    ImPlus::SliderValue("##zoom", zoomRef, 0.5f, 2.f, "zoom out: %.2f");
 }
 
 //============================================================================//

@@ -2,9 +2,15 @@
 
 #include "render/Renderer.hpp"
 
-//============================================================================//
-
 namespace sts {
+
+//====== Forward Declarations ================================================//
+
+struct HitBlob;
+struct HurtBlob;
+class Fighter;
+
+//============================================================================//
 
 class DebugRenderer final : sq::NonCopyable
 {
@@ -20,7 +26,7 @@ public: //====================================================//
 
     void render_hurt_blobs(const Vector<HurtBlob*>& blobs);
 
-    void render_diamond(Vec2F position, const struct LocalDiamond& diamond);
+    void render_diamond(const Fighter& fighter);
 
     void render_skeleton(const Fighter& fighter);
 

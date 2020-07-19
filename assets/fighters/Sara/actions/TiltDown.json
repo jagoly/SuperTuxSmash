@@ -1,0 +1,113 @@
+{
+  "blobs": 
+  {
+    "BlobA": 
+    {
+      "bone": null,
+      "damage": 3.0,
+      "flavour": "Sour",
+      "group": 0,
+      "knockAngle": 0.125,
+      "knockBase": 6.0,
+      "knockScale": 0.0,
+      "origin": [ 0.0, 0.1, 1.0 ],
+      "priority": "Normal",
+      "radius": 0.5
+    },
+    "BlobB": 
+    {
+      "bone": null,
+      "damage": 3.0,
+      "flavour": "Sour",
+      "group": 1,
+      "knockAngle": 0.125,
+      "knockBase": 6.0,
+      "knockScale": 0.0,
+      "origin": [ 0.0, 0.1, 1.5 ],
+      "priority": "Normal",
+      "radius": 0.5
+    },
+    "BlobC": 
+    {
+      "bone": null,
+      "damage": 6.0,
+      "flavour": "Tangy",
+      "group": 2,
+      "knockAngle": 0.04,
+      "knockBase": 10.0,
+      "knockScale": 1.0,
+      "origin": [ 0.0, 0.1, 2.0 ],
+      "priority": "High",
+      "radius": 0.5
+    }
+  },
+  "emitters": 
+  {
+    "PuffA": 
+    {
+      "bone": null,
+      "colour.random": [         [ 1.0, 0.0, 0.0 ],
+        [ 0.0, 1.0, 0.0 ],
+        [ 0.0, 0.0, 1.0 ]
+      ],
+      "direction": [ 0.0, 1.0, 0.0 ],
+      "endOpacity": 0.1,
+      "endScale": 1.5,
+      "lifetime": [ 12, 18 ],
+      "opacity": [ 0.9, 1.0 ],
+      "origin": [ 0.0, 0.1, 1.0 ],
+      "radius": [ 0.3, 0.4 ],
+      "shape.disc": 
+      {
+        "incline": [ -0.05, 0.25 ],
+        "speed": [ 1.5, 2.5 ]
+      },
+      "speed": [ 0.1, 0.5 ],
+      "sprite": "Sparkle"
+    },
+    "PuffB": 
+    {
+      "bone": null,
+      "colour.random": [         [ 1.0, 0.0, 0.0 ],
+        [ 0.0, 1.0, 0.0 ],
+        [ 0.0, 0.0, 1.0 ]
+      ],
+      "direction": [ 0.0, 1.0, 0.0 ],
+      "endOpacity": 0.1,
+      "endScale": 1.5,
+      "lifetime": [ 12, 18 ],
+      "opacity": [ 0.9, 1.0 ],
+      "origin": [ 0.0, 0.1, 1.5 ],
+      "radius": [ 0.3, 0.4 ],
+      "shape.disc": 
+      {
+        "incline": [ -0.05, 0.25 ],
+        "speed": [ 1.5, 2.5 ]
+      },
+      "speed": [ 0.1, 0.5 ],
+      "sprite": "Sparkle"
+    },
+    "PuffC": 
+    {
+      "bone": null,
+      "colour.random": [         [ 1.0, 0.0, 0.0 ],
+        [ 0.0, 1.0, 0.0 ],
+        [ 0.0, 0.0, 1.0 ]
+      ],
+      "direction": [ 0.0, 1.0, 0.0 ],
+      "endOpacity": 0.1,
+      "endScale": 1.5,
+      "lifetime": [ 14, 20 ],
+      "opacity": [ 0.9, 1.0 ],
+      "origin": [ 0.0, 0.1, 2.0 ],
+      "radius": [ 0.3, 0.4 ],
+      "shape.disc": 
+      {
+        "incline": [ -0.05, 0.25 ],
+        "speed": [ 1.5, 2.5 ]
+      },
+      "speed": [ 0.1, 0.5 ],
+      "sprite": "Sparkle"
+    }
+  }
+}

@@ -199,6 +199,7 @@ private: //===================================================//
 
     Fighter& fighter;
 
+    friend class EditorScene;
     friend struct DebugGui;
 };
 

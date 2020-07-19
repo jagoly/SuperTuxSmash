@@ -126,20 +126,20 @@ void PrivateFighter::initialise_armature(const String& path)
     animations.SmashForwardAttack = load_anim("SmashForwardAttack", AnimMode::ApplyMotion);
     animations.SmashUpAttack = load_anim("SmashUpAttack", AnimMode::Standard);
 
+    // some anims need to be longer than a certain length for logic to work correctly
     const auto ensure_anim_time = [](Animation& anim, uint time, const char* animName, const char* timeName)
     {
-        // this is probably a fallback null animation, so don't print another warning
-        if (anim.anim.totalTime == 1u)
-            anim.anim.totalTime = anim.anim.times.front() = time;
+        if (anim.anim.totalTime > time) return; // anim is longer than time
 
-        else if (anim.anim.totalTime < time)
+        if (anim.anim.totalTime != 1u) // fallback animation, don't print another warning
             sq::log_warning("anim '%s' shorter than '%s'", animName, timeName);
+
+        anim.anim.totalTime = anim.anim.times.front() = time + 1u;
     };
 
     ensure_anim_time(animations.DashStart, fighter.stats.dash_start_time, "DashStart", "dash_start_time");
-    ensure_anim_time(animations.TurnDash, fighter.stats.dash_turn_time, "TurnDash", "dash_turn_time");
     ensure_anim_time(animations.Brake, fighter.stats.dash_brake_time, "Brake", "dash_brake_time");
-
+    ensure_anim_time(animations.TurnDash, fighter.stats.dash_turn_time, "TurnDash", "dash_turn_time");
     ensure_anim_time(animations.LedgeClimb, fighter.stats.ledge_climb_time, "LedgeClimb", "ledge_climb_time");
 }
 
@@ -171,17 +171,18 @@ void PrivateFighter::initialise_stats(const String& path)
 
     const auto json = sq::parse_json_from_file(path + "/Stats.json");
 
-    stats.walk_speed     = json.at("walk_speed");
-    stats.dash_speed     = json.at("dash_speed");
-    stats.air_speed      = json.at("air_speed");
-    stats.traction       = json.at("traction");
-    stats.air_mobility   = json.at("air_mobility");
-    stats.air_friction   = json.at("air_friction");
-    stats.hop_height     = json.at("hop_height");
-    stats.jump_height    = json.at("jump_height");
-    stats.air_hop_height = json.at("air_hop_height");
-    stats.gravity        = json.at("gravity");
-    stats.fall_speed     = json.at("fall_speed");
+    stats.walk_speed    = json.at("walk_speed");
+    stats.dash_speed    = json.at("dash_speed");
+    stats.air_speed     = json.at("air_speed");
+    stats.traction      = json.at("traction");
+    stats.air_mobility  = json.at("air_mobility");
+    stats.air_friction  = json.at("air_friction");
+    stats.hop_height    = json.at("hop_height");
+    stats.jump_height   = json.at("jump_height");
+    stats.airhop_height = json.at("airhop_height");
+    stats.gravity       = json.at("gravity");
+    stats.fall_speed    = json.at("fall_speed");
+    stats.weight        = json.at("weight");
 
     stats.extra_jumps = json.at("extra_jumps");
 
@@ -417,6 +418,8 @@ void PrivateFighter::update_transitions(const Controller::Input& input)
 
     const auto try_catch_ledge = [&]() -> bool
     {
+        SQASSERT(fighter.status.ledge == nullptr, "");
+
         if (mTimeSinceLedge <= STS_NO_LEDGE_CATCH_TIME)
             return false;
 
@@ -425,6 +428,8 @@ void PrivateFighter::update_transitions(const Controller::Input& input)
 
         if (fighter.status.ledge == nullptr)
             return false;
+
+        mTimeSinceLedge = 0u;
 
         // steal the ledge from some other fighter
         if (fighter.status.ledge->grabber != nullptr)
@@ -671,8 +676,6 @@ void PrivateFighter::update_transitions(const Controller::Input& input)
 
     CASE ( Landing ) //=======================================//
     {
-        // todo: different air actions should have different landing lag values
-
         if (mStateProgress == mLandingLag)
             state_transition(State::Neutral, 0u, nullptr, 0u, &animations.NeutralLoop);
     }
@@ -693,7 +696,7 @@ void PrivateFighter::update_transitions(const Controller::Input& input)
                 state_transition(State::Jumping, 2u, &animations.AirHopForward, 1u, &animations.FallingLoop);
 
             mExtraJumps -= 1u;
-            velocity.y = std::sqrt(2.f * stats.gravity * stats.air_hop_height) + stats.gravity * 0.5f;
+            velocity.y = std::sqrt(2.f * stats.gravity * stats.airhop_height) + stats.gravity * 0.5f;
         }
 
         else if (fighter.consume_command_oldest({Command::SmashDown, Command::AttackDown}))
@@ -737,12 +740,24 @@ void PrivateFighter::update_transitions(const Controller::Input& input)
 
     CASE ( LedgeHang ) //=====================================//
     {
-        if (mStateProgress >= STS_MIN_LEDGE_HANG_TIME)
+        // someone else stole our ledge on the previous frame
+        if (fighter.status.ledge == nullptr)
+        {
+            // todo: this needs to be handled later, to give p2 a chance to steal p1's ledge
+            state_transition(State::Jumping, 0u, &animations.FallingLoop, 0u, nullptr);
+            translate.x -= fighter.diamond.halfWidth * float(facing);
+            translate.y -= fighter.diamond.offsetTop * 0.75f;
+            mExtraJumps = stats.extra_jumps;
+        }
+
+        else if (mStateProgress >= STS_MIN_LEDGE_HANG_TIME)
         {
             if (fighter.consume_command(Command::Jump))
             {
                 state_transition(State::Jumping, 1u, &animations.LedgeJump, 0u, &animations.FallingLoop);
-                velocity.y = std::sqrt(2.f * stats.ledge_jump_height * stats.gravity) + stats.gravity * 0.5f;
+                velocity.y = std::sqrt(2.f * stats.jump_height * stats.gravity) + stats.gravity * 0.5f;
+                fighter.status.ledge->grabber = nullptr;
+                fighter.status.ledge = nullptr;
                 mExtraJumps = stats.extra_jumps;
             }
 
@@ -1032,15 +1047,8 @@ void PrivateFighter::update_states(const Controller::Input& input)
     //-- update the active action ----------------------------//
 
     if (fighter.current.action != nullptr && fighter.current.state != State::Charge)
-    {
         if (fighter.current.action->do_tick() == true)
-        {
-            message::fighter_action_finished msg { fighter, fighter.current.action->get_type() };
             switch_action(ActionType::None);
-
-            get_world().get_message_bus().get_message_source<message::fighter_action_finished>().publish(msg);
-        }
-    }
 }
 
 //============================================================================//

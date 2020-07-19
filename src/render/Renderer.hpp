@@ -16,20 +16,15 @@
 #include "render/ResourceCaches.hpp"
 #include "render/SceneData.hpp"
 
-//====== Forward Declarations ================================================//
-
-namespace sts { struct HitBlob; struct HurtBlob; }
-namespace sts { class DebugRenderer; class ParticleRenderer; }
-namespace sts { class Camera; class RenderObject; }
-namespace sts { class ParticleSystem; }
-
-//============================================================================//
-
 namespace sts {
 
-//============================================================================//
+//====== Forward Declarations ================================================//
 
-struct DebugArrow { Vec2F origin; float angle; float length; };
+class DebugRenderer;
+class ParticleRenderer;
+class Camera;
+class RenderObject;
+class ParticleSystem;
 
 //============================================================================//
 
@@ -132,5 +127,7 @@ private: //===================================================//
     UniquePtr<DebugRenderer> mDebugRenderer;
     UniquePtr<ParticleRenderer> mParticleRenderer;
 };
+
+//============================================================================//
 
 } // namespace sts

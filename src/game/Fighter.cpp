@@ -168,13 +168,6 @@ Vec2F Fighter::get_velocity() const
 
 //============================================================================//
 
-void Fighter::lua_func_change_facing()
-{
-    current.facing = -current.facing;
-}
-
-//============================================================================//
-
 Vector<Mat4F> Fighter::debug_get_skeleton_mats() const
 {
     return impl->armature.compute_skeleton_matrices(impl->current.pose);

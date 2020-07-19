@@ -17,6 +17,8 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
     const String label = "Fighter %d - %s"_fmt_(fighter.index, fighter.type);
     if (ImGui::CollapsingHeader(label.c_str(), ImGuiTreeNodeFlags_DefaultOpen) == false) return;
 
+    const auto scopeId = ImPlus::ScopeID(fighter.index);
+
     //--------------------------------------------------------//
 
     if (ImGui::CollapsingHeader("General", ImGuiTreeNodeFlags_DefaultOpen))
@@ -61,31 +63,30 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
         const ImPlus::ScopeFont font = ImPlus::FONT_MONO;
         const ImPlus::ScopeItemWidth width = 160.f;
 
-        ImPlus::InputValue("walk_speed",     fighter.stats.walk_speed,     0.05f, "%.6f");
-        ImPlus::InputValue("dash_speed",     fighter.stats.dash_speed,     0.05f, "%.6f");
-        ImPlus::InputValue("air_speed",      fighter.stats.air_speed,      0.05f, "%.6f");
-        ImPlus::InputValue("traction",       fighter.stats.traction,       0.05f, "%.6f");
-        ImPlus::InputValue("air_mobility",   fighter.stats.air_mobility,   0.05f, "%.6f");
-        ImPlus::InputValue("air_friction",   fighter.stats.air_friction,   0.05f, "%.6f");
-        ImPlus::InputValue("hop_height",     fighter.stats.hop_height,     0.05f, "%.6f");
-        ImPlus::InputValue("jump_height",    fighter.stats.jump_height,    0.05f, "%.6f");
-        ImPlus::InputValue("air_hop_height", fighter.stats.air_hop_height, 0.05f, "%.6f");
-        ImPlus::InputValue("gravity",        fighter.stats.gravity,        0.05f, "%.6f");
-        ImPlus::InputValue("fall_speed",     fighter.stats.fall_speed,     0.05f, "%.6f");
-
-        ImGui::Separator();
+        ImPlus::InputValue("walk_speed",    fighter.stats.walk_speed,    0.001f, "%.6f");
+        ImPlus::InputValue("dash_speed",    fighter.stats.dash_speed,    0.001f, "%.6f");
+        ImPlus::InputValue("air_speed",     fighter.stats.air_speed,     0.001f, "%.6f");
+        ImPlus::InputValue("traction",      fighter.stats.traction,      0.001f, "%.6f");
+        ImPlus::InputValue("air_mobility",  fighter.stats.air_mobility,  0.001f, "%.6f");
+        ImPlus::InputValue("air_friction",  fighter.stats.air_friction,  0.001f, "%.6f");
+        ImPlus::InputValue("hop_height",    fighter.stats.hop_height,    0.001f, "%.6f");
+        ImPlus::InputValue("jump_height",   fighter.stats.jump_height,   0.001f, "%.6f");
+        ImPlus::InputValue("airhop_height", fighter.stats.airhop_height, 0.001f, "%.6f");
+        ImPlus::InputValue("gravity",       fighter.stats.gravity,       0.001f, "%.6f");
+        ImPlus::InputValue("fall_speed",    fighter.stats.fall_speed,    0.001f, "%.6f");
+        ImPlus::InputValue("weight",        fighter.stats.weight,        0.001f, "%.6f");
 
         ImPlus::InputValue("extra_jumps", fighter.stats.extra_jumps, 1u);
+
+        ImPlus::InputValue("land_heavy_min_time", fighter.stats.land_heavy_min_time, 1u);
 
         ImPlus::InputValue("dash_start_time",  fighter.stats.dash_start_time,  1u);
         ImPlus::InputValue("dash_brake_time",  fighter.stats.dash_brake_time,  1u);
         ImPlus::InputValue("dash_turn_time",   fighter.stats.dash_turn_time,   1u);
         ImPlus::InputValue("ledge_climb_time", fighter.stats.ledge_climb_time, 1u);
 
-        ImPlus::InputValue("anim_walk_stride", fighter.stats.anim_walk_stride, 0.1f);
-        ImPlus::InputValue("anim_dash_stride", fighter.stats.anim_dash_stride, 0.1f);
-
-        ImPlus::InputValue("land_heavy_min_time", fighter.stats.land_heavy_min_time, 1u);
+        ImPlus::InputValue("anim_walk_stride", fighter.stats.anim_walk_stride, 0.01f, "%.4f");
+        ImPlus::InputValue("anim_dash_stride", fighter.stats.anim_dash_stride, 0.01f, "%.4f");
     }
 
     if (ImGui::CollapsingHeader("Input Commands"))

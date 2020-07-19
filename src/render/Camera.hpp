@@ -52,7 +52,9 @@ public: //====================================================//
 
     void intergrate(float blend) override;
 
-    float zoomOut = 0.f;
+    float zoomOut = 1.f;
+
+    bool smoothMoves = true;
 
 private: //===================================================//
 

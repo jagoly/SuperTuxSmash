@@ -189,7 +189,7 @@ void EditorScene::render(double elapsed)
 
     if (mSmashApp.get_globals().renderDiamonds == true)
         for (const auto fighter : ctx.world->get_fighters())
-            debugRenderer.render_diamond(fighter->get_position(), fighter->diamond);
+            debugRenderer.render_diamond(*fighter);
 
     if (mSmashApp.get_globals().renderSkeletons == true)
         for (const auto fighter : ctx.world->get_fighters())
@@ -521,18 +521,6 @@ void EditorScene::impl_show_widget_fighter()
 
 //============================================================================//
 
-void EditorScene::handle_message(const message::fighter_action_finished& /*msg*/)
-{
-    SQASSERT(mActiveActionContext != nullptr, "where did this message come from");
-
-    if (mIncrementSeed) ++mRandomSeed;
-
-    // we defer this so that we don't call tick inside of tick
-    //mDoRestartAction = true;
-}
-
-//============================================================================//
-
 void EditorScene::create_base_context(FighterEnum fighterKey, BaseContext& ctx)
 {
     ctx.world = std::make_unique<FightWorld>(mSmashApp.get_globals());
@@ -570,17 +558,13 @@ void EditorScene::create_base_context(FighterEnum fighterKey, BaseContext& ctx)
 
     ctx.fighter = fighter.get();
     ctx.renderFighter = renderFighter.get();
-    ctx.privateFighter = fighter->editor_get_private();
+    ctx.privateFighter = fighter->impl.get();
 
     ctx.world->set_stage(std::move(stage));
     ctx.renderer->add_object(std::move(renderStage));
 
     ctx.world->add_fighter(std::move(fighter));
     ctx.renderer->add_object(std::move(renderFighter));
-
-    receiver.subscribe(ctx.world->get_message_bus());
-
-    SQEE_MB_BIND_METHOD(receiver, message::fighter_action_finished, handle_message);
 }
 
 //----------------------------------------------------------------------------//
@@ -596,47 +580,53 @@ EditorScene::ActionContext& EditorScene::get_action_context(ActionKey key)
 
     ctx.key = key;
 
-    //build_working_procedures(ctx);
     scrub_to_frame_current(ctx);
 
     ctx.savedData = ctx.fighter->get_action(key.action)->clone();
     ctx.undoStack.push_back(ctx.fighter->get_action(key.action)->clone());
 
-    /*const auto& anims = ctx.fighter->animations;
+    const auto& anims = ctx.privateFighter->animations;
 
     SWITCH (key.action) {
 
-        CASE (Neutral_First) ctx.timelineLength =  anims.at("NeutralFirst").anim.totalTime;
-        CASE (Tilt_Down)     ctx.timelineLength = anims.at("TiltDown").anim.totalTime;
-        CASE (Tilt_Forward)  ctx.timelineLength = anims.at("TiltForward").anim.totalTime;
-        CASE (Tilt_Up)       ctx.timelineLength = anims.at("TiltUp").anim.totalTime;
-        CASE (Air_Back)      ctx.timelineLength = anims.at("AirBack").anim.totalTime;
-        CASE (Air_Down)      ctx.timelineLength = anims.at("AirDown").anim.totalTime;
-        CASE (Air_Forward)   ctx.timelineLength = anims.at("AirForward").anim.totalTime;
-        CASE (Air_Neutral)   ctx.timelineLength = anims.at("AirNeutral").anim.totalTime;
-        CASE (Air_Up)        ctx.timelineLength = anims.at("AirUp").anim.totalTime;
-        CASE (Dash_Attack)   ctx.timelineLength = anims.at("DashAttack").anim.totalTime;
+    CASE (NeutralFirst) ctx.timelineLength =  anims.NeutralFirst.anim.totalTime;
+    CASE (TiltDown)     ctx.timelineLength = anims.TiltDown.anim.totalTime;
+    CASE (TiltForward)  ctx.timelineLength = anims.TiltForward.anim.totalTime;
+    CASE (TiltUp)       ctx.timelineLength = anims.TiltUp.anim.totalTime;
+    CASE (DashAttack)   ctx.timelineLength = anims.DashAttack.anim.totalTime;
 
-        CASE (Smash_Down)    ctx.timelineLength = anims.at("SmashDownStart").anim.totalTime
-                                                + anims.at("SmashDownCharge").anim.totalTime
-                                                + anims.at("SmashDownAttack").anim.totalTime;
+    CASE (AirBack)    ctx.timelineLength = anims.AirBack.anim.totalTime;
+    CASE (AirDown)    ctx.timelineLength = anims.AirDown.anim.totalTime;
+    CASE (AirForward) ctx.timelineLength = anims.AirForward.anim.totalTime;
+    CASE (AirNeutral) ctx.timelineLength = anims.AirNeutral.anim.totalTime;
+    CASE (AirUp)      ctx.timelineLength = anims.AirUp.anim.totalTime;
 
-        CASE (Smash_Forward) ctx.timelineLength = anims.at("SmashForwardStart").anim.totalTime
-                                                + anims.at("SmashForwardCharge").anim.totalTime
-                                                + anims.at("SmashForwardAttack").anim.totalTime;
+    CASE (EvadeBack)    ctx.timelineLength = anims.EvadeBack.anim.totalTime;
+    CASE (EvadeForward) ctx.timelineLength = anims.EvadeForward.anim.totalTime;
+    CASE (Dodge)        ctx.timelineLength = anims.Dodge.anim.totalTime;
 
-        CASE (Smash_Up)      ctx.timelineLength = anims.at("SmashUpStart").anim.totalTime
-                                                + anims.at("SmashUpCharge").anim.totalTime
-                                                + anims.at("SmashUpAttack").anim.totalTime;
+    CASE (AirDodge) ctx.timelineLength = anims.AirDodge.anim.totalTime;
 
-        CASE (Special_Down)    ctx.timelineLength = 32u;
-        CASE (Special_Forward) ctx.timelineLength = 32u;
-        CASE (Special_Neutral) ctx.timelineLength = 32u;
-        CASE (Special_Up)      ctx.timelineLength = 32u;
+    CASE (SmashDown)    ctx.timelineLength = anims.SmashDownStart.anim.totalTime
+                                            + anims.SmashDownCharge.anim.totalTime
+                                            + anims.SmashDownAttack.anim.totalTime;
 
-        CASE (None) SQASSERT(false, "");
+    CASE (SmashForward) ctx.timelineLength = anims.SmashForwardStart.anim.totalTime
+                                            + anims.SmashForwardCharge.anim.totalTime
+                                            + anims.SmashForwardAttack.anim.totalTime;
 
-    } SWITCH_END;*/
+    CASE (SmashUp)      ctx.timelineLength = anims.SmashUpStart.anim.totalTime
+                                            + anims.SmashUpCharge.anim.totalTime
+                                            + anims.SmashUpAttack.anim.totalTime;
+
+    CASE (SpecialDown)    ctx.timelineLength = 32u;
+    CASE (SpecialForward) ctx.timelineLength = 32u;
+    CASE (SpecialNeutral) ctx.timelineLength = 32u;
+    CASE (SpecialUp)      ctx.timelineLength = 32u;
+
+    CASE (None) SQASSERT(false, "");
+
+    } SWITCH_END;
 
     return ctx;
 }
@@ -674,7 +664,6 @@ void EditorScene::apply_working_changes(ActionContext& ctx)
 
     if (action.has_changes(*ctx.undoStack[ctx.undoIndex]))
     {
-        //build_working_procedures(ctx);
         scrub_to_frame_current(ctx);
 
         ctx.undoStack.erase(ctx.undoStack.begin() + ++ctx.undoIndex, ctx.undoStack.end());
@@ -716,7 +705,6 @@ void EditorScene::do_undo_redo(ActionContext &ctx, bool redo)
         Action& action = *ctx.fighter->get_action(ctx.key.action);
         action.apply_changes(*ctx.undoStack[ctx.undoIndex]);
 
-        //build_working_procedures(ctx);
         scrub_to_frame_current(ctx);
 
         ctx.modified = action.has_changes(*ctx.savedData);
@@ -785,26 +773,29 @@ void EditorScene::save_changes(HurtblobsContext& ctx)
 
 void EditorScene::scrub_to_frame(ActionContext& ctx, int frame)
 {
-    if (ctx.fighter->current.action != nullptr)
-        ctx.privateFighter->switch_action(ActionType::None);
+    // reset the world and fighter
 
     ParticleEmitter::reset_random_seed(mRandomSeed);
     ctx.world->get_particle_system().clear();
 
+    if (ctx.fighter->current.action != nullptr)
+        ctx.privateFighter->switch_action(ActionType::None);
+
+    ctx.privateFighter->state_transition(Fighter::State::Neutral, 0u, &ctx.privateFighter->animations.NeutralLoop, 0u, nullptr);
+
+    ctx.privateFighter->current.position = Vec2F();
+    ctx.privateFighter->current.rotation = QuatF();
+    ctx.fighter->current.facing = +1;
+    ctx.fighter->mVelocity = Vec2F();
+    ctx.fighter->mTranslate = Vec2F();
+
+    ctx.world->tick();
+
+    // start the action and scrub to the frame
+
     ctx.privateFighter->switch_action(ctx.key.action);
 
-    /*SWITCH (ctx.key.action)
-    {
-        CASE (Air_Back, Air_Down, Air_Forward, Air_Neutral, Air_Up)
-        {
-            ctx.fighter->edit_position() = { 0.f, 10.f };
-        }
-    }
-    SWITCH_END;*/
-
-    ctx.currentFrame = -1;
-
-    for (int i = -1; i < frame; ++i)
+    for (ctx.currentFrame = -1; ctx.currentFrame < frame;)
         tick_action_context(ctx);
 
     SQASSERT(ctx.fighter->current.action == nullptr ||

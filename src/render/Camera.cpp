@@ -21,14 +21,27 @@ Camera::Camera(const Renderer& renderer) : renderer(renderer)
 
 //============================================================================//
 
-void StandardCamera::update_from_scene_data(const SceneData& sceneData)
+void StandardCamera::update_from_scene_data(const SceneData& scene)
 {
+    const float border = 3.f * zoomOut;
+
     mPreviousView = mCurrentView;
     mPreviousBounds = mCurrentBounds;
 
-    MinMax averageView = { sceneData.view.min, sceneData.view.max };
+    mCurrentView.min = scene.view.min - border;
+    mCurrentView.max = scene.view.max + border;
 
-    //for (uint i = 0u; i < 1u; ++i)
+    mCurrentBounds.min = scene.outer.min;
+    mCurrentBounds.max = scene.outer.max;
+
+    mCurrentView.min = maths::max(mCurrentView.min, mCurrentBounds.min);
+    mCurrentView.min = maths::min(mCurrentView.min, mCurrentBounds.max - border - border);
+
+    mCurrentView.max = maths::min(mCurrentView.max, mCurrentBounds.max);
+    mCurrentView.max = maths::max(mCurrentView.max, mCurrentBounds.min + border + border);
+
+    MinMax averageView = mCurrentView;
+
     for (uint i = 0u; i < 15u; ++i)
     {
         averageView.min += mViewHistory[i].min;
@@ -36,15 +49,13 @@ void StandardCamera::update_from_scene_data(const SceneData& sceneData)
         mViewHistory[i] = mViewHistory[i + 1];
     }
 
-    //mViewHistory[1] = { sceneData.view.min, sceneData.view.max };
-    mViewHistory.back() = { sceneData.view.min, sceneData.view.max };
+    mViewHistory.back() = mCurrentView;
 
-    //mCurrentView.min = averageView.min / 2.f;
-    //mCurrentView.max = averageView.max / 2.f;
-    mCurrentView.min = averageView.min / 16.f;
-    mCurrentView.max = averageView.max / 16.f;
-
-    mCurrentBounds = { sceneData.outer.min, sceneData.outer.max };
+    if (smoothMoves == true)
+    {
+        mCurrentView.min = averageView.min / 16.f;
+        mCurrentView.max = averageView.max / 16.f;
+    }
 }
 
 //----------------------------------------------------------------------------//
@@ -53,52 +64,27 @@ void StandardCamera::intergrate(float blend)
 {
     const float aspect = float(renderer.options.Window_Size.x) / float(renderer.options.Window_Size.y);
 
-    mBlock.direction = maths::normalize(Vec3F(0.f, -0.f, +4.f));
+    mBlock.direction = Vec3F(0.f, 0.f, +1.f);
 
     mBlock.projMat = maths::perspective_LH(1.f, aspect, 0.2f, 200.f);
 
     const Vec2F minView = maths::mix(mPreviousView.min, mCurrentView.min, blend);
     const Vec2F maxView = maths::mix(mPreviousView.max, mCurrentView.max, blend);
 
-    const Vec2F minBounds = maths::mix(mPreviousBounds.min, mCurrentBounds.min, blend);
-    const Vec2F maxBounds = maths::mix(mPreviousBounds.max, mCurrentBounds.max, blend);
+    const float cameraDistanceX = (maxView.x - minView.x) * 0.5f / std::tan(0.5f) / aspect;
+    const float cameraDistanceY = (maxView.y - minView.y) * 0.5f / std::tan(0.5f);
 
-    const float cameraDistance = [&]() {
-        float distanceX = (maxView.x - minView.x + 4.f) * 0.5f / std::tan(0.5f) / aspect;
-        float distanceY = (maxView.y - minView.y + 4.f) * 0.5f / std::tan(0.5f);
-        return maths::max(distanceX, distanceY); }();
-
-    Vec3F cameraTarget = Vec3F((minView + maxView) * 0.5f, -zoomOut);
-    mBlock.position = cameraTarget - mBlock.direction * cameraDistance;
-
-    mBlock.viewMat = maths::look_at_LH(mBlock.position, cameraTarget, Vec3F(0.f, 1.f, 0.f));
-
-    const float screenLeft = [&]() {
-        Vec4F worldPos = Vec4F(minBounds.x, cameraTarget.y, 0.f, 1.f);
-        Vec4F screenPos = mBlock.projMat * (mBlock.viewMat * worldPos);
-        return (screenPos.x / screenPos.w + 1.f) * screenPos.w; }();
-
-    const float screenRight = [&]() {
-        Vec4F worldPos = Vec4F(maxBounds.x, cameraTarget.y, 0.f, 1.f);
-        Vec4F screenPos = mBlock.projMat * (mBlock.viewMat * worldPos);
-        return (screenPos.x / screenPos.w - 1.f) * screenPos.w; }();
-
-    if (screenLeft > 0.f && screenRight < 0.f) {}
-    else if (screenLeft > 0.f) { cameraTarget.x += screenLeft; }
-    else if (screenRight < 0.f) { cameraTarget.x += screenRight; }
+    const float cameraDistance = maths::max(cameraDistanceX, cameraDistanceY);
+    const Vec3F cameraTarget = Vec3F((minView + maxView) * 0.5f, 0.f);
 
     mBlock.position = cameraTarget - mBlock.direction * cameraDistance;
 
     mBlock.viewMat = maths::look_at_LH(mBlock.position, cameraTarget, Vec3F(0.f, 1.f, 0.f));
-
-    //--------------------------------------------------------//
 
     mBlock.invViewMat = maths::inverse(mBlock.viewMat);
     mBlock.invProjMat = maths::inverse(mBlock.projMat);
 
     mUbo.update(0u, mBlock);
-
-    //--------------------------------------------------------//
 
     mComboMatrix = mBlock.projMat * mBlock.viewMat;
 }

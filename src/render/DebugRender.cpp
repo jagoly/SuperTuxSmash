@@ -180,7 +180,7 @@ void DebugRenderer::render_hurt_blobs(const Vector<HurtBlob*>& blobs)
 
 //============================================================================//
 
-void DebugRenderer::render_diamond(Vec2F position, const LocalDiamond& diamond)
+void DebugRenderer::render_diamond(const Fighter& fighter)
 {
     auto& context = renderer.context;
 
@@ -202,12 +202,12 @@ void DebugRenderer::render_diamond(Vec2F position, const LocalDiamond& diamond)
 
     //--------------------------------------------------------//
 
-    const Vec3F translate = Vec3F(position.x, position.y + diamond.offsetCross, 0.f);
-    const float scaleBottom = diamond.offsetCross;
-    const float scaleTop = diamond.offsetTop - diamond.offsetCross;
+    const Vec3F translate = Vec3F(fighter.get_position() + Vec2F(0.f, fighter.diamond.offsetCross), 0.f);
+    const float scaleBottom = fighter.diamond.offsetCross;
+    const float scaleTop = fighter.diamond.offsetTop - fighter.diamond.offsetCross;
 
-    const Mat4F bottomMat = maths::transform(translate, Vec3F(diamond.halfWidth, scaleBottom, 0.1f));
-    const Mat4F topMat = maths::transform(translate, Vec3F(diamond.halfWidth, scaleTop, 0.1f));
+    const Mat4F bottomMat = maths::transform(translate, Vec3F(fighter.diamond.halfWidth, scaleBottom, 0.1f));
+    const Mat4F topMat = maths::transform(translate, Vec3F(fighter.diamond.halfWidth, scaleTop, 0.1f));
 
     mBlobShader.update(1, Vec3F(1.f, 1.f, 1.f));
 

@@ -45,8 +45,6 @@ FightWorld::FightWorld(const Globals& globals)
     , mHitBlobAlloc(globals.editorMode ? 1024 * 64 : 1024)
     , mEmitterAlloc(globals.editorMode ? 1024 * 64 : 1024)
 {
-    mMessageBus.add_message_source<message::fighter_action_finished>();
-
     lua.open_libraries(sol::lib::base, sol::lib::coroutine);
 
     sol::usertype<Action> actionType = lua.new_usertype<Action>("Action", sol::no_constructor);
@@ -63,7 +61,7 @@ FightWorld::FightWorld(const Globals& globals)
     fighterType.set("velocity_x", sol::property(&Fighter::lua_get_velocity_x, &Fighter::lua_set_velocity_x));
     fighterType.set("velocity_y", sol::property(&Fighter::lua_get_velocity_y, &Fighter::lua_set_velocity_y));
 
-    fighterType.set("change_facing", &Fighter::lua_func_change_facing);
+    fighterType.set("facing", sol::readonly_property(&Fighter::lua_get_facing));
 
     impl = std::make_unique<PrivateWorld>(*this);
 }
@@ -192,11 +190,11 @@ SceneData FightWorld::compute_scene_data() const
         result.view.max = maths::max(result.view.max, centre);
     }
 
-    result.inner = { Vec2F(-14.f,  -6.f), Vec2F(+14.f, +14.f) };
-    result.outer = { Vec2F(-18.f, -10.f), Vec2F(+18.f, +18.f) };
+    result.inner.min = mStage->get_inner_boundary().min;
+    result.inner.max = mStage->get_inner_boundary().max;
 
-    result.view.min = maths::max(result.view.min, result.inner.min);
-    result.view.max = maths::min(result.view.max, result.inner.max);
+    result.outer.min = mStage->get_outer_boundary().min;
+    result.outer.max = mStage->get_outer_boundary().max;
 
     return result;
 }

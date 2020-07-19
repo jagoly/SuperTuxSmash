@@ -128,14 +128,6 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
-    sq::MessageReceiver <
-        message::fighter_action_finished
-    > receiver;
-
-    void handle_message(const message::fighter_action_finished& msg);
-
-    //--------------------------------------------------------//
-
     void create_base_context(FighterEnum fighterKey, BaseContext& ctx);
 
     ActionContext& get_action_context(ActionKey key);

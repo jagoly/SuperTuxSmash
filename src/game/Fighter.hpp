@@ -78,28 +78,27 @@ public: //====================================================//
 
     struct Stats
     {
-        float walk_speed        = 1.f;
-        float dash_speed        = 1.f;
-        float air_speed         = 1.f;
-        float traction          = 1.f;
-        float air_mobility      = 1.f;
-        float air_friction      = 1.f;
-        float hop_height        = 1.f;
-        float jump_height       = 1.f;
-        float air_hop_height    = 1.f;
-        float ledge_jump_height = 1.f;
-        float gravity           = 1.f;
-        float fall_speed        = 1.f;
-        float weight            = 1.f;
+        float walk_speed    = 0.1f;
+        float dash_speed    = 0.15f;
+        float air_speed     = 0.1f;
+        float traction      = 0.005f;
+        float air_mobility  = 0.008f;
+        float air_friction  = 0.002f;
+        float hop_height    = 1.5f;
+        float jump_height   = 3.5f;
+        float airhop_height = 3.5f;
+        float gravity       = 0.01f;
+        float fall_speed    = 0.15f;
+        float weight        = 1.f;
 
         uint extra_jumps = 2u;
 
-        uint dash_start_time  = 12u;
+        uint land_heavy_min_time = 4u;
+
+        uint dash_start_time  = 11u;
         uint dash_brake_time  = 12u;
         uint dash_turn_time   = 14u;
-        uint ledge_climb_time = 34u;
-
-        uint land_heavy_min_time = 4u;
+        uint ledge_climb_time = 32u;
 
         float anim_walk_stride = 2.f;
         float anim_dash_stride = 3.f;
@@ -207,7 +206,7 @@ public: //====================================================//
     float lua_get_velocity_y() const { return mVelocity.y; }
     void lua_set_velocity_y(float value) { mVelocity.y = value; }
 
-    void lua_func_change_facing();
+    int lua_get_facing() const { return int(current.facing); }
 
     //-- debug stuff -----------------------------------------//
 
@@ -248,15 +247,15 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
-    friend class PrivateFighter;
     UniquePtr<PrivateFighter> impl;
 
 public: //== debug and editor interfaces =====================//
 
     void debug_reload_actions();
 
-    PrivateFighter* editor_get_private() { return impl.get(); }
+    friend class PrivateFighter;
 
+    friend class EditorScene;
     friend struct DebugGui;
 };
 
