@@ -1,0 +1,23 @@
+os: linux
+dist: focal
+language: cpp
+
+addons:
+  apt:
+    packages:
+      - libsfml-system2.5
+      - libsfml-window2.5
+      - libsfml-audio2.5
+      - libsfml-dev
+
+before_script:
+  - git clone --depth 1 https://github.com/jagoly/sqee.git
+  - cd sqee
+  - cmake .
+  - cmake --build . --target sqee
+  - cd ..
+
+script:
+  - cmake .
+  - cmake --build .
+

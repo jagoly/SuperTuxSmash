@@ -1,0 +1,31 @@
+image: Visual Studio 2019
+
+before_build:
+
+  - cd c:/projects
+
+  - curl -fsSL -o sfml.zip https://www.sfml-dev.org/files/SFML-2.5.1-windows-vc15-64-bit.zip
+  - 7z x sfml.zip
+  - rename SFML-2.5.1 sfml
+
+  - git clone --depth 1 https://github.com/jagoly/sqee.git
+  - cd c:/projects/sqee
+  - cmake . -DCMAKE_PREFIX_PATH=c:/projects/sfml -G "Visual Studio 16 2019" -A x64
+  - cmake --build . --target sqee
+
+build_script:
+
+  - cd c:/projects/SuperTuxSmash
+
+  - cmake . -G "Visual Studio 16 2019" -A x64
+  - cmake --build .
+
+after_build:
+
+  - 7z a sts-windows-debug.zip c:/projects
+
+artifacts:
+
+  - path: sts-windows-debug.zip
+    name: sts-windows-debug
+
