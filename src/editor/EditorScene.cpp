@@ -742,10 +742,10 @@ void EditorScene::save_changes(ActionContext& ctx)
     auto& emitters = json["emitters"] = JsonValue::object();
 
     for (const auto& [key, blob] : action.mBlobs)
-        blob.to_json(blobs[key]);
+        blob.to_json(blobs[key.c_str()]);
 
     for (const auto& [key, emitter] : action.mEmitters)
-        emitter.to_json(emitters[key]);
+        emitter.to_json(emitters[key.c_str()]);
 
     sq::save_string_to_file(action.path + ".json", json.dump(2));
     sq::save_string_to_file(action.path + ".lua", action.mLuaSource);
@@ -758,7 +758,7 @@ void EditorScene::save_changes(HurtblobsContext& ctx)
 {
     JsonValue json;
     for (const auto& [key, blob] : ctx.fighter->mHurtBlobs)
-        blob.to_json(json[key]);
+        blob.to_json(json[key.c_str()]);
 
     sq::save_string_to_file("assets/fighters/%s/HurtBlobs.json"_fmt_(ctx.fighter->type), json.dump(2));
 

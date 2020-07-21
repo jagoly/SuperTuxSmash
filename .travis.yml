@@ -11,13 +11,14 @@ addons:
       - libsfml-dev
 
 before_script:
+  - cd /home/travis/build/jagoly
   - git clone --depth 1 https://github.com/jagoly/sqee.git
-  - cd sqee
+  - cd /home/travis/build/jagoly/sqee
   - cmake .
   - cmake --build . --target sqee
-  - cd ..
 
 script:
+  - cd /home/travis/build/jagoly/SuperTuxSmash
   - cmake .
   - cmake --build .
 

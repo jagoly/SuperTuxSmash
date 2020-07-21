@@ -57,7 +57,7 @@ public: //====================================================//
     //--------------------------------------------------------//
 
     struct SpriteRange { uint16_t first, last; };
-    std::map<String, SpriteRange> sprites;
+    std::map<TinyString, SpriteRange> sprites;
 
     //--------------------------------------------------------//
 

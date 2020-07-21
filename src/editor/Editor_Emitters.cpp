@@ -144,7 +144,7 @@ void EditorScene::impl_show_widget_emitters()
 
             ImGui::Separator();
 
-            int colourIndex = emitter.colour.index();
+            int colourIndex = int(emitter.colour.index());
             ImPlus::Combo(" Colour", std::array { "Fixed", "Random" }, colourIndex);
 
             if (colourIndex == 0)
@@ -182,7 +182,7 @@ void EditorScene::impl_show_widget_emitters()
 
             ImGui::Separator();
 
-            int shapeIndex = emitter.shape.index();
+            int shapeIndex = int(emitter.shape.index());
             ImPlus::Combo(" Shape", std::array { "Ball", "Disc", "Ring" }, shapeIndex);
 
             if (shapeIndex == 0)
