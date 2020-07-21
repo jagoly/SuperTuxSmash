@@ -39,8 +39,8 @@ after_build:
   - copy c:\projects\SuperTuxSmash\player3.json build
   - copy c:\projects\SuperTuxSmash\player4.json build
   
-  - xcopy /E c:\projects\SuperTuxSmash\assets build\assets
-  - xcopy /E c:\projects\SuperTuxSmash\shaders build\shaders
+  - xcopy /E c:\projects\SuperTuxSmash\assets build
+  - xcopy /E c:\projects\SuperTuxSmash\shaders build
 
   - 7z a sts-windows-debug.zip build
 
