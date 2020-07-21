@@ -12,9 +12,9 @@ using namespace sts;
 //============================================================================//
 
 // todo: use one RNG for whole program
-static std::mt19937 gRandomNumberGenerator { 1337ul };
+static std::mt19937 gRandomNumberGenerator { 1337u };
 
-void ParticleEmitter::reset_random_seed(uint64_t seed)
+void ParticleEmitter::reset_random_seed(uint_fast32_t seed)
 {
     gRandomNumberGenerator.seed(seed);
 }
@@ -69,7 +69,7 @@ void ParticleEmitter::generate(ParticleSystem& system, uint count)
 
     if (auto random = std::get_if<RandomColour>(&colour))
     {
-        RandomRange<uint8_t> randIndex { 0u, uint8_t(random->size() - 1) };
+        RandomRange<uint> randIndex { 0u, uint(random->size() - 1) };
         for (size_t i = genStart; i < genStart + count; ++i)
             system.mParticles[i].colour = (*random)[randIndex(rng)];
     }

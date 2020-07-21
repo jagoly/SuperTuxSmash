@@ -159,7 +159,7 @@ private: //===================================================//
     PreviewMode mPreviewMode = PreviewMode::Pause;
 
     bool mIncrementSeed = false;
-    uint64_t mRandomSeed = 0ul;
+    uint_fast32_t mRandomSeed = 0u;
 
     float mBlendValue = 1.f;
 
