@@ -29,6 +29,22 @@ else ()
     message(FATAL_ERROR "Could not find SQEE, try specifying SQEE_BUILD_ROOT")
 endif ()
 
+# todo: these variables should come from finding sqee
+
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    set(SQEE_LINUX True)
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    set(SQEE_WINDOWS True)
+endif ()
+
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    set(SQEE_GNU True)
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    set(SQEE_CLANG True)
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    set(SQEE_MSVC True)
+endif ()
+
 ################################################################################
 
 if (SQEE_GNU OR SQEE_CLANG)
