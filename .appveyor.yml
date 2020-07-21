@@ -24,20 +24,20 @@ after_build:
 
   - mkdir build
   
-  - copy c:/projects/sfml/bin/openal32.dll build
-  - copy c:/projects/sfml/bin/sfml-audio-d-2.dll build
-  - copy c:/projects/sfml/bin/sfml-system-d-2.dll build
-  - copy c:/projects/sfml/bin/sfml-window-d-2.dll build
+  - copy c:\projects\sfml\bin\openal32.dll build
+  - copy c:\projects\sfml\bin\sfml-audio-d-2.dll build
+  - copy c:\projects\sfml\bin\sfml-system-d-2.dll build
+  - copy c:\projects\sfml\bin\sfml-window-d-2.dll build
   
-  - copy c:/projects/sqee/Debug/sqee.dll build
-  - copy c:/projects/sqee/lua54cpp/Debug/lua54cpp.dll build
+  - copy c:\projects\sqee\Debug\sqee.dll build
+  - copy c:\projects\sqee\lua54cpp\Debug\lua54cpp.dll build
 
-  - copy c:/projects/SuperTuxSmash/Debug/sts-game.exe build
+  - copy c:\projects\SuperTuxSmash\Debug\sts-game.exe build
 
-  - copy c:/projects/SuperTuxSmash/player1.json build
-  - copy c:/projects/SuperTuxSmash/player2.json build
-  - copy c:/projects/SuperTuxSmash/player3.json build
-  - copy c:/projects/SuperTuxSmash/player4.json build
+  - copy c:\projects\SuperTuxSmash\player1.json build
+  - copy c:\projects\SuperTuxSmash\player2.json build
+  - copy c:\projects\SuperTuxSmash\player3.json build
+  - copy c:\projects\SuperTuxSmash\player4.json build
   
   - xcopy /E c:\projects\SuperTuxSmash\assets build\assets
   - xcopy /E c:\projects\SuperTuxSmash\shaders build\shaders
