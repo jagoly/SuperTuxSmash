@@ -25,6 +25,8 @@ public: //====================================================//
 
     void refresh_options() override;
 
+    void show_imgui_widgets() override;
+
 private: //===================================================//
 
     void update() override;
@@ -36,8 +38,6 @@ private: //===================================================//
     SmashApp& mSmashApp;
 
     //--------------------------------------------------------//
-
-    sq::GuiWidget mMainWidget;
 
     void impl_show_main_window();
 

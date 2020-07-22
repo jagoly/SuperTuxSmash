@@ -22,27 +22,36 @@ build_script:
 
 after_build:
 
-  - mkdir build
+  - cd C:\
   
-  - copy c:\projects\sfml\bin\openal32.dll build
-  - copy c:\projects\sfml\bin\sfml-audio-d-2.dll build
-  - copy c:\projects\sfml\bin\sfml-system-d-2.dll build
-  - copy c:\projects\sfml\bin\sfml-window-d-2.dll build
+  - dir MSVCP140D.dll /s
+  - dir VCRUNTIME140D.dll /s
+  - dir VCRUNTIME140_1D.dll /s
+  - dir ucrtbased.dll /s
+
+  - mkdir out
   
-  - copy c:\projects\sqee\Debug\sqee.dll build
-  - copy c:\projects\sqee\lua54cpp\Debug\lua54cpp.dll build
-
-  - copy c:\projects\SuperTuxSmash\Debug\sts-game.exe build
-
-  - copy c:\projects\SuperTuxSmash\player1.json build
-  - copy c:\projects\SuperTuxSmash\player2.json build
-  - copy c:\projects\SuperTuxSmash\player3.json build
-  - copy c:\projects\SuperTuxSmash\player4.json build
+  - copy c:\projects\sfml\bin\openal32.dll out
+  - copy c:\projects\sfml\bin\sfml-audio-d-2.dll out
+  - copy c:\projects\sfml\bin\sfml-system-d-2.dll out
+  - copy c:\projects\sfml\bin\sfml-window-d-2.dll out
   
-  - xcopy /E c:\projects\SuperTuxSmash\assets build
-  - xcopy /E c:\projects\SuperTuxSmash\shaders build
+  - copy c:\projects\sqee\Debug\sqee.dll out
+  - copy c:\projects\sqee\lua54cpp\Debug\lua54cpp.dll out
 
-  - 7z a sts-windows-debug.zip build
+  - copy c:\projects\SuperTuxSmash\Debug\sts-game.exe out
+
+  - copy c:\projects\SuperTuxSmash\player1.json out
+  - copy c:\projects\SuperTuxSmash\player2.json out
+  - copy c:\projects\SuperTuxSmash\player3.json out
+  - copy c:\projects\SuperTuxSmash\player4.json out
+
+  - xcopy /E c:\projects\SuperTuxSmash\assets out\assets\
+  - xcopy /E c:\projects\SuperTuxSmash\shaders out\shaders\
+  
+  - rename out sts-windows-debug
+
+  - 7z a sts-windows-debug.zip sts-windows-debug
 
 artifacts:
 

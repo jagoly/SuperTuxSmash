@@ -33,6 +33,8 @@ public: //====================================================//
 
     void refresh_options() override;
 
+    void show_imgui_widgets() override;
+
     enum class PreviewMode { Pause, Normal, Slow, Slower };
 
 private: //===================================================//
@@ -100,17 +102,6 @@ private: //===================================================//
     HurtblobsContext* mActiveHurtblobsContext = nullptr;
 
     //--------------------------------------------------------//
-
-    sq::GuiWidget widget_toolbar;
-    sq::GuiWidget widget_navigator;
-
-    sq::GuiWidget widget_hitblobs;
-    sq::GuiWidget widget_emitters;
-    sq::GuiWidget widget_script;
-    sq::GuiWidget widget_hurtblobs;
-    sq::GuiWidget widget_timeline;
-
-    sq::GuiWidget widget_fighter;
 
     void impl_setup_docks();
 

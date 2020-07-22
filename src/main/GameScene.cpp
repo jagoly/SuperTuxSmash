@@ -24,9 +24,6 @@ using namespace sts;
 GameScene::GameScene(SmashApp& smashApp, GameSetup setup)
     : Scene(1.0 / 48.0), mSmashApp(smashApp)
 {
-    mGeneralWidget.func = [this]() { impl_show_general_window(); };
-    mFightersWidget.func = [this]() { impl_show_fighters_window(); };
-
     mSmashApp.get_window().set_key_repeat(false);
 
     // todo: these "globals" are dumb and not really needed, clean it up
@@ -279,4 +276,12 @@ void GameScene::impl_show_fighters_window()
     }
 
     ImGui::End();
+}
+
+//============================================================================//
+
+void GameScene::show_imgui_widgets()
+{
+    impl_show_general_window();
+    impl_show_fighters_window();
 }

@@ -41,17 +41,6 @@ constexpr const float WIDTH_NAVIGATOR = 240;
 EditorScene::EditorScene(SmashApp& smashApp)
     : Scene(1.0 / 48.0), mSmashApp(smashApp)
 {
-    widget_toolbar.func = [this]() { impl_show_widget_toolbar(); };
-    widget_navigator.func = [this]() { impl_show_widget_navigator(); };
-    widget_hitblobs.func = [this]() { impl_show_widget_hitblobs(); };
-    widget_emitters.func = [this]() { impl_show_widget_emitters(); };
-    widget_script.func = [this]() { impl_show_widget_script(); };
-    widget_hurtblobs.func = [this]() { impl_show_widget_hurtblobs(); };
-    widget_timeline.func = [this]() { impl_show_widget_timeline(); };
-    widget_fighter.func = [this]() { impl_show_widget_fighter(); };
-
-    //--------------------------------------------------------//
-
     smashApp.get_globals().renderHitBlobs = true;
     smashApp.get_globals().renderHurtBlobs = true;
     smashApp.get_globals().renderDiamonds = true;
@@ -515,6 +504,20 @@ void EditorScene::impl_show_widget_fighter()
     if (window.show == false) return;
 
     DebugGui::show_widget_fighter(fighter);
+}
+
+//============================================================================//
+
+void EditorScene::show_imgui_widgets()
+{
+    impl_show_widget_toolbar();
+    impl_show_widget_navigator();
+    impl_show_widget_hitblobs();
+    impl_show_widget_emitters();
+    impl_show_widget_script();
+    impl_show_widget_hurtblobs();
+    impl_show_widget_timeline();
+    impl_show_widget_fighter();
 }
 
 //============================================================================//

@@ -14,8 +14,6 @@ using namespace sts;
 MenuScene::MenuScene(SmashApp& smashApp)
     : Scene(1.0 / 60.0), mSmashApp(smashApp)
 {
-    mMainWidget.func = [this]() { impl_show_main_window(); };
-
     mSmashApp.get_window().set_key_repeat(false);
 }
 
@@ -102,4 +100,11 @@ void MenuScene::impl_show_main_window()
     }
 
     ImGui::End();
+}
+
+//============================================================================//
+
+void MenuScene::show_imgui_widgets()
+{
+    impl_show_main_window();
 }
