@@ -31,6 +31,8 @@ public: //====================================================//
 
     void refresh_options() override;
 
+    void show_imgui_widgets() override;
+
 private: //===================================================//
 
     void update() override;
@@ -50,9 +52,6 @@ private: //===================================================//
     SmashApp& mSmashApp;
 
     //--------------------------------------------------------//
-
-    sq::GuiWidget mGeneralWidget;
-    sq::GuiWidget mFightersWidget;
 
     void impl_show_general_window();
     void impl_show_fighters_window();

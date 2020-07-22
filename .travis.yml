@@ -1,0 +1,24 @@
+os: linux
+dist: focal
+language: cpp
+
+addons:
+  apt:
+    packages:
+      - libsfml-system2.5
+      - libsfml-window2.5
+      - libsfml-audio2.5
+      - libsfml-dev
+
+before_script:
+  - cd /home/travis/build/jagoly
+  - git clone --depth 1 https://github.com/jagoly/sqee.git
+  - cd /home/travis/build/jagoly/sqee
+  - cmake .
+  - cmake --build . --target sqee
+
+script:
+  - cd /home/travis/build/jagoly/SuperTuxSmash
+  - cmake .
+  - cmake --build .
+

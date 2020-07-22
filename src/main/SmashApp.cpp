@@ -43,6 +43,8 @@ void SmashApp::update(double elapsed)
 {
     auto& guiSystem = sq::GuiSystem::get();
 
+    SQASSERT(mActiveScene != nullptr, "we have no scene!");
+
     //-- fetch and handle events -----------------------------//
 
     if (mWindow->has_focus() == true)
@@ -56,20 +58,16 @@ void SmashApp::update(double elapsed)
     }
     else guiSystem.finish_handle_events(false);
 
-    //-- update and render the active scene ------------------//
+    //-- update and render scenes ----------------------------//
 
-    if (mActiveScene != nullptr)
-        mActiveScene->update_and_render(elapsed);
-
-    //-- update and render the debug overlay -----------------//
-
+    mActiveScene->update_and_render(elapsed);
     mDebugOverlay->update_and_render(elapsed);
 
     //-- draw and render imgui stuff -------------------------//
 
-    guiSystem.show_imgui_demo();
+    mActiveScene->show_imgui_widgets();
 
-    guiSystem.draw_widgets();
+    guiSystem.show_imgui_demo();
 
     guiSystem.finish_scene_update(elapsed);
 
@@ -186,8 +184,7 @@ void SmashApp::handle_event(sq::Event event)
 
     //--------------------------------------------------------//
 
-    if (mActiveScene != nullptr)
-        mActiveScene->handle_event(event);
+    mActiveScene->handle_event(event);
 }
 
 //============================================================================//

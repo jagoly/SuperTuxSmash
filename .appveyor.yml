@@ -1,0 +1,60 @@
+image: Visual Studio 2019
+
+before_build:
+
+  - cd c:/projects
+
+  - curl -fsSL -o sfml.zip https://www.sfml-dev.org/files/SFML-2.5.1-windows-vc15-64-bit.zip
+  - 7z x sfml.zip
+  - rename SFML-2.5.1 sfml
+
+  - git clone --depth 1 https://github.com/jagoly/sqee.git
+  - cd c:/projects/sqee
+  - cmake . -DCMAKE_PREFIX_PATH=c:/projects/sfml -G "Visual Studio 16 2019" -A x64
+  - cmake --build . --target sqee
+
+build_script:
+
+  - cd c:/projects/SuperTuxSmash
+
+  - cmake . -G "Visual Studio 16 2019" -A x64
+  - cmake --build .
+
+after_build:
+
+  - mkdir c:\out
+
+  - cd c:\projects\sfml
+  - copy bin\openal32.dll c:\out
+  - copy bin\sfml-audio-d-2.dll c:\out
+  - copy bin\sfml-system-d-2.dll c:\out
+  - copy bin\sfml-window-d-2.dll c:\out
+
+  - cd c:\projects\sqee
+  - copy Debug\sqee.dll c:\out
+  - copy lua54cpp\Debug\lua54cpp.dll c:\out
+
+  - cd c:\projects\SuperTuxSmash
+  - xcopy /E assets c:\out\assets\
+  - xcopy /E shaders c:\out\shaders\
+  - xcopy /E config c:\out\config\
+  - copy Debug\sts-game.exe c:\out
+
+  - cd "c:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Redist\MSVC\14.26.28720\debug_nonredist\x64"
+  - copy Microsoft.VC142.DebugCRT\msvcp140d.dll c:\out
+  - copy Microsoft.VC142.DebugCRT\vcruntime140d.dll c:\out
+  - copy Microsoft.VC142.DebugCRT\vcruntime140_1d.dll c:\out
+
+  - copy "c:\Program Files (x86)\Windows Kits\10\bin\10.0.19041.0\x64\ucrt\ucrtbased.dll" c:\out
+
+  - cd c:\
+  - rename out sts-windows-debug
+  - 7z a sts-windows-debug.zip sts-windows-debug
+
+  - move sts-windows-debug.zip c:\projects\SuperTuxSmash
+
+artifacts:
+
+  - path: sts-windows-debug.zip
+    name: sts-windows-debug
+

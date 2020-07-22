@@ -106,7 +106,7 @@ struct ParticleEmitter final
 
     //-- static members / methods ----------------------------//
 
-    static void reset_random_seed(uint64_t seed);
+    static void reset_random_seed(uint_fast32_t seed);
 };
 
 //============================================================================//

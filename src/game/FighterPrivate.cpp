@@ -1033,7 +1033,7 @@ void Fighter::base_tick_fighter()
 
     update_animation();
 
-    mArmature.compute_ubo_data(current.pose, mBoneMatrices.data(), mBoneMatrices.size());
+    mArmature.compute_ubo_data(current.pose, mBoneMatrices.data(), uint(mBoneMatrices.size()));
 
     mModelMatrix = maths::transform(Vec3F(current.position, 0.f), current.rotation, Vec3F(1.f));
 }

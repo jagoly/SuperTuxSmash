@@ -41,17 +41,6 @@ constexpr const float WIDTH_NAVIGATOR = 240;
 EditorScene::EditorScene(SmashApp& smashApp)
     : Scene(1.0 / 48.0), mSmashApp(smashApp)
 {
-    widget_toolbar.func = [this]() { impl_show_widget_toolbar(); };
-    widget_navigator.func = [this]() { impl_show_widget_navigator(); };
-    widget_hitblobs.func = [this]() { impl_show_widget_hitblobs(); };
-    widget_emitters.func = [this]() { impl_show_widget_emitters(); };
-    widget_script.func = [this]() { impl_show_widget_script(); };
-    widget_hurtblobs.func = [this]() { impl_show_widget_hurtblobs(); };
-    widget_timeline.func = [this]() { impl_show_widget_timeline(); };
-    widget_fighter.func = [this]() { impl_show_widget_fighter(); };
-
-    //--------------------------------------------------------//
-
     smashApp.get_globals().renderHitBlobs = true;
     smashApp.get_globals().renderHurtBlobs = true;
     smashApp.get_globals().renderDiamonds = true;
@@ -519,6 +508,20 @@ void EditorScene::impl_show_widget_fighter()
 
 //============================================================================//
 
+void EditorScene::show_imgui_widgets()
+{
+    impl_show_widget_toolbar();
+    impl_show_widget_navigator();
+    impl_show_widget_hitblobs();
+    impl_show_widget_emitters();
+    impl_show_widget_script();
+    impl_show_widget_hurtblobs();
+    impl_show_widget_timeline();
+    impl_show_widget_fighter();
+}
+
+//============================================================================//
+
 void EditorScene::create_base_context(FighterEnum fighterKey, BaseContext& ctx)
 {
     ctx.world = std::make_unique<FightWorld>(mSmashApp.get_globals());
@@ -742,10 +745,10 @@ void EditorScene::save_changes(ActionContext& ctx)
     auto& emitters = json["emitters"] = JsonValue::object();
 
     for (const auto& [key, blob] : action.mBlobs)
-        blob.to_json(blobs[key]);
+        blob.to_json(blobs[key.c_str()]);
 
     for (const auto& [key, emitter] : action.mEmitters)
-        emitter.to_json(emitters[key]);
+        emitter.to_json(emitters[key.c_str()]);
 
     sq::save_string_to_file(action.path + ".json", json.dump(2));
     sq::save_string_to_file(action.path + ".lua", action.mLuaSource);
@@ -758,7 +761,7 @@ void EditorScene::save_changes(HurtblobsContext& ctx)
 {
     JsonValue json;
     for (const auto& [key, blob] : ctx.fighter->mHurtBlobs)
-        blob.to_json(json[key]);
+        blob.to_json(json[key.c_str()]);
 
     sq::save_string_to_file("assets/fighters/%s/HurtBlobs.json"_fmt_(ctx.fighter->type), json.dump(2));
 

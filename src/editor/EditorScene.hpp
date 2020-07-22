@@ -33,6 +33,8 @@ public: //====================================================//
 
     void refresh_options() override;
 
+    void show_imgui_widgets() override;
+
     enum class PreviewMode { Pause, Normal, Slow, Slower };
 
 private: //===================================================//
@@ -101,17 +103,6 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
-    sq::GuiWidget widget_toolbar;
-    sq::GuiWidget widget_navigator;
-
-    sq::GuiWidget widget_hitblobs;
-    sq::GuiWidget widget_emitters;
-    sq::GuiWidget widget_script;
-    sq::GuiWidget widget_hurtblobs;
-    sq::GuiWidget widget_timeline;
-
-    sq::GuiWidget widget_fighter;
-
     void impl_setup_docks();
 
     void impl_show_widget_toolbar();
@@ -159,7 +150,7 @@ private: //===================================================//
     PreviewMode mPreviewMode = PreviewMode::Pause;
 
     bool mIncrementSeed = false;
-    uint64_t mRandomSeed = 0ul;
+    uint_fast32_t mRandomSeed = 0u;
 
     float mBlendValue = 1.f;
 

@@ -43,13 +43,12 @@ Action::~Action() = default;
 
 void Action::do_start()
 {
-    //mThread = sol::thread::create(world.lua);
-    lua_resetthread(mThread.state());
+    reset_lua_thread();
 
     mTickCoroutine = sol::coroutine(mThread.state(), mTickFunction);
     sol::set_environment(mEnvironment, mTickCoroutine);
 
-    SQASSERT(mTickCoroutine.valid(), "");
+    SQASSERT(mTickCoroutine.valid(), "error creating coroutine");
 
     mCurrentFrame = 0u;
     mWaitingUntil = 0u;
@@ -172,6 +171,10 @@ void Action::load_from_json()
 
 void Action::load_lua_from_file()
 {
+    // todo: This function has to load the script file twice, once to set mLuaSource
+    // and again to load the script. Need to figure out how to have lua load a script
+    // from a string, but still give error messages as if it was loading a file.
+
     const String filePath = path + ".lua";
 
     if (sq::check_file_exists(filePath) == false)
@@ -181,28 +184,23 @@ void Action::load_lua_from_file()
         return;
     }
 
+    mLuaSource = sq::get_string_from_file(filePath);
+
     try
     {
-        mEnvironment = { world.lua, sol::create, world.lua.globals() };
-
-        mEnvironment["action"] = this;
-        mEnvironment["fighter"] = &fighter;
+        reset_lua_environment();
 
         world.lua.script_file(filePath, mEnvironment);
         world.lua.script(VALIDATE_SCRIPT, mEnvironment, "validate", sol::load_mode::any);
 
         mTickFunction = mEnvironment["tick"];
         mCancelFunction = mEnvironment["cancel"];
-        mThread = sol::thread::create(world.lua);
     }
     catch (sol::error& error)
     {
         sq::log_warning("error loading script '%s'\n%s", filePath, error.what());
         load_lua_from_string(FALLBACK_SCRIPT);
     }
-
-    // todo: only bother to set this if we have are editing this action
-    mLuaSource = sq::get_string_from_file(filePath);
 }
 
 //----------------------------------------------------------------------------//
@@ -211,17 +209,13 @@ void Action::load_lua_from_string(StringView source)
 {
     try
     {
-        mEnvironment = { world.lua, sol::create, world.lua.globals() };
-
-        mEnvironment["action"] = this;
-        mEnvironment["fighter"] = &fighter;
+        reset_lua_environment();
 
         world.lua.script(source, mEnvironment, "source", sol::load_mode::any);
         world.lua.script(VALIDATE_SCRIPT, mEnvironment, "validate", sol::load_mode::any);
 
         mTickFunction = mEnvironment["tick"];
         mCancelFunction = mEnvironment["cancel"];
-        mThread = sol::thread::create(world.lua);
     }
     catch (sol::error& error)
     {
@@ -237,6 +231,26 @@ void Action::load_lua_from_string(StringView source)
 
 //============================================================================//
 
+void Action::reset_lua_environment()
+{
+    mEnvironment = { world.lua, sol::create, world.lua.globals() };
+
+    mEnvironment["action"] = this;
+    mEnvironment["fighter"] = &fighter;
+}
+
+void Action::reset_lua_thread()
+{
+    if (mThread.valid() == true)
+    {
+        lua_gc(mThread.state(), LUA_GCCOLLECT);
+        lua_resetthread(mThread.state());
+    }
+    else mThread = sol::thread::create(world.lua);
+}
+
+//============================================================================//
+
 bool Action::has_changes(const Action& reference) const
 {
     if (mBlobs != reference.mBlobs) return true;
@@ -248,12 +262,10 @@ bool Action::has_changes(const Action& reference) const
 void Action::apply_changes(const Action& source)
 {
     mBlobs.clear();
-    mEmitters.clear();
-    mLuaSource.clear();
-
     for (const auto& [key, blob] : source.mBlobs)
         mBlobs.try_emplace(key, blob);
 
+    mEmitters.clear();
     for (const auto& [key, emitter] : source.mEmitters)
         mEmitters.try_emplace(key, emitter);
 
