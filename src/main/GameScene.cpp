@@ -26,26 +26,32 @@ GameScene::GameScene(SmashApp& smashApp, GameSetup setup)
 {
     mSmashApp.get_window().set_key_repeat(false);
 
+    //--------------------------------------------------------//
+
+    auto& globals = mSmashApp.get_globals();
+    auto& options = mSmashApp.get_options();
+    auto& inputDevices = mSmashApp.get_input_devices();
+
+    //--------------------------------------------------------//
+
     // todo: these "globals" are dumb and not really needed, clean it up
 
-    smashApp.get_globals().renderHitBlobs = false;
-    smashApp.get_globals().renderHurtBlobs = false;
-    smashApp.get_globals().renderDiamonds = false;
-    smashApp.get_globals().renderSkeletons = false;
+    globals.renderHitBlobs = false;
+    globals.renderHurtBlobs = false;
+    globals.renderDiamonds = false;
+    globals.renderSkeletons = false;
 
-    smashApp.get_globals().editorMode = false;
-
-    //--------------------------------------------------------//
-
-    mFightWorld = std::make_unique<FightWorld>(mSmashApp.get_globals());
-    mRenderer = std::make_unique<Renderer>(mSmashApp.get_globals(), mSmashApp.get_options());
+    globals.editorMode = false;
 
     //--------------------------------------------------------//
 
-    mControllers[0] = std::make_unique<Controller>(mSmashApp.get_globals(), mSmashApp.get_input_devices(), "player1.json");
-    mControllers[1] = std::make_unique<Controller>(mSmashApp.get_globals(), mSmashApp.get_input_devices(), "player2.json");
-    mControllers[2] = std::make_unique<Controller>(mSmashApp.get_globals(), mSmashApp.get_input_devices(), "player3.json");
-    mControllers[3] = std::make_unique<Controller>(mSmashApp.get_globals(), mSmashApp.get_input_devices(), "player4.json");
+    mFightWorld = std::make_unique<FightWorld>(globals);
+    mRenderer = std::make_unique<Renderer>(globals, options);
+
+    mControllers[0] = std::make_unique<Controller>(globals, inputDevices, "config/player1.json");
+    mControllers[1] = std::make_unique<Controller>(globals, inputDevices, "config/player2.json");
+    mControllers[2] = std::make_unique<Controller>(globals, inputDevices, "config/player3.json");
+    mControllers[3] = std::make_unique<Controller>(globals, inputDevices, "config/player4.json");
 
     //--------------------------------------------------------//
 
@@ -54,7 +60,6 @@ GameScene::GameScene(SmashApp& smashApp, GameSetup setup)
 
     SWITCH (setup.stage)
     {
-        //CASE (TestZone)
         CASE (Null, TestZone)
         {
             stage = std::make_unique<TestZone_Stage>(*mFightWorld);

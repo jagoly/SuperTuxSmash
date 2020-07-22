@@ -22,39 +22,37 @@ build_script:
 
 after_build:
 
-  - cd C:\
-  
-  - dir MSVCP140D.dll /s
-  - dir VCRUNTIME140D.dll /s
-  - dir VCRUNTIME140_1D.dll /s
-  - dir ucrtbased.dll /s
+  - mkdir c:\out
 
-  - mkdir out
-  
-  - copy c:\projects\sfml\bin\openal32.dll out
-  - copy c:\projects\sfml\bin\sfml-audio-d-2.dll out
-  - copy c:\projects\sfml\bin\sfml-system-d-2.dll out
-  - copy c:\projects\sfml\bin\sfml-window-d-2.dll out
-  
-  - copy c:\projects\sqee\Debug\sqee.dll out
-  - copy c:\projects\sqee\lua54cpp\Debug\lua54cpp.dll out
+  - cd c:\projects\sfml
+  - copy bin\openal32.dll c:\out
+  - copy bin\sfml-audio-d-2.dll c:\out
+  - copy bin\sfml-system-d-2.dll c:\out
+  - copy bin\sfml-window-d-2.dll c:\out
 
-  - copy c:\projects\SuperTuxSmash\Debug\sts-game.exe out
+  - cd c:\projects\sqee
+  - copy Debug\sqee.dll c:\out
+  - copy lua54cpp\Debug\lua54cpp.dll c:\out
 
-  - copy c:\projects\SuperTuxSmash\player1.json out
-  - copy c:\projects\SuperTuxSmash\player2.json out
-  - copy c:\projects\SuperTuxSmash\player3.json out
-  - copy c:\projects\SuperTuxSmash\player4.json out
+  - cd c:\projects\SuperTuxSmash
+  - xcopy /E assets c:\out\assets\
+  - xcopy /E shaders c:\out\shaders\
+  - xcopy /E config c:\out\config\
+  - copy Debug\sts-game.exe c:\out
 
-  - xcopy /E c:\projects\SuperTuxSmash\assets out\assets\
-  - xcopy /E c:\projects\SuperTuxSmash\shaders out\shaders\
-  
+  - cd "c:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Redist\MSVC\14.26.28720\debug_nonredist\x64"
+  - copy Microsoft.VC142.DebugCRT\msvcp140d.dll c:\out
+  - copy Microsoft.VC142.DebugCRT\vcruntime140d.dll c:\out
+  - copy Microsoft.VC142.DebugCRT\vcruntime140_1d.dll c:\out
+
+  - copy c:\Windows\SysWOW64\ucrtbased.dll c:\out
+
   - rename out sts-windows-debug
 
   - 7z a sts-windows-debug.zip sts-windows-debug
 
 artifacts:
 
-  - path: sts-windows-debug.zip
+  - path: c:\sts-windows-debug.zip
     name: sts-windows-debug
 

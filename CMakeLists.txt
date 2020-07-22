@@ -64,16 +64,11 @@ if (NOT CMAKE_BINARY_DIR STREQUAL PROJECT_SOURCE_DIR)
 
     add_custom_command(TARGET sts-game POST_BUILD COMMAND ${CMAKE_COMMAND} -E create_symlink
         "${PROJECT_SOURCE_DIR}/assets" "${CMAKE_BINARY_DIR}/assets")
+
     add_custom_command(TARGET sts-game POST_BUILD COMMAND ${CMAKE_COMMAND} -E create_symlink
         "${PROJECT_SOURCE_DIR}/shaders" "${CMAKE_BINARY_DIR}/shaders")
 
     add_custom_command(TARGET sts-game POST_BUILD COMMAND ${CMAKE_COMMAND} -E create_symlink
-        "${PROJECT_SOURCE_DIR}/player1.json" "${CMAKE_BINARY_DIR}/player1.json")
-    add_custom_command(TARGET sts-game POST_BUILD COMMAND ${CMAKE_COMMAND} -E create_symlink
-        "${PROJECT_SOURCE_DIR}/player2.json" "${CMAKE_BINARY_DIR}/player2.json")
-    add_custom_command(TARGET sts-game POST_BUILD COMMAND ${CMAKE_COMMAND} -E create_symlink
-        "${PROJECT_SOURCE_DIR}/player3.json" "${CMAKE_BINARY_DIR}/player3.json")
-    add_custom_command(TARGET sts-game POST_BUILD COMMAND ${CMAKE_COMMAND} -E create_symlink
-        "${PROJECT_SOURCE_DIR}/player4.json" "${CMAKE_BINARY_DIR}/player4.json")
-        
+        "${PROJECT_SOURCE_DIR}/config" "${CMAKE_BINARY_DIR}/config")
+
 endif ()
