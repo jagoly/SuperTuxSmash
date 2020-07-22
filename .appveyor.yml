@@ -47,8 +47,8 @@ after_build:
 
   - copy c:\Windows\SysWOW64\ucrtbased.dll c:\out
 
+  - cd c:\
   - rename out sts-windows-debug
-
   - 7z a sts-windows-debug.zip sts-windows-debug
 
 artifacts:
