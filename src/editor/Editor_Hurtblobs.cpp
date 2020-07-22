@@ -71,7 +71,7 @@ void EditorScene::impl_show_widget_hurtblobs()
         if (collapseAll) ImGui::SetNextItemOpen(false);
         const bool sectionOpen = ImGui::CollapsingHeader(key, ImGuiTreeNodeFlags_AllowItemOverlap);
 
-        const ImPlus::ScopeID blobIdScope = { key };
+        const ImPlus::ScopeID blobIdScope = { key.c_str() };
 
         //--------------------------------------------------------//
 

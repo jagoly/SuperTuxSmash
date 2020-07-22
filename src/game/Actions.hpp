@@ -119,6 +119,11 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
+    void reset_lua_thread();
+    void reset_lua_environment();
+
+    //--------------------------------------------------------//
+
     bool has_changes(const Action& reference) const;
 
     void apply_changes(const Action& source);

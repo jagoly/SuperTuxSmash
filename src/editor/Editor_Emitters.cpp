@@ -65,7 +65,7 @@ void EditorScene::impl_show_widget_emitters()
     {
         auto& key = item.first; auto& emitter = item.second;
 
-        const ImPlus::ScopeID emitterIdScope = { key };
+        const ImPlus::ScopeID emitterIdScope = { key.c_str() };
 
         if (collapseAll) ImGui::SetNextItemOpen(false);
         const bool sectionOpen = ImGui::CollapsingHeader(key);
