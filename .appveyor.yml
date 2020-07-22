@@ -45,7 +45,7 @@ after_build:
   - copy Microsoft.VC142.DebugCRT\vcruntime140d.dll c:\out
   - copy Microsoft.VC142.DebugCRT\vcruntime140_1d.dll c:\out
 
-  - copy c:\Windows\SysWOW64\ucrtbased.dll c:\out
+  - copy "c:\Program Files (x86)\Windows Kits\10\bin\10.0.19041.0\x64\ucrt\ucrtbased.dll" c:\out
 
   - cd c:\
   - rename out sts-windows-debug
