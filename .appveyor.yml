@@ -51,8 +51,10 @@ after_build:
   - rename out sts-windows-debug
   - 7z a sts-windows-debug.zip sts-windows-debug
 
+  - move sts-windows-debug.zip c:\projects\SuperTuxSmash
+
 artifacts:
 
-  - path: c:\sts-windows-debug.zip
+  - path: sts-windows-debug.zip
     name: sts-windows-debug
 
