@@ -10,7 +10,7 @@ SuperTuxSmash requires [SQEE](https://github.com/jagoly/sqee).
 
 ##### Downloads
 
-The game is very far from complete, but you can get automatic builds for 64bit Windows from [AppVeyor](https://ci.appveyor.com/project/jagoly/supertuxsmash/build/artifacts). No Linux builds are currently available, but STS is fairly easy to build yourself (check out [.travis.yml](https://github.com/jagoly/SuperTuxSmash/blob/travis/.travis.yml)).
+The game is very far from complete, but you can get automatic builds for 64bit Windows from [AppVeyor](https://ci.appveyor.com/project/jagoly/supertuxsmash/build/artifacts). No Linux builds are currently available, but STS is fairly easy to build yourself (check out [.travis.yml](https://github.com/jagoly/SuperTuxSmash/blob/master/.travis.yml)).
 
 ### Licence Information
 
