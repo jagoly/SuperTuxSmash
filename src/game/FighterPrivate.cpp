@@ -1,15 +1,15 @@
-#include "game/Fighter.hpp"
+#include "game/Fighter.hpp" // IWYU pragma: associated
 
+#include "main/Options.hpp"
+
+#include "game/Action.hpp"
+#include "game/Controller.hpp"
+#include "game/FightWorld.hpp"
 #include "game/Stage.hpp"
 
-#include <sqee/macros.hpp>
 #include <sqee/debug/Assert.hpp>
 #include <sqee/debug/Logging.hpp>
 #include <sqee/maths/Functions.hpp>
-
-namespace maths = sq::maths;
-
-using sq::literals::operator""_fmt_;
 
 using namespace sts;
 
@@ -142,14 +142,14 @@ void Fighter::switch_action(ActionType type)
 
 //============================================================================//
 
-void Fighter::update_commands(const Controller::Input& input)
+void Fighter::update_commands(const InputFrame& input)
 {
     for (int i = STS_CMD_BUFFER_SIZE - 1u; i != 0; --i)
         mCommands[i] = std::move(mCommands[i-1]);
 
     mCommands[0].clear();
 
-    Vector<Command>& cmds = mCommands[0];
+    std::vector<Command>& cmds = mCommands[0];
 
     //--------------------------------------------------------//
 
@@ -197,7 +197,7 @@ void Fighter::update_commands(const Controller::Input& input)
 
 //============================================================================//
 
-void Fighter::update_transitions(const Controller::Input& input)
+void Fighter::update_transitions(const InputFrame& input)
 {
     Stage& stage = world.get_stage();
 
@@ -612,7 +612,7 @@ void Fighter::update_transitions(const Controller::Input& input)
 
 //============================================================================//
 
-void Fighter::update_states(const Controller::Input& input)
+void Fighter::update_states(const InputFrame& input)
 {
     Stage& stage = world.get_stage();
 
@@ -879,7 +879,7 @@ void Fighter::update_animation()
         current.rotation = root().rotation * rootInverseRestRotation * current.rotation;
         root().rotation = mArmature.get_rest_pose().front().rotation;
 
-        sq::log_info("pose: %s - %d", anim.key, time);
+        sq::log_debug("pose: {} - {}", anim.key, time);
 
         mPreviousAnimation = &anim;
         mPreviousAnimTimeDiscrete = time;
@@ -891,7 +891,7 @@ void Fighter::update_animation()
         current.rotation = root().rotation * rootInverseRestRotation * current.rotation;
         root().rotation = mArmature.get_rest_pose().front().rotation;
 
-        sq::log_info("pose: %s - %.4f", anim.key, time);
+        sq::log_debug("pose: {} - {}", anim.key, time);
 
         mPreviousAnimation = &anim;
         mPreviousAnimTimeContinuous = time;
@@ -985,7 +985,7 @@ void Fighter::update_animation()
         const float blend = float(++mFadeProgress) / float(mFadeFrames + 1u);
         current.pose = mArmature.blend_poses(mFadeStartPose, current.pose, blend);
         current.rotation = maths::slerp(mFadeStartRotation, current.rotation, blend);
-        sq::log_info("blend - %d / %d - %.3f", mFadeProgress, mFadeFrames, blend);
+        sq::log_debug("blend - {} / {} - {}", mFadeProgress, mFadeFrames, blend);
     }
     else mFadeProgress = mFadeFrames = 0u;
 
@@ -1006,9 +1006,9 @@ void Fighter::base_tick_fighter()
 
     //--------------------------------------------------------//
 
-    if (world.globals.editorMode == true)
+    if (world.options.editor_mode == true)
     {
-        const auto input = Controller::Input();
+        const auto input = InputFrame();
 
         update_commands(input);
         update_transitions(input);

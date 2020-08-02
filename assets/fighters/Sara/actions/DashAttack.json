@@ -1,9 +1,7 @@
 {
   "blobs": {},
-  "emitters": 
-  {
-    "FeetSlide": 
-    {
+  "emitters": {
+    "FeetSlide": {
       "bone": null,
       "colour.fixed": [ 1.0, 1.0, 1.0 ],
       "direction": [ 0.0, 1.0, 0.0 ],
@@ -13,8 +11,7 @@
       "opacity": [ 0.4, 0.5 ],
       "origin": [ 0.0, 0.0, 0.0 ],
       "radius": [ 0.15, 0.3 ],
-      "shape.disc": 
-      {
+      "shape.disc": {
         "incline": [ -0.01, 0.04 ],
         "speed": [ 1.1, 1.8 ]
       },

@@ -1,10 +1,12 @@
 #include "fighters/Tux_Render.hpp"
+#include "fighters/Tux_Fighter.hpp"
+
+#include "render/Camera.hpp"
+#include "render/Renderer.hpp"
 
 #include <sqee/gl/Context.hpp>
-#include <sqee/maths/Functions.hpp>
 
-using Context = sq::Context;
-namespace maths = sq::maths;
+using sq::Context;
 using namespace sts;
 
 //============================================================================//
@@ -13,8 +15,6 @@ Tux_Render::Tux_Render(Renderer& renderer, const Tux_Fighter& fighter)
     : RenderObject(renderer), fighter(fighter)
 {
     mUbo.create_and_allocate(sizeof(Tux_Render::mCharacterBlock));
-
-    //--------------------------------------------------------//
 
     ResourceCaches& cache = renderer.resources;
 
@@ -52,8 +52,6 @@ void Tux_Render::render_depth()
     auto& context = renderer.context;
     auto& shaders = renderer.shaders;
 
-    //--------------------------------------------------------//
-
     context.set_state(Context::Cull_Face::Back);
     context.set_state(Context::Depth_Compare::LessEqual);
     context.set_state(Context::Depth_Test::Replace);
@@ -71,8 +69,6 @@ void Tux_Render::render_depth()
 void Tux_Render::render_main()
 {
     auto& context = renderer.context;
-
-    //--------------------------------------------------------//
 
     context.set_state(Context::Cull_Face::Back);
     context.set_state(Context::Depth_Compare::Equal);

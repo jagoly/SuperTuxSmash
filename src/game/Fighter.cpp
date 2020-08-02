@@ -1,15 +1,16 @@
 #include "game/Fighter.hpp"
 
+#include "game/Action.hpp"
+#include "game/FightWorld.hpp"
+
 #include <sqee/debug/Assert.hpp>
-#include <sqee/maths/Functions.hpp>
 #include <sqee/debug/Logging.hpp>
-#include <sqee/misc/Algorithms.hpp>
+#include <sqee/maths/Functions.hpp>
 #include <sqee/misc/Files.hpp>
+#include <sqee/misc/Json.hpp>
 
 namespace maths = sq::maths;
 namespace algo = sq::algo;
-
-using sq::literals::operator""_fmt_;
 
 using namespace sts;
 
@@ -49,13 +50,13 @@ void Fighter::initialise_armature(const String& path)
             filePath = sq::build_path(path, "anims", name) + ".txt";
             if (sq::check_file_exists(filePath) == false)
             {
-                sq::log_warning("missing animation '%s'", filePath);
+                sq::log_warning("missing animation '{}'", filePath);
                 return { mArmature.make_null_animation(1u, looping), mode, name };
             }
         }
         Animation result = { mArmature.make_animation(filePath), mode, name };
-        if (!result.anim.looping() && looping) sq::log_warning("animation '%s' should loop", filePath);
-        if (result.anim.looping() && !looping) sq::log_warning("animation '%s' should not loop", filePath);
+        if (!result.anim.looping() && looping) sq::log_warning("animation '{}' should loop", filePath);
+        if (result.anim.looping() && !looping) sq::log_warning("animation '{}' should not loop", filePath);
         return result;
     };
 
@@ -133,7 +134,7 @@ void Fighter::initialise_armature(const String& path)
         if (anim.anim.totalTime > time) return; // anim is longer than time
 
         if (anim.anim.totalTime != 1u) // fallback animation, don't print another warning
-            sq::log_warning("anim '%s' shorter than '%s'", animName, timeName);
+            sq::log_warning("anim '{}' shorter than '{}'", animName, timeName);
 
         anim.anim.totalTime = anim.anim.times.front() = time + 1u;
     };
@@ -156,7 +157,7 @@ void Fighter::initialise_hurt_blobs(const String& path)
 
         try { blob.from_json(item.value()); }
         catch (const std::exception& e) {
-            sq::log_warning("problem loading hurt blob '%s': %s", item.key(), e.what());
+            sq::log_warning("problem loading hurt blob '{}': {}", item.key(), e.what());
         }
 
         world.enable_hurt_blob(&blob);
@@ -221,7 +222,7 @@ bool Fighter::consume_command(Fighter::Command cmd)
 {
     for (uint i = 0u; i < 8u; ++i)
     {
-        Vector<Command>& vec = mCommands[7u-i];
+        std::vector<Command>& vec = mCommands[7u-i];
         auto iter = std::find(vec.rbegin(), vec.rend(), cmd);
         if (iter != vec.rend())
         {
@@ -233,11 +234,11 @@ bool Fighter::consume_command(Fighter::Command cmd)
     return false;
 }
 
-bool Fighter::consume_command_oldest(InitList<Command> cmds)
+bool Fighter::consume_command_oldest(std::initializer_list<Command> cmds)
 {
     for (uint i = 0u; i < 8u; ++i)
     {
-        Vector<Command>& vec = mCommands[7u-i];
+        std::vector<Command>& vec = mCommands[7u-i];
         for (auto iter = vec.rbegin(); iter != vec.rend(); ++iter)
         {
             auto findIter = algo::find(cmds, *iter);
@@ -259,7 +260,7 @@ bool Fighter::consume_command_facing(Command leftCmd, Command rightCmd)
     return false; // make compiler happy
 }
 
-bool Fighter::consume_command_oldest_facing(InitList<Command> leftCmds, InitList<Command> rightCmds)
+bool Fighter::consume_command_oldest_facing(std::initializer_list<Command> leftCmds, std::initializer_list<Command> rightCmds)
 {
     if (status.facing == -1) return consume_command_oldest(leftCmds);
     if (status.facing == +1) return consume_command_oldest(rightCmds);
@@ -332,7 +333,7 @@ void Fighter::debug_reload_actions()
 
 //============================================================================//
 
-Vector<Mat4F> Fighter::debug_get_skeleton_mats() const
+std::vector<Mat4F> Fighter::debug_get_skeleton_mats() const
 {
     return mArmature.compute_skeleton_matrices(current.pose);
 }

@@ -1,13 +1,9 @@
-#include "editor/EditorScene.hpp"
+#include "editor/EditorScene.hpp" // IWYU pragma: associated
 
-#include <sqee/debug/Logging.hpp>
-#include <sqee/misc/Algorithms.hpp>
+#include "game/Action.hpp"
+#include "game/Fighter.hpp"
+
 #include <sqee/app/GuiWidgets.hpp>
-
-namespace algo = sq::algo;
-namespace maths = sq::maths;
-
-using sq::literals::operator""_fmt_;
 
 using namespace sts;
 
@@ -24,13 +20,14 @@ void EditorScene::impl_show_widget_script()
     if (mDoResetDockScript) ImGui::SetNextWindowDockID(mDockRightId);
     mDoResetDockScript = false;
 
-    const ImPlus::ScopeWindow window = { "Procedures", 0 };
+    const ImPlus::ScopeWindow window = { "Script", 0 };
     if (window.show == false) return;
 
     auto font = ImPlus::ScopeFont(ImPlus::FONT_MONO);
 
     ImGui::SetNextItemWidth(-1);
-    ImPlus::InputStringMultiline("##Script", action.mLuaSource, {});
+    const float widgetHeight = ImGui::GetContentRegionAvail().y;
+    ImPlus::InputStringMultiline("##Script", action.mLuaSource, {0.f, widgetHeight}, ImGuiInputTextFlags_NoUndoRedo);
 
     /*
 
@@ -96,7 +93,7 @@ void EditorScene::impl_show_widget_script()
 
         ImPlus::if_Popup("delete_procedure", 0, [&]()
         {
-            ImPlus::Text("Delete '%s'?"_fmt_(key));
+            ImPlus::Text("Delete '{}'?"_fmt_(key));
             if (ImGui::Button("Confirm"))
             {
                 toDelete = key;
@@ -106,7 +103,7 @@ void EditorScene::impl_show_widget_script()
 
         ImPlus::if_Popup("rename_procedure", 0, [&]()
         {
-            ImPlus::Text("Rename '%s':"_fmt_(key));
+            ImPlus::Text("Rename '{}':"_fmt_(key));
             TinyString newKey = key;
             if (ImGui::InputText("", newKey.data(), sizeof(TinyString), ImGuiInputTextFlags_EnterReturnsTrue))
             {
@@ -118,7 +115,7 @@ void EditorScene::impl_show_widget_script()
 
         ImPlus::if_Popup("copy_procedure", 0, [&]()
         {
-            ImPlus::Text("Copy '%s':"_fmt_(key));
+            ImPlus::Text("Copy '{}':"_fmt_(key));
             TinyString newKey = key;
             if (ImGui::InputText("", newKey.data(), sizeof(TinyString), ImGuiInputTextFlags_EnterReturnsTrue))
             {
@@ -216,7 +213,7 @@ void EditorScene::impl_show_widget_timeline()
     {
         ImGui::SameLine();
 
-        const String label = "%d"_fmt_(i);
+        const String label = "{}"_format(i);
 
         const bool active = ctx.currentFrame == i;
         const bool open = ImPlus::IsPopupOpen(label);

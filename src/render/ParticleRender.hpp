@@ -1,11 +1,12 @@
 #pragma once
 
-#include <sqee/misc/Builtins.hpp>
-#include <sqee/maths/Builtins.hpp>
+#include "setup.hpp"
 
 #include "game/ParticleSystem.hpp"
 
-#include "render/Renderer.hpp"
+#include <sqee/gl/FixedBuffer.hpp>
+#include <sqee/gl/Textures.hpp>
+#include <sqee/gl/VertexArray.hpp>
 
 namespace sts {
 
@@ -37,10 +38,10 @@ private: //===================================================//
         float averageDepth;
     };
 
-    Vector<ParticleSetInfo> mParticleSetInfo;
-    Vector<ParticleSetInfo> mParticleSetInfoKeep;
+    std::vector<ParticleSetInfo> mParticleSetInfo;
+    std::vector<ParticleSetInfo> mParticleSetInfoKeep;
 
-    Vector<ParticleVertex> mVertices;
+    std::vector<ParticleVertex> mVertices;
 
     //--------------------------------------------------------//
 

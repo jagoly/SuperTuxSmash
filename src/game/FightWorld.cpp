@@ -1,15 +1,15 @@
 #include "game/FightWorld.hpp"
 
-#include "game/Actions.hpp"
+#include "main/Options.hpp"
+
+#include "game/Action.hpp"
+#include "game/Blobs.hpp"
 #include "game/Fighter.hpp"
+#include "game/ParticleSystem.hpp"
 #include "game/Stage.hpp"
 
 #include <sqee/debug/Assert.hpp>
 #include <sqee/maths/Culling.hpp>
-#include <sqee/misc/Algorithms.hpp>
-
-namespace algo = sq::algo;
-namespace maths = sq::maths;
 
 using namespace sts;
 
@@ -39,12 +39,17 @@ int sol_lua_push(sol::types<TinyString>, lua_State* L, const TinyString& str)
 
 //============================================================================//
 
-FightWorld::FightWorld(const Globals& globals)
-    : globals(globals)
-    , mHurtBlobAlloc(globals.editorMode ? 128 * 64 : 128)
-    , mHitBlobAlloc(globals.editorMode ? 1024 * 64 : 1024)
-    , mEmitterAlloc(globals.editorMode ? 1024 * 64 : 1024)
+FightWorld::FightWorld(const Options& _options)
+    : options(_options)
+    , mHurtBlobAlloc(options.editor_mode ? 128 * 64 : 128)
+    , mHitBlobAlloc(options.editor_mode ? 1024 * 64 : 1024)
+    , mEmitterAlloc(options.editor_mode ? 1024 * 64 : 1024)
 {
+    mLuaState = std::make_unique<sol::state>();
+    mParticleSystem = std::make_unique<ParticleSystem>();
+
+    sol::state& lua = *mLuaState;
+
     lua.open_libraries(sol::lib::base, sol::lib::coroutine);
 
     sol::usertype<Action> actionType = lua.new_usertype<Action>("Action", sol::no_constructor);
@@ -86,7 +91,7 @@ void FightWorld::tick()
             mStage->check_boundary(*fighter);
     }
 
-    mParticleSystem.update_and_clean();
+    mParticleSystem->update_and_clean();
 }
 
 //============================================================================//
@@ -172,10 +177,10 @@ void FightWorld::impl_update_collisions()
         Fighter& other;
     };
 
-    Vector<FinalResult> finalResultVec;
+    std::vector<FinalResult> finalResultVec;
 
-    Array<HitBlob*, 32> bestHitBlobs {};
-    Array<HurtBlob*, 32> bestHurtBlobs {};
+    std::array<HitBlob*, 32> bestHitBlobs {};
+    std::array<HurtBlob*, 32> bestHurtBlobs {};
 
     for (auto& collisionsArr : mCollisions)
     {
@@ -219,13 +224,18 @@ void FightWorld::impl_update_collisions()
 
 //============================================================================//
 
-void FightWorld::set_stage(UniquePtr<Stage> stage)
+void FightWorld::set_stage(std::unique_ptr<Stage> stage)
 {
     mStage = std::move(stage);
 }
 
-void FightWorld::add_fighter(UniquePtr<Fighter> fighter)
+void FightWorld::add_fighter(std::unique_ptr<Fighter> fighter)
 {
+    SQASSERT(mFighters[fighter->index] == nullptr, "index already added");
+
+    const auto iter = algo::find_if(mFighterRefs, [&](auto& it) { return it->index > fighter->index; });
+    mFighterRefs.insert(iter, fighter.get());
+
     mFighters[fighter->index] = std::move(fighter);
 }
 
@@ -284,33 +294,6 @@ void FightWorld::disable_all_hurt_blobs(Fighter &fighter)
     const auto predicate = [&](HurtBlob* blob) { return blob->fighter == &fighter; };
     const auto end = std::remove_if(mEnabledHurtBlobs.begin(), mEnabledHurtBlobs.end(), predicate);
     mEnabledHurtBlobs.erase(end, mEnabledHurtBlobs.end());
-}
-
-//============================================================================//
-
-SceneData FightWorld::compute_scene_data() const
-{
-    SceneData result;
-
-    result.view = { Vec2F(+INFINITY), Vec2F(-INFINITY) };
-
-    for (const auto& fighter : mFighters)
-    {
-        if (fighter == nullptr) continue;
-
-        const Vec2F centre = fighter->get_position() + fighter->get_diamond().cross();
-
-        result.view.min = maths::min(result.view.min, centre);
-        result.view.max = maths::max(result.view.max, centre);
-    }
-
-    result.inner.min = mStage->get_inner_boundary().min;
-    result.inner.max = mStage->get_inner_boundary().max;
-
-    result.outer.min = mStage->get_outer_boundary().min;
-    result.outer.max = mStage->get_outer_boundary().max;
-
-    return result;
 }
 
 //============================================================================//

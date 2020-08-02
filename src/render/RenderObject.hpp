@@ -1,11 +1,10 @@
 #pragma once
 
-#include "render/Camera.hpp"
-#include "render/Renderer.hpp"
-
-//============================================================================//
+#include "setup.hpp" // IWYU pragma: export
 
 namespace sts {
+
+//============================================================================//
 
 class RenderObject : sq::NonCopyable
 {
@@ -29,5 +28,7 @@ protected: //=================================================//
 
     const Renderer& renderer;
 };
+
+//============================================================================//
 
 } // namespace sts

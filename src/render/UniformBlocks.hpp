@@ -1,12 +1,13 @@
 #pragma once
 
-#include <sqee/misc/Builtins.hpp>
-#include <sqee/maths/Builtins.hpp>
+#include "setup.hpp"
 
 #ifndef SQEE_MSVC
 _Pragma("GCC diagnostic push")
 _Pragma("GCC diagnostic ignored \"-Wpadded\"")
 #endif
+
+namespace sts {
 
 //============================================================================//
 
@@ -29,12 +30,14 @@ struct alignas(16) CharacterBlock
 {
     Mat4F  matrix;  // 64
     Mat34F normMat; // 48
-    Array<Mat34F, NumBones> bones;
+    std::array<Mat34F, NumBones> bones;
 };
 
 //static_assert(sizeof(CharacterBlock<80>) == 3952);
 
 //============================================================================//
+
+} // namespace sts
 
 #ifndef SQEE_MSVC
 _Pragma("GCC diagnostic pop")

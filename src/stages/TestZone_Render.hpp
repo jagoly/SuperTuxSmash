@@ -1,18 +1,14 @@
 #pragma once
 
-#include <sqee/gl/Textures.hpp>
-#include <sqee/gl/UniformBuffer.hpp>
-#include <sqee/gl/Program.hpp>
-
-#include <sqee/render/Mesh.hpp>
-
 #include "render/RenderObject.hpp"
 
-#include "stages/TestZone_Stage.hpp"
-
-//============================================================================//
+#include "render/ResourceCaches.hpp"
 
 namespace sts {
+
+class TestZone_Stage;
+
+//============================================================================//
 
 class TestZone_Render final : public RenderObject
 {
@@ -36,7 +32,7 @@ private: //===================================================//
 
     TextureHandle TEX_Diff;
 
-    sq::Program PROG_Main;
+    ProgramHandle PROG_Main;
 
     //--------------------------------------------------------//
 
@@ -47,5 +43,7 @@ private: //===================================================//
 
     const TestZone_Stage& stage;
 };
+
+//============================================================================//
 
 } // namespace sts

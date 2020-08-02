@@ -1,4 +1,22 @@
 {
   "blobs": {},
-  "emitters": {}
+  "emitters": {
+    "FeetSlide": {
+      "bone": null,
+      "colour.fixed": [ 1.0, 1.0, 1.0 ],
+      "direction": [ 0.0, 1.0, 0.0 ],
+      "endOpacity": 0.0,
+      "endScale": 2.0,
+      "lifetime": [ 12, 18 ],
+      "opacity": [ 0.4, 0.5 ],
+      "origin": [ 0.0, 0.0, 0.0 ],
+      "radius": [ 0.15, 0.3 ],
+      "shape.disc": {
+        "incline": [ -0.01, 0.04 ],
+        "speed": [ 1.1, 1.8 ]
+      },
+      "speed": [ 0.0, 0.0 ],
+      "sprite": "Smoke"
+    }
+  }
 }

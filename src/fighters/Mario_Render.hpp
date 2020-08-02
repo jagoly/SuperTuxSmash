@@ -1,13 +1,17 @@
 #pragma once
 
+#include "render/RenderObject.hpp"
+
+#include "render/ResourceCaches.hpp"
+#include "render/UniformBlocks.hpp"
+
 #include <sqee/gl/UniformBuffer.hpp>
 
-#include "render/RenderObject.hpp"
-#include "fighters/Mario_Fighter.hpp"
+namespace sts {
+
+class Mario_Fighter;
 
 //============================================================================//
-
-namespace sts {
 
 class Mario_Render final : public RenderObject
 {
@@ -51,5 +55,7 @@ private: //===================================================//
 
     const Mario_Fighter& fighter;
 };
+
+//============================================================================//
 
 } // namespace sts

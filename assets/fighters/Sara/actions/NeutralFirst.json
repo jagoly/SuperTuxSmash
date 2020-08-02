@@ -1,8 +1,6 @@
 {
-  "blobs": 
-  {
-    "BlobA": 
-    {
+  "blobs": {
+    "BlobA": {
       "bone": null,
       "damage": 3.0,
       "flavour": "Sour",
@@ -14,8 +12,7 @@
       "priority": "Low",
       "radius": 0.4
     },
-    "BlobB": 
-    {
+    "BlobB": {
       "bone": null,
       "damage": 3.0,
       "flavour": "Sour",

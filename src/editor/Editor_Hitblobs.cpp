@@ -1,11 +1,21 @@
-#include "editor/EditorScene.hpp"
+#include "editor/EditorScene.hpp" // IWYU pragma: associated
 
-#include <sqee/debug/Logging.hpp>
+#include "game/Action.hpp"
+#include "game/Blobs.hpp"
+#include "game/Fighter.hpp"
+
 #include <sqee/app/GuiWidgets.hpp>
 
-namespace maths = sq::maths;
-using sq::literals::operator""_fmt_;
 using namespace sts;
+
+//============================================================================//
+
+constexpr const float BLOB_RADIUS_MIN = 0.05f;
+constexpr const float BLOB_RADIUS_MAX = 2.f;
+constexpr const float BLOB_DAMAGE_MIN = 0.1f;
+constexpr const float BLOB_DAMAGE_MAX = 50.f;
+constexpr const float BLOB_KNOCK_MIN = 0.f;
+constexpr const float BLOB_KNOCK_MAX = 100.f;
 
 //============================================================================//
 
@@ -53,9 +63,9 @@ void EditorScene::impl_show_widget_hitblobs()
 
     //--------------------------------------------------------//
 
-    Optional<TinyString> toDelete;
-    Optional<Pair<TinyString, TinyString>> toRename;
-    Optional<Pair<TinyString, TinyString>> toCopy;
+    std::optional<TinyString> toDelete;
+    std::optional<std::pair<TinyString, TinyString>> toRename;
+    std::optional<std::pair<TinyString, TinyString>> toCopy;
 
     const auto boneMats = fighter.get_armature().compute_skeleton_matrices(fighter.get_armature().get_rest_pose());
     const auto& boneNames = fighter.get_armature().get_bone_names();
@@ -90,7 +100,7 @@ void EditorScene::impl_show_widget_hitblobs()
 
         ImPlus::if_Popup("delete_hitblob", 0, [&]()
         {
-            ImPlus::Text("Delete '%s'?"_fmt_(key));
+            ImPlus::Text("Delete '{}'?"_format(key));
             if (ImGui::Button("Confirm"))
             {
                 toDelete = key;
@@ -100,7 +110,7 @@ void EditorScene::impl_show_widget_hitblobs()
 
         ImPlus::if_Popup("rename_hitblob", 0, [&]()
         {
-            ImPlus::Text("Rename '%s':"_fmt_(key));
+            ImPlus::Text("Rename '{}':"_format(key));
             TinyString newKey = key;
             if (ImGui::InputText("", newKey.data(), sizeof(TinyString), ImGuiInputTextFlags_EnterReturnsTrue))
             {
@@ -112,7 +122,7 @@ void EditorScene::impl_show_widget_hitblobs()
 
         ImPlus::if_Popup("copy_hitblob", 0, [&]()
         {
-            ImPlus::Text("Copy '%s':"_fmt_(key));
+            ImPlus::Text("Copy '{}':"_format(key));
             TinyString newKey = key;
             if (ImGui::InputText("", newKey.data(), sizeof(TinyString), ImGuiInputTextFlags_EnterReturnsTrue))
             {
@@ -137,7 +147,7 @@ void EditorScene::impl_show_widget_hitblobs()
             ImGui::SameLine();
             ImPlus::InputVector(" Origin", blob.origin, 0, "%.4f");
 
-            ImPlus::SliderValue(" Radius", blob.radius, 0.05f, 2.0f, "%.3f metres");
+            ImPlus::SliderValue(" Radius", blob.radius, BLOB_RADIUS_MIN, BLOB_RADIUS_MAX, "%.3f metres");
 
             if (ImPlus::Button(" #  ##2") && blob.bone >= 0)
                 blob.origin = Vec3F(boneMats[blob.bone][3]);

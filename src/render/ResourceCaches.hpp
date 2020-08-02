@@ -1,12 +1,17 @@
 #pragma once
 
-#include <sqee/app/PreProcessor.hpp>
-#include <sqee/gl/Program.hpp>
-#include <sqee/gl/Textures.hpp>
-#include <sqee/misc/ResourceCache.hpp>
-#include <sqee/misc/ResourceHandle.hpp>
-#include <sqee/render/Mesh.hpp>
-#include <sqee/render/Armature.hpp>
+#include "setup.hpp"
+
+#include <sqee/gl/Program.hpp> // IWYU pragma: export
+#include <sqee/gl/Textures.hpp> // IWYU pragma: export
+#include <sqee/objects/Mesh.hpp> // IWYU pragma: export
+
+#include <sqee/misc/ResourceCache.hpp> // IWYU pragma: export
+#include <sqee/misc/ResourceHandle.hpp> // IWYU pragma: export
+
+//============================================================================//
+
+namespace sq { class PreProcessor; }
 
 namespace sts {
 
@@ -15,7 +20,6 @@ namespace sts {
 using TextureHandle   = sq::Handle<String, sq::Texture2D>;
 using TexArrayHandle  = sq::Handle<String, sq::TextureArray2D>;
 using MeshHandle      = sq::Handle<String, sq::Mesh>;
-//using AnimationHandle = sq::Handle<String, sq::Animation>;
 using ProgramHandle   = sq::Handle<sq::ProgramKey, sq::Program>;
 
 //============================================================================//
@@ -26,7 +30,7 @@ public:
     TextureCache();
     ~TextureCache() override;
 private:
-    UniquePtr<sq::Texture2D> create(const String& path) override;
+    std::unique_ptr<sq::Texture2D> create(const String& path) override;
 };
 
 //----------------------------------------------------------------------------//
@@ -37,7 +41,7 @@ public:
     TexArrayCache();
     ~TexArrayCache() override;
 private:
-    UniquePtr<sq::TextureArray2D> create(const String& path) override;
+    std::unique_ptr<sq::TextureArray2D> create(const String& path) override;
 };
 
 //----------------------------------------------------------------------------//
@@ -48,19 +52,8 @@ public:
     MeshCache();
     ~MeshCache() override;
 private:
-    UniquePtr<sq::Mesh> create(const String& path) override;
+    std::unique_ptr<sq::Mesh> create(const String& path) override;
 };
-
-//----------------------------------------------------------------------------//
-
-//class AnimationCache final : public sq::ResourceCache<String, sq::Armature::Animation>
-//{
-//public:
-//    AnimationCache();
-//    ~AnimationCache() override;
-//private:
-//    UniquePtr<sq::Armature::Animation> create(const String& path) override;
-//};
 
 //----------------------------------------------------------------------------//
 
@@ -70,7 +63,7 @@ public:
     ProgramCache(const sq::PreProcessor& processor);
     ~ProgramCache() override;
 private:
-    UniquePtr<sq::Program> create(const sq::ProgramKey& key) override;
+    std::unique_ptr<sq::Program> create(const sq::ProgramKey& key) override;
     const sq::PreProcessor& mProcessor;
 };
 
@@ -80,10 +73,8 @@ class ResourceCaches final : sq::NonCopyable
 {
 public: //====================================================//
 
-    ResourceCaches(const sq::PreProcessor&);
+    ResourceCaches(const sq::PreProcessor& processor);
     ~ResourceCaches();
-
-    //--------------------------------------------------------//
 
     TextureCache  textures;
     TexArrayCache texarrays;

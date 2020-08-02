@@ -1,43 +1,12 @@
 #pragma once
 
+#include "setup.hpp"
+
+#include "game/ActionEnums.hpp"
+
 #include <sqee/redist/sol.hpp>
 
-#include <sqee/macros.hpp>
-#include <sqee/misc/PoolTools.hpp>
-#include <sqee/misc/TinyString.hpp>
-
-#include "game/Blobs.hpp"
-#include "game/ParticleEmitter.hpp"
-
 namespace sts {
-
-//============================================================================//
-
-enum class ActionType : int8_t
-{
-    None = -1,
-    NeutralFirst,
-    TiltDown,
-    TiltForward,
-    TiltUp,
-    AirBack,
-    AirDown,
-    AirForward,
-    AirNeutral,
-    AirUp,
-    DashAttack,
-    SmashDown,
-    SmashForward,
-    SmashUp,
-    SpecialDown,
-    SpecialForward,
-    SpecialNeutral,
-    SpecialUp,
-    EvadeBack,
-    EvadeForward,
-    Dodge,
-    AirDodge
-};
 
 //============================================================================//
 
@@ -95,7 +64,7 @@ private: //===================================================//
 
     sq::PoolMap<TinyString, HitBlob> mBlobs;
 
-    sq::PoolMap<TinyString, ParticleEmitter> mEmitters;
+    sq::PoolMap<TinyString, Emitter> mEmitters;
 
     String mLuaSource; // only used for editor
 
@@ -128,40 +97,14 @@ private: //===================================================//
 
     void apply_changes(const Action& source);
 
-    UniquePtr<Action> clone() const;
+    std::unique_ptr<Action> clone() const;
 
     //--------------------------------------------------------//
 
-    friend struct DebugGui;
-    friend class EditorScene;
+    friend DebugGui;
+    friend EditorScene;
 };
 
 //============================================================================//
 
 } // namespace sts
-
-//============================================================================//
-
-SQEE_ENUM_HELPER(sts::ActionType,
-                 None,
-                 NeutralFirst,
-                 TiltDown,
-                 TiltForward,
-                 TiltUp,
-                 AirBack,
-                 AirDown,
-                 AirForward,
-                 AirNeutral,
-                 AirUp,
-                 DashAttack,
-                 SmashDown,
-                 SmashForward,
-                 SmashUp,
-                 SpecialDown,
-                 SpecialForward,
-                 SpecialNeutral,
-                 SpecialUp,
-                 EvadeBack,
-                 EvadeForward,
-                 Dodge,
-                 AirDodge)

@@ -1,15 +1,15 @@
 #pragma once
 
+#include "setup.hpp"
+
+#include "main/GameSetup.hpp"
+
 #include <sqee/app/Event.hpp>
-#include <sqee/app/GuiSystem.hpp>
 #include <sqee/app/Scene.hpp>
 
-#include "main/Options.hpp"
-#include "main/SmashApp.hpp"
+namespace sts {
 
 //============================================================================//
-
-namespace sts {
 
 class MenuScene final : public sq::Scene
 {
@@ -39,21 +39,9 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
-    void impl_show_main_window();
-
-    //--------------------------------------------------------//
-
-    struct {
-
-        struct {
-            FighterEnum fighter {-1};
-        } players[4];
-
-        StageEnum stage {-1};
-
-    } state;
-
-    GameSetup setup;
+    GameSetup mSetup;
 };
+
+//============================================================================//
 
 } // namespace sts

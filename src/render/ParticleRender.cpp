@@ -1,12 +1,12 @@
 #include "render/ParticleRender.hpp"
 
+#include "render/Renderer.hpp"
+
 #include <sqee/gl/Context.hpp>
+
 #include <sqee/redist/gl_loader.hpp>
 
-#include <algorithm> // for sort
-
-using Context = sq::Context;
-namespace maths = sq::maths;
+using sq::Context;
 using namespace sts;
 
 //============================================================================//

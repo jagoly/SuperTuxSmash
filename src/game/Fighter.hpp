@@ -1,25 +1,55 @@
 #pragma once
 
-#include <sqee/misc/Builtins.hpp>
+#include "setup.hpp" // IWYU pragma: export
 
-#include <sqee/render/Armature.hpp>
+#include "game/ActionEnums.hpp"
+#include "game/FighterEnums.hpp"
+#include "main/MainEnums.hpp"
 
-#include "game/Actions.hpp"
-#include "game/Controller.hpp"
-#include "game/FightWorld.hpp"
+#include <sqee/misc/PoolTools.hpp>
+#include <sqee/objects/Armature.hpp>
+
+//============================================================================//
 
 namespace sts {
 
-//====== Constants and Forward Declarations ==================================//
+struct InputFrame;
+struct Ledge;
 
-inline constexpr uint STS_CMD_BUFFER_SIZE = 8u;
-inline constexpr uint STS_LIGHT_LANDING_LAG = 2u;
-inline constexpr uint STS_HEAVY_LANDING_LAG = 8u;
-inline constexpr uint STS_JUMP_DELAY = 5u;
-inline constexpr uint STS_NO_LEDGE_CATCH_TIME = 48u;
-inline constexpr uint STS_MIN_LEDGE_HANG_TIME = 16u;
+//============================================================================//
 
-struct Ledge; // status.ledge
+constexpr const uint STS_CMD_BUFFER_SIZE = 8u;
+constexpr const uint STS_LIGHT_LANDING_LAG = 2u;
+constexpr const uint STS_HEAVY_LANDING_LAG = 8u;
+constexpr const uint STS_JUMP_DELAY = 5u;
+constexpr const uint STS_NO_LEDGE_CATCH_TIME = 48u;
+constexpr const uint STS_MIN_LEDGE_HANG_TIME = 16u;
+
+//============================================================================//
+
+struct LocalDiamond
+{
+    LocalDiamond() = default;
+
+    LocalDiamond(float _halfWidth, float _offsetTop, float _offsetCross)
+    {
+        halfWidth = _halfWidth;
+        offsetTop = _offsetTop;
+        offsetCross = _offsetCross;
+
+        normLeftDown = sq::maths::normalize(Vec2F(-_offsetCross, -_halfWidth));
+        normLeftUp = sq::maths::normalize(Vec2F(-_offsetCross, +_halfWidth));
+        normRightDown = sq::maths::normalize(Vec2F(+_offsetCross, -_halfWidth));
+        normRightUp = sq::maths::normalize(Vec2F(+_offsetCross, +_halfWidth));
+    }
+
+    float halfWidth, offsetTop, offsetCross;
+    Vec2F normLeftDown, normLeftUp, normRightDown, normRightUp;
+
+    Vec2F min() const { return { -halfWidth, 0.f }; }
+    Vec2F max() const { return { +halfWidth, offsetTop }; }
+    Vec2F cross() const { return { 0.f, offsetCross }; }
+};
 
 //============================================================================//
 
@@ -27,57 +57,9 @@ class Fighter : sq::NonCopyable
 {
 public: //====================================================//
 
-    enum class State
-    {
-        Neutral,
-        Walking,
-        Dashing,
-        Brake,
-        Crouch,
-        Charge,
-        Action,
-        AirAction,
-        Landing,
-        PreJump,
-        Jumping,
-        Helpless,
-        Knocked,
-        Stunned,
-        Shield,
-        LedgeHang,
-        LedgeClimb,
-        EditorPreview,
-    };
-
-    enum class Command
-    {
-        Shield,        ///< used to perform evades/dodges
-        Jump,          ///< used to jump and airhop
-        MashDown,      ///< used to drop through platforms and fastfall
-        MashUp,        ///< not currently used
-        MashLeft,      ///< used to start dashing
-        MashRight,     ///< used to start dashing
-        TurnLeft,      ///< used to change facing
-        TurnRight,     ///< used to change facing
-        SmashDown,     ///< begin charging a down smash
-        SmashUp,       ///< begin charging an up smash
-        SmashLeft,     ///< begin charging a forward smash
-        SmashRight,    ///< begin charging a forward smash
-        AttackDown,    ///< perform dtilt, dair or dash attack
-        AttackUp,      ///< perform utilt, uair or dash attack
-        AttackLeft,    ///< perform ftilt, fair, bair or dash attack
-        AttackRight,   ///< perform ftilt, fair, bair or dash attack
-        AttackNeutral, ///< perform neutral, nair or dash attack
-    };
-
-    enum class AnimMode
-    {
-        Standard,    ///< non-looping, without root motion
-        Looping,     ///< looping, without root motion
-        WalkCycle,   ///< looping, update using velocity and anim_walk_stride
-        DashCycle,   ///< looping, update using velocity and anim_dash_stride
-        ApplyMotion, ///< non-looping, extract root motion to object
-    };
+    using State = FighterState;
+    using Command = FighterCommand;
+    using AnimMode = FighterAnimMode;
 
     //--------------------------------------------------------//
 
@@ -251,7 +233,7 @@ public: //====================================================//
     const Mat4F& get_model_matrix() const { return mModelMatrix; }
 
     /// Get current armature pose matrices.
-    const Vector<Mat34F>& get_bone_matrices() const { return mBoneMatrices; }
+    const std::vector<Mat34F>& get_bone_matrices() const { return mBoneMatrices; }
 
     /// Get current position (same as a model matrix)
     Vec2F get_position() const { return current.position; }
@@ -309,15 +291,15 @@ private: //===================================================//
 
     bool consume_command(Command cmd);
 
-    bool consume_command_oldest(InitList<Command> cmds);
+    bool consume_command_oldest(std::initializer_list<Command> cmds);
 
     bool consume_command_facing(Command leftCmd, Command rightCmd);
 
-    bool consume_command_oldest_facing(InitList<Command> leftCmds, InitList<Command> rightCmds);
+    bool consume_command_oldest_facing(std::initializer_list<Command> leftCmds, std::initializer_list<Command> rightCmds);
 
     Controller* mController = nullptr;
 
-    Array<Vector<Command>, STS_CMD_BUFFER_SIZE> mCommands;
+    std::array<std::vector<Command>, STS_CMD_BUFFER_SIZE> mCommands;
 
     //-- methods used internally and by the action editor ----//
 
@@ -328,7 +310,7 @@ private: //===================================================//
     /// @param animNow      play this animation immediately
     /// @param fadeAfter    fade into animAfter over this many frames
     /// @param animAfter    play after the current anim finishes
-
+    ///
     void state_transition(State newState, uint fadeNow, const Animation* animNow,
                           uint fadeAfter, const Animation* animAfter);
 
@@ -336,11 +318,11 @@ private: //===================================================//
 
     //-- update methods, called each tick --------------------//
 
-    void update_commands(const Controller::Input& input);
+    void update_commands(const InputFrame& input);
 
-    void update_transitions(const Controller::Input& input);
+    void update_transitions(const InputFrame& input);
 
-    void update_states(const Controller::Input& input);
+    void update_states(const InputFrame& input);
 
     void update_animation();
 
@@ -350,7 +332,7 @@ private: //===================================================//
 
     Animations mAnimations;
 
-    Array<UniquePtr<Action>, sq::enum_count_v<ActionType>> mActions;
+    std::array<std::unique_ptr<Action>, sq::enum_count_v<ActionType>> mActions;
 
     sq::PoolMap<TinyString, HurtBlob> mHurtBlobs;
 
@@ -401,7 +383,7 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
-    Vector<Mat34F> mBoneMatrices;
+    std::vector<Mat34F> mBoneMatrices;
 
     Mat4F mModelMatrix;
 
@@ -409,60 +391,12 @@ public: //== debug and editor stuff ==========================//
 
     void debug_reload_actions();
 
-    Vector<Mat4F> debug_get_skeleton_mats() const;
+    std::vector<Mat4F> debug_get_skeleton_mats() const;
 
-    friend class EditorScene;
-    friend struct DebugGui;
+    friend DebugGui;
+    friend EditorScene;
 };
 
 //============================================================================//
 
 } // namespace sts
-
-//============================================================================//
-
-SQEE_ENUM_HELPER(sts::Fighter::State,
-                 Neutral,
-                 Walking,
-                 Dashing,
-                 Brake,
-                 Crouch,
-                 Charge,
-                 Action,
-                 AirAction,
-                 Landing,
-                 PreJump,
-                 Jumping,
-                 Helpless,
-                 Knocked,
-                 Stunned,
-                 Shield,
-                 LedgeHang,
-                 LedgeClimb,
-                 EditorPreview)
-
-SQEE_ENUM_HELPER(sts::Fighter::Command,
-                 Shield,
-                 Jump,
-                 MashDown,
-                 MashUp,
-                 MashLeft,
-                 MashRight,
-                 TurnLeft,
-                 TurnRight,
-                 SmashDown,
-                 SmashUp,
-                 SmashLeft,
-                 SmashRight,
-                 AttackDown,
-                 AttackUp,
-                 AttackLeft,
-                 AttackRight,
-                 AttackNeutral)
-
-SQEE_ENUM_HELPER(sts::Fighter::AnimMode,
-                 Standard,
-                 Looping,
-                 WalkCycle,
-                 DashCycle,
-                 ApplyMotion)

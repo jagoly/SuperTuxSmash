@@ -1,13 +1,10 @@
-#include "editor/EditorScene.hpp"
+#include "editor/EditorScene.hpp" // IWYU pragma: associated
 
-#include <sqee/debug/Logging.hpp>
-#include <sqee/misc/Algorithms.hpp>
+#include "game/Blobs.hpp"
+#include "game/FightWorld.hpp"
+#include "game/Fighter.hpp"
+
 #include <sqee/app/GuiWidgets.hpp>
-
-namespace algo = sq::algo;
-namespace maths = sq::maths;
-
-using sq::literals::operator""_fmt_;
 
 using namespace sts;
 
@@ -56,9 +53,9 @@ void EditorScene::impl_show_widget_hurtblobs()
 
     //--------------------------------------------------------//
 
-    Optional<TinyString> toDelete;
-    Optional<Pair<TinyString, TinyString>> toRename;
-    Optional<Pair<TinyString, TinyString>> toCopy;
+    std::optional<TinyString> toDelete;
+    std::optional<std::pair<TinyString, TinyString>> toRename;
+    std::optional<std::pair<TinyString, TinyString>> toCopy;
 
     //--------------------------------------------------------//
 
@@ -90,7 +87,7 @@ void EditorScene::impl_show_widget_hurtblobs()
 
         ImPlus::if_Popup("delete_hurtblob", 0, [&]()
         {
-            ImPlus::Text("Delete '%s'?"_fmt_(key));
+            ImPlus::Text("Delete '{}'?"_format(key));
             if (ImGui::Button("Confirm"))
             {
                 toDelete = key;
@@ -100,7 +97,7 @@ void EditorScene::impl_show_widget_hurtblobs()
 
         ImPlus::if_Popup("rename_hurtblob", 0, [&]()
         {
-            ImPlus::Text("Rename '%s':"_fmt_(key));
+            ImPlus::Text("Rename '{}':"_format(key));
             TinyString newKey = key;
             if (ImGui::InputText("", newKey.data(), sizeof(TinyString), ImGuiInputTextFlags_EnterReturnsTrue))
             {
@@ -112,7 +109,7 @@ void EditorScene::impl_show_widget_hurtblobs()
 
         ImPlus::if_Popup("copy_hurtblob", 0, [&]()
         {
-            ImPlus::Text("Copy '%s':"_fmt_(key));
+            ImPlus::Text("Copy '{}':"_format(key));
             TinyString newKey = key;
             if (ImGui::InputText("", newKey.data(), sizeof(TinyString), ImGuiInputTextFlags_EnterReturnsTrue))
             {

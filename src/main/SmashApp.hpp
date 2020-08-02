@@ -1,17 +1,17 @@
 #pragma once
 
-#include "main/GameSetup.hpp"
-#include "main/Globals.hpp"
-#include "main/Options.hpp"
+#include "setup.hpp"
 
 #include <sqee/app/Application.hpp>
-#include <sqee/app/Window.hpp>
-#include <sqee/app/InputDevices.hpp>
-#include <sqee/app/DebugOverlay.hpp>
 
-//============================================================================//
+#include <sqee/app/Window.hpp> // IWYU pragma: export
+#include <sqee/app/InputDevices.hpp> // IWYU pragma: export
+#include <sqee/app/DebugOverlay.hpp> // IWYU pragma: export
+#include <sqee/app/Scene.hpp> // IWYU pragma: export
 
 namespace sts {
+
+//============================================================================//
 
 class SmashApp final : public sq::Application
 {
@@ -35,12 +35,11 @@ public: //====================================================//
     sq::InputDevices& get_input_devices() { return *mInputDevices; }
     sq::DebugOverlay& get_debug_overlay() { return *mDebugOverlay; }
 
-    Globals& get_globals() { return mGlobals; }
-    Options& get_options() { return mOptions; }
+    Options& get_options() { return *mOptions; }
 
 private: //===================================================//
 
-    void initialise(Vector<String> args) override;
+    void initialise(std::vector<String> args) override;
 
     void update(double elapsed) override;
 
@@ -52,16 +51,15 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
-    UniquePtr<sq::Window> mWindow;
-    UniquePtr<sq::InputDevices> mInputDevices;
-    UniquePtr<sq::DebugOverlay> mDebugOverlay;
+    std::unique_ptr<sq::Window> mWindow;
+    std::unique_ptr<sq::InputDevices> mInputDevices;
+    std::unique_ptr<sq::DebugOverlay> mDebugOverlay;
 
-    Globals mGlobals;
-    Options mOptions;
+    std::unique_ptr<Options> mOptions;
 
-    //--------------------------------------------------------//
-
-    UniquePtr<sq::Scene> mActiveScene;
+    std::unique_ptr<sq::Scene> mActiveScene;
 };
+
+//============================================================================//
 
 } // namespace sts

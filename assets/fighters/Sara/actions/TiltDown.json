@@ -1,8 +1,6 @@
 {
-  "blobs": 
-  {
-    "BlobA": 
-    {
+  "blobs": {
+    "BlobA": {
       "bone": null,
       "damage": 3.0,
       "flavour": "Sour",
@@ -14,8 +12,7 @@
       "priority": "Normal",
       "radius": 0.5
     },
-    "BlobB": 
-    {
+    "BlobB": {
       "bone": null,
       "damage": 3.0,
       "flavour": "Sour",
@@ -27,8 +24,7 @@
       "priority": "Normal",
       "radius": 0.5
     },
-    "BlobC": 
-    {
+    "BlobC": {
       "bone": null,
       "damage": 6.0,
       "flavour": "Tangy",
@@ -41,12 +37,11 @@
       "radius": 0.5
     }
   },
-  "emitters": 
-  {
-    "PuffA": 
-    {
+  "emitters": {
+    "PuffA": {
       "bone": null,
-      "colour.random": [         [ 1.0, 0.0, 0.0 ],
+      "colour.random": [
+        [ 1.0, 0.0, 0.0 ],
         [ 0.0, 1.0, 0.0 ],
         [ 0.0, 0.0, 1.0 ]
       ],
@@ -57,18 +52,17 @@
       "opacity": [ 0.9, 1.0 ],
       "origin": [ 0.0, 0.1, 1.0 ],
       "radius": [ 0.3, 0.4 ],
-      "shape.disc": 
-      {
+      "shape.disc": {
         "incline": [ -0.05, 0.25 ],
         "speed": [ 1.5, 2.5 ]
       },
       "speed": [ 0.1, 0.5 ],
       "sprite": "Sparkle"
     },
-    "PuffB": 
-    {
+    "PuffB": {
       "bone": null,
-      "colour.random": [         [ 1.0, 0.0, 0.0 ],
+      "colour.random": [
+        [ 1.0, 0.0, 0.0 ],
         [ 0.0, 1.0, 0.0 ],
         [ 0.0, 0.0, 1.0 ]
       ],
@@ -79,18 +73,17 @@
       "opacity": [ 0.9, 1.0 ],
       "origin": [ 0.0, 0.1, 1.5 ],
       "radius": [ 0.3, 0.4 ],
-      "shape.disc": 
-      {
+      "shape.disc": {
         "incline": [ -0.05, 0.25 ],
         "speed": [ 1.5, 2.5 ]
       },
       "speed": [ 0.1, 0.5 ],
       "sprite": "Sparkle"
     },
-    "PuffC": 
-    {
+    "PuffC": {
       "bone": null,
-      "colour.random": [         [ 1.0, 0.0, 0.0 ],
+      "colour.random": [
+        [ 1.0, 0.0, 0.0 ],
         [ 0.0, 1.0, 0.0 ],
         [ 0.0, 0.0, 1.0 ]
       ],
@@ -101,8 +94,7 @@
       "opacity": [ 0.9, 1.0 ],
       "origin": [ 0.0, 0.1, 2.0 ],
       "radius": [ 0.3, 0.4 ],
-      "shape.disc": 
-      {
+      "shape.disc": {
         "incline": [ -0.05, 0.25 ],
         "speed": [ 1.5, 2.5 ]
       },

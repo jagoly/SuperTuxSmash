@@ -1,10 +1,12 @@
 #include "fighters/Sara_Render.hpp"
+#include "fighters/Sara_Fighter.hpp"
+
+#include "render/Camera.hpp"
+#include "render/Renderer.hpp"
 
 #include <sqee/gl/Context.hpp>
-#include <sqee/maths/Functions.hpp>
 
-using Context = sq::Context;
-namespace maths = sq::maths;
+using sq::Context;
 using namespace sts;
 
 //============================================================================//
@@ -13,8 +15,6 @@ Sara_Render::Sara_Render(Renderer& renderer, const Sara_Fighter& fighter)
     : RenderObject(renderer), fighter(fighter)
 {
     mUbo.create_and_allocate(sizeof(Sara_Render::mCharacterBlock));
-
-    //--------------------------------------------------------//
 
     ResourceCaches& cache = renderer.resources;
 
@@ -61,21 +61,19 @@ void Sara_Render::render_depth()
     auto& context = renderer.context;
     auto& shaders = renderer.shaders;
 
-    //--------------------------------------------------------//
-
     context.set_state(Context::Depth_Compare::LessEqual);
     context.set_state(Context::Depth_Test::Replace);
     context.bind_VertexArray(MESH_Sara->get_vao());
     context.bind_UniformBuffer(mUbo, 2u);
 
-        context.set_state(Context::Cull_Face::Back);
-        context.bind_Program(shaders.Depth_FighterSolid);
-        MESH_Sara->draw_partial(0u);
+    context.set_state(Context::Cull_Face::Back);
+    context.bind_Program(shaders.Depth_FighterSolid);
+    MESH_Sara->draw_partial(0u);
 
-        context.set_state(Context::Cull_Face::Disable);
-        context.bind_Texture(TX_Hair_mask.get(), 0u);
-        context.bind_Program(shaders.Depth_FighterPunch);
-        MESH_Sara->draw_partial(1u);
+    context.set_state(Context::Cull_Face::Disable);
+    context.bind_Texture(TX_Hair_mask.get(), 0u);
+    context.bind_Program(shaders.Depth_FighterPunch);
+    MESH_Sara->draw_partial(1u);
 }
 
 //============================================================================//
@@ -84,23 +82,21 @@ void Sara_Render::render_main()
 {
     auto& context = renderer.context;
 
-    //--------------------------------------------------------//
-
     context.set_state(Context::Depth_Compare::Equal);
     context.set_state(Context::Depth_Test::Keep);
     context.bind_VertexArray(MESH_Sara->get_vao());
     context.bind_UniformBuffer(mUbo, 2u);
 
-        context.set_state(Context::Cull_Face::Back);
-        context.bind_Texture(TX_Main_diff.get(), 0u);
-        context.bind_Texture(TX_Main_spec.get(), 2u);
-        context.bind_Program(PROG_Main.get());
-        MESH_Sara->draw_partial(0u);
+    context.set_state(Context::Cull_Face::Back);
+    context.bind_Texture(TX_Main_diff.get(), 0u);
+    context.bind_Texture(TX_Main_spec.get(), 2u);
+    context.bind_Program(PROG_Main.get());
+    MESH_Sara->draw_partial(0u);
 
-        context.set_state(Context::Cull_Face::Disable);
-        context.bind_Texture(TX_Hair_diff.get(), 0u);
-        context.bind_Texture(TX_Hair_norm.get(), 1u);
-        context.bind_Texture(TX_Hair_spec.get(), 2u);
-        context.bind_Program(PROG_Hair.get());
-        MESH_Sara->draw_partial(1u);
+    context.set_state(Context::Cull_Face::Disable);
+    context.bind_Texture(TX_Hair_diff.get(), 0u);
+    context.bind_Texture(TX_Hair_norm.get(), 1u);
+    context.bind_Texture(TX_Hair_spec.get(), 2u);
+    context.bind_Program(PROG_Hair.get());
+    MESH_Sara->draw_partial(1u);
 }

@@ -1,17 +1,15 @@
 #include "game/Controller.hpp"
 
-#include <sqee/debug/Logging.hpp>
 #include <sqee/misc/Json.hpp>
 
-namespace maths = sq::maths;
 using namespace sts;
 
 //============================================================================//
 
-Controller::Controller(const Globals& globals, const sq::InputDevices& devices, String configPath)
-    : globals(globals), devices(devices)
+Controller::Controller(const sq::InputDevices& devices, const String& configPath)
+    : devices(devices)
 {
-    const auto root = sq::parse_json_from_file(configPath);
+    const JsonValue root = sq::parse_json_from_file(configPath);
 
     config.gamepad_port  = static_cast<int>                (int(root.at("gamepad_port")));
     config.stick_move    = static_cast<sq::Gamepad_Stick>  (int(root.at("stick_move")));
@@ -55,7 +53,7 @@ void Controller::handle_event(sq::Event event)
 
 //============================================================================//
 
-Controller::Input Controller::get_input()
+InputFrame Controller::get_input()
 {
     using Stick = sq::Gamepad_Stick;
     using Button = sq::Gamepad_Button;
@@ -192,11 +190,8 @@ Controller::Input Controller::get_input()
 
     mPrevAxisMove = mInput.float_axis;
 
-    Input result = mInput;
-    mInput = Input();
-
-    if (globals.disableInput)
-        result = Input();
+    InputFrame result = mInput;
+    mInput = InputFrame();
 
     return result;
 }

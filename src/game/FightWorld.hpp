@@ -1,48 +1,13 @@
 #pragma once
 
-#include <sqee/redist/sol.hpp>
+#include "setup.hpp"
 
-#include <sqee/debug/Assert.hpp>
-#include <sqee/misc/Builtins.hpp>
-#include <sqee/misc/PoolTools.hpp>
-#include <sqee/app/MessageBus.hpp>
+#include "Blobs.hpp"
+#include "Emitter.hpp"
 
-#include "main/Enumerations.hpp"
-#include "main/Globals.hpp"
-
-#include "render/SceneData.hpp"
-
-#include "game/Blobs.hpp"
-#include "game/ParticleSystem.hpp"
-#include "game/ParticleEmitter.hpp"
+#include <sqee/redist/sol_fwd.hpp>
 
 namespace sts {
-
-//============================================================================//
-
-struct LocalDiamond
-{
-    LocalDiamond() = default;
-
-    LocalDiamond(float _halfWidth, float _offsetTop, float _offsetCross)
-    {
-        halfWidth = _halfWidth;
-        offsetTop = _offsetTop;
-        offsetCross = _offsetCross;
-
-        normLeftDown = sq::maths::normalize(Vec2F(-_offsetCross, -_halfWidth));
-        normLeftUp = sq::maths::normalize(Vec2F(-_offsetCross, +_halfWidth));
-        normRightDown = sq::maths::normalize(Vec2F(+_offsetCross, -_halfWidth));
-        normRightUp = sq::maths::normalize(Vec2F(+_offsetCross, +_halfWidth));
-    }
-
-    float halfWidth, offsetTop, offsetCross;
-    Vec2F normLeftDown, normLeftUp, normRightDown, normRightUp;
-
-    Vec2F min() const { return { -halfWidth, 0.f }; }
-    Vec2F max() const { return { +halfWidth, offsetTop }; }
-    Vec2F cross() const { return { 0.f, offsetCross }; }
-};
 
 //============================================================================//
 
@@ -50,15 +15,13 @@ class FightWorld final : sq::NonCopyable
 {
 public: //====================================================//
 
-    FightWorld(const Globals& globals);
+    FightWorld(const Options& options);
 
     ~FightWorld();
 
     //--------------------------------------------------------//
 
-    const Globals& globals;
-
-    sol::state lua;
+    const Options& options;
 
     //--------------------------------------------------------//
 
@@ -67,10 +30,10 @@ public: //====================================================//
     //--------------------------------------------------------//
 
     /// Set the stage for the game.
-    void set_stage(UniquePtr<Stage> stage);
+    void set_stage(std::unique_ptr<Stage> stage);
 
     /// Add a fighter to the game.
-    void add_fighter(UniquePtr<Fighter> fighter);
+    void add_fighter(std::unique_ptr<Fighter> fighter);
 
     //--------------------------------------------------------//
 
@@ -100,10 +63,10 @@ public: //====================================================//
     //--------------------------------------------------------//
 
     /// Access the stage.
-    Stage& get_stage() { SQASSERT(mStage, ""); return *mStage; }
+    Stage& get_stage() { return *mStage; }
 
     /// Access the stage (const).
-    const Stage& get_stage() const { SQASSERT(mStage, ""); return *mStage; }
+    const Stage& get_stage() const { return *mStage; }
 
     /// Access a fighter by index, might be null.
     Fighter* get_fighter(uint8_t index) { return mFighters[index].get(); }
@@ -111,20 +74,11 @@ public: //====================================================//
     /// Access a fighter by index, might be null (const).
     const Fighter* get_fighter(uint8_t index) const { return mFighters[index].get(); }
 
-    //--------------------------------------------------------//
+    /// Acquire an iterable of all added fighters.
+    auto get_fighters() { return sq::StackVector<Fighter*, 4>(mFighterRefs.begin(), mFighterRefs.end()); }
 
-    /// Acquire a vector of all added fighters.
-    Vector<Fighter*> get_fighters()
-    {
-        Vector<Fighter*> result;
-        result.reserve(4u);
-
-        for (auto& uptr : mFighters)
-            if (uptr != nullptr)
-                result.push_back(uptr.get());
-
-        return result;
-    }
+    /// Acquire an iterable of all added fighters (const).
+    auto get_fighters() const { return sq::StackVector<const Fighter*, 4>(mFighterRefs.begin(), mFighterRefs.end()); }
 
     //--------------------------------------------------------//
 
@@ -138,31 +92,27 @@ public: //====================================================//
     auto get_emitter_allocator() { return mEmitterAlloc.get(); }
 
     /// Access the enabled HurtBlobs.
-    const Vector<HurtBlob*>& get_hurt_blobs() const { return mEnabledHurtBlobs; };
+    const std::vector<HurtBlob*>& get_hurt_blobs() const { return mEnabledHurtBlobs; };
 
     /// Access the enabled HitBlobs.
-    const Vector<HitBlob*>& get_hit_blobs() const { return mEnabledHitBlobs; };
+    const std::vector<HitBlob*>& get_hit_blobs() const { return mEnabledHitBlobs; };
 
     //--------------------------------------------------------//
+
+    /// Access the shared Lua State.
+    sol::state& get_lua_state() { return *mLuaState; }
 
     /// Access the ParticleSystem.
-    ParticleSystem& get_particle_system() { return mParticleSystem; }
-
-    /// Access the MessageBus.
-    sq::MessageBus& get_message_bus() { return mMessageBus; }
-
-    //--------------------------------------------------------//
-
-    SceneData compute_scene_data() const;
+    ParticleSystem& get_particle_system() { return *mParticleSystem; }
 
 private: //===================================================//
 
     // undo stack in the editor can cause us to run out of slots, so we reserve more space
     // todo: for the editor, use big pools shared between all contexts
 
-    sq::PoolAllocatorStore<Pair<const TinyString, HurtBlob>> mHurtBlobAlloc;
-    sq::PoolAllocatorStore<Pair<const TinyString, HitBlob>> mHitBlobAlloc;
-    sq::PoolAllocatorStore<Pair<const TinyString, ParticleEmitter>> mEmitterAlloc;
+    sq::PoolAllocatorStore<std::pair<const TinyString, HurtBlob>> mHurtBlobAlloc;
+    sq::PoolAllocatorStore<std::pair<const TinyString, HitBlob>> mHitBlobAlloc;
+    sq::PoolAllocatorStore<std::pair<const TinyString, Emitter>> mEmitterAlloc;
 
     //--------------------------------------------------------//
 
@@ -170,30 +120,29 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
-    ParticleSystem mParticleSystem;
+    std::unique_ptr<sol::state> mLuaState;
 
-    sq::MessageBus mMessageBus;
-
-    //--------------------------------------------------------//
-
-    UniquePtr<Stage> mStage;
-
-    Array<UniquePtr<Fighter>, 4> mFighters;
-
-    Vector<HitBlob*> mEnabledHitBlobs;
-    Vector<HurtBlob*> mEnabledHurtBlobs;
+    std::unique_ptr<ParticleSystem> mParticleSystem;
 
     //--------------------------------------------------------//
 
-    Array<Array<uint32_t, 4>, 4> mHitBitsArray;
+    std::unique_ptr<Stage> mStage;
+
+    std::array<std::unique_ptr<Fighter>, 4> mFighters;
+    sq::StackVector<Fighter*, 4> mFighterRefs;
+
+    std::vector<HitBlob*> mEnabledHitBlobs;
+    std::vector<HurtBlob*> mEnabledHurtBlobs;
+
+    //--------------------------------------------------------//
+
+    std::array<std::array<uint32_t, 4>, 4> mHitBitsArray;
 
     struct Collision { HitBlob* hit; HurtBlob* hurt; };
 
-    Array<Array<Vector<Collision>, 4u>, 4u> mCollisions;
+    std::array<std::array<std::vector<Collision>, 4u>, 4u> mCollisions;
 
 public: //== debug and editor interfaces =====================//
-
-    void debug_show_fighter_widget();
 
     void debug_reload_actions();
 

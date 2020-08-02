@@ -4,9 +4,6 @@
 
 #include <sqee/maths/Culling.hpp>
 
-#include <sqee/misc/StringCast.hpp>
-
-namespace maths = sq::maths;
 using namespace sts;
 
 //============================================================================//

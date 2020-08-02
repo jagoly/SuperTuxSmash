@@ -1,11 +1,12 @@
 #pragma once
 
-#include <sqee/misc/Builtins.hpp>
-#include <sqee/maths/Builtins.hpp>
+#include "setup.hpp"
 
-#include <sqee/misc/Json.hpp>
+//============================================================================//
 
 namespace sts {
+
+struct Emitter;
 
 //============================================================================//
 
@@ -45,7 +46,7 @@ class ParticleSystem final : sq::NonCopyable
 {
 public: //====================================================//
 
-    using VertexVec = Vector<ParticleVertex>;
+    using VertexVec = std::vector<ParticleVertex>;
 
     //--------------------------------------------------------//
 
@@ -66,15 +67,15 @@ public: //====================================================//
 
     void compute_vertices(float blend, VertexVec& vertices) const;
 
-    const Vector<ParticleData>& get_particles() const { return mParticles; }
+    const std::vector<ParticleData>& get_particles() const { return mParticles; }
 
 private: //===================================================//
 
-    Vector<ParticleData> mParticles;
+    std::vector<ParticleData> mParticles;
 
     //--------------------------------------------------------//
 
-    friend struct ParticleEmitter;
+    friend Emitter;
 };
 
 //============================================================================//

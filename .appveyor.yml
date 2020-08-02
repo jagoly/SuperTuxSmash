@@ -32,7 +32,9 @@ after_build:
 
   - cd c:\projects\sqee
   - copy Debug\sqee.dll c:\out
-  - copy lua54cpp\Debug\lua54cpp.dll c:\out
+  - copy libs\dearimgui\Debug\dearimgui.dll c:\out
+  - copy libs\format\Debug\format.dll c:\out
+  - copy libs\lua54cpp\Debug\lua54cpp.dll c:\out
 
   - cd c:\projects\SuperTuxSmash
   - xcopy /E assets c:\out\assets\

@@ -1,17 +1,14 @@
-#include "game/Actions.hpp"
+#include "game/Action.hpp"
 
-#include "main/Globals.hpp"
+#include "main/Options.hpp"
 
+#include "game/FightWorld.hpp"
 #include "game/Fighter.hpp"
 
 #include <sqee/debug/Logging.hpp>
 #include <sqee/misc/Files.hpp>
 #include <sqee/misc/Json.hpp>
 #include <sqee/misc/Parsing.hpp>
-
-namespace maths = sq::maths;
-
-using sq::literals::operator""_fmt_;
 
 using namespace sts;
 
@@ -76,7 +73,7 @@ bool Action::do_tick()
         emitter.emitVelocity = Vec3F(fighter.get_velocity().x * 0.2f, 0.f, 0.f);
     }
 
-    if (world.globals.editorMode == false)
+    if (world.options.editor_mode == false)
         SQASSERT(mTickCoroutine.runnable(), "finish_action not called");
 
     if (mCurrentFrame >= mWaitingUntil)
@@ -121,16 +118,15 @@ void Action::load_from_json()
 
     if (sq::check_file_exists(filePath) == false)
     {
-        sq::log_warning("missing json   '%s'", filePath);
+        sq::log_warning("missing json   '{}'", filePath);
         return;
     }
 
     const JsonValue root = sq::parse_json_from_file(filePath);
 
-    Vector<String> errors;
+    String errors;
 
-    try {
-    for (auto iter : root.at("blobs").items())
+    TRY_FOR (auto iter : root.at("blobs").items())
     {
         HitBlob& blob = mBlobs[iter.key()];
 
@@ -138,30 +134,25 @@ void Action::load_from_json()
         blob.action = this;
 
         try { blob.from_json(iter.value()); }
-        catch (const std::exception& e) {
-            errors.push_back("blob '%s': %s"_fmt_(iter.key(), e.what()));
-        }
+        catch (const std::exception& e) { errors += "\nblob '{}': {}"_format(iter.key(), e.what()); }
     }
-    } catch (const std::exception& e) { errors.emplace_back(e.what()); }
+    CATCH (const std::exception& e) { errors += '\n'; errors += e.what(); }
 
-    try {
-    for (auto iter : root.at("emitters").items())
+    TRY_FOR (auto iter : root.at("emitters").items())
     {
-        ParticleEmitter& emitter = mEmitters[iter.key()];
+        Emitter& emitter = mEmitters[iter.key()];
 
         emitter.fighter = &fighter;
         emitter.action = this;
 
         try { emitter.from_json(iter.value()); }
-        catch (const std::exception& e) {
-            errors.push_back("emitter '%s': %s"_fmt_(iter.key(), e.what()));
-        }
+        catch (const std::exception& e) { errors += "\nemitter '{}': {}"_format(iter.key(), e.what()); }
     }
-    } catch (const std::exception& e) { errors.emplace_back(e.what()); }
+    CATCH (const std::exception& e) { errors += '\n'; errors += e.what(); }
 
     if (errors.empty() == false)
     {
-        sq::log_warning_block("errors in json '%s'"_fmt_(filePath), errors);
+        sq::log_warning_multiline("errors in json '{}'{}", filePath, errors);
         mBlobs.clear();
         mEmitters.clear();
     }
@@ -175,11 +166,13 @@ void Action::load_lua_from_file()
     // and again to load the script. Need to figure out how to have lua load a script
     // from a string, but still give error messages as if it was loading a file.
 
+    sol::state& lua = world.get_lua_state();
+
     const String filePath = path + ".lua";
 
     if (sq::check_file_exists(filePath) == false)
     {
-        sq::log_warning("missing script '%s'", filePath);
+        sq::log_warning("missing script '{}'", filePath);
         load_lua_from_string(FALLBACK_SCRIPT);
         return;
     }
@@ -190,15 +183,15 @@ void Action::load_lua_from_file()
     {
         reset_lua_environment();
 
-        world.lua.script_file(filePath, mEnvironment);
-        world.lua.script(VALIDATE_SCRIPT, mEnvironment, "validate", sol::load_mode::any);
+        lua.script_file(filePath, mEnvironment);
+        lua.script(VALIDATE_SCRIPT, mEnvironment, "validate", sol::load_mode::any);
 
         mTickFunction = mEnvironment["tick"];
         mCancelFunction = mEnvironment["cancel"];
     }
-    catch (sol::error& error)
+    catch (const sol::error& error)
     {
-        sq::log_warning("error loading script '%s'\n%s", filePath, error.what());
+        sq::log_warning("error loading script '{}'\n{}", filePath, error.what());
         load_lua_from_string(FALLBACK_SCRIPT);
     }
 }
@@ -207,33 +200,38 @@ void Action::load_lua_from_file()
 
 void Action::load_lua_from_string(StringView source)
 {
+    sol::state& lua = world.get_lua_state();
+
     try
     {
         reset_lua_environment();
 
-        world.lua.script(source, mEnvironment, "source", sol::load_mode::any);
-        world.lua.script(VALIDATE_SCRIPT, mEnvironment, "validate", sol::load_mode::any);
+        lua.script(source, mEnvironment, "source", sol::load_mode::any);
+        lua.script(VALIDATE_SCRIPT, mEnvironment, "validate", sol::load_mode::any);
 
         mTickFunction = mEnvironment["tick"];
         mCancelFunction = mEnvironment["cancel"];
     }
-    catch (sol::error& error)
+    catch (const sol::error& error)
     {
-        sq::log_warning("error loading script '%s.lua'", path);
-        sq::log_only(error.what());
+        sq::log_warning("error loading script '{}.lua'\n{}", path, error.what());
 
         if (source.data() == FALLBACK_SCRIPT)
             sq::log_error("fallback script is broken???");
 
         load_lua_from_string(FALLBACK_SCRIPT);
     }
+
+    reset_lua_thread();
 }
 
 //============================================================================//
 
 void Action::reset_lua_environment()
 {
-    mEnvironment = { world.lua, sol::create, world.lua.globals() };
+    sol::state& lua = world.get_lua_state();
+
+    mEnvironment = { lua, sol::create, lua.globals() };
 
     mEnvironment["action"] = this;
     mEnvironment["fighter"] = &fighter;
@@ -241,12 +239,14 @@ void Action::reset_lua_environment()
 
 void Action::reset_lua_thread()
 {
+    sol::state& lua = world.get_lua_state();
+
     if (mThread.valid() == true)
     {
         lua_gc(mThread.state(), LUA_GCCOLLECT);
         lua_resetthread(mThread.state());
     }
-    else mThread = sol::thread::create(world.lua);
+    else mThread = sol::thread::create(lua);
 }
 
 //============================================================================//
@@ -273,7 +273,7 @@ void Action::apply_changes(const Action& source)
     load_lua_from_string(mLuaSource);
 }
 
-UniquePtr<Action> Action::clone() const
+std::unique_ptr<Action> Action::clone() const
 {
     auto result = std::make_unique<Action>(world, fighter, type, path);
 
@@ -286,11 +286,11 @@ UniquePtr<Action> Action::clone() const
 
 void Action::lua_func_enable_blob(TinyString key)
 {
-    sq::log_only("enable_blob('%s')", key);
+    sq::log_debug("enable_blob('{}')", key);
 
     const auto iter = mBlobs.find(key);
     if (iter == mBlobs.end())
-        throw "invalid blob '%s'"_fmt_(key);
+        throw "invalid blob '{}'"_format(key);
 
     world.enable_hit_blob(&iter->second);
 };
@@ -299,11 +299,11 @@ void Action::lua_func_enable_blob(TinyString key)
 
 void Action::lua_func_disable_blob(TinyString key)
 {
-    sq::log_only("disable_blob('%s')", key);
+    sq::log_debug("disable_blob('{}')", key);
 
     const auto iter = mBlobs.find(key);
     if (iter == mBlobs.end())
-        throw "invalid blob '%s'"_fmt_(key);
+        throw "invalid blob '{}'"_format(key);
 
     world.disable_hit_blob(&iter->second);
 };
@@ -312,7 +312,7 @@ void Action::lua_func_disable_blob(TinyString key)
 
 void Action::lua_func_finish_action()
 {
-    sq::log_only("finish_action()");
+    sq::log_debug("finish_action()");
 
     mFinished = true;
 };
@@ -321,11 +321,11 @@ void Action::lua_func_finish_action()
 
 void Action::lua_func_emit_particles(TinyString key, uint count)
 {
-    sq::log_only("emit_particles('%s', %d)", key, count);
+    sq::log_debug("emit_particles('{}', {})", key, count);
 
     const auto iter = mEmitters.find(key);
     if (iter == mEmitters.end())
-        throw "invalid emitter '%s'"_fmt_(key);
+        throw "invalid emitter '{}'"_format(key);
 
     iter->second.generate(world.get_particle_system(), count);
 }
@@ -334,10 +334,10 @@ void Action::lua_func_emit_particles(TinyString key, uint count)
 
 void Action::lua_func_wait_until(uint frame)
 {
-    sq::log_only("wait_until(%d)", frame);
+    sq::log_debug("wait_until({})", frame);
 
     if (frame <= mCurrentFrame)
-        throw "can't wait for %d on %d"_fmt_(frame, mCurrentFrame);
+        throw "can't wait for {} on {}"_format(frame, mCurrentFrame);
 
     mWaitingUntil = frame;
 }

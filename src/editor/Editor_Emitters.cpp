@@ -1,11 +1,23 @@
-#include "editor/EditorScene.hpp"
+#include "editor/EditorScene.hpp" // IWYU pragma: associated
 
-#include <sqee/debug/Logging.hpp>
+#include "game/Action.hpp"
+#include "game/Emitter.hpp"
+#include "game/Fighter.hpp"
+
 #include <sqee/app/GuiWidgets.hpp>
 
-namespace maths = sq::maths;
-using sq::literals::operator""_fmt_;
 using namespace sts;
+
+//============================================================================//
+
+constexpr const float EMIT_END_SCALE_MAX = 10.f;
+constexpr const float EMIT_END_OPACITY_MAX = 10.f;
+constexpr const uint16_t EMIT_RAND_LIFETIME_MIN = 4u;
+constexpr const uint16_t EMIT_RAND_LIFETIME_MAX = 480u;
+constexpr const float EMIT_RAND_RADIUS_MIN = 0.05f;
+constexpr const float EMIT_RAND_RADIUS_MAX = 1.f;
+constexpr const float EMIT_RAND_OPACITY_MIN = 0.1f;
+constexpr const float EMIT_RAND_SPEED_MAX = 20.f;
 
 //============================================================================//
 
@@ -42,9 +54,8 @@ void EditorScene::impl_show_widget_emitters()
         {
             if (auto [iter, ok] = action.mEmitters.try_emplace(newKey); ok)
             {
-                ParticleEmitter& emitter = iter->second;
-                emitter.fighter = &fighter;
-                emitter.action = &action;
+                iter->second.fighter = &fighter;
+                iter->second.action = &action;
                 ImGui::CloseCurrentPopup();
             }
         }
@@ -53,9 +64,9 @@ void EditorScene::impl_show_widget_emitters()
 
     //--------------------------------------------------------//
 
-    Optional<TinyString> toDelete;
-    Optional<Pair<TinyString, TinyString>> toRename;
-    Optional<Pair<TinyString, TinyString>> toCopy;
+    std::optional<TinyString> toDelete;
+    std::optional<std::pair<TinyString, TinyString>> toRename;
+    std::optional<std::pair<TinyString, TinyString>> toCopy;
 
     //--------------------------------------------------------//
 
@@ -87,7 +98,7 @@ void EditorScene::impl_show_widget_emitters()
 
         ImPlus::if_Popup("delete_emitter", 0, [&]()
         {
-            ImPlus::Text("Delete '%s'?"_fmt_(key));
+            ImPlus::Text("Delete '{}'?"_format(key));
             if (ImGui::Button("Confirm"))
             {
                 toDelete = key;
@@ -97,7 +108,7 @@ void EditorScene::impl_show_widget_emitters()
 
         ImPlus::if_Popup("rename_emitter", 0, [&]()
         {
-            ImPlus::Text("Rename '%s':"_fmt_(key));
+            ImPlus::Text("Rename '{}':"_format(key));
             TinyString newKey = key;
             if (ImGui::InputText("", newKey.data(), sizeof(TinyString), ImGuiInputTextFlags_EnterReturnsTrue))
             {
@@ -109,7 +120,7 @@ void EditorScene::impl_show_widget_emitters()
 
         ImPlus::if_Popup("copy_emitter", 0, [&]()
         {
-            ImPlus::Text("Copy '%s':"_fmt_(key));
+            ImPlus::Text("Copy '{}':"_format(key));
             TinyString newKey = key;
             if (ImGui::InputText("", newKey.data(), sizeof(TinyString), ImGuiInputTextFlags_EnterReturnsTrue))
             {
@@ -152,7 +163,7 @@ void EditorScene::impl_show_widget_emitters()
                 if (emitter.colour.index() != 0)
                 {
                     const Vec3F defaultValue = emitter.colour_random().front();
-                    emitter.colour.emplace<ParticleEmitter::FixedColour>(defaultValue);
+                    emitter.colour.emplace<Emitter::FixedColour>(defaultValue);
                 }
 
                 ImGui::ColorEdit3(" RGB", emitter.colour_fixed().data, ImGuiColorEditFlags_Float);
@@ -163,7 +174,7 @@ void EditorScene::impl_show_widget_emitters()
                 if (emitter.colour.index() != 1)
                 {
                     const Vec3F defaultValue = emitter.colour_fixed();
-                    emitter.colour.emplace<ParticleEmitter::RandomColour>({defaultValue});
+                    emitter.colour.emplace<Emitter::RandomColour>({defaultValue});
                 }
 
                 int indexToDelete = -1;
@@ -188,7 +199,7 @@ void EditorScene::impl_show_widget_emitters()
             if (shapeIndex == 0)
             {
                 if (emitter.shape.index() != 0)
-                    emitter.shape.emplace<ParticleEmitter::BallShape>();
+                    emitter.shape.emplace<Emitter::BallShape>();
 
                 auto& shape = emitter.shape_ball();
                 ImPlus::SliderValueRange2(" Speed##shape", shape.speed.min, shape.speed.max, 0.f, 100.f, "%.3f");
@@ -197,7 +208,7 @@ void EditorScene::impl_show_widget_emitters()
             if (shapeIndex == 1)
             {
                 if (emitter.shape.index() != 1)
-                    emitter.shape.emplace<ParticleEmitter::DiscShape>();
+                    emitter.shape.emplace<Emitter::DiscShape>();
 
                 auto& shape = emitter.shape_disc();
                 ImPlus::SliderValueRange2(" Incline##shape", shape.incline.min, shape.incline.max, -0.25f, 0.25f, "%.3f");

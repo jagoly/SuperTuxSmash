@@ -1,42 +1,40 @@
 #pragma once
 
-#include <sqee/misc/Builtins.hpp>
+#include "setup.hpp"
 
-#include <sqee/app/InputDevices.hpp>
 #include <sqee/app/Event.hpp>
+#include <sqee/app/InputDevices.hpp>
 
-#include "main/Globals.hpp"
+namespace sts {
 
 //============================================================================//
 
-namespace sts {
+/// One frame of input from a Controller.
+struct InputFrame final
+{
+    bool press_attack = false;
+    bool press_jump = false;
+    bool press_shield = false;
+
+    bool hold_attack = false;
+    bool hold_jump = false;
+    bool hold_shield = false;
+
+    Vec2F float_axis {}; ///< -1, -0.5, -0, +0, +0.5, +1
+
+    struct { int8_t x=0, y=0; } int_axis;  ///< in the range of -2 to +2
+    struct { int8_t x=0, y=0; } mash_axis; ///< true for one frame if you quickly push all the way
+    struct { int8_t x=0, y=0; } mod_axis;  ///< same as mash_axis but lasts for a few frames
+    struct { int8_t x=0, y=0; } norm_axis; ///< just int_axis but normalised
+};
+
+//============================================================================//
 
 class Controller final : sq::NonCopyable
 {
 public: //====================================================//
 
-    Controller(const Globals& globals, const sq::InputDevices& devices, String configPath);
-
-    //--------------------------------------------------------//
-
-    struct Input
-    {
-        bool press_attack = false;
-        bool press_jump = false;
-
-        bool hold_attack = false;
-        bool hold_jump = false;
-
-        bool press_shield = false;
-        bool hold_shield = false;
-
-        Vec2F float_axis {}; ///< -1, -0.5, -0, +0, +0.5, +1
-
-        struct { int8_t x=0, y=0; } int_axis;  ///< in the range of -2 to +2
-        struct { int8_t x=0, y=0; } mash_axis; ///< true for one frame if you quickly push all the way
-        struct { int8_t x=0, y=0; } mod_axis;  ///< same as mash_axis but lasts for a few frames
-        struct { int8_t x=0, y=0; } norm_axis; ///< just int_axis but normalised
-    };
+    Controller(const sq::InputDevices& devices, const String& configPath);
 
     //--------------------------------------------------------//
 
@@ -44,11 +42,10 @@ public: //====================================================//
     void handle_event(sq::Event event);
 
     /// Refresh and access input data.
-    Input get_input();
+    InputFrame get_input();
 
     //--------------------------------------------------------//
 
-    const Globals& globals;
     const sq::InputDevices& devices;
 
 private: //===================================================//
@@ -57,20 +54,20 @@ private: //===================================================//
 
         int gamepad_port = -1;
 
-        sq::Gamepad_Stick stick_move = sq::Gamepad_Stick::Unknown;
+        sq::Gamepad_Stick stick_move {-1};
 
-        sq::Gamepad_Button button_attack = sq::Gamepad_Button::Unknown;
-        sq::Gamepad_Button button_jump   = sq::Gamepad_Button::Unknown;
-        sq::Gamepad_Button button_shield = sq::Gamepad_Button::Unknown;
+        sq::Gamepad_Button button_attack {-1};
+        sq::Gamepad_Button button_jump {-1};
+        sq::Gamepad_Button button_shield {-1};
 
-        sq::Keyboard_Key key_left  = sq::Keyboard_Key::Unknown;
-        sq::Keyboard_Key key_up    = sq::Keyboard_Key::Unknown;
-        sq::Keyboard_Key key_right = sq::Keyboard_Key::Unknown;
-        sq::Keyboard_Key key_down  = sq::Keyboard_Key::Unknown;
+        sq::Keyboard_Key key_left {-1};
+        sq::Keyboard_Key key_up {-1};
+        sq::Keyboard_Key key_right {-1};
+        sq::Keyboard_Key key_down {-1};
 
-        sq::Keyboard_Key key_attack = sq::Keyboard_Key::Unknown;
-        sq::Keyboard_Key key_jump   = sq::Keyboard_Key::Unknown;
-        sq::Keyboard_Key key_shield = sq::Keyboard_Key::Unknown;
+        sq::Keyboard_Key key_attack {-1};
+        sq::Keyboard_Key key_jump {-1};
+        sq::Keyboard_Key key_shield {-1};
 
     } config;
 
@@ -84,7 +81,9 @@ private: //===================================================//
     bool mDoneMashX = false;
     bool mDoneMashY = false;
 
-    Input mInput;
+    InputFrame mInput;
 };
+
+//============================================================================//
 
 } // namespace sts

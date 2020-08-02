@@ -1,19 +1,17 @@
 #pragma once
 
-#include <sqee/app/Event.hpp>
-#include <sqee/app/GuiSystem.hpp>
+#include "setup.hpp"
+
+#include "game/ActionEnums.hpp"
+#include "main/MainEnums.hpp"
+
 #include <sqee/app/Scene.hpp>
 
-#include "render/Renderer.hpp"
-
-#include "game/Actions.hpp"
-#include "game/FightWorld.hpp"
-#include "game/Fighter.hpp"
-
-#include "main/Options.hpp"
-#include "main/SmashApp.hpp"
-
 #include <set>
+
+// IWYU pragma: no_include "game/Action.hpp"
+// IWYU pragma: no_include "game/FightWorld.hpp"
+// IWYU pragma: no_include "render/Renderer.hpp"
 
 namespace sts {
 
@@ -35,6 +33,7 @@ public: //====================================================//
 
     void show_imgui_widgets() override;
 
+    // only public so we can use SQEE_ENUM_HELPER
     enum class PreviewMode { Pause, Normal, Slow, Slower };
 
 private: //===================================================//
@@ -57,8 +56,8 @@ private: //===================================================//
 
     struct BaseContext
     {
-        UniquePtr<FightWorld> world;
-        UniquePtr<Renderer> renderer;
+        std::unique_ptr<FightWorld> world;
+        std::unique_ptr<Renderer> renderer;
 
         Fighter* fighter;
         RenderObject* renderFighter;
@@ -68,13 +67,13 @@ private: //===================================================//
     {
         ActionKey key;
 
-        UniquePtr<Action> savedData;
+        std::unique_ptr<Action> savedData;
         bool modified = false;
 
-        Vector<UniquePtr<Action>> undoStack;
+        std::vector<std::unique_ptr<Action>> undoStack;
         size_t undoIndex = 0u;
 
-        std::map<TinyString, Vector<String>> buildErrors;
+        std::map<TinyString, std::vector<String>> buildErrors;
 
         int timelineLength = 0;
         int currentFrame = 0;
@@ -84,10 +83,10 @@ private: //===================================================//
     {
         FighterEnum key;
 
-        UniquePtr<decltype(Fighter::mHurtBlobs)> savedData;
+        std::unique_ptr<sq::PoolMap<TinyString, HurtBlob>> savedData;
         bool modified = false;
 
-        Vector<UniquePtr<decltype(Fighter::mHurtBlobs)>> undoStack;
+        std::vector<std::unique_ptr<sq::PoolMap<TinyString, HurtBlob>>> undoStack;
         size_t undoIndex = 0u;
 
         std::set<TinyString> hiddenKeys;
@@ -141,6 +140,7 @@ private: //===================================================//
     void scrub_to_frame_current(ActionContext& ctx);
 
     void tick_action_context(ActionContext& ctx);
+    void scrub_to_frame_previous(ActionContext& ctx);
 
     //--------------------------------------------------------//
 
@@ -181,5 +181,7 @@ private: //===================================================//
 };
 
 } // namespace sts
+
+//============================================================================//
 
 SQEE_ENUM_HELPER(sts::EditorScene::PreviewMode, Pause, Normal, Slow, Slower)

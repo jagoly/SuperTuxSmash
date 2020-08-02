@@ -1,13 +1,17 @@
 #pragma once
 
+#include "render/RenderObject.hpp"
+
+#include "render/ResourceCaches.hpp"
+#include "render/UniformBlocks.hpp"
+
 #include <sqee/gl/UniformBuffer.hpp>
 
-#include "render/RenderObject.hpp"
-#include "fighters/Sara_Fighter.hpp"
+namespace sts {
+
+class Sara_Fighter;
 
 //============================================================================//
-
-namespace sts {
 
 class Sara_Render final : public RenderObject
 {
@@ -50,5 +54,7 @@ private: //===================================================//
 
     const Sara_Fighter& fighter;
 };
+
+//============================================================================//
 
 } // namespace sts

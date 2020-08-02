@@ -1,14 +1,13 @@
 #pragma once
 
-#include "render/Renderer.hpp"
+#include "setup.hpp"
+
+#include <sqee/gl/FixedBuffer.hpp>
+#include <sqee/gl/Program.hpp>
+#include <sqee/gl/VertexArray.hpp>
+#include <sqee/objects/Mesh.hpp>
 
 namespace sts {
-
-//====== Forward Declarations ================================================//
-
-struct HitBlob;
-struct HurtBlob;
-class Fighter;
 
 //============================================================================//
 
@@ -22,9 +21,9 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    void render_hit_blobs(const Vector<HitBlob*>& blobs);
+    void render_hit_blobs(const std::vector<HitBlob*>& blobs);
 
-    void render_hurt_blobs(const Vector<HurtBlob*>& blobs);
+    void render_hurt_blobs(const std::vector<HurtBlob*>& blobs);
 
     void render_diamond(const Fighter& fighter);
 

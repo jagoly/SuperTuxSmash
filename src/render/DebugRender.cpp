@@ -2,17 +2,18 @@
 
 #include "game/Blobs.hpp"
 #include "game/Fighter.hpp"
-#include "game/FightWorld.hpp"
-#include "render/Camera.hpp"
 
+#include "render/Camera.hpp"
+#include "render/Renderer.hpp"
+
+#include <sqee/app/PreProcessor.hpp>
 #include <sqee/gl/Context.hpp>
 #include <sqee/maths/Functions.hpp>
+#include <sqee/objects/Armature.hpp>
+
 #include <sqee/redist/gl_loader.hpp>
 
-#include <sqee/debug/Logging.hpp>
-
-using Context = sq::Context;
-namespace maths = sq::maths;
+using sq::Context;
 using namespace sts;
 
 //============================================================================//
@@ -56,7 +57,7 @@ void DebugRenderer::refresh_options()
 
 //============================================================================//
 
-void DebugRenderer::render_hit_blobs(const Vector<HitBlob*>& blobs)
+void DebugRenderer::render_hit_blobs(const std::vector<HitBlob*>& blobs)
 {
     auto& context = renderer.context;
 
@@ -78,7 +79,7 @@ void DebugRenderer::render_hit_blobs(const Vector<HitBlob*>& blobs)
 
     //--------------------------------------------------------//
 
-    Vector<Vec4F> lineData;
+    std::vector<Vec4F> lineData;
     lineData.reserve(blobs.size() * 2u);
 
     //--------------------------------------------------------//
@@ -126,7 +127,7 @@ void DebugRenderer::render_hit_blobs(const Vector<HitBlob*>& blobs)
 
 //============================================================================//
 
-void DebugRenderer::render_hurt_blobs(const Vector<HurtBlob*>& blobs)
+void DebugRenderer::render_hurt_blobs(const std::vector<HurtBlob*>& blobs)
 {
     auto& context = renderer.context;
 
@@ -243,9 +244,9 @@ void DebugRenderer::render_skeleton(const Fighter& fighter)
 
     //--------------------------------------------------------//
 
-    const Vector<Mat4F> mats = fighter.debug_get_skeleton_mats();
+    const std::vector<Mat4F> mats = fighter.debug_get_skeleton_mats();
 
-    Vector<Vec4F> lineData;
+    std::vector<Vec4F> lineData;
     lineData.reserve(mats.size() - 1u);
 
     const Mat4F projViewModelMat = projViewMat * fighter.get_model_matrix();

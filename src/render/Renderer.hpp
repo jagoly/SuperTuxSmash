@@ -1,30 +1,23 @@
 #pragma once
 
-#include <sqee/app/PreProcessor.hpp>
+#include "setup.hpp"
 
+#include "render/ResourceCaches.hpp"
+
+#include <sqee/app/PreProcessor.hpp>
 #include <sqee/gl/FrameBuffer.hpp>
 #include <sqee/gl/Program.hpp>
 #include <sqee/gl/Textures.hpp>
 #include <sqee/gl/UniformBuffer.hpp>
 
-#include <sqee/render/Mesh.hpp>
+//============================================================================//
 
-#include "main/Enumerations.hpp"
-#include "main/Globals.hpp"
-#include "main/Options.hpp"
-
-#include "render/ResourceCaches.hpp"
-#include "render/SceneData.hpp"
+namespace sq { class Context; }
 
 namespace sts {
 
-//====== Forward Declarations ================================================//
-
 class DebugRenderer;
 class ParticleRenderer;
-class Camera;
-class RenderObject;
-class ParticleSystem;
 
 //============================================================================//
 
@@ -32,7 +25,7 @@ class Renderer final : sq::NonCopyable
 {
 public: //====================================================//
 
-    Renderer(const Globals& globals, const Options& options);
+    Renderer(const Options& options);
 
     ~Renderer();
 
@@ -40,21 +33,23 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
+    void set_camera(std::unique_ptr<Camera> camera);
+
     Camera& get_camera() { return *mCamera; }
 
     const Camera& get_camera() const { return *mCamera; }
 
     //--------------------------------------------------------//
 
-    void add_object(UniquePtr<RenderObject> object);
+    void add_object(std::unique_ptr<RenderObject> object);
 
-    UniquePtr<RenderObject> remove_object(RenderObject* ptr);
+    std::unique_ptr<RenderObject> remove_object(RenderObject* ptr);
 
     //--------------------------------------------------------//
 
-    void render_objects(float accum, float blend);
+    void render_objects(float blend);
 
-    void render_particles(const ParticleSystem& system, float accum, float blend);
+    void render_particles(const ParticleSystem& system, float blend);
 
     void resolve_multisample();
 
@@ -114,18 +109,16 @@ public: //====================================================//
 
     sq::Context& context;
 
-    const Globals& globals;
-
     const Options& options;
 
 private: //===================================================//
 
-    UniquePtr<Camera> mCamera;
+    std::unique_ptr<Camera> mCamera;
 
-    Vector<UniquePtr<RenderObject>> mRenderObjects;
+    std::vector<std::unique_ptr<RenderObject>> mRenderObjects;
 
-    UniquePtr<DebugRenderer> mDebugRenderer;
-    UniquePtr<ParticleRenderer> mParticleRenderer;
+    std::unique_ptr<DebugRenderer> mDebugRenderer;
+    std::unique_ptr<ParticleRenderer> mParticleRenderer;
 };
 
 //============================================================================//

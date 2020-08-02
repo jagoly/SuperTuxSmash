@@ -1,5 +1,8 @@
 #include "fighters/Sara_Fighter.hpp"
 
+#include "game/Emitter.hpp"
+#include "game/FightWorld.hpp"
+
 using namespace sts;
 
 //============================================================================//
@@ -15,9 +18,9 @@ void Sara_Fighter::tick()
 
     //--------------------------------------------------------//
 
-    ParticleEmitter emitter;
+    Emitter emitter;
 
-    emitter.shape = ParticleEmitter::DiscShape();
+    emitter.shape = Emitter::DiscShape();
 
     emitter.emitPosition = Vec3F(get_position(), 0.f);
     emitter.emitVelocity = Vec3F(get_velocity().x * 0.2f, 0.f, 0.f);
@@ -37,7 +40,7 @@ void Sara_Fighter::tick()
 
     emitter.sprite = "Smoke";
 
-    auto& partilcles = world.get_particle_system();
+    //auto& partilcles = world.get_particle_system();
 
     /*if (current.state == State::Landing && previous.state != State::Landing)
     {

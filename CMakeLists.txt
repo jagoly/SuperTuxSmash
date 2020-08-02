@@ -17,6 +17,9 @@ target_include_directories(sts-game PRIVATE "${PROJECT_SOURCE_DIR}/src")
 set_property(TARGET sts-game PROPERTY CXX_STANDARD 17)
 set_property(TARGET sts-game PROPERTY CXX_STANDARD_REQUIRED True)
 
+#set_property(TARGET sts-game PROPERTY CXX_INCLUDE_WHAT_YOU_USE
+#    "iwyu;-Xiwyu;any;-Xiwyu;iwyu;-Xiwyu;--mapping_file=/storage/Projects/SQEE/sqee/extras/iwyu-mapping.imp")
+
 ################################################################################
 
 # todo: proper support for finding sqee would be good

@@ -1,22 +1,20 @@
 #include "main/DebugGui.hpp"
 
-#include <sqee/app/GuiWidgets.hpp>
-#include <sqee/debug/Logging.hpp>
-
+#include "game/Action.hpp"
 #include "game/Fighter.hpp"
 
-using namespace sts;
+#include <sqee/app/GuiWidgets.hpp>
 
-using sq::literals::operator""_fmt_;
+using namespace sts;
 
 //============================================================================//
 
 void DebugGui::show_widget_fighter(Fighter& fighter)
 {
-    const String label = "Fighter %d - %s"_fmt_(fighter.index, fighter.type);
-    if (ImGui::CollapsingHeader(label.c_str(), ImGuiTreeNodeFlags_DefaultOpen) == false) return;
+    if (!ImPlus::CollapsingHeader("Fighter {} - {}"_format(fighter.index, fighter.type),
+                                  ImGuiTreeNodeFlags_DefaultOpen)) return;
 
-    const auto scopeId = ImPlus::ScopeID(fighter.index);
+    const ImPlus::ScopeID scopeId = fighter.index;
 
     //--------------------------------------------------------//
 
@@ -24,17 +22,19 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
     {
         const ImPlus::ScopeFont font = ImPlus::FONT_MONO;
 
-        ImPlus::Text("Position: %s"_fmt_(fighter.current.position));
-        ImPlus::HoverTooltip("Previous: %s"_fmt_(fighter.previous.position));
-        ImPlus::Text("Rotation: %s"_fmt_(fighter.current.rotation)); // todo: this line is too long
-        ImPlus::HoverTooltip("Previous: %s"_fmt_(fighter.previous.rotation));
+        ImPlus::Text("Position: {:+.6f}"_format(fighter.current.position));
+        ImPlus::HoverTooltip("Previous: {:+.6f}"_format(fighter.previous.position));
 
-        ImPlus::Text("State: %s"_fmt_(fighter.status.state));
-        ImPlus::Text("Facing: %d"_fmt_(fighter.status.facing));
-        ImPlus::Text("Velocity: %s"_fmt_(fighter.status.velocity));
-        ImPlus::Text("Damage: %0.f%%"_fmt_(fighter.status.damage));
+        // todo: nicer rotation display, although rotation could probably just be a float not a quat
+        ImPlus::Text("Rotation: {:+.3f}"_format(fighter.current.rotation));
+        ImPlus::HoverTooltip("Previous: {:+.3f}"_format(fighter.previous.rotation));
 
-        ImPlus::Text("Translate: %s"_fmt_(fighter.mTranslate));
+        ImPlus::Text("State: {}"_format(fighter.status.state));
+        ImPlus::Text("Facing: {}"_format(fighter.status.facing));
+        ImPlus::Text("Velocity: {:+.6f}"_format(fighter.status.velocity));
+        ImPlus::Text("Damage: {}%"_format(fighter.status.damage));
+
+        ImPlus::Text("Translate: {:+.6f}"_format(fighter.mTranslate));
 
         // todo: because the gui renders after we update, this shows values for next
         // frame, rather than what is actually on the screen, which is confusing
@@ -50,12 +50,12 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
 
         const uint animTotalTime = fighter.mAnimation ? fighter.mAnimation->anim.totalTime : 0u;
 
-        ImPlus::Text("animation: %s -> %s"_fmt_(animation, nextAnimation));
-        ImPlus::Text("animation time: %d / %d"_fmt_(fighter.mAnimTimeDiscrete, animTotalTime));
-        ImPlus::Text("animation fade: %d / %d"_fmt_(fighter.mFadeProgress, fighter.mFadeFrames));
+        ImPlus::Text("animation: {} -> {}"_format(animation, nextAnimation));
+        ImPlus::Text("animation time: {} / {}"_format(fighter.mAnimTimeDiscrete, animTotalTime));
+        ImPlus::Text("animation fade: {} / {}"_format(fighter.mFadeProgress, fighter.mFadeFrames));
 
         if (fighter.mActiveAction == nullptr) ImPlus::Text("action: None");
-        else ImPlus::Text("action: %s (%d)"_fmt_(fighter.mActiveAction->type, fighter.mActiveAction->mCurrentFrame));
+        else ImPlus::Text("action: {} ({})"_format(fighter.mActiveAction->type, fighter.mActiveAction->mCurrentFrame));
     }
 
     if (ImGui::CollapsingHeader("Edit Stats"))
@@ -94,7 +94,7 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
     {
         for (int i = 0; i != 8; ++i)
         {
-            ImPlus::Text("T-%d: "_fmt_(i));
+            ImPlus::Text("T-{}: "_format(i));
             for (Fighter::Command cmd : fighter.mCommands[i])
             {
                 ImGui::SameLine();
@@ -105,7 +105,7 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
 
     if (ImGui::Button("RESET"))
     {
-        fighter.current.position = { 0.f, 1.f };
+        fighter.current.position = { 0.f, 0.f };
     }
     ImPlus::HoverTooltip("reset the fighter's position");
 

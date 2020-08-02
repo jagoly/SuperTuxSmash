@@ -1,10 +1,12 @@
 #include "fighters/Mario_Render.hpp"
+#include "fighters/Mario_Fighter.hpp"
+
+#include "render/Camera.hpp"
+#include "render/Renderer.hpp"
 
 #include <sqee/gl/Context.hpp>
-#include <sqee/maths/Functions.hpp>
 
-using Context = sq::Context;
-namespace maths = sq::maths;
+using sq::Context;
 using namespace sts;
 
 //============================================================================//
@@ -13,8 +15,6 @@ Mario_Render::Mario_Render(Renderer& renderer, const Mario_Fighter& fighter)
     : RenderObject(renderer), fighter(fighter)
 {
     mUbo.create_and_allocate(sizeof(Mario_Render::mCharacterBlock));
-
-    //--------------------------------------------------------//
 
     ResourceCaches& cache = renderer.resources;
 
@@ -41,7 +41,6 @@ Mario_Render::Mario_Render(Renderer& renderer, const Mario_Fighter& fighter)
 
 void Mario_Render::integrate(float blend)
 {
-    //constexpr const Mat4F scaleMatrix = maths::scale(Mat4F(), {0.1f, 0.1f, 0.1f});
     const Mat4F modelMatrix = fighter.interpolate_model_matrix(blend);
 
     mCharacterBlock.matrix = renderer.get_camera().get_combo_matrix() * modelMatrix;
@@ -59,8 +58,6 @@ void Mario_Render::render_depth()
 {
     auto& context = renderer.context;
     auto& shaders = renderer.shaders;
-
-    //--------------------------------------------------------//
 
     context.set_state(Context::Depth_Compare::LessEqual);
     context.set_state(Context::Depth_Test::Replace);
@@ -89,8 +86,6 @@ void Mario_Render::render_depth()
 void Mario_Render::render_main()
 {
     auto& context = renderer.context;
-
-    //--------------------------------------------------------//
 
     context.set_state(Context::Depth_Compare::Equal);
     context.set_state(Context::Depth_Test::Keep);

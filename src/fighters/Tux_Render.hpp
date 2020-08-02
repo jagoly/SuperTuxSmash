@@ -1,13 +1,17 @@
 #pragma once
 
+#include "render/RenderObject.hpp"
+
+#include "render/ResourceCaches.hpp"
+#include "render/UniformBlocks.hpp"
+
 #include <sqee/gl/UniformBuffer.hpp>
 
-#include "render/RenderObject.hpp"
-#include "fighters/Tux_Fighter.hpp"
+namespace sts {
+
+class Tux_Fighter;
 
 //============================================================================//
-
-namespace sts {
 
 class Tux_Render final : public RenderObject
 {
@@ -44,5 +48,7 @@ private: //===================================================//
 
     const Tux_Fighter& fighter;
 };
+
+//============================================================================//
 
 } // namespace sts

@@ -1,6 +1,4 @@
 function tick()
-    print(foo)
-    foo = 'down'
     action:wait_until(4)
     action:enable_blob('BlobA')
     action:emit_particles('PuffA', 40)

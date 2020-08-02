@@ -1,11 +1,16 @@
-#include "game/Blobs.hpp"
+#include "Blobs.hpp"
 
 #include "game/Fighter.hpp"
 
 #include <sqee/debug/Logging.hpp>
+#include <sqee/misc/Json.hpp>
 
 using namespace sts;
-namespace maths = sq::maths;
+
+//============================================================================//
+
+SQEE_ENUM_JSON_CONVERSIONS(sts::BlobFlavour)
+SQEE_ENUM_JSON_CONVERSIONS(sts::BlobPriority)
 
 //============================================================================//
 
@@ -14,7 +19,7 @@ void HitBlob::from_json(const JsonValue& json)
     if (auto& jb = json.at("bone"); jb.is_null() == false)
     {
         bone = fighter->get_armature().get_bone_index(jb);
-        if (bone == -1) sq::log_warning("Invalid bone name %s", jb);
+        if (bone == -1) throw std::out_of_range("invalid bone '{}'"_format(jb));
     }
     else bone = -1;
 
@@ -31,13 +36,8 @@ void HitBlob::from_json(const JsonValue& json)
 
 void HitBlob::to_json(JsonValue& json) const
 {
-    if (bone != -1)
-    {
-        const auto boneName = fighter->get_armature().get_bone_name(bone);
-        if (boneName.empty()) sq::log_warning("Invalid bone index %d", bone);
-        json["bone"] = boneName;
-    }
-    else json["bone"] = nullptr;
+    if (bone == -1) json["bone"] = nullptr;
+    else json["bone"] = fighter->get_armature().get_bone_name(bone);
 
     json["origin"] = origin;
     json["radius"] = radius;
@@ -59,7 +59,7 @@ void HurtBlob::from_json(const JsonValue& json)
         if (auto& jb = json.at("bone"); jb.is_null() == false)
         {
             bone = fighter->get_armature().get_bone_index(jb);
-            if (bone == -1) sq::log_warning("Invalid bone name %s", jb);
+            if (bone == -1) throw std::out_of_range("invalid bone '{}'"_format(jb));
         }
         else bone = -1;
 
@@ -78,13 +78,8 @@ void HurtBlob::from_json(const JsonValue& json)
 
 void HurtBlob::to_json(JsonValue& json) const
 {
-    if (bone != -1)
-    {
-        const auto boneName = fighter->get_armature().get_bone_name(bone);
-        if (boneName.empty()) sq::log_warning("Invalid bone index %d", bone);
-        json["bone"] = boneName;
-    }
-    else json["bone"] = nullptr;
+    if (bone == -1) json["bone"] = nullptr;
+    else json["bone"] = fighter->get_armature().get_bone_name(bone);
 
     json["originA"] = originA;
     json["originB"] = originB;

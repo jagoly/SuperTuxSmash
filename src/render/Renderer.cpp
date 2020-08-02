@@ -1,29 +1,26 @@
 #include "render/Renderer.hpp"
 
+#include "main/Options.hpp"
+
 #include "render/Camera.hpp"
 #include "render/DebugRender.hpp"
 #include "render/ParticleRender.hpp"
 #include "render/RenderObject.hpp"
 
 #include <sqee/debug/Assert.hpp>
-#include <sqee/debug/Logging.hpp>
 #include <sqee/gl/Context.hpp>
 #include <sqee/gl/Drawing.hpp>
 #include <sqee/redist/gl_loader.hpp>
-#include <sqee/misc/Algorithms.hpp>
 
-using Context = sq::Context;
-namespace algo = sq::algo;
-namespace maths = sq::maths;
+using sq::Context;
 using namespace sts;
 
 //============================================================================//
 
-Renderer::~Renderer() = default;
-
-Renderer::Renderer(const Globals& globals, const Options& options)
-    : resources(processor), context(sq::Context::get()),
-      globals(globals), options(options)
+Renderer::Renderer(const Options& options)
+    : resources(processor)
+    , context(sq::Context::get())
+    , options(options)
 {
     //-- Set Texture Paramaters ------------------------------//
 
@@ -42,12 +39,11 @@ Renderer::Renderer(const Globals& globals, const Options& options)
 
     //--------------------------------------------------------//
 
-    if (globals.editorMode) mCamera = std::make_unique<EditorCamera>(*this);
-    else mCamera = std::make_unique<StandardCamera>(*this);
-
     mDebugRenderer = std::make_unique<DebugRenderer>(*this);
     mParticleRenderer = std::make_unique<ParticleRenderer>(*this);
 }
+
+Renderer::~Renderer() = default;
 
 //============================================================================//
 
@@ -57,12 +53,12 @@ void Renderer::refresh_options()
 
     String headerStr = "// set of constants and defines added at runtime\n";
 
-    headerStr += "const uint OPTION_WinWidth  = " + std::to_string(options.Window_Size.x) + ";\n";
-    headerStr += "const uint OPTION_WinHeight = " + std::to_string(options.Window_Size.y) + ";\n";
+    headerStr += "const uint OPTION_WinWidth  = " + std::to_string(options.window_size.x) + ";\n";
+    headerStr += "const uint OPTION_WinHeight = " + std::to_string(options.window_size.y) + ";\n";
 
-    if (options.Bloom_Enable == true) headerStr += "#define OPTION_BLOOM_ENABLE\n";;
-    if (options.SSAO_Quality != 0u)   headerStr += "#define OPTION_SSAO_ENABLE\n";
-    if (options.SSAO_Quality >= 2u)   headerStr += "#define OPTION_SSAO_HIGH\n";
+    if (options.bloom_enable == true) headerStr += "#define OPTION_BLOOM_ENABLE\n";;
+    if (options.ssao_quality != 0u)   headerStr += "#define OPTION_SSAO_ENABLE\n";
+    if (options.ssao_quality >= 2u)   headerStr += "#define OPTION_SSAO_HIGH\n";
 
     headerStr += "// some handy shortcuts for comman use of this data\n"
                  "const float OPTION_Aspect = float(OPTION_WinWidth) / float(OPTION_WinHeight);\n"
@@ -74,13 +70,13 @@ void Renderer::refresh_options()
 
     //-- Allocate Target Textures ----------------------------//
 
-    const uint msaaNum = std::max(4u * options.MSAA_Quality * options.MSAA_Quality, 1u);
+    const uint msaaNum = std::max(4u * options.msaa_quality * options.msaa_quality, 1u);
 
-    textures.MsDepth.allocate_storage(Vec3U(options.Window_Size, msaaNum));
-    textures.MsColour.allocate_storage(Vec3U(options.Window_Size, msaaNum));
+    textures.MsDepth.allocate_storage(Vec3U(options.window_size, msaaNum));
+    textures.MsColour.allocate_storage(Vec3U(options.window_size, msaaNum));
 
-    textures.Depth.allocate_storage(options.Window_Size);
-    textures.Colour.allocate_storage(options.Window_Size);
+    textures.Depth.allocate_storage(options.window_size);
+    textures.Colour.allocate_storage(options.window_size);
 
     //-- Attach Textures to FrameBuffers ---------------------//
 
@@ -133,12 +129,17 @@ void Renderer::refresh_options()
 
 //============================================================================//
 
-void Renderer::add_object(UniquePtr<RenderObject> object)
+void Renderer::set_camera(std::unique_ptr<Camera> camera)
+{
+    mCamera = std::move(camera);
+}
+
+void Renderer::add_object(std::unique_ptr<RenderObject> object)
 {
     mRenderObjects.push_back(std::move(object));
 }
 
-UniquePtr<RenderObject> Renderer::remove_object(RenderObject* ptr)
+std::unique_ptr<RenderObject> Renderer::remove_object(RenderObject* ptr)
 {
     const auto predicate = [ptr](auto& item) { return item.get() == ptr; };
     const auto iter = algo::find_if(mRenderObjects, predicate);
@@ -166,7 +167,7 @@ struct StaticShit
 
 //============================================================================//
 
-void Renderer::render_objects(float elapsed, float blend)
+void Renderer::render_objects(float blend)
 {
     static StaticShit shit;
 
@@ -181,7 +182,7 @@ void Renderer::render_objects(float elapsed, float blend)
     const Vec3F skyColour = { 0.7f, 0.7f, 0.7f };
     const Mat4F skyMatrix = Mat4F();
 
-    light.ubo.update_complete(ambiColour, 0, skyColour, 0, skyDirection, 0, skyMatrix);
+    light.ubo.update(0u, sq::Structure(ambiColour, 0, skyColour, 0, skyDirection, 0, skyMatrix));
 
     //-- Integrate Object Changes ----------------------------//
 
@@ -190,7 +191,7 @@ void Renderer::render_objects(float elapsed, float blend)
 
     //-- Setup Shared Rendering State ------------------------//
 
-    context.set_ViewPort(options.Window_Size);
+    context.set_ViewPort(options.window_size);
 
     context.bind_UniformBuffer(mCamera->get_ubo(), 0u);
     context.bind_UniformBuffer(light.ubo, 1u);
@@ -237,7 +238,7 @@ void Renderer::render_objects(float elapsed, float blend)
 
 //============================================================================//
 
-void Renderer::render_particles(const ParticleSystem& system, float accum, float blend)
+void Renderer::render_particles(const ParticleSystem& system, float blend)
 {
     mParticleRenderer->swap_sets();
 
@@ -252,7 +253,7 @@ void Renderer::resolve_multisample()
 {
     //-- Resolve the Multi Sample Texture --------------------//
 
-    fbos.MsMain.blit(fbos.Resolve, options.Window_Size, gl::DEPTH_BUFFER_BIT | gl::COLOR_BUFFER_BIT);
+    fbos.MsMain.blit(fbos.Resolve, options.window_size, gl::DEPTH_BUFFER_BIT | gl::COLOR_BUFFER_BIT);
 }
 
 //============================================================================//

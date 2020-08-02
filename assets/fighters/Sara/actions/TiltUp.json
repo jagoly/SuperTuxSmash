@@ -1,8 +1,6 @@
 {
-  "blobs": 
-  {
-    "SourA": 
-    {
+  "blobs": {
+    "SourA": {
       "bone": null,
       "damage": 5.0,
       "flavour": "Sour",
@@ -14,8 +12,7 @@
       "priority": "Normal",
       "radius": 0.45
     },
-    "SourB": 
-    {
+    "SourB": {
       "bone": null,
       "damage": 5.0,
       "flavour": "Sour",
@@ -27,8 +24,7 @@
       "priority": "Normal",
       "radius": 0.45
     },
-    "Tangy": 
-    {
+    "Tangy": {
       "bone": null,
       "damage": 8.0,
       "flavour": "Tangy",
@@ -41,12 +37,11 @@
       "radius": 0.4
     }
   },
-  "emitters": 
-  {
-    "SourA": 
-    {
+  "emitters": {
+    "SourA": {
       "bone": null,
-      "colour.random": [         [ 1.0, 0.0, 0.0 ],
+      "colour.random": [
+        [ 1.0, 0.0, 0.0 ],
         [ 0.0, 1.0, 0.0 ],
         [ 0.0, 0.0, 1.0 ]
       ],
@@ -57,18 +52,17 @@
       "opacity": [ 0.9, 1.0 ],
       "origin": [ 0.0, 1.9, 0.1 ],
       "radius": [ 0.4, 0.8 ],
-      "shape.disc": 
-      {
+      "shape.disc": {
         "incline": [ 0.2, 0.5 ],
         "speed": [ 2.6, 3.2 ]
       },
       "speed": [ 0.0, 0.0 ],
       "sprite": "Sparkle"
     },
-    "SourB": 
-    {
+    "SourB": {
       "bone": null,
-      "colour.random": [         [ 1.0, 0.0, 0.0 ],
+      "colour.random": [
+        [ 1.0, 0.0, 0.0 ],
         [ 0.0, 1.0, 0.0 ],
         [ 0.0, 0.0, 1.0 ]
       ],
@@ -79,16 +73,14 @@
       "opacity": [ 0.9, 1.0 ],
       "origin": [ 0.0, 1.9, 0.5 ],
       "radius": [ 0.4, 0.8 ],
-      "shape.disc": 
-      {
+      "shape.disc": {
         "incline": [ 0.2, 0.5 ],
         "speed": [ 2.6, 3.2 ]
       },
       "speed": [ 0.0, 0.0 ],
       "sprite": "Sparkle"
     },
-    "Tangy": 
-    {
+    "Tangy": {
       "bone": null,
       "colour.fixed": [ 0.0, 0.0, 0.0 ],
       "direction": [ 0.0, 1.0, 0.0 ],
@@ -98,8 +90,7 @@
       "opacity": [ 0.9, 1.0 ],
       "origin": [ 0.0, 1.8, 0.3 ],
       "radius": [ 0.3, 0.6 ],
-      "shape.disc": 
-      {
+      "shape.disc": {
         "incline": [ 0.2, 0.5 ],
         "speed": [ 2.4, 3.0 ]
       },

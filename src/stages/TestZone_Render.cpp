@@ -1,10 +1,11 @@
 #include "stages/TestZone_Render.hpp"
 
-#include <sqee/gl/Context.hpp>
-#include <sqee/maths/Functions.hpp>
+#include "render/Camera.hpp"
+#include "render/Renderer.hpp"
 
-using Context = sq::Context;
-namespace maths = sq::maths;
+#include <sqee/gl/Context.hpp>
+
+using sq::Context;
 using namespace sts;
 
 //============================================================================//
@@ -18,18 +19,16 @@ TestZone_Render::TestZone_Render(Renderer& renderer, const TestZone_Stage& stage
 
     TEX_Diff = cache.textures.acquire("assets/stages/TestZone/textures/Diffuse");
 
-    //--------------------------------------------------------//
-
-    const String fragmentDefines = "#define OPT_TEX_DIFFUSE";
-
-    renderer.processor.load_vertex(PROG_Main, "stages/StaticMesh_vs");
-    renderer.processor.load_fragment(PROG_Main, "BasicModel_fs", fragmentDefines);
-    PROG_Main.link_program_stages();
+    sq::ProgramKey programKey;
+    programKey.vertexPath = "stages/StaticMesh_vs";
+    programKey.fragmentDefines = "#define OPT_TEX_DIFFUSE";
+    programKey.fragmentPath = "BasicModel_fs";
+    PROG_Main = cache.programs.acquire(programKey);
 }
 
 //============================================================================//
 
-void TestZone_Render::integrate(float blend)
+void TestZone_Render::integrate(float /*blend*/)
 {
     mFinalMatrix = renderer.get_camera().get_combo_matrix();
     mNormalMatrix = maths::normal_matrix(renderer.get_camera().get_view_matrix());
@@ -41,8 +40,6 @@ void TestZone_Render::render_depth()
 {
     auto& context = renderer.context;
     auto& shaders = renderer.shaders;
-
-    //--------------------------------------------------------//
 
     context.set_state(Context::Cull_Face::Back);
     context.set_state(Context::Depth_Compare::LessEqual);
@@ -62,8 +59,6 @@ void TestZone_Render::render_main()
 {
     auto& context = renderer.context;
 
-    //--------------------------------------------------------//
-
     context.set_state(Context::Cull_Face::Back);
     context.set_state(Context::Depth_Compare::Equal);
     context.set_state(Context::Depth_Test::Keep);
@@ -72,10 +67,10 @@ void TestZone_Render::render_main()
 
     context.bind_Texture(TEX_Diff.get(), 0u);
 
-    PROG_Main.update(0, mFinalMatrix);
-    PROG_Main.update(1, mNormalMatrix);
-    PROG_Main.update(3, Vec3F(0.5f, 0.5f, 0.5f));
-    context.bind_Program(PROG_Main);
+    PROG_Main->update(0, mFinalMatrix);
+    PROG_Main->update(1, mNormalMatrix);
+    PROG_Main->update(3, Vec3F(0.5f, 0.5f, 0.5f));
+    context.bind_Program(PROG_Main.get());
 
     MESH_Mesh->draw_complete();
 }

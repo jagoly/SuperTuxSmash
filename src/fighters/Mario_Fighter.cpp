@@ -1,6 +1,7 @@
 #include "fighters/Mario_Fighter.hpp"
 
-namespace maths = sq::maths;
+#include "game/Emitter.hpp"
+#include "game/FightWorld.hpp"
 
 using namespace sts;
 
@@ -17,9 +18,9 @@ void Mario_Fighter::tick()
 
     //--------------------------------------------------------//
 
-    ParticleEmitter emitter;
+    Emitter emitter;
 
-    emitter.shape = ParticleEmitter::DiscShape();
+    emitter.shape = Emitter::DiscShape();
 
     emitter.direction = Vec3F(0.f, 1.f, 0.f);
 
@@ -70,7 +71,7 @@ void Mario_Fighter::tick()
         emitter.emitVelocity = Vec3F(get_velocity().x * 0.5f, 0.f, 0.f);
         emitter.direction = Vec3F(0.f, 1.f, 0.f);
 
-        emitter.shape = ParticleEmitter::BallShape();
+        emitter.shape = Emitter::BallShape();
 
         emitter.shape_ball().speed = { 0.f, 0.f };
 

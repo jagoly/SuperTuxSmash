@@ -1,11 +1,12 @@
 #pragma once
 
-#include <sqee/misc/Builtins.hpp>
-#include <sqee/maths/Builtins.hpp>
+#include "setup.hpp" // IWYU pragma: export
 
-#include "game/FightWorld.hpp"
+//============================================================================//
 
 namespace sts {
+
+struct LocalDiamond;
 
 //============================================================================//
 
@@ -80,11 +81,11 @@ protected: //=================================================//
 
     //--------------------------------------------------------//
 
-    Vector<Platform> mPlatforms;
+    std::vector<Platform> mPlatforms;
 
-    Vector<AlignedBlock> mAlignedBlocks;
+    std::vector<AlignedBlock> mAlignedBlocks;
 
-    Vector<Ledge> mLedges;
+    std::vector<Ledge> mLedges;
 
     //--------------------------------------------------------//
 

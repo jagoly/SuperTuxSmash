@@ -1,15 +1,15 @@
 #include "main/SmashApp.hpp"
 
+#include "main/Options.hpp"
+
 #include "editor/EditorScene.hpp"
 #include "main/GameScene.hpp"
 #include "main/MenuScene.hpp"
 
+#include <sqee/app/Event.hpp>
 #include <sqee/app/GuiSystem.hpp>
-#include <sqee/app/MessageBus.hpp>
+#include <sqee/debug/Assert.hpp>
 #include <sqee/debug/Logging.hpp>
-#include <sqee/debug/Misc.hpp>
-
-namespace maths = sq::maths;
 
 using namespace sts;
 
@@ -21,7 +21,7 @@ SmashApp::~SmashApp() = default;
 
 //============================================================================//
 
-void SmashApp::initialise(Vector<String> args)
+void SmashApp::initialise(std::vector<String> /*args*/)
 {
     mWindow = std::make_unique<sq::Window>("SuperTuxSmash - Main Menu", Vec2U(1280u, 720u));
 
@@ -29,10 +29,13 @@ void SmashApp::initialise(Vector<String> args)
     mWindow->set_key_repeat(false);
 
     mInputDevices = std::make_unique<sq::InputDevices>(*mWindow);
+    mDebugOverlay = std::make_unique<sq::DebugOverlay>();
+
+    mOptions = std::make_unique<Options>();
 
     sq::GuiSystem::construct(*mWindow, *mInputDevices);
-
-    mDebugOverlay = std::make_unique<sq::DebugOverlay>();
+    sq::GuiSystem::get().set_style_widgets_supertux();
+    sq::GuiSystem::get().set_style_colours_supertux();
 
     return_to_main_menu();
 }
@@ -49,7 +52,7 @@ void SmashApp::update(double elapsed)
 
     if (mWindow->has_focus() == true)
     {
-        for (auto event : mWindow->fetch_events())
+        for (const auto& event : mWindow->fetch_events())
         {
             if (guiSystem.handle_event(event)) continue;
             handle_event(event);
@@ -95,8 +98,6 @@ void SmashApp::handle_event(sq::Event event)
         return;
     }
 
-    //--------------------------------------------------------//
-
     if (type == Type::Window_Resize)
     {
         refresh_options();
@@ -122,62 +123,64 @@ void SmashApp::handle_event(sq::Event event)
 
     //--------------------------------------------------------//
 
-    auto notify = [this](uint value, const String& message, Vector<String> options)
-    { this->mDebugOverlay->notify(message + options[value]); };
-
     if (type == Type::Keyboard_Press)
     {
         if (data.keyboard.key == Key::V)
         {
-            auto value = !mWindow->get_vsync_enabled();
-            mWindow->set_vsync_enabled(value);
-            notify(value, "vsync set to ", {"OFF", "ON"});
+            constexpr const auto STRINGS = std::array { "OFF", "ON" };
+            const bool newValue = !mWindow->get_vsync_enabled();
+            mDebugOverlay->notify(sq::build_string("vsync set to ", STRINGS[newValue]));
+            mWindow->set_vsync_enabled(newValue);
         }
 
         if (data.keyboard.key == Key::B)
         {
-            mOptions.Bloom_Enable = !mOptions.Bloom_Enable;
-            notify(mOptions.Bloom_Enable, "bloom set to ", {"OFF", "ON"});
+            constexpr const auto STRINGS = std::array { "OFF", "ON" };
+            mOptions->bloom_enable = !mOptions->bloom_enable;
+            mDebugOverlay->notify(sq::build_string("bloom set to ", STRINGS[mOptions->bloom_enable]));
             refresh_options();
         }
 
         if (data.keyboard.key == Key::O)
         {
-            if (++mOptions.SSAO_Quality == 3) mOptions.SSAO_Quality = 0;
-            notify(mOptions.SSAO_Quality, "ssao set to ", {"OFF", "LOW", "HIGH"});
+            constexpr const auto STRINGS = std::array { "OFF", "LOW", "HIGH" };
+            if (++mOptions->ssao_quality == 3) mOptions->ssao_quality = 0;
+            mDebugOverlay->notify(sq::build_string("ssao set to ", STRINGS[mOptions->ssao_quality]));
             refresh_options();
         }
 
         if (data.keyboard.key == Key::A)
         {
-            if (++mOptions.MSAA_Quality == 3) mOptions.MSAA_Quality = 0;
-            notify(mOptions.MSAA_Quality, "msaa set to ", {"OFF", "4x", "16x"});
+            constexpr const auto STRINGS = std::array { "OFF", "4x", "16x" };
+            if (++mOptions->msaa_quality == 3) mOptions->msaa_quality = 0;
+            mDebugOverlay->notify(sq::build_string("msaa set to ", STRINGS[mOptions->msaa_quality]));
             refresh_options();
         }
 
         if (data.keyboard.key == Key::D)
         {
-            if      ( mOptions.Debug_Texture == ""      ) mOptions.Debug_Texture = "depth";
-            else if ( mOptions.Debug_Texture == "depth" ) mOptions.Debug_Texture = "ssao";
-            else if ( mOptions.Debug_Texture == "ssao"  ) mOptions.Debug_Texture = "bloom";
-            else if ( mOptions.Debug_Texture == "bloom" ) mOptions.Debug_Texture = "";
+            if      (mOptions->debug_texture == "")      mOptions->debug_texture = "depth";
+            else if (mOptions->debug_texture == "depth") mOptions->debug_texture = "bloom";
+            else if (mOptions->debug_texture == "bloom") mOptions->debug_texture = "ssao";
+            else if (mOptions->debug_texture == "ssao")  mOptions->debug_texture = "";
 
-            mDebugOverlay->notify("debug texture set to \"" + mOptions.Debug_Texture + "\"");
-
+            mDebugOverlay->notify("debug texture set to '{}'"_format(mOptions->debug_texture));
             refresh_options();
         }
 
         if (data.keyboard.key == Key::Num_1)
         {
-            mGlobals.debugToggle1 = !mGlobals.debugToggle1;
-            notify(mGlobals.debugToggle1, "debugToggle1 set to ", {"false", "true"});
+            constexpr const auto STRINGS = std::array { "false", "true" };
+            mOptions->debug_toggle_1 = !mOptions->debug_toggle_1;
+            mDebugOverlay->notify(sq::build_string("debugToggle1 set to ", STRINGS[mOptions->debug_toggle_1]));
             refresh_options();
         }
 
         if (data.keyboard.key == Key::Num_2)
         {
-            mGlobals.debugToggle2 = !mGlobals.debugToggle2;
-            notify(mGlobals.debugToggle2, "debugToggle2 set to ", {"false", "true"});
+            constexpr const auto STRINGS = std::array { "false", "true" };
+            mOptions->debug_toggle_2 = !mOptions->debug_toggle_2;
+            mDebugOverlay->notify(sq::build_string("debugToggle2 set to ", STRINGS[mOptions->debug_toggle_2]));
             refresh_options();
         }
     }
@@ -191,7 +194,7 @@ void SmashApp::handle_event(sq::Event event)
 
 void SmashApp::refresh_options()
 {
-    mOptions.Window_Size = mWindow->get_window_size();
+    mOptions->window_size = mWindow->get_window_size();
 
     if (mActiveScene != nullptr)
         mActiveScene->refresh_options();

@@ -1,21 +1,13 @@
 #pragma once
 
+#include "setup.hpp"
+
 #include <sqee/app/Event.hpp>
-#include <sqee/app/GuiSystem.hpp>
 #include <sqee/app/Scene.hpp>
 
-#include "render/Renderer.hpp"
-
-#include "game/FightWorld.hpp"
-#include "game/Stage.hpp"
-#include "game/Controller.hpp"
-
-#include "main/Options.hpp"
-#include "main/SmashApp.hpp"
+namespace sts {
 
 //============================================================================//
-
-namespace sts {
 
 class GameScene final : public sq::Scene
 {
@@ -41,11 +33,11 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
-    UniquePtr<FightWorld> mFightWorld;
+    std::unique_ptr<FightWorld> mFightWorld;
 
-    UniquePtr<Renderer> mRenderer;
+    std::unique_ptr<Renderer> mRenderer;
 
-    Array<UniquePtr<Controller>, 4> mControllers;
+    std::array<std::unique_ptr<Controller>, 4> mControllers;
 
     //--------------------------------------------------------//
 
@@ -60,5 +52,7 @@ private: //===================================================//
 
     bool mGamePaused = false;
 };
+
+//============================================================================//
 
 } // namespace sts

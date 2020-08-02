@@ -1,11 +1,14 @@
 #pragma once
 
-#include "render/Renderer.hpp"
-#include "render/UniformBlocks.hpp"
+#include "setup.hpp"
 
-//============================================================================//
+#include "render/UniformBlocks.hpp" // IWYU pragma: export
+
+#include <sqee/gl/UniformBuffer.hpp> // IWYU pragma: export
 
 namespace sts {
+
+//============================================================================//
 
 class Camera : sq::NonCopyable
 {
@@ -38,56 +41,6 @@ protected: //=================================================//
     Mat4F mComboMatrix;
 
     const Renderer& renderer;
-};
-
-//============================================================================//
-
-class StandardCamera final : public Camera
-{
-public: //====================================================//
-
-    using Camera::Camera;
-
-    void update_from_scene_data(const SceneData& sceneData);
-
-    void intergrate(float blend) override;
-
-    float zoomOut = 1.f;
-
-    bool smoothMoves = true;
-
-private: //===================================================//
-
-    struct MinMax { Vec2F min, max; };
-
-    Array<MinMax, 16u> mViewHistory;
-
-    MinMax mPreviousView, mCurrentView;
-    MinMax mPreviousBounds, mCurrentBounds;
-};
-
-//============================================================================//
-
-class EditorCamera final : public Camera
-{
-public: //====================================================//
-
-    using Camera::Camera;
-
-    void update_from_scroll(float delta);
-
-    void update_from_mouse(bool left, bool right, Vec2F position);
-
-    void intergrate(float blend) override;
-
-private: //===================================================//
-
-    Vec2F mPrevMousePosition;
-
-    float mYaw = 0.f;
-    float mPitch = 0.f;
-    float mZoom = 4.f;
-    Vec2F mCentre = { 0.f, 1.f };
 };
 
 //============================================================================//
