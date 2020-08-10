@@ -20,6 +20,8 @@ struct Options final : sq::NonCopyable
 
     uint8_t msaa_quality = 1u;      ///< Multi Sample Anti-Aliasing quality
 
+    bool imgui_demo = false;        ///< Show the ImGui demo window
+
     //--------------------------------------------------------//
 
     String debug_texture = "";      ///< Debug texture to draw to screen
@@ -31,10 +33,13 @@ struct Options final : sq::NonCopyable
     bool render_diamonds = false;   ///< Enable rendering of diamonds
     bool render_skeletons = false;  ///< Enable rendering of skeletons
 
-    bool camera_smooth = true;      ///< Smoothly move the camera over time.
+    bool camera_smooth = true;      ///< Smoothly move the camera over time
     float camera_zoom_out = 1.f;    ///< Minimum distance between camera and scene
 
-    bool editor_mode = false;       ///< NOT AN OPTION, SHOULD NOT BE HERE
+    bool log_animation = false;     ///< Enable logging of animation stuff
+    bool log_script = false;        ///< Enable logging of script stuff
+
+    bool editor_mode = false;       ///< CANNOT BE TOGGLED, SHOULD NOT BE HERE
 
     bool debug_toggle_1 = false;    ///< Used for whatever, press 1
     bool debug_toggle_2 = false;    ///< Used for whatever, press 2

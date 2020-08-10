@@ -158,6 +158,8 @@ void EditorScene::impl_show_widget_hurtblobs()
             ImPlus::HoverTooltip("snap origins to bone");
             ImGui::SameLine();
             ImPlus::Combo(" Bone", boneNames, blob.bone, "(None)");
+
+            ImPlus::ComboEnum(" Region", blob.region);
         }
     }
 

@@ -15,16 +15,10 @@ using namespace sts;
 //============================================================================//
 
 const char* const FALLBACK_SCRIPT = R"lua(
-  function tick()
-    action:wait_until(32)
-    action:finish_action()
-  end
-  function cancel() end
-)lua";
-
-const char* const VALIDATE_SCRIPT = R"lua(
-  assert(type(tick) == 'function')
-  assert(type(cancel) == 'function')
+function tick()
+  action:wait_until(32)
+  action:allow_interrupt()
+end
 )lua";
 
 //============================================================================//
@@ -40,6 +34,9 @@ Action::~Action() = default;
 
 void Action::do_start()
 {
+    if (world.options.log_script == true)
+        sq::log_debug("{}/{}: do_start()", fighter.type, type);
+
     reset_lua_thread();
 
     mTickCoroutine = sol::coroutine(mThread.state(), mTickFunction);
@@ -50,61 +47,69 @@ void Action::do_start()
     mCurrentFrame = 0u;
     mWaitingUntil = 0u;
 
-    mFinished = false;
+    mAllowIterrupt = false;
 }
 
 //----------------------------------------------------------------------------//
 
-bool Action::do_tick()
+void Action::do_tick()
 {
-    // todo: this doesn't need to happen every frame
-    for (auto& [key, emitter] : mEmitters)
+    mCurrentFrame += 1u;
+
+    if (mTickCoroutine.status() == sol::call_status::ok)
     {
-        Mat4F matrix = fighter.get_model_matrix();
-
-        if (emitter.bone >= 0)
-        {
-            const auto& matrices = fighter.get_bone_matrices();
-            const auto& boneMatrix = matrices[uint(emitter.bone)];
-            matrix *= maths::transpose(Mat4F(boneMatrix));
-        }
-
-        emitter.emitPosition = Vec3F(matrix * Vec4F(emitter.origin, 1.f));
-        emitter.emitVelocity = Vec3F(fighter.get_velocity().x * 0.2f, 0.f, 0.f);
+        mStatus = ActionStatus::Finished;
+        return;
     }
 
-    if (world.options.editor_mode == false)
-        SQASSERT(mTickCoroutine.runnable(), "finish_action not called");
+    if (mTickCoroutine.status() != sol::call_status::yielded)
+    {
+        mStatus = ActionStatus::RuntimeError;
+        return;
+    }
+
+    SQASSERT(mTickCoroutine.runnable() == true, "");
 
     if (mCurrentFrame >= mWaitingUntil)
     {
         const auto pfr = mTickCoroutine.call();
         if (pfr.valid() == false)
         {
-            sq::log_warning("caught script error, will crash now");
-            sol::script_throw_on_error(mThread.state(), pfr);
+            try { sol::script_throw_on_error(mThread.state(), pfr); }
+            catch (const sol::error& error)
+            {
+                if (world.options.editor_mode == false)
+                    sq::log_error_multiline("action '{}/{}', frame {}:\n{}", fighter.type, type, mCurrentFrame, error.what());
+
+                mErrorMessage = "error on frame {}:\n{}"_format(mCurrentFrame, error.what());
+                do_cancel();
+            }
         }
     }
 
-    mCurrentFrame += 1u;
-
-    return mFinished;
+    mStatus = mAllowIterrupt ? ActionStatus::AllowInterrupt : ActionStatus::Running;
 }
 
 //----------------------------------------------------------------------------//
 
 void Action::do_cancel()
 {
-    const auto pfr = mCancelFunction.call();
-
-    if (pfr.valid() == false)
-    {
-        sq::log_warning("caught script error, will crash now");
-        sol::script_throw_on_error(mThread.state(), pfr);
-    }
+    if (world.options.log_script == true)
+        sq::log_debug("{}/{}: do_cancel()", fighter.type, type);
 
     world.disable_all_hit_blobs(fighter);
     world.reset_all_hit_blob_groups(fighter);
+    mAllowIterrupt = true;
+
+    //const auto pfr = mCancelFunction.call();
+//    if (pfr.valid() == false)
+//    {
+//        sq::log_warning("caught script error, will crash now");
+//        sol::script_throw_on_error(mThread.state(), pfr);
+//    }
+
+//    world.reset_all_hit_blob_groups(fighter);
+//    world.disable_all_hit_blobs(fighter);
 }
 
 //============================================================================//
@@ -160,69 +165,79 @@ void Action::load_from_json()
 
 //----------------------------------------------------------------------------//
 
-void Action::load_lua_from_file()
+void Action::load_lua_from_fallback()
 {
-    // todo: This function has to load the script file twice, once to set mLuaSource
-    // and again to load the script. Need to figure out how to have lua load a script
-    // from a string, but still give error messages as if it was loading a file.
-
     sol::state& lua = world.get_lua_state();
 
+    reset_lua_environment();
+
+    lua.script(FALLBACK_SCRIPT, mEnvironment, "fallback", sol::load_mode::text);
+
+    mTickFunction = mEnvironment["tick"];
+}
+
+//----------------------------------------------------------------------------//
+
+void Action::load_lua_from_file()
+{
     const String filePath = path + ".lua";
 
     if (sq::check_file_exists(filePath) == false)
     {
         sq::log_warning("missing script '{}'", filePath);
-        load_lua_from_string(FALLBACK_SCRIPT);
-        return;
+        load_lua_from_fallback();
+
+        if (world.options.editor_mode == true)
+        {
+            mLuaSource = FALLBACK_SCRIPT;
+            mErrorMessage.clear();
+        }
     }
 
-    mLuaSource = sq::get_string_from_file(filePath);
-
-    try
+    else if (world.options.editor_mode == true)
     {
+        mLuaSource = sq::get_string_from_file(filePath);
+        load_lua_from_string();
+    }
+
+    else try
+    {
+        sol::state& lua = world.get_lua_state();
         reset_lua_environment();
 
-        lua.script_file(filePath, mEnvironment);
-        lua.script(VALIDATE_SCRIPT, mEnvironment, "validate", sol::load_mode::any);
+        lua.script_file(filePath, mEnvironment, sol::load_mode::text);
 
         mTickFunction = mEnvironment["tick"];
-        mCancelFunction = mEnvironment["cancel"];
     }
     catch (const sol::error& error)
     {
-        sq::log_warning("error loading script '{}'\n{}", filePath, error.what());
-        load_lua_from_string(FALLBACK_SCRIPT);
+        sq::log_warning_multiline("failed to load script '{}'\n{}", filePath, error.what());
+        load_lua_from_fallback();
     }
 }
 
 //----------------------------------------------------------------------------//
 
-void Action::load_lua_from_string(StringView source)
+void Action::load_lua_from_string()
 {
-    sol::state& lua = world.get_lua_state();
-
     try
     {
+        sol::state& lua = world.get_lua_state();
         reset_lua_environment();
 
-        lua.script(source, mEnvironment, "source", sol::load_mode::any);
-        lua.script(VALIDATE_SCRIPT, mEnvironment, "validate", sol::load_mode::any);
+        lua.script(mLuaSource, mEnvironment, "src", sol::load_mode::text);
 
         mTickFunction = mEnvironment["tick"];
-        mCancelFunction = mEnvironment["cancel"];
+
+        mErrorMessage.clear();
     }
     catch (const sol::error& error)
     {
-        sq::log_warning("error loading script '{}.lua'\n{}", path, error.what());
-
-        if (source.data() == FALLBACK_SCRIPT)
-            sq::log_error("fallback script is broken???");
-
-        load_lua_from_string(FALLBACK_SCRIPT);
+        load_lua_from_fallback();
+        mErrorMessage = "error loading from string:\n{}"_format(error.what());
     }
 
-    reset_lua_thread();
+    //reset_lua_thread();
 }
 
 //============================================================================//
@@ -243,7 +258,7 @@ void Action::reset_lua_thread()
 
     if (mThread.valid() == true)
     {
-        lua_gc(mThread.state(), LUA_GCCOLLECT);
+        //lua_gc(mThread.state(), LUA_GCCOLLECT);
         lua_resetthread(mThread.state());
     }
     else mThread = sol::thread::create(lua);
@@ -270,7 +285,7 @@ void Action::apply_changes(const Action& source)
         mEmitters.try_emplace(key, emitter);
 
     mLuaSource = source.mLuaSource;
-    load_lua_from_string(mLuaSource);
+    load_lua_from_string();
 }
 
 std::unique_ptr<Action> Action::clone() const
@@ -284,60 +299,104 @@ std::unique_ptr<Action> Action::clone() const
 
 //============================================================================//
 
-void Action::lua_func_enable_blob(TinyString key)
+template <class... Args>
+static inline void throw_error(StringView str, const Args&... args)
 {
-    sq::log_debug("enable_blob('{}')", key);
+    throw std::runtime_error(fmt::format(str, args...));
+}
 
-    const auto iter = mBlobs.find(key);
-    if (iter == mBlobs.end())
-        throw "invalid blob '{}'"_format(key);
+template <class... Args>
+inline void Action::log_script(StringView str, const Args&... args)
+{
+    if (world.options.log_script == true)
+        sq::log_debug(sq::build_string("{}/{} {:02d}: ", str), fighter.type, type, mCurrentFrame, args...);
+}
 
-    world.enable_hit_blob(&iter->second);
+//============================================================================//
+
+//void Action::lua_func_enable_blob(TinyString key)
+//{
+//    if (world.options.log_script) sq::log_debug("enable_blob('{}')", key);
+
+//    const auto iter = mBlobs.find(key);
+//    if (iter == mBlobs.end())
+//        throw_error("invalid blob '{}'", key);
+
+//    world.enable_hit_blob(&iter->second);
+//};
+
+//----------------------------------------------------------------------------//
+
+//void Action::lua_func_disable_blob(TinyString key)
+//{
+//    if (world.options.log_script) sq::log_debug("disable_blob('{}')", key);
+
+//    const auto iter = mBlobs.find(key);
+//    if (iter == mBlobs.end())
+//        throw_error("invalid blob '{}'", key);
+
+//    world.disable_hit_blob(&iter->second);
+//};
+
+//----------------------------------------------------------------------------//
+
+void Action::lua_func_enable_blob_group(uint8_t group)
+{
+    log_script("enable_blob_group('{}')", group);
+
+    for (auto& [key, blob] : mBlobs)
+        if (blob.group == group)
+            world.enable_hit_blob(&blob);
 };
 
 //----------------------------------------------------------------------------//
 
-void Action::lua_func_disable_blob(TinyString key)
+void Action::lua_func_disable_blob_group(uint8_t group)
 {
-    sq::log_debug("disable_blob('{}')", key);
+    log_script("disable_blob_group('{}')", group);
 
-    const auto iter = mBlobs.find(key);
-    if (iter == mBlobs.end())
-        throw "invalid blob '{}'"_format(key);
-
-    world.disable_hit_blob(&iter->second);
+    for (auto& [key, blob] : mBlobs)
+        if (blob.group == group)
+            world.disable_hit_blob(&blob);
 };
 
 //----------------------------------------------------------------------------//
 
-void Action::lua_func_finish_action()
+void Action::lua_func_allow_interrupt()
 {
-    sq::log_debug("finish_action()");
+    log_script("allow_interrupt()");
 
-    mFinished = true;
+    world.disable_all_hit_blobs(fighter);
+    world.reset_all_hit_blob_groups(fighter);
+    mAllowIterrupt = true;
 };
 
 //----------------------------------------------------------------------------//
 
 void Action::lua_func_emit_particles(TinyString key, uint count)
 {
-    sq::log_debug("emit_particles('{}', {})", key, count);
+    log_script("emit_particles('{}', {})", key, count);
+
+    if (count > 256u)
+        throw_error("count {} too high, limit is 256", count);
 
     const auto iter = mEmitters.find(key);
     if (iter == mEmitters.end())
-        throw "invalid emitter '{}'"_format(key);
+        throw_error("invalid emitter '{}'", key);
 
-    iter->second.generate(world.get_particle_system(), count);
+    Emitter& emitter = iter->second;
+
+    emitter.generate(world.get_particle_system(), count);
 }
 
 //----------------------------------------------------------------------------//
 
 void Action::lua_func_wait_until(uint frame)
 {
-    sq::log_debug("wait_until({})", frame);
+    log_script("wait_until({})", frame);
 
     if (frame <= mCurrentFrame)
-        throw "can't wait for {} on {}"_format(frame, mCurrentFrame);
+        throw_error("can't wait for {} on {}", frame, mCurrentFrame);
 
     mWaitingUntil = frame;
 }

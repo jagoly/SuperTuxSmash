@@ -1,4 +1,44 @@
 {
-  "blobs": {},
+  "blobs": {
+    "0_Neck": {
+      "bone": "NeckN",
+      "damage": 7.0,
+      "flavour": "Tangy",
+      "freezeFactor": 1.0,
+      "group": 0,
+      "index": 0,
+      "knockAngle": 96.0,
+      "knockBase": 28.0,
+      "knockScale": 130.0,
+      "origin": [ 0.0, 0.9119801, -0.024320113 ],
+      "radius": 0.4
+    },
+    "1_ArmR": {
+      "bone": "RArmJ",
+      "damage": 7.0,
+      "flavour": "Tangy",
+      "freezeFactor": 1.0,
+      "group": 0,
+      "index": 1,
+      "knockAngle": 96.0,
+      "knockBase": 28.0,
+      "knockScale": 130.0,
+      "origin": [ 0.3631301, 0.87162006, -0.021440106 ],
+      "radius": 0.45
+    },
+    "2_ArmR_offset": {
+      "bone": "RArmJ",
+      "damage": 7.0,
+      "flavour": "Tangy",
+      "freezeFactor": 1.0,
+      "group": 0,
+      "index": 2,
+      "knockAngle": 96.0,
+      "knockBase": 28.0,
+      "knockScale": 130.0,
+      "origin": [ 0.7631302, 0.87162006, -0.021440106 ],
+      "radius": 0.55
+    }
+  },
   "emitters": {}
 }

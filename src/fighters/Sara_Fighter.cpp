@@ -20,25 +20,20 @@ void Sara_Fighter::tick()
 
     Emitter emitter;
 
-    emitter.shape = Emitter::DiscShape();
-
-    emitter.emitPosition = Vec3F(get_position(), 0.f);
-    emitter.emitVelocity = Vec3F(get_velocity().x * 0.2f, 0.f, 0.f);
-    emitter.direction = Vec3F(0.f, 1.f, 0.f);
-
-    emitter.endScale = 2.f;
-    emitter.endOpacity = 0.f;
-
-    emitter.lifetime = { 16u, 24u };
-    emitter.radius = { 0.4f, 0.6f };
-    emitter.opacity = { 0.4f, 0.5f };
-
-    emitter.colour_fixed() = { 1.f, 1.f, 1.f };
-
-    emitter.shape_disc().incline = { -0.01f, 0.04f };
-    emitter.shape_disc().speed = { 1.2f, 2.2f };
+    emitter.fighter = this;
 
     emitter.sprite = "Smoke";
+    emitter.colour = { Vec3F(1.f, 1.f, 1.f) };
+
+    emitter.baseOpacity = 0.5f;
+    emitter.endOpacity = 0.f;
+    emitter.endScale = 2.f;
+
+    emitter.lifetime = { 16u, 24u };
+    emitter.baseRadius = { 0.4f, 0.6f };
+
+    emitter.discIncline = { -0.01f, 0.04f };
+    emitter.discSpeed = { 1.2f, 2.2f };
 
     //auto& partilcles = world.get_particle_system();
 

@@ -10,13 +10,10 @@ using namespace sts;
 
 //============================================================================//
 
-constexpr const float EMIT_END_SCALE_MAX = 10.f;
-constexpr const float EMIT_END_OPACITY_MAX = 10.f;
 constexpr const uint16_t EMIT_RAND_LIFETIME_MIN = 4u;
 constexpr const uint16_t EMIT_RAND_LIFETIME_MAX = 480u;
 constexpr const float EMIT_RAND_RADIUS_MIN = 0.05f;
 constexpr const float EMIT_RAND_RADIUS_MAX = 1.f;
-constexpr const float EMIT_RAND_OPACITY_MIN = 0.1f;
 constexpr const float EMIT_RAND_SPEED_MAX = 20.f;
 
 //============================================================================//
@@ -141,79 +138,99 @@ void EditorScene::impl_show_widget_emitters()
             const auto& boneNames = fighter.get_armature().get_bone_names();
             ImPlus::Combo(" Bone", boneNames, emitter.bone, "(None)");
 
-            ImPlus::InputVector(" Direction", emitter.direction, 0, "%.4f");
+            ImPlus::InputVector(" Velocity", emitter.velocity, 0, "%.4f");
 
             ImGui::InputText(" Sprite", emitter.sprite.data(), TinyString::capacity());
 
-            ImPlus::DragValue(" EndScale", emitter.endScale, 0.f, EMIT_END_SCALE_MAX, 0.001f, "%.3f");
-            ImPlus::DragValue(" EndOpacity", emitter.endOpacity, 0.f, EMIT_END_OPACITY_MAX, 0.0025f, "%.2f");
-
-            ImPlus::DragValueRange2(" Lifetime", emitter.lifetime.min, emitter.lifetime.max, EMIT_RAND_LIFETIME_MIN, EMIT_RAND_LIFETIME_MAX, 0.5f, "%d");
-            ImPlus::DragValueRange2(" Radius", emitter.radius.min, emitter.radius.max, EMIT_RAND_RADIUS_MIN, EMIT_RAND_RADIUS_MAX, 0.001f, "%.3f");
-            ImPlus::DragValueRange2(" Opacity", emitter.opacity.min, emitter.opacity.max, EMIT_RAND_OPACITY_MIN, 1.f, 0.0025f, "%.2f");
-            ImPlus::DragValueRange2(" Speed", emitter.speed.min, emitter.speed.max, 0.f, EMIT_RAND_SPEED_MAX, 0.001f, "%.3f");
-
-            ImGui::Separator();
-
-            int colourIndex = int(emitter.colour.index());
-            ImPlus::Combo(" Colour", std::array { "Fixed", "Random" }, colourIndex);
-
-            if (colourIndex == 0)
+            if (emitter.colour.empty()) emitter.colour = { Vec3F(1.f, 1.f, 1.f) };
+            int indexToDelete = -1;
+            for (int index = 0; index < emitter.colour.size(); ++index)
             {
-                if (emitter.colour.index() != 0)
-                {
-                    const Vec3F defaultValue = emitter.colour_random().front();
-                    emitter.colour.emplace<Emitter::FixedColour>(defaultValue);
-                }
-
-                ImGui::ColorEdit3(" RGB", emitter.colour_fixed().data, ImGuiColorEditFlags_Float);
+                const ImPlus::ScopeID idScope = index;
+                if (ImGui::Button(" X ")) indexToDelete = index;
+                ImGui::SameLine();
+                ImGui::ColorEdit3(" RGB", emitter.colour[index].data);
             }
+            if (indexToDelete >= 0)
+                emitter.colour.erase(emitter.colour.begin() + indexToDelete);
+            if (ImGui::Button("Add New Entry") && !emitter.colour.full())
+                emitter.colour.emplace_back();
 
-            if (colourIndex == 1)
-            {
-                if (emitter.colour.index() != 1)
-                {
-                    const Vec3F defaultValue = emitter.colour_fixed();
-                    emitter.colour.emplace<Emitter::RandomColour>({defaultValue});
-                }
+            ImPlus::SliderValue(" BaseOpacity", emitter.baseOpacity, 0.2f, 1.f, "%.3f");
+            ImPlus::SliderValue(" EndOpacity", emitter.endOpacity, 0.f, 5.f, "%.3f");
+            ImPlus::SliderValue(" EndScale", emitter.endScale, 0.f, 5.f, "%.3f");
 
-                int indexToDelete = -1;
-                for (int index = 0; index < emitter.colour_random().size(); ++index)
-                {
-                    const ImPlus::ScopeID idScope = index;
-                    if (ImGui::Button(" X ")) indexToDelete = index;
-                    ImGui::SameLine();
-                    ImGui::ColorEdit3(" RGB", emitter.colour_random()[index].data);
-                }
-                if (indexToDelete >= 0)
-                    emitter.colour_random().erase(emitter.colour_random().begin() + indexToDelete);
-                if (ImGui::Button("Add New Entry") && !emitter.colour_random().full())
-                    emitter.colour_random().emplace_back();
-            }
+            ImPlus::DragValueRange2(" Lifetime", emitter.lifetime.min, emitter.lifetime.max, 4u, 240u, 1.f/8, "%d");
+            ImPlus::DragValueRange2(" BaseRadius", emitter.baseRadius.min, emitter.baseRadius.max, 0.05f, 1.f, 1.f/320, "%.3f");
 
-            ImGui::Separator();
+            ImPlus::DragValueRange2(" BallOffset", emitter.ballOffset.min, emitter.ballOffset.max, 0.f, 2.f, 1.f/80, "%.3f");
+            ImPlus::DragValueRange2(" BallSpeed", emitter.ballSpeed.min, emitter.ballSpeed.max, 0.f, 10.f, 1.f/80, "%.3f");
 
-            int shapeIndex = int(emitter.shape.index());
-            ImPlus::Combo(" Shape", std::array { "Ball", "Disc", "Ring" }, shapeIndex);
+            ImPlus::DragValueRange2(" DiscIncline", emitter.discIncline.min, emitter.discIncline.max, -0.25f, 0.25f, 1.f/320, "%.3f");
+            ImPlus::DragValueRange2(" DiscOffset", emitter.discOffset.min, emitter.discOffset.max, 0.f, 2.f, 1.f/80, "%.3f");
+            ImPlus::DragValueRange2(" DiscSpeed", emitter.discSpeed.min, emitter.discSpeed.max, 0.f, 10.f, 1.f/80, "%.3f");
 
-            if (shapeIndex == 0)
-            {
-                if (emitter.shape.index() != 0)
-                    emitter.shape.emplace<Emitter::BallShape>();
+//            ImGui::Separator();
 
-                auto& shape = emitter.shape_ball();
-                ImPlus::SliderValueRange2(" Speed##shape", shape.speed.min, shape.speed.max, 0.f, 100.f, "%.3f");
-            }
+//            int colourIndex = int(emitter.colour.index());
+//            ImPlus::Combo(" Colour", std::array { "Fixed", "Random" }, colourIndex);
 
-            if (shapeIndex == 1)
-            {
-                if (emitter.shape.index() != 1)
-                    emitter.shape.emplace<Emitter::DiscShape>();
+//            if (colourIndex == 0)
+//            {
+//                if (emitter.colour.index() != 0)
+//                {
+//                    const Vec3F defaultValue = emitter.colour_random().front();
+//                    emitter.colour.emplace<Emitter::FixedColour>(defaultValue);
+//                }
 
-                auto& shape = emitter.shape_disc();
-                ImPlus::SliderValueRange2(" Incline##shape", shape.incline.min, shape.incline.max, -0.25f, 0.25f, "%.3f");
-                ImPlus::SliderValueRange2(" Speed##shape", shape.speed.min, shape.speed.max, 0.f, 100.f, "%.3f");
-            }
+//                ImGui::ColorEdit3(" RGB", emitter.colour_fixed().data, ImGuiColorEditFlags_Float);
+//            }
+
+//            if (colourIndex == 1)
+//            {
+//                if (emitter.colour.index() != 1)
+//                {
+//                    const Vec3F defaultValue = emitter.colour_fixed();
+//                    emitter.colour.emplace<Emitter::RandomColour>({defaultValue});
+//                }
+
+//                int indexToDelete = -1;
+//                for (int index = 0; index < emitter.colour_random().size(); ++index)
+//                {
+//                    const ImPlus::ScopeID idScope = index;
+//                    if (ImGui::Button(" X ")) indexToDelete = index;
+//                    ImGui::SameLine();
+//                    ImGui::ColorEdit3(" RGB", emitter.colour_random()[index].data);
+//                }
+//                if (indexToDelete >= 0)
+//                    emitter.colour_random().erase(emitter.colour_random().begin() + indexToDelete);
+//                if (ImGui::Button("Add New Entry") && !emitter.colour_random().full())
+//                    emitter.colour_random().emplace_back();
+//            }
+
+//            ImGui::Separator();
+
+//            int shapeIndex = int(emitter.shape.index());
+//            ImPlus::Combo(" Shape", std::array { "Ball", "Disc", "Ring" }, shapeIndex);
+
+//            if (shapeIndex == 0)
+//            {
+//                if (emitter.shape.index() != 0)
+//                    emitter.shape.emplace<Emitter::BallShape>();
+
+//                auto& shape = emitter.shape_ball();
+//                ImPlus::SliderValueRange2(" Speed##shape", shape.speed.min, shape.speed.max, 0.f, 100.f, "%.3f");
+//            }
+
+//            if (shapeIndex == 1)
+//            {
+//                if (emitter.shape.index() != 1)
+//                    emitter.shape.emplace<Emitter::DiscShape>();
+
+//                auto& shape = emitter.shape_disc();
+//                ImPlus::SliderValueRange2(" Incline##shape", shape.incline.min, shape.incline.max, -0.25f, 0.25f, "%.3f");
+//                ImPlus::SliderValueRange2(" Speed##shape", shape.speed.min, shape.speed.max, 0.f, 100.f, "%.3f");
+//            }
         }
     }
 

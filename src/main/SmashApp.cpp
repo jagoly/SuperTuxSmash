@@ -70,7 +70,8 @@ void SmashApp::update(double elapsed)
 
     mActiveScene->show_imgui_widgets();
 
-    guiSystem.show_imgui_demo();
+    if (mOptions->imgui_demo == true)
+        guiSystem.show_imgui_demo();
 
     guiSystem.finish_scene_update(elapsed);
 
@@ -166,6 +167,21 @@ void SmashApp::handle_event(sq::Event event)
 
             mDebugOverlay->notify("debug texture set to '{}'"_format(mOptions->debug_texture));
             refresh_options();
+        }
+
+        if (data.keyboard.key == Key::I)
+        {
+            constexpr const auto STRINGS = std::array { "OFF", "ON" };
+            mOptions->imgui_demo = !mOptions->imgui_demo;
+            mDebugOverlay->notify(sq::build_string("imgui demo set to ", STRINGS[mOptions->imgui_demo]));
+        }
+
+        if (data.keyboard.key == Key::R)
+        {
+            constexpr const auto STRINGS = std::array { "OFF", "ON" };
+            mOptions->render_hit_blobs = mOptions->render_hurt_blobs = !mOptions->render_skeletons;
+            mOptions->render_diamonds = mOptions->render_skeletons = !mOptions->render_skeletons;
+            mDebugOverlay->notify(sq::build_string("debug render set to ", STRINGS[mOptions->render_skeletons]));
         }
 
         if (data.keyboard.key == Key::Num_1)

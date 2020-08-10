@@ -65,6 +65,8 @@ void Fighter::initialise_armature(const String& path)
     anims.DashingLoop = load_anim("DashingLoop", AnimMode::DashCycle);
     anims.FallingLoop = load_anim("FallingLoop", AnimMode::Looping);
     anims.NeutralLoop = load_anim("NeutralLoop", AnimMode::Looping);
+    anims.ProneLoop = load_anim("ProneLoop", AnimMode::Looping);
+    anims.TumbleLoop = load_anim("TumbleLoop", AnimMode::Looping);
     anims.VertigoLoop = load_anim("VertigoLoop", AnimMode::Looping);
     anims.WalkingLoop = load_anim("WalkingLoop", AnimMode::WalkCycle);
 
@@ -80,8 +82,6 @@ void Fighter::initialise_armature(const String& path)
     anims.VertigoStart = load_anim("VertigoStart", AnimMode::Standard);
 
     anims.Brake = load_anim("Brake", AnimMode::Standard);
-    anims.LandLight = load_anim("LandLight", AnimMode::Standard);
-    anims.LandHeavy = load_anim("LandHeavy", AnimMode::Standard);
     anims.PreJump = load_anim("PreJump", AnimMode::Standard);
     anims.Turn = load_anim("Turn", AnimMode::Standard);
     anims.TurnBrake = load_anim("TurnBrake", AnimMode::Standard);
@@ -97,24 +97,22 @@ void Fighter::initialise_armature(const String& path)
     anims.LedgeClimb = load_anim("LedgeClimb", AnimMode::ApplyMotion);
     anims.LedgeJump = load_anim("LedgeJump", AnimMode::Standard);
 
-    anims.EvadeBack = load_anim("EvadeBack", AnimMode::ApplyMotion);
-    anims.EvadeForward = load_anim("EvadeForward", AnimMode::ApplyMotion);
-    anims.Dodge = load_anim("Dodge", AnimMode::Standard);
-    anims.AirDodge = load_anim("AirDodge", AnimMode::Standard);
-
     anims.NeutralFirst = load_anim("NeutralFirst", AnimMode::Standard);
+
+    anims.DashAttack = load_anim("DashAttack", AnimMode::ApplyMotion);
 
     anims.TiltDown = load_anim("TiltDown", AnimMode::Standard);
     anims.TiltForward = load_anim("TiltForward", AnimMode::ApplyMotion);
     anims.TiltUp = load_anim("TiltUp", AnimMode::Standard);
 
-    anims.AirBack = load_anim("AirBack", AnimMode::Standard);
-    anims.AirDown = load_anim("AirDown", AnimMode::Standard);
-    anims.AirForward = load_anim("AirForward", AnimMode::Standard);
-    anims.AirNeutral = load_anim("AirNeutral", AnimMode::Standard);
-    anims.AirUp = load_anim("AirUp", AnimMode::Standard);
+    anims.EvadeBack = load_anim("EvadeBack", AnimMode::ApplyMotion);
+    anims.EvadeForward = load_anim("EvadeForward", AnimMode::ApplyMotion);
+    anims.Dodge = load_anim("Dodge", AnimMode::Standard);
 
-    anims.DashAttack = load_anim("DashAttack", AnimMode::ApplyMotion);
+    anims.ProneAttack = load_anim("ProneAttack", AnimMode::Standard);
+    anims.ProneBack = load_anim("ProneBack", AnimMode::ApplyMotion);
+    anims.ProneForward = load_anim("ProneForward", AnimMode::ApplyMotion);
+    anims.ProneStand = load_anim("ProneStand", AnimMode::Standard);
 
     anims.SmashDownStart = load_anim("SmashDownStart", AnimMode::Standard);
     anims.SmashForwardStart = load_anim("SmashForwardStart", AnimMode::ApplyMotion);
@@ -128,21 +126,61 @@ void Fighter::initialise_armature(const String& path)
     anims.SmashForwardAttack = load_anim("SmashForwardAttack", AnimMode::ApplyMotion);
     anims.SmashUpAttack = load_anim("SmashUpAttack", AnimMode::Standard);
 
-    // some anims need to be longer than a certain length for logic to work correctly
-    const auto ensure_anim_time = [](Animation& anim, uint time, const char* animName, const char* timeName)
+    anims.AirBack = load_anim("AirBack", AnimMode::Standard);
+    anims.AirDown = load_anim("AirDown", AnimMode::Standard);
+    anims.AirForward = load_anim("AirForward", AnimMode::Standard);
+    anims.AirNeutral = load_anim("AirNeutral", AnimMode::Standard);
+    anims.AirUp = load_anim("AirUp", AnimMode::Standard);
+    anims.AirDodge = load_anim("AirDodge", AnimMode::Standard);
+
+    anims.LandLight = load_anim("LandLight", AnimMode::Standard);
+    anims.LandHeavy = load_anim("LandHeavy", AnimMode::Standard);
+    //anims.LandAirBack = load_anim("LandAirBack", AnimMode::Standard);
+    //anims.LandAirDown = load_anim("LandAirDown", AnimMode::Standard);
+    //anims.LandAirForward = load_anim("LandAirForward", AnimMode::Standard);
+    //anims.LandAirNeutral = load_anim("LandAirNeutral", AnimMode::Standard);
+    //anims.LandAirUp = load_anim("LandAirUp", AnimMode::Standard);
+    anims.LandTumble = load_anim("LandTumble", AnimMode::Standard);
+
+    anims.HurtLowerLight = load_anim("HurtLowerLight", AnimMode::Standard);
+    //anims.HurtLowerMedium = load_anim("HurtLowerMedium", AnimMode::Standard);
+    anims.HurtLowerHeavy = load_anim("HurtLowerHeavy", AnimMode::Standard);
+    anims.HurtLowerTumble = load_anim("HurtLowerTumble", AnimMode::Standard);
+
+    anims.HurtMiddleLight = load_anim("HurtMiddleLight", AnimMode::Standard);
+    //anims.HurtMiddleMedium = load_anim("HurtMiddleMedium", AnimMode::Standard);
+    anims.HurtMiddleHeavy = load_anim("HurtMiddleHeavy", AnimMode::Standard);
+    anims.HurtMiddleTumble = load_anim("HurtMiddleTumble", AnimMode::Standard);
+
+    anims.HurtUpperLight = load_anim("HurtUpperLight", AnimMode::Standard);
+    //anims.HurtUpperMedium = load_anim("HurtUpperMedium", AnimMode::Standard);
+    anims.HurtUpperHeavy = load_anim("HurtUpperHeavy", AnimMode::Standard);
+    anims.HurtUpperTumble = load_anim("HurtUpperTumble", AnimMode::Standard);
+
+    //anims.LaunchLoop = load_anim("LaunchLoop", AnimMode::Looping);
+    //anims.LaunchFinish = load_anim("LaunchFinish", AnimMode::Standard);
+
+    const auto ensure_anim_at_least = [](Animation& anim, uint time, const char* timeName)
     {
         if (anim.anim.totalTime > time) return; // anim is longer than time
 
         if (anim.anim.totalTime != 1u) // fallback animation, don't print another warning
-            sq::log_warning("anim '{}' shorter than '{}'", animName, timeName);
+            sq::log_warning("anim '{}' shorter than '{}'", anim.key, timeName);
 
         anim.anim.totalTime = anim.anim.times.front() = time + 1u;
     };
 
-    ensure_anim_time(anims.DashStart, stats.dash_start_time, "DashStart", "dash_start_time");
-    ensure_anim_time(anims.Brake, stats.dash_brake_time, "Brake", "dash_brake_time");
-    ensure_anim_time(anims.TurnDash, stats.dash_turn_time, "TurnDash", "dash_turn_time");
-    ensure_anim_time(anims.LedgeClimb, stats.ledge_climb_time, "LedgeClimb", "ledge_climb_time");
+    ensure_anim_at_least(anims.DashStart, stats.dash_start_time, "dash_start_time");
+    ensure_anim_at_least(anims.Brake, stats.dash_brake_time, "dash_brake_time");
+    ensure_anim_at_least(anims.TurnDash, stats.dash_turn_time, "dash_turn_time");
+
+    ensure_anim_at_least(anims.HurtLowerHeavy, MIN_HITSTUN_HEAVY, "MIN_HITSTUN_HEAVY");
+    ensure_anim_at_least(anims.HurtMiddleHeavy, MIN_HITSTUN_HEAVY, "MIN_HITSTUN_HEAVY");
+    ensure_anim_at_least(anims.HurtUpperHeavy, MIN_HITSTUN_HEAVY, "MIN_HITSTUN_HEAVY");
+
+    ensure_anim_at_least(anims.HurtLowerTumble, MIN_HITSTUN_TUMBLE, "MIN_HITSTUN_TUMBLE");
+    ensure_anim_at_least(anims.HurtMiddleTumble, MIN_HITSTUN_TUMBLE, "MIN_HITSTUN_TUMBLE");
+    ensure_anim_at_least(anims.HurtUpperTumble, MIN_HITSTUN_TUMBLE, "MIN_HITSTUN_TUMBLE");
 }
 
 //============================================================================//
@@ -190,7 +228,6 @@ void Fighter::initialise_stats(const String& path)
     stats.dash_start_time  = json.at("dash_start_time");
     stats.dash_brake_time  = json.at("dash_brake_time");
     stats.dash_turn_time   = json.at("dash_turn_time");
-    stats.ledge_climb_time = json.at("ledge_climb_time");
 
     stats.anim_walk_stride = json.at("anim_walk_stride");
     stats.anim_dash_stride = json.at("anim_dash_stride");
@@ -269,45 +306,134 @@ bool Fighter::consume_command_oldest_facing(std::initializer_list<Command> leftC
 
 //============================================================================//
 
-void Fighter::apply_hit_basic(const HitBlob& hit)
+void Fighter::apply_hit_basic(const HitBlob& hit, const HurtBlob& hurt)
 {
-    auto func = &Fighter::apply_hit_basic;
-    (this->*func)(hit);
-
-    const float angle = maths::radians(hit.knockAngle * float(hit.fighter->status.facing));
-    const Vec2F knockDir = { std::sin(angle), std::cos(angle) };
+    SQASSERT(hit.fighter != this, "invalid hitblob");
+    SQASSERT(hurt.fighter == this, "invalid hurtblob");
 
     status.damage += hit.damage;
 
+    // if we were in the middle of an action, cancel it
+    if (mActiveAction != nullptr) mActiveAction->do_cancel();
+
+    //--------------------------------------------------------//
+
+    // knockback formula: https://www.ssbwiki.com/Knockback#Melee_onward
+    // freezetime formula: https://www.ssbwiki.com/Hitlag#Formula
+    // knockback and weight values are the same arbitary units as in smash bros
+    // hitstun should always end before launch speed completely decays
+
+    const float angle = maths::radians(hit.knockAngle / 360.f);
+    const Vec2F knockDir = { std::cos(angle) * float(hit.fighter->status.facing), std::sin(angle) };
+
     const float damageFactor = status.damage / 10.f + (status.damage * hit.damage) / 20.f;
-    const float weightFactor = (2.f / (stats.weight + 1.f)); // * 1.4f;
+    const float weightFactor = 200.f / (stats.weight + 100.f);
 
-    const float knockback = damageFactor * weightFactor * hit.knockScale / 10.f + hit.knockBase;
+    const float knockback = hit.knockBase + (damageFactor * weightFactor * 1.4f + 18.f) * hit.knockScale * 0.01f;
 
-    status.velocity = maths::normalize(knockDir) * knockback;
+    const uint freezeTime = uint((hit.damage * 0.4f + 4.f) * hit.freezeFactor);
 
-    status.state = State::Knocked;
+    const float launchSpeed = knockback * 0.003f;
+    const uint hitStunTime = uint(knockback * 0.4f);
+
+    sq::log_debug_multiline("fighter {} hit by fighter {}:"
+                            "\naction:      {}" "\nknockback:   {}" "\nfreezeTime:  {}" "\nhitStun:     {}"
+                            "\nknockDir:    {}" "\nlaunchSpeed: {}" "\ndecayFrames: {}" "\nhurtRegion:  {}",
+                            index, hit.fighter->index,
+                            hit.action->type, knockback, freezeTime, hitStunTime,
+                            knockDir, launchSpeed, uint(launchSpeed / KNOCKBACK_DECAY), hurt.region);
+
+    SQASSERT(hitStunTime < uint(launchSpeed / KNOCKBACK_DECAY), "check ya formulas");
+
+    //--------------------------------------------------------//
+
+    mLaunchSpeed = launchSpeed;
+    mHitStunTime = hitStunTime;
+
+    mFreezeTime = freezeTime;
+    mFrozenProgress = 0u;
+
+    status.velocity = maths::normalize(knockDir) * launchSpeed;
+    status.facing = -hit.fighter->status.facing;
+
+    //--------------------------------------------------------//
+
+    // todo: in the air, should be always using those animations regardless of region
+
+    const auto& anims = mAnimations;
+
+    if (mHitStunTime >= MIN_HITSTUN_TUMBLE)
+    {
+        mFrozenState = State::TumbleStun;
+
+        if (hurt.region == BlobRegion::Middle)
+            state_transition(State::Freeze, 0u, &anims.HurtMiddleTumble, 0u, &anims.TumbleLoop);
+        else if (hurt.region == BlobRegion::Lower)
+            state_transition(State::Freeze, 0u, &anims.HurtLowerTumble, 0u, &anims.TumbleLoop);
+        else if (hurt.region == BlobRegion::Upper)
+            state_transition(State::Freeze, 0u, &anims.HurtUpperTumble, 0u, &anims.TumbleLoop);
+    }
+    else if (mHitStunTime >= MIN_HITSTUN_HEAVY)
+    {
+        mFrozenState = State::HitStun;
+
+        if (hurt.region == BlobRegion::Middle)
+            state_transition(State::Freeze, 0u, &anims.HurtMiddleHeavy, 4u, &anims.FallingLoop);
+        else if (hurt.region == BlobRegion::Lower)
+            state_transition(State::Freeze, 0u, &anims.HurtLowerHeavy, 4u, &anims.FallingLoop);
+        else if (hurt.region == BlobRegion::Upper)
+            state_transition(State::Freeze, 0u, &anims.HurtUpperHeavy, 4u, &anims.FallingLoop);
+    }
+    else
+    {
+        mFrozenState = State::HitStun;
+
+        if (hurt.region == BlobRegion::Middle)
+            state_transition(State::Freeze, 0u, &anims.HurtMiddleLight, 4u, &anims.FallingLoop);
+        else if (hurt.region == BlobRegion::Lower)
+            state_transition(State::Freeze, 0u, &anims.HurtLowerLight, 4u, &anims.FallingLoop);
+        else if (hurt.region == BlobRegion::Upper)
+            state_transition(State::Freeze, 0u, &anims.HurtUpperLight, 4u, &anims.FallingLoop);
+    }
+
+    //--------------------------------------------------------//
+
+    hit.fighter->mFreezeTime = freezeTime;
+    hit.fighter->mFrozenProgress = hit.fighter->mStateProgress;
+    hit.fighter->mFrozenState = hit.fighter->status.state;
+
+    hit.fighter->state_transition(State::Freeze, 0u, nullptr, 0u, nullptr);
 }
+
+//============================================================================//
 
 void Fighter::pass_boundary()
 {
     current.position = Vec2F();
     status.velocity = Vec2F();
+
+    state_transition(State::Neutral, 0u, &mAnimations.NeutralLoop, 0u, nullptr);
 }
 
 //============================================================================//
+
+Mat4F Fighter::get_bone_matrix(int8_t bone) const
+{
+    SQASSERT(bone < int8_t(mArmature.get_bone_count()), "invalid bone");
+    if (bone < 0) return mModelMatrix;
+    return mModelMatrix * maths::transpose(Mat4F(mBoneMatrices[bone]));
+}
 
 Mat4F Fighter::interpolate_model_matrix(float blend) const
 {
     const Vec2F position = maths::mix(previous.position, current.position, blend);
     const QuatF rotation = maths::slerp(previous.rotation, current.rotation, blend);
-
     return maths::transform(Vec3F(position, 0.f), rotation, Vec3F(1.f));
 }
 
 void Fighter::interpolate_bone_matrices(float blend, Mat34F* out, size_t len) const
 {
-    SQASSERT(len == mArmature.get_bone_names().size(), "");
+    SQASSERT(len == mArmature.get_bone_count(), "buffer size does not match");
     const auto blendPose = mArmature.blend_poses(previous.pose, current.pose, blend);
     mArmature.compute_ubo_data(blendPose, out, uint(len));
 }

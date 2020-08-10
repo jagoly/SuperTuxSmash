@@ -18,15 +18,6 @@ struct Ledge;
 
 //============================================================================//
 
-constexpr const uint STS_CMD_BUFFER_SIZE = 8u;
-constexpr const uint STS_LIGHT_LANDING_LAG = 2u;
-constexpr const uint STS_HEAVY_LANDING_LAG = 8u;
-constexpr const uint STS_JUMP_DELAY = 5u;
-constexpr const uint STS_NO_LEDGE_CATCH_TIME = 48u;
-constexpr const uint STS_MIN_LEDGE_HANG_TIME = 16u;
-
-//============================================================================//
-
 struct LocalDiamond
 {
     LocalDiamond() = default;
@@ -77,6 +68,8 @@ public: //====================================================//
         Animation DashingLoop;
         Animation FallingLoop;
         Animation NeutralLoop;
+        Animation ProneLoop;
+        Animation TumbleLoop;
         Animation VertigoLoop;
         Animation WalkingLoop;
 
@@ -92,8 +85,6 @@ public: //====================================================//
         Animation VertigoStart;
 
         Animation Brake;
-        Animation LandLight;
-        Animation LandHeavy;
         Animation PreJump;
         Animation Turn;
         Animation TurnBrake;
@@ -109,24 +100,22 @@ public: //====================================================//
         Animation LedgeClimb;
         Animation LedgeJump;
 
-        Animation EvadeBack;
-        Animation EvadeForward;
-        Animation Dodge;
-        Animation AirDodge;
-
         Animation NeutralFirst;
+
+        Animation DashAttack;
 
         Animation TiltDown;
         Animation TiltForward;
         Animation TiltUp;
 
-        Animation AirBack;
-        Animation AirDown;
-        Animation AirForward;
-        Animation AirNeutral;
-        Animation AirUp;
+        Animation EvadeBack;
+        Animation EvadeForward;
+        Animation Dodge;
 
-        Animation DashAttack;
+        Animation ProneAttack;
+        Animation ProneBack;
+        Animation ProneForward;
+        Animation ProneStand;
 
         Animation SmashDownStart;
         Animation SmashForwardStart;
@@ -139,6 +128,40 @@ public: //====================================================//
         Animation SmashDownAttack;
         Animation SmashForwardAttack;
         Animation SmashUpAttack;
+
+        Animation AirBack;
+        Animation AirDown;
+        Animation AirForward;
+        Animation AirNeutral;
+        Animation AirUp;
+        Animation AirDodge;
+
+        Animation LandLight;
+        Animation LandHeavy;
+        //Animation LandAirBack;
+        //Animation LandAirDown;
+        //Animation LandAirForward;
+        //Animation LandAirNeutral;
+        //Animation LandAirUp;
+        Animation LandTumble;
+
+        Animation HurtLowerLight;
+        //Animation HurtLowerMedium;
+        Animation HurtLowerHeavy;
+        Animation HurtLowerTumble;
+
+        Animation HurtMiddleLight;
+        //Animation HurtMiddleMedium;
+        Animation HurtMiddleHeavy;
+        Animation HurtMiddleTumble;
+
+        Animation HurtUpperLight;
+        //Animation HurtUpperMedium;
+        Animation HurtUpperHeavy;
+        Animation HurtUpperTumble;
+
+        //Animation LaunchLoop;
+        //Animation LaunchFinish;
     };
 
     /// Structure containing stats that generally don't change during a game.
@@ -155,16 +178,15 @@ public: //====================================================//
         float airhop_height = 3.5f;
         float gravity       = 0.01f;
         float fall_speed    = 0.15f;
-        float weight        = 1.f;
+        float weight        = 100.f;
 
         uint extra_jumps = 2u;
 
-        uint land_heavy_min_time = 4u;
+        uint land_heavy_min_time = 32u;
 
         uint dash_start_time  = 11u;
         uint dash_brake_time  = 12u;
         uint dash_turn_time   = 14u;
-        uint ledge_climb_time = 32u;
 
         float anim_walk_stride = 2.f;
         float anim_dash_stride = 3.f;
@@ -222,29 +244,26 @@ public: //====================================================//
     //--------------------------------------------------------//
 
     /// Called when hit by a basic attack.
-    void apply_hit_basic(const HitBlob& hit);
+    void apply_hit_basic(const HitBlob& hit, const HurtBlob& hurt);
 
     /// Called when passing the stage boundary.
     void pass_boundary();
 
-    //-- access data needed for world updates ----------------//
+    //-- private member access methods -----------------------//
 
     /// Get current model matrix.
     const Mat4F& get_model_matrix() const { return mModelMatrix; }
 
-    /// Get current armature pose matrices.
+    /// Get current armature pose matrices (local, transposed).
     const std::vector<Mat34F>& get_bone_matrices() const { return mBoneMatrices; }
-
-    /// Get current position (same as a model matrix)
-    Vec2F get_position() const { return current.position; }
-
-    /// Get current velocity.
-    Vec2F get_velocity() const { return status.velocity; }
 
     /// Get the collision diamond.
     const LocalDiamond& get_diamond() const { return mLocalDiamond; }
 
-    //-- compute data needed for rendering -------------------//
+    //-- compute data needed for update and render -----------//
+
+    /// Compute matrix for the specified bone, or model matrix if -1.
+    Mat4F get_bone_matrix(int8_t bone) const;
 
     /// Compute interpolated model matrix.
     Mat4F interpolate_model_matrix(float blend) const;
@@ -275,6 +294,8 @@ protected: //=================================================//
 
     void base_tick_fighter();
 
+    uint mStateProgress = 0u;
+
 private: //===================================================//
 
     //-- init methods, called by constructor -----------------//
@@ -299,26 +320,21 @@ private: //===================================================//
 
     Controller* mController = nullptr;
 
-    std::array<std::vector<Command>, STS_CMD_BUFFER_SIZE> mCommands;
+    std::array<std::vector<Command>, CMD_BUFFER_SIZE> mCommands;
 
     //-- methods used internally and by the action editor ----//
 
-    /// Transition from one state to another and play animations
-    ///
-    /// @param newState     the state to change to
-    /// @param fadeNow      fade into animNow over this many frames
-    /// @param animNow      play this animation immediately
-    /// @param fadeAfter    fade into animAfter over this many frames
-    /// @param animAfter    play after the current anim finishes
-    ///
-    void state_transition(State newState, uint fadeNow, const Animation* animNow,
-                          uint fadeAfter, const Animation* animAfter);
+    /// Transition from one state to another and play animations.
+    void state_transition(State state, uint fadeNow, const Animation* animNow, uint fadeAfter, const Animation* animAfter);
 
-    void switch_action(ActionType type);
+    /// Activate an action and change to the appropriate state.
+    void state_transition_action(ActionType action);
 
     //-- update methods, called each tick --------------------//
 
     void update_commands(const InputFrame& input);
+
+    void update_action(const InputFrame& input);
 
     void update_transitions(const InputFrame& input);
 
@@ -342,15 +358,21 @@ private: //===================================================//
 
     Action* mActiveAction = nullptr;
 
-    uint mStateProgress = 0u;
+    //uint mStateProgress = 0u;
 
-    uint mExtraJumps = 0u;
-
-    uint mLandingLag = 0u;
-
-    uint mTimeSinceLedge = 0u;
+    uint mLandingTime = 0u;
 
     bool mJumpHeld = false;
+
+    uint mTimeSinceLedge = 0u;
+    uint mExtraJumps = 0u;
+
+    uint mFreezeTime = 0u;
+    uint mFrozenProgress = 0u;
+    State mFrozenState = {};
+
+    float mLaunchSpeed = 0.f;
+    uint mHitStunTime = 0u;
 
     bool mVertigoActive = false;
 

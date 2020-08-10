@@ -156,12 +156,14 @@ void EditorScene::impl_show_widget_hitblobs()
             ImPlus::Combo(" Bone", boneNames, blob.bone, "(None)");
 
             ImPlus::InputValue(" Group", blob.group, 1, "%u");
+            ImPlus::InputValue(" Index", blob.index, 1, "%u");
+
             ImPlus::InputValue(" KnockAngle", blob.knockAngle, 0.01f, "%.4f");
             ImPlus::InputValue(" KnockBase", blob.knockBase, 0.01f, "%.4f");
             ImPlus::InputValue(" KnockScale", blob.knockScale, 0.01f, "%.4f");
             ImPlus::InputValue(" Damage", blob.damage, 0.01f, "%.4f");
+
             ImPlus::ComboEnum(" Flavour", blob.flavour);
-            ImPlus::ComboEnum(" Priority", blob.priority);
 
             ImPlus::if_Popup("input_bone_origin", 0, [&]()
             {

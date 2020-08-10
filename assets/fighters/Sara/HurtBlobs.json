@@ -1,86 +1,86 @@
 {
-  "ArmA.L": 
-  {
+  "ArmA.L": {
     "bone": "ArmA.L",
     "originA": [ -0.26, 1.4, -0.02 ],
     "originB": [ -0.39, 1.35, -0.02 ],
-    "radius": 0.07
+    "radius": 0.07,
+    "region": "Middle"
   },
-  "ArmA.R": 
-  {
+  "ArmA.R": {
     "bone": "ArmA.R",
     "originA": [ 0.26, 1.4, -0.02 ],
     "originB": [ 0.39, 1.35, -0.02 ],
-    "radius": 0.07
+    "radius": 0.07,
+    "region": "Middle"
   },
-  "ArmC.L": 
-  {
+  "ArmC.L": {
     "bone": "ArmC.L",
     "originA": [ -0.45, 1.33, -0.02 ],
     "originB": [ -0.67, 1.26, -0.015 ],
-    "radius": 0.07
+    "radius": 0.07,
+    "region": "Middle"
   },
-  "ArmC.R": 
-  {
+  "ArmC.R": {
     "bone": "ArmC.R",
     "originA": [ 0.45, 1.33, -0.02 ],
     "originB": [ 0.67, 1.26, -0.015 ],
-    "radius": 0.07
+    "radius": 0.07,
+    "region": "Middle"
   },
-  "Head": 
-  {
+  "Head": {
     "bone": "Head",
     "originA": [ 0.0, 1.65, 0.0 ],
     "originB": [ 0.0, 1.82, 0.01 ],
-    "radius": 0.16
+    "radius": 0.16,
+    "region": "Upper"
   },
-  "LegA.L": 
-  {
+  "LegA.L": {
     "bone": "LegA.L",
     "originA": [ -0.11, 0.77, 0.0 ],
     "originB": [ -0.15, 0.55, 0.03 ],
-    "radius": 0.11
+    "radius": 0.11,
+    "region": "Lower"
   },
-  "LegA.R": 
-  {
+  "LegA.R": {
     "bone": "LegA.R",
     "originA": [ 0.11, 0.77, 0.0 ],
     "originB": [ 0.15, 0.55, 0.03 ],
-    "radius": 0.11
+    "radius": 0.11,
+    "region": "Lower"
   },
-  "LegB.L": 
-  {
+  "LegB.L": {
     "bone": "LegB.L",
     "originA": [ -0.16, 0.47, 0.02 ],
     "originB": [ -0.21, 0.1, 0.0 ],
-    "radius": 0.11
+    "radius": 0.11,
+    "region": "Lower"
   },
-  "LegB.R": 
-  {
+  "LegB.R": {
     "bone": "LegB.R",
     "originA": [ 0.16, 0.47, 0.02 ],
     "originB": [ 0.21, 0.1, 0.0 ],
-    "radius": 0.11
+    "radius": 0.11,
+    "region": "Lower"
   },
-  "SpineA": 
-  {
+  "SpineA": {
     "bone": "SpineA",
     "originA": [ 0.0, 1.09, 0.0 ],
     "originB": [ 0.0, 1.22, 0.01 ],
-    "radius": 0.15
+    "radius": 0.15,
+    "region": "Middle"
   },
-  "SpineC": 
-  {
+  "SpineC": {
     "bone": "SpineC",
     "originA": [ -0.08, 1.35, 0.01 ],
     "originB": [ 0.08, 1.35, 0.01 ],
-    "radius": 0.16
+    "radius": 0.16,
+    "region": "Middle"
   },
-  "Torso": 
-  {
+  "Torso": {
     "bone": "Torso",
     "originA": [ -0.07, 0.89, -0.01 ],
     "originB": [ 0.07, 0.89, -0.01 ],
-    "radius": 0.15
+    "radius": 0.15,
+    "region": "Middle"
   }
 }

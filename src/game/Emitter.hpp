@@ -5,69 +5,41 @@
 #include <sqee/maths/Random.hpp>
 #include <sqee/misc/StackVector.hpp>
 
-#include <variant>
-
 namespace sts {
 
 //============================================================================//
 
 struct Emitter final
 {
-    Vec3F emitPosition; ///< World position of the emitter.
-    Vec3F emitVelocity; ///< Velocity of the emitter.
-
-    Fighter* fighter; ///< The fighter who owns this emitter.
-    Action* action;   ///< The action that created this emitter.
+    Fighter* fighter = nullptr; ///< The fighter who owns this emitter.
+    Action* action = nullptr;   ///< The action that created this emitter.
 
     //--------------------------------------------------------//
 
     int8_t bone = -1; ///< Index of the bone to attach to.
 
     Vec3F origin;    ///< Relative origin of the generated shape.
-    Vec3F direction; ///< Relative direction of the generated shape.
+    Vec3F velocity;  ///< Relative velocity of the generated shape.
 
     TinyString sprite; ///< Sprite to use.
 
-    float endScale;   ///< End of life scale factor.
-    float endOpacity; ///< End of life opacity factor.
+    sq::StackVector<Vec3F, 8> colour; ///< Random colour choices.
 
-    maths::RandomRange<uint16_t> lifetime; ///< Random lifetime.
-    maths::RandomRange<float>    radius;   ///< Random radius.
-    maths::RandomRange<float>    opacity;  ///< Random opacity.
-    maths::RandomRange<float>    speed;    ///< Random shapeless launch speed.
+    float baseOpacity = 1.f; ///< Starting opacity.
+    float endOpacity = 0.f;  ///< End of life opacity factor.
+    float endScale = 1.f;    ///< End of life scale factor.
 
-    //--------------------------------------------------------//
-
-    /// Always use a fixed colour.
-    using FixedColour = Vec3F;
-
-    /// Use one of multiple possible colours.
-    using RandomColour = sq::StackVector<Vec3F, 8u>;
-
-    std::variant<FixedColour, RandomColour> colour;
-
-    FixedColour& colour_fixed() { return std::get<FixedColour>(colour); }
-    RandomColour& colour_random() { return std::get<RandomColour>(colour); }
+    maths::RandomRange<uint16_t> lifetime;   ///< Random particle lifetime.
+    maths::RandomRange<float>    baseRadius; ///< Random starting radius.
 
     //--------------------------------------------------------//
 
-    /// Spawn particles at origin, and launch them in every direction to form a ball.
-    struct BallShape
-    {
-        maths::RandomRange<float> speed;  ///< Random ball launch velocity.
-    };
+    maths::RandomRange<float> ballOffset; ///< Random ball starting offset.
+    maths::RandomRange<float> ballSpeed;  ///< Random ball launch speed.
 
-    /// Spawn particles at origin, and launch them outwards to form a disc.
-    struct DiscShape
-    {
-        maths::RandomRange<float> incline; ///< Random incline for launch direction.
-        maths::RandomRange<float> speed;   ///< Random disc launch velocity.
-    };
-
-    std::variant<BallShape, DiscShape> shape;
-
-    BallShape& shape_ball() { return std::get<BallShape>(shape); }
-    DiscShape& shape_disc() { return std::get<DiscShape>(shape); }
+    maths::RandomRange<float> discIncline; ///< Random disc launch incline.
+    maths::RandomRange<float> discOffset;  ///< Random disc starting offset.
+    maths::RandomRange<float> discSpeed;   ///< Random disc launch speed.
 
     //--------------------------------------------------------//
 
@@ -86,7 +58,7 @@ struct Emitter final
 
 //============================================================================//
 
-static_assert(sizeof(Emitter) <= 256u);
+static_assert(sizeof(Emitter) == 224u);
 
 bool operator==(const Emitter& a, const Emitter& b);
 

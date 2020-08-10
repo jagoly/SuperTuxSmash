@@ -20,6 +20,8 @@ set_property(TARGET sts-game PROPERTY CXX_STANDARD_REQUIRED True)
 #set_property(TARGET sts-game PROPERTY CXX_INCLUDE_WHAT_YOU_USE
 #    "iwyu;-Xiwyu;any;-Xiwyu;iwyu;-Xiwyu;--mapping_file=/storage/Projects/SQEE/sqee/extras/iwyu-mapping.imp")
 
+#target_precompile_headers(sts-game PUBLIC <setup.hpp>)
+
 ################################################################################
 
 # todo: proper support for finding sqee would be good

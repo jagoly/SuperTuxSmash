@@ -118,6 +118,8 @@ GameScene::GameScene(SmashApp& smashApp, GameSetup setup)
         mFightWorld->add_fighter(std::move(fighter));
         mRenderer->add_object(std::move(renderFighter));
     }
+
+    mFightWorld->finish_setup();
 }
 
 GameScene::~GameScene() = default;
@@ -263,6 +265,13 @@ void GameScene::impl_show_general_window()
             ImPlus::RadioButton("2×", mTickTime, 1.0 / 96.0);
         });
         ImPlus::HoverTooltip("change game speed");
+
+        ImPlus::if_Menu("log...", true, [&]()
+        {
+            ImPlus::Checkbox("animation", &options.log_animation);
+            ImPlus::Checkbox("script", &options.log_script);
+        });
+        ImPlus::HoverTooltip("change debug logging");
     });
 
     ImGui::SetNextItemWidth(-1.f);

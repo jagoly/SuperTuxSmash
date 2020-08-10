@@ -1,0 +1,57 @@
+{
+  "blobs": {
+    "00_ForwardA": {
+      "bone": null,
+      "damage": 15.0,
+      "flavour": "Tangy",
+      "freezeFactor": 0.0,
+      "group": 0,
+      "index": 0,
+      "knockAngle": 45.0,
+      "knockBase": 40.0,
+      "knockScale": 73.0,
+      "origin": [ 0.0, 0.36, 1.2 ],
+      "radius": 0.48
+    },
+    "01_ForwardB": {
+      "bone": null,
+      "damage": 15.0,
+      "flavour": "Tangy",
+      "freezeFactor": 0.0,
+      "group": 0,
+      "index": 1,
+      "knockAngle": 45.0,
+      "knockBase": 40.0,
+      "knockScale": 73.0,
+      "origin": [ 0.0, 0.36, 0.9 ],
+      "radius": 0.384
+    },
+    "10_BackA": {
+      "bone": null,
+      "damage": 12.0,
+      "flavour": "Tangy",
+      "freezeFactor": 0.0,
+      "group": 1,
+      "index": 0,
+      "knockAngle": 135.0,
+      "knockBase": 35.0,
+      "knockScale": 75.0,
+      "origin": [ 0.0, 0.36, -1.2 ],
+      "radius": 0.48
+    },
+    "11_BackB": {
+      "bone": null,
+      "damage": 12.0,
+      "flavour": "Tangy",
+      "freezeFactor": 0.0,
+      "group": 1,
+      "index": 1,
+      "knockAngle": 135.0,
+      "knockBase": 35.0,
+      "knockScale": 75.0,
+      "origin": [ 0.0, 0.36, -0.9 ],
+      "radius": 0.384
+    }
+  },
+  "emitters": {}
+}

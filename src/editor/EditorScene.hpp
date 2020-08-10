@@ -76,7 +76,7 @@ private: //===================================================//
         std::map<TinyString, std::vector<String>> buildErrors;
 
         int timelineLength = 0;
-        int currentFrame = 0;
+        int currentFrame = -1;
     };
 
     struct HurtblobsContext : public BaseContext

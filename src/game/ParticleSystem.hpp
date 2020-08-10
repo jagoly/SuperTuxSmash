@@ -16,11 +16,11 @@ struct ParticleData
     uint16_t progress;
     uint16_t lifetime;
     Vec3F currentPos;
-    float radius;
+    float baseRadius;
     Vec3F velocity;
     float endScale;
     Vec3F colour;
-    float opacity;
+    float baseOpacity;
     float endOpacity;
     float friction;
     uint16_t sprite;

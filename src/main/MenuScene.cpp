@@ -84,6 +84,7 @@ void MenuScene::show_imgui_widgets()
 
         mSmashApp.start_game(any ? mSetup : GameSetup::get_defaults());
     }
+    ImPlus::HoverTooltip("warning: Sara and Tux are usually broken, if you want a mostly working fighter use Mario (Quick Start)");
 
     ImGui::SameLine();
 
@@ -91,4 +92,12 @@ void MenuScene::show_imgui_widgets()
     {
         mSmashApp.start_action_editor();
     }
+
+    ImGui::SameLine();
+
+    if (ImPlus::Button("Quick Start"))
+    {
+        mSmashApp.start_game(GameSetup::get_quickstart());
+    }
+    ImPlus::HoverTooltip("currently this starts a game in TestZone with two Marios");
 }

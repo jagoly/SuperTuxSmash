@@ -1,0 +1,83 @@
+{
+  "blobs": {
+    "00_BackA": {
+      "bone": "TransN",
+      "damage": 6.0,
+      "flavour": "Tangy",
+      "freezeFactor": 0.0,
+      "group": 0,
+      "index": 0,
+      "knockAngle": 135.0,
+      "knockBase": 80.0,
+      "knockScale": 50.0,
+      "origin": [ 0.0, 0.5, -1.2 ],
+      "radius": 0.5
+    },
+    "01_BackB": {
+      "bone": "TransN",
+      "damage": 6.0,
+      "flavour": "Tangy",
+      "freezeFactor": 0.0,
+      "group": 0,
+      "index": 1,
+      "knockAngle": 135.0,
+      "knockBase": 80.0,
+      "knockScale": 50.0,
+      "origin": [ 0.0, 0.5, -0.8 ],
+      "radius": 0.5
+    },
+    "02_BackC": {
+      "bone": "TransN",
+      "damage": 6.0,
+      "flavour": "Tangy",
+      "freezeFactor": 0.0,
+      "group": 0,
+      "index": 2,
+      "knockAngle": 135.0,
+      "knockBase": 80.0,
+      "knockScale": 50.0,
+      "origin": [ 0.0, 0.5, -0.4 ],
+      "radius": 0.5
+    },
+    "10_ForwardA": {
+      "bone": "TransN",
+      "damage": 6.0,
+      "flavour": "Tangy",
+      "freezeFactor": 0.0,
+      "group": 1,
+      "index": 0,
+      "knockAngle": 45.0,
+      "knockBase": 80.0,
+      "knockScale": 50.0,
+      "origin": [ 0.0, 0.5, 0.8 ],
+      "radius": 0.5
+    },
+    "11_ForwardB": {
+      "bone": "TransN",
+      "damage": 6.0,
+      "flavour": "Tangy",
+      "freezeFactor": 0.0,
+      "group": 1,
+      "index": 1,
+      "knockAngle": 45.0,
+      "knockBase": 80.0,
+      "knockScale": 50.0,
+      "origin": [ 0.0, 0.5, 1.2 ],
+      "radius": 0.5
+    },
+    "12_ForwardC": {
+      "bone": "TransN",
+      "damage": 6.0,
+      "flavour": "Tangy",
+      "freezeFactor": 0.0,
+      "group": 1,
+      "index": 2,
+      "knockAngle": 45.0,
+      "knockBase": 80.0,
+      "knockScale": 50.0,
+      "origin": [ 0.0, 0.5, 0.4 ],
+      "radius": 0.5
+    }
+  },
+  "emitters": {}
+}

@@ -1,44 +1,43 @@
 {
-  "blobs": 
-  {
-    "Hip": 
-    {
-      "bone": "HipN",
-      "damage": 0.0,
+  "blobs": {
+    "0_ToeR": {
+      "bone": "RToeN",
+      "damage": 5.0,
       "flavour": "Sour",
+      "freezeFactor": 1.0,
       "group": 0,
-      "knockAngle": 0.0,
-      "knockBase": 0.0,
-      "knockScale": 0.0,
-      "origin": [ 0.0, 0.47493994, 0.0 ],
-      "priority": "Low",
-      "radius": 0.234
+      "index": 0,
+      "knockAngle": 80.0,
+      "knockBase": 20.0,
+      "knockScale": 80.0,
+      "origin": [ 0.12796003, 0.08162999, 0.32974005 ],
+      "radius": 0.5
     },
-    "Knee": 
-    {
+    "1_KneeR": {
       "bone": "RKneeJ",
-      "damage": 0.0,
+      "damage": 7.0,
       "flavour": "Tangy",
+      "freezeFactor": 1.0,
       "group": 0,
-      "knockAngle": 0.0,
-      "knockBase": 0.0,
-      "knockScale": 0.0,
-      "origin": [ 0.12462002, 0.33975, -0.0009299854 ],
-      "priority": "Low",
-      "radius": 0.391
+      "index": 1,
+      "knockAngle": 80.0,
+      "knockBase": 20.0,
+      "knockScale": 80.0,
+      "origin": [ 0.124620035, 0.33975005, -0.0009300404 ],
+      "radius": 0.4
     },
-    "Leg": 
-    {
-      "bone": "RLegJ",
-      "damage": 0.0,
-      "flavour": "Sweet",
+    "2_Hip": {
+      "bone": "HipN",
+      "damage": 7.0,
+      "flavour": "Tangy",
+      "freezeFactor": 1.0,
       "group": 0,
-      "knockAngle": 0.0,
-      "knockBase": 0.0,
-      "knockScale": 0.0,
-      "origin": [ 0.24614003, 0.3772, 2.9336661e-08 ],
-      "priority": "Low",
-      "radius": 0.313
+      "index": 2,
+      "knockAngle": 80.0,
+      "knockBase": 20.0,
+      "knockScale": 80.0,
+      "origin": [ 0.0, 0.5491701, -6.546617e-08 ],
+      "radius": 0.3
     }
   },
   "emitters": {}

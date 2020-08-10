@@ -21,6 +21,8 @@ struct GameSetup
     StageEnum stage {-1};
 
     static GameSetup get_defaults();
+
+    static GameSetup get_quickstart();
 };
 
 //============================================================================//

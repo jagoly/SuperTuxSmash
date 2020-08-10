@@ -29,12 +29,27 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
         ImPlus::Text("Rotation: {:+.3f}"_format(fighter.current.rotation));
         ImPlus::HoverTooltip("Previous: {:+.3f}"_format(fighter.previous.rotation));
 
-        ImPlus::Text("State: {}"_format(fighter.status.state));
         ImPlus::Text("Facing: {}"_format(fighter.status.facing));
         ImPlus::Text("Velocity: {:+.6f}"_format(fighter.status.velocity));
         ImPlus::Text("Damage: {}%"_format(fighter.status.damage));
 
         ImPlus::Text("Translate: {:+.6f}"_format(fighter.mTranslate));
+
+        // show the progress and total time for some states
+        SWITCH (fighter.status.state) {
+
+        CASE (Freeze)
+            ImPlus::Text("State: {} ({}/{})"_format(fighter.status.state, fighter.mStateProgress, fighter.mFreezeTime));
+
+        CASE (HitStun, TumbleStun)
+            ImPlus::Text("State: HitStun ({}/{})"_format(fighter.mStateProgress, fighter.mHitStunTime));
+
+        CASE (PreJump)
+            ImPlus::Text("State: PreJump ({}/{})"_format(fighter.mStateProgress, JUMP_DELAY));
+
+        CASE_DEFAULT ImPlus::Text("State: {}"_format(fighter.status.state));
+
+        } SWITCH_END;
 
         // todo: because the gui renders after we update, this shows values for next
         // frame, rather than what is actually on the screen, which is confusing
@@ -83,7 +98,6 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
         ImPlus::InputValue("dash_start_time",  fighter.stats.dash_start_time,  1u);
         ImPlus::InputValue("dash_brake_time",  fighter.stats.dash_brake_time,  1u);
         ImPlus::InputValue("dash_turn_time",   fighter.stats.dash_turn_time,   1u);
-        ImPlus::InputValue("ledge_climb_time", fighter.stats.ledge_climb_time, 1u);
 
         ImPlus::InputValue("anim_walk_stride", fighter.stats.anim_walk_stride, 0.01f, "%.4f");
         ImPlus::InputValue("anim_dash_stride", fighter.stats.anim_dash_stride, 0.01f, "%.4f");

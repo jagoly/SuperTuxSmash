@@ -35,6 +35,9 @@ public: //====================================================//
     /// Add a fighter to the game.
     void add_fighter(std::unique_ptr<Fighter> fighter);
 
+    /// Called after the stage and fighters have been added.
+    void finish_setup();
+
     //--------------------------------------------------------//
 
     /// Enable a hit blob.
@@ -128,19 +131,20 @@ private: //===================================================//
 
     std::unique_ptr<Stage> mStage;
 
-    std::array<std::unique_ptr<Fighter>, 4> mFighters;
-    sq::StackVector<Fighter*, 4> mFighterRefs;
+    std::array<std::unique_ptr<Fighter>, MAX_FIGHTERS> mFighters;
+    sq::StackVector<Fighter*, MAX_FIGHTERS> mFighterRefs;
 
     std::vector<HitBlob*> mEnabledHitBlobs;
     std::vector<HurtBlob*> mEnabledHurtBlobs;
 
     //--------------------------------------------------------//
 
-    std::array<std::array<uint32_t, 4>, 4> mHitBitsArray;
+    struct Collision { HitBlob& hit; HurtBlob& hurt; };
 
-    struct Collision { HitBlob* hit; HurtBlob* hurt; };
+    // turns out you can do value-aggregate initialisation with nested std arrays
+    std::array<std::array<std::array<bool, MAX_FIGHTERS>, MAX_HITBLOB_GROUPS>, MAX_FIGHTERS> mHitBlobGroups {};
 
-    std::array<std::array<std::vector<Collision>, 4u>, 4u> mCollisions;
+    std::array<std::vector<Collision>, MAX_FIGHTERS> mCollisions;
 
 public: //== debug and editor interfaces =====================//
 

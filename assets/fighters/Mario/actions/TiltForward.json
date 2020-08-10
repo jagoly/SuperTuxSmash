@@ -1,4 +1,44 @@
 {
-  "blobs": {},
+  "blobs": {
+    "0_KneeR": {
+      "bone": "RKneeJ",
+      "damage": 8.0,
+      "flavour": "Tangy",
+      "freezeFactor": 0.0,
+      "group": 0,
+      "index": 0,
+      "knockAngle": 45.0,
+      "knockBase": 8.0,
+      "knockScale": 100.0,
+      "origin": [ 0.124620035, -0.020249993, -0.0009299975 ],
+      "radius": 0.5
+    },
+    "1_LegR": {
+      "bone": "RLegJ",
+      "damage": 8.0,
+      "flavour": "Tangy",
+      "freezeFactor": 0.0,
+      "group": 0,
+      "index": 1,
+      "knockAngle": 45.0,
+      "knockBase": 8.0,
+      "knockScale": 100.0,
+      "origin": [ 0.0, 0.66917014, -0.2000001 ],
+      "radius": 0.4
+    },
+    "2_Hip": {
+      "bone": "HipN",
+      "damage": 8.0,
+      "flavour": "Tangy",
+      "freezeFactor": 0.0,
+      "group": 0,
+      "index": 2,
+      "knockAngle": 45.0,
+      "knockBase": 8.0,
+      "knockScale": 100.0,
+      "origin": [ 0.12307003, 0.4296701, 0.003129949 ],
+      "radius": 0.4
+    }
+  },
   "emitters": {}
 }

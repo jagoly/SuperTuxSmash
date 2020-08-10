@@ -1,72 +1,72 @@
 {
-  "HeadN": 
-  {
+  "HeadN": {
     "bone": "HeadN",
     "originA": [ 0.0, 1.16, 0.03 ],
     "originB": [ 0.0, 1.26, 0.03 ],
-    "radius": 0.26
+    "radius": 0.26,
+    "region": "Upper"
   },
-  "LArmJ": 
-  {
+  "LArmJ": {
     "bone": "LArmJ",
     "originA": [ -0.36, 0.87, -0.02 ],
     "originB": [ -0.57, 0.87, -0.02 ],
-    "radius": 0.1
+    "radius": 0.1,
+    "region": "Middle"
   },
-  "LKneeJ": 
-  {
+  "LKneeJ": {
     "bone": "LKneeJ",
     "originA": [ -0.11, 0.38, 0.0 ],
     "originB": [ -0.11, 0.18, 0.0 ],
-    "radius": 0.14
+    "radius": 0.14,
+    "region": "Lower"
   },
-  "LLegJ": 
-  {
+  "LLegJ": {
     "bone": "LLegJ",
     "originA": [ -0.11, 0.58, 0.0 ],
     "originB": [ -0.11, 0.38, 0.0 ],
-    "radius": 0.14
+    "radius": 0.14,
+    "region": "Lower"
   },
-  "LShoulderJ": 
-  {
+  "LShoulderJ": {
     "bone": "LShoulderJ",
     "originA": [ -0.17, 0.87, -0.02 ],
     "originB": [ -0.27, 0.87, -0.02 ],
-    "radius": 0.09
+    "radius": 0.09,
+    "region": "Middle"
   },
-  "RArmJ": 
-  {
+  "RArmJ": {
     "bone": "RArmJ",
     "originA": [ 0.36, 0.87, -0.02 ],
     "originB": [ 0.57, 0.87, -0.02 ],
-    "radius": 0.1
+    "radius": 0.1,
+    "region": "Middle"
   },
-  "RKneeJ": 
-  {
+  "RKneeJ": {
     "bone": "RKneeJ",
     "originA": [ 0.11, 0.38, 0.0 ],
     "originB": [ 0.11, 0.18, 0.0 ],
-    "radius": 0.14
+    "radius": 0.14,
+    "region": "Lower"
   },
-  "RLegJ": 
-  {
+  "RLegJ": {
     "bone": "RLegJ",
     "originA": [ 0.11, 0.58, 0.0 ],
     "originB": [ 0.11, 0.38, 0.0 ],
-    "radius": 0.14
+    "radius": 0.14,
+    "region": "Lower"
   },
-  "RShoulderJ": 
-  {
+  "RShoulderJ": {
     "bone": "RShoulderJ",
     "originA": [ 0.17, 0.87, -0.02 ],
     "originB": [ 0.27, 0.87, -0.02 ],
-    "radius": 0.09
+    "radius": 0.09,
+    "region": "Middle"
   },
-  "WaistN": 
-  {
+  "WaistN": {
     "bone": "WaistN",
     "originA": [ 0.0, 0.64, 0.029 ],
     "originB": [ 0.0, 0.78, 0.029 ],
-    "radius": 0.23
+    "radius": 0.23,
+    "region": "Middle"
   }
 }

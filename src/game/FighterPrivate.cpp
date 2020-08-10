@@ -15,21 +15,20 @@ using namespace sts;
 
 //============================================================================//
 
-void Fighter::state_transition(State newState, uint fadeNow, const Animation* animNow, uint fadeAfter, const Animation* animAfter)
+void Fighter::state_transition(State state, uint fadeNow, const Animation* animNow, uint fadeAfter, const Animation* animAfter)
 {
     SQASSERT(fadeNow == 0u || animNow != nullptr, "");
     SQASSERT(fadeAfter == 0u || animAfter != nullptr, "");
-    SQASSERT(newState == State::EditorPreview || animNow != nullptr || animAfter != nullptr, "");
+    SQASSERT(animAfter == nullptr || animAfter->anim.looping(), "");
 
-    status.state = newState;
+    status.state = state;
     mStateProgress = 0u;
 
+    // current animation will be kept if animNow is null
     if (animNow != nullptr)
     {
-        // check if animNow is an already playing loop animation
-        const bool alreadyPlaying = mAnimation == animNow && mAnimation->anim.looping();
-
-        if (alreadyPlaying == false)
+        // don't restart already playing loop animations
+        if (mAnimation != animNow || !mAnimation->anim.looping())
         {
             mAnimation = animNow;
             mFadeFrames = fadeNow;
@@ -45,106 +44,85 @@ void Fighter::state_transition(State newState, uint fadeNow, const Animation* an
         }
     }
 
+    // next animation is never kept, if animAfter is null it will be cleared
     mNextAnimation = animAfter;
     mNextFadeFrames = fadeAfter;
+
+    // don't set next animation if it's already playing
+    if (mNextAnimation == mAnimation)
+    {
+        mNextAnimation = nullptr;
+        mNextFadeFrames = 0u;
+    }
+
 }
 
 //============================================================================//
 
-void Fighter::switch_action(ActionType type)
+void Fighter::state_transition_action(ActionType action)
 {
-    Action* const newAction = get_action(type);
-
-    SQASSERT(newAction != mActiveAction, "switch to same action");
+    // if there is already an active action, cancel it
+    if (mActiveAction != nullptr) mActiveAction->do_cancel();
 
     const Animations& anims = mAnimations;
 
-    //--------------------------------------------------------//
-
-    SWITCH ( type ) {
-
-    //--------------------------------------------------------//
+    SWITCH ( action ) {
 
     CASE (NeutralFirst) state_transition(State::Action, 1u, &anims.NeutralFirst, 0u, nullptr);
+
+    CASE (DashAttack) state_transition(State::Action, 1u, &anims.DashAttack, 0u, nullptr);
 
     CASE (TiltDown)    state_transition(State::Action, 1u, &anims.TiltDown, 0u, nullptr);
     CASE (TiltForward) state_transition(State::Action, 1u, &anims.TiltForward, 0u, nullptr);
     CASE (TiltUp)      state_transition(State::Action, 1u, &anims.TiltUp, 0u, nullptr);
+
+    CASE (EvadeBack)    state_transition(State::Action, 1u, &anims.EvadeBack, 0u, nullptr);
+    CASE (EvadeForward) state_transition(State::Action, 1u, &anims.EvadeForward, 0u, nullptr);
+    CASE (Dodge)        state_transition(State::Action, 1u, &anims.Dodge, 0u, nullptr);
+
+    CASE (ProneAttack)  state_transition(State::Action, 1u, &anims.ProneAttack, 0u, nullptr);
+    CASE (ProneBack)    state_transition(State::Action, 1u, &anims.ProneBack, 0u, nullptr);
+    CASE (ProneForward) state_transition(State::Action, 1u, &anims.ProneForward, 0u, nullptr);
+    CASE (ProneStand)   state_transition(State::Action, 1u, &anims.ProneStand, 0u, nullptr);
+
+    CASE (LedgeClimb) state_transition(State::Action, 1u, &anims.LedgeClimb, 0u, nullptr);
+
+    CASE (SmashDown)    state_transition(State::Charge, 1u, &anims.SmashDownStart, 0u, &anims.SmashDownCharge);
+    CASE (SmashForward) state_transition(State::Charge, 1u, &anims.SmashForwardStart, 0u, &anims.SmashForwardCharge);
+    CASE (SmashUp)      state_transition(State::Charge, 1u, &anims.SmashUpStart, 0u, &anims.SmashUpCharge);
 
     CASE (AirBack)    state_transition(State::AirAction, 1u, &anims.AirBack, 0u, nullptr);
     CASE (AirDown)    state_transition(State::AirAction, 1u, &anims.AirDown, 0u, nullptr);
     CASE (AirForward) state_transition(State::AirAction, 1u, &anims.AirForward, 0u, nullptr);
     CASE (AirNeutral) state_transition(State::AirAction, 1u, &anims.AirNeutral, 0u, nullptr);
     CASE (AirUp)      state_transition(State::AirAction, 1u, &anims.AirUp, 0u, nullptr);
+    CASE (AirDodge)   state_transition(State::AirAction, 1u, &anims.AirDodge, 0u, nullptr);
 
-    CASE (DashAttack) state_transition(State::Action, 1u, &anims.DashAttack, 0u, nullptr);
-
-    CASE (SmashDown)    state_transition(State::Charge, 1u, &anims.SmashDownStart, 0u, &anims.SmashDownCharge);
-    CASE (SmashForward) state_transition(State::Charge, 1u, &anims.SmashForwardStart, 0u, &anims.SmashForwardCharge);
-    CASE (SmashUp)      state_transition(State::Charge, 1u, &anims.SmashUpStart, 0u, &anims.SmashUpCharge);
+    CASE (LandLight) state_transition(State::Action, 1u, &anims.LandLight, 0u, nullptr);
+    CASE (LandHeavy) state_transition(State::Action, 1u, &anims.LandHeavy, 0u, nullptr);
+    CASE (LandAttack) state_transition(State::Action, 1u, &anims.LandHeavy, 0u, nullptr);
+    CASE (LandTumble) state_transition(State::Action, 1u, &anims.LandTumble, 0u, nullptr);
 
     CASE (SpecialDown)    {} // todo
     CASE (SpecialForward) {} // todo
     CASE (SpecialNeutral) {} // todo
     CASE (SpecialUp)      {} // todo
 
-    CASE (EvadeBack)    state_transition(State::Action, 1u, &anims.EvadeBack, 0u, nullptr);
-    CASE (EvadeForward) state_transition(State::Action, 1u, &anims.EvadeForward, 0u, nullptr);
-    CASE (Dodge)        state_transition(State::Action, 1u, &anims.Dodge, 0u, nullptr);
-
-    CASE (AirDodge) state_transition(State::AirAction, 1u, &anims.AirDodge, 0u, nullptr);
-
-    //--------------------------------------------------------//
-
-    CASE ( None )
-    {
-        // we know here that current action is not nullptr
-
-        SWITCH ( mActiveAction->get_type() ) {
-
-        CASE ( NeutralFirst, TiltForward, TiltUp, SmashDown, SmashForward, SmashUp, DashAttack )
-        state_transition(State::Neutral, 0u, nullptr, 0u, &anims.NeutralLoop );
-
-        CASE ( TiltDown )
-        state_transition(State::Crouch, 0u, nullptr, 0u, &anims.CrouchLoop );
-
-        CASE ( AirBack, AirDown, AirForward, AirNeutral, AirUp )
-        state_transition(State::Jumping, 0u, nullptr, 0u, &anims.FallingLoop );
-
-        CASE ( SpecialDown, SpecialForward, SpecialNeutral, SpecialUp )
-        state_transition(State::Neutral, 0u, nullptr, 0u, &anims.NeutralLoop ); // todo
-
-        CASE ( EvadeBack, EvadeForward, Dodge )
-        state_transition(State::Neutral, 0u, nullptr, 0u, &anims.NeutralLoop );
-
-        CASE ( AirDodge )
-        state_transition(State::Jumping, 0u, nullptr, 0u, &anims.FallingLoop ); // todo
-
-        CASE ( None ) SQASSERT(false, "switch from None to None");
-
-        } SWITCH_END;
-    }
-
-    //--------------------------------------------------------//
+    CASE (None) SQASSERT(false, "can't switch to None");
 
     } SWITCH_END;
 
-    //--------------------------------------------------------//
+    mActiveAction = get_action(action);
 
-    if (mActiveAction != nullptr)
-        mActiveAction->do_cancel();
-
-    mActiveAction = newAction;
-
-    if (mActiveAction != nullptr && status.state != State::Charge)
-        mActiveAction->do_start();
-}
+    // if the action is not charging, start it now
+    if (status.state != State::Charge) mActiveAction->do_start();
+};
 
 //============================================================================//
 
 void Fighter::update_commands(const InputFrame& input)
 {
-    for (int i = STS_CMD_BUFFER_SIZE - 1u; i != 0; --i)
+    for (int i = CMD_BUFFER_SIZE - 1u; i != 0; --i)
         mCommands[i] = std::move(mCommands[i-1]);
 
     mCommands[0].clear();
@@ -183,22 +161,49 @@ void Fighter::update_commands(const InputFrame& input)
         else if (input.mod_axis.y == +1) cmds.push_back(Command::SmashUp);
         else if (input.mod_axis.x == -1) cmds.push_back(Command::SmashLeft);
         else if (input.mod_axis.x == +1) cmds.push_back(Command::SmashRight);
-        else if (input.int_axis.y == -2) cmds.push_back(Command::AttackDown);
-        else if (input.int_axis.y == +2) cmds.push_back(Command::AttackUp);
-        else if (input.int_axis.x == -2) cmds.push_back(Command::AttackLeft);
-        else if (input.int_axis.x == +2) cmds.push_back(Command::AttackRight);
-        else if (input.int_axis.y == -1) cmds.push_back(Command::AttackDown);
-        else if (input.int_axis.y == +1) cmds.push_back(Command::AttackUp);
-        else if (input.int_axis.x == -1) cmds.push_back(Command::AttackLeft);
-        else if (input.int_axis.x == +1) cmds.push_back(Command::AttackRight);
+        else if (input.int_axis.y <= -1) cmds.push_back(Command::AttackDown);
+        else if (input.int_axis.y >= +1) cmds.push_back(Command::AttackUp);
+        else if (input.int_axis.x <= -1) cmds.push_back(Command::AttackLeft);
+        else if (input.int_axis.x >= +1) cmds.push_back(Command::AttackRight);
         else    cmds.push_back(Command::AttackNeutral);
     }
 }
 
 //============================================================================//
 
-void Fighter::update_transitions(const InputFrame& input)
+void Fighter::update_action(const InputFrame& /*input*/)
 {
+    // Actions can override normal fighter behaviour, so they need to be updated first.
+
+    if (status.state == State::Charge) return;
+    if (status.state == State::Freeze) return;
+    if (mActiveAction == nullptr) return;
+
+    mActiveAction->do_tick();
+
+    //sq::log_debug("status: {}", mActiveAction->get_status());
+
+    if (mActiveAction->get_status() == ActionStatus::Finished)
+    {
+        //mActiveAction->do_cancel();
+        mActiveAction = nullptr;
+    }
+
+    else if (mActiveAction->get_status() == ActionStatus::RuntimeError)
+        SQASSERT(world.options.editor_mode == true, "");
+}
+
+//============================================================================//
+
+void Fighter::update_transitions(const InputFrame& input)
+{    
+    // This is the heart of the fighter state machine. Each tick this should do
+    // either zero or one state transition, not more. Things not coinciding with
+    // these transitions should be done elsewhere.
+    //
+    // Transitions can be made elsewhere, but everything done in response to
+    // input commands should be here, as well as whatever others are possible.
+
     Stage& stage = world.get_stage();
 
     const Animations& anims = mAnimations;
@@ -209,7 +214,7 @@ void Fighter::update_transitions(const InputFrame& input)
     {
         SQASSERT(status.ledge == nullptr, "");
 
-        if (mTimeSinceLedge <= STS_NO_LEDGE_CATCH_TIME)
+        if (mTimeSinceLedge <= LEDGE_CATCH_NOPE_TIME)
             return false;
 
         // todo: unsure if position should be fighter's origin, or the centre of it's diamond
@@ -248,10 +253,6 @@ void Fighter::update_transitions(const InputFrame& input)
 
     //--------------------------------------------------------//
 
-    // This is the heart of the fighter state machine. Each tick this should do
-    // either zero or one state transition, not more. Things not coinciding with
-    // these transitions should be done elsewhere.
-
     SWITCH ( status.state ) {
 
     CASE ( Neutral ) //=======================================//
@@ -263,25 +264,25 @@ void Fighter::update_transitions(const InputFrame& input)
             state_transition_prejump();
 
         else if (consume_command(Command::SmashDown))
-            switch_action(ActionType::SmashDown);
+            state_transition_action(ActionType::SmashDown);
 
         else if (consume_command(Command::SmashUp))
-            switch_action(ActionType::SmashUp);
+            state_transition_action(ActionType::SmashUp);
 
         else if (consume_command_facing(Command::SmashLeft, Command::SmashRight))
-            switch_action(ActionType::SmashForward);
+            state_transition_action(ActionType::SmashForward);
 
         else if (consume_command(Command::AttackDown))
-            switch_action(ActionType::TiltDown);
+            state_transition_action(ActionType::TiltDown);
 
         else if (consume_command(Command::AttackUp))
-            switch_action(ActionType::TiltUp);
+            state_transition_action(ActionType::TiltUp);
 
         else if (consume_command_facing(Command::AttackLeft, Command::AttackRight))
-            switch_action(ActionType::TiltForward);
+            state_transition_action(ActionType::TiltForward);
 
         else if (consume_command(Command::AttackNeutral))
-            switch_action(ActionType::NeutralFirst);
+            state_transition_action(ActionType::NeutralFirst);
 
         else if (consume_command(Command::MashDown))
             current.position.y -= 0.1f;
@@ -314,22 +315,22 @@ void Fighter::update_transitions(const InputFrame& input)
             state_transition_prejump();
 
         else if (consume_command(Command::SmashDown))
-            switch_action(ActionType::SmashDown);
+            state_transition_action(ActionType::SmashDown);
 
         else if (consume_command(Command::SmashUp))
-            switch_action(ActionType::SmashUp);
+            state_transition_action(ActionType::SmashUp);
 
         else if (consume_command_facing(Command::SmashLeft, Command::SmashRight))
-            switch_action(ActionType::SmashForward);
+            state_transition_action(ActionType::SmashForward);
 
         else if (consume_command(Command::AttackDown))
-            switch_action(ActionType::TiltDown);
+            state_transition_action(ActionType::TiltDown);
 
         else if (consume_command(Command::AttackUp))
-            switch_action(ActionType::TiltUp);
+            state_transition_action(ActionType::TiltUp);
 
         else if (consume_command_facing(Command::AttackLeft, Command::AttackRight))
-            switch_action(ActionType::TiltForward);
+            state_transition_action(ActionType::TiltForward);
 
         else if (consume_command_facing(Command::MashLeft, Command::MashRight))
             state_transition(State::Dashing, 0u, &anims.DashStart, 0u, nullptr);
@@ -362,10 +363,10 @@ void Fighter::update_transitions(const InputFrame& input)
             state_transition_prejump();
 
         else if (consume_command_facing(Command::SmashLeft, Command::SmashRight))
-            switch_action(ActionType::SmashForward);
+            state_transition_action(ActionType::SmashForward);
 
         else if (consume_command_facing(Command::AttackLeft, Command::AttackRight))
-            switch_action(ActionType::DashAttack);
+            state_transition_action(ActionType::DashAttack);
 
         else if (input.int_axis.x != status.facing * 2)
         {
@@ -388,17 +389,17 @@ void Fighter::update_transitions(const InputFrame& input)
             state_transition_prejump();
 
         else if (consume_command(Command::SmashDown))
-            switch_action(ActionType::SmashDown);
+            state_transition_action(ActionType::SmashDown);
 
         else if (consume_command(Command::SmashUp))
-            switch_action(ActionType::SmashUp);
+            state_transition_action(ActionType::SmashUp);
 
         else if (consume_command_facing(Command::SmashLeft, Command::SmashRight))
-            switch_action(ActionType::SmashForward);
+            state_transition_action(ActionType::SmashForward);
 
         else if (consume_command_oldest({Command::AttackDown, Command::AttackUp, Command::AttackLeft,
                                          Command::AttackRight, Command::AttackNeutral}))
-            switch_action(ActionType::DashAttack);
+            state_transition_action(ActionType::DashAttack);
 
         else if (mAnimation == &anims.Brake)
         {
@@ -436,10 +437,10 @@ void Fighter::update_transitions(const InputFrame& input)
             state_transition_prejump();
 
         else if (consume_command(Command::SmashDown))
-            switch_action(ActionType::SmashDown);
+            state_transition_action(ActionType::SmashDown);
 
         else if (consume_command(Command::AttackDown))
-            switch_action(ActionType::TiltDown);
+            state_transition_action(ActionType::TiltDown);
 
         else if (input.int_axis.y != -2)
             state_transition(State::Neutral, 2u, &anims.CrouchOff, 0u, &anims.NeutralLoop);
@@ -447,12 +448,12 @@ void Fighter::update_transitions(const InputFrame& input)
 
     CASE ( PreJump ) //=======================================//
     {
-        if (mStateProgress == STS_JUMP_DELAY)
+        if (mStateProgress == JUMP_DELAY)
         {
             if (input.norm_axis.x == -status.facing)
-                state_transition(State::Jumping, 1u, &anims.JumpBack, 0u, &anims.FallingLoop);
+                state_transition(State::JumpFall, 1u, &anims.JumpBack, 0u, &anims.FallingLoop);
             else
-                state_transition(State::Jumping, 1u, &anims.JumpForward, 0u, &anims.FallingLoop);
+                state_transition(State::JumpFall, 1u, &anims.JumpForward, 0u, &anims.FallingLoop);
 
             // this could be a seperate stat, but half air speed seems good enough
             status.velocity.x = stats.air_speed * input.float_axis.x * 0.5f;
@@ -462,45 +463,23 @@ void Fighter::update_transitions(const InputFrame& input)
         }
     }
 
-    CASE ( Landing ) //=======================================//
+    CASE ( Prone ) //=========================================//
     {
-        if (mStateProgress == mLandingLag)
-            state_transition(State::Neutral, 0u, nullptr, 0u, &anims.NeutralLoop);
-    }
-
-    CASE ( Jumping ) //=======================================//
-    {
-        if (try_catch_ledge() == true)
-            state_transition(State::LedgeHang, 1u, &anims.LedgeCatch, 0u, &anims.LedgeLoop);
-
-        else if (consume_command(Command::Shield))
-            switch_action(ActionType::AirDodge);
-
-        else if (mExtraJumps > 0u && consume_command(Command::Jump))
+        if (consume_command_facing(Command::MashLeft, Command::MashRight))
         {
-            if (input.norm_axis.x == -status.facing)
-                state_transition(State::Jumping, 2u, &anims.AirHopBack, 1u, &anims.FallingLoop);
-            else
-                state_transition(State::Jumping, 2u, &anims.AirHopForward, 1u, &anims.FallingLoop);
-
-            mExtraJumps -= 1u;
-            status.velocity.y = std::sqrt(2.f * stats.gravity * stats.airhop_height) + stats.gravity * 0.5f;
+            state_transition_action(ActionType::ProneForward);
+            do_animated_facing_change();
         }
 
-        else if (consume_command_oldest({Command::SmashDown, Command::AttackDown}))
-            switch_action(ActionType::AirDown);
+        else if (consume_command_facing(Command::MashRight, Command::MashLeft))
+            state_transition_action(ActionType::ProneBack);
 
-        else if (consume_command_oldest({Command::SmashUp, Command::AttackUp}))
-            switch_action(ActionType::AirUp);
+        else if (consume_command_oldest({Command::MashUp, Command::Jump}))
+            state_transition_action(ActionType::ProneStand);
 
-        else if (consume_command_oldest_facing({Command::SmashLeft, Command::AttackLeft}, {Command::SmashRight, Command::AttackRight}))
-            switch_action(ActionType::AirForward);
-
-        else if (consume_command_oldest_facing({Command::SmashRight, Command::AttackRight}, {Command::SmashLeft, Command::AttackLeft}))
-            switch_action(ActionType::AirBack);
-
-        else if (consume_command(Command::AttackNeutral))
-            switch_action(ActionType::AirNeutral);
+        else if (consume_command_oldest({Command::AttackDown, Command::AttackUp, Command::AttackLeft,
+                                         Command::AttackRight, Command::AttackNeutral}))
+            state_transition_action(ActionType::ProneAttack);
     }
 
     CASE ( Shield ) //========================================//
@@ -510,18 +489,76 @@ void Fighter::update_transitions(const InputFrame& input)
 
         else if (consume_command_facing(Command::MashLeft, Command::MashRight))
         {
-            switch_action(ActionType::EvadeForward);
+            state_transition_action(ActionType::EvadeForward);
             do_animated_facing_change();
         }
 
         else if (consume_command_facing(Command::MashRight, Command::MashLeft))
-            switch_action(ActionType::EvadeBack);
+            state_transition_action(ActionType::EvadeBack);
 
         else if (consume_command_oldest({Command::MashDown, Command::MashUp}))
-            switch_action(ActionType::Dodge);
+            state_transition_action(ActionType::Dodge);
 
         else if (input.hold_shield == false)
             state_transition(State::Neutral, 2u, &anims.ShieldOff, 0u, &anims.NeutralLoop);
+    }
+
+    CASE ( JumpFall, TumbleFall ) //==========================//
+    {
+        if (try_catch_ledge() == true)
+            state_transition(State::LedgeHang, 1u, &anims.LedgeCatch, 0u, &anims.LedgeLoop);
+
+        else if (consume_command(Command::Shield))
+            state_transition_action(ActionType::AirDodge);
+
+        else if (mExtraJumps > 0u && consume_command(Command::Jump))
+        {
+            if (input.norm_axis.x == -status.facing)
+                state_transition(State::JumpFall, 2u, &anims.AirHopBack, 1u, &anims.FallingLoop);
+            else
+                state_transition(State::JumpFall, 2u, &anims.AirHopForward, 1u, &anims.FallingLoop);
+
+            mExtraJumps -= 1u;
+            status.velocity.y = std::sqrt(2.f * stats.gravity * stats.airhop_height) + stats.gravity * 0.5f;
+        }
+
+        else if (consume_command_oldest({Command::SmashDown, Command::AttackDown}))
+            state_transition_action(ActionType::AirDown);
+
+        else if (consume_command_oldest({Command::SmashUp, Command::AttackUp}))
+            state_transition_action(ActionType::AirUp);
+
+        else if (consume_command_oldest_facing({Command::SmashLeft, Command::AttackLeft}, {Command::SmashRight, Command::AttackRight}))
+            state_transition_action(ActionType::AirForward);
+
+        else if (consume_command_oldest_facing({Command::SmashRight, Command::AttackRight}, {Command::SmashLeft, Command::AttackLeft}))
+            state_transition_action(ActionType::AirBack);
+
+        else if (consume_command(Command::AttackNeutral))
+            state_transition_action(ActionType::AirNeutral);
+    }
+
+    CASE ( HitStun ) //=======================================//
+    {
+        if (mStateProgress == mHitStunTime)
+        {
+            // this will only be the case if we have landed already
+            if (mLaunchSpeed == 0.f)
+                state_transition(State::Neutral, 0u, nullptr, 0u, &anims.NeutralLoop);
+            else
+                state_transition(State::JumpFall, 0u, nullptr, 4u, &anims.FallingLoop);
+        }
+    }
+
+    CASE ( TumbleStun ) //====================================//
+    {
+        if (mStateProgress == mHitStunTime)
+            state_transition(State::TumbleFall, 0u, nullptr, 0u, &anims.TumbleLoop);
+    }
+
+    CASE ( Helpless ) //======================================//
+    {
+        // todo
     }
 
     CASE ( LedgeHang ) //=====================================//
@@ -530,17 +567,17 @@ void Fighter::update_transitions(const InputFrame& input)
         if (status.ledge == nullptr)
         {
             // todo: this needs to be handled later, to give p2 a chance to steal p1's ledge
-            state_transition(State::Jumping, 0u, &anims.FallingLoop, 0u, nullptr);
+            state_transition(State::JumpFall, 0u, &anims.FallingLoop, 0u, nullptr);
             mTranslate.x -= mLocalDiamond.halfWidth * float(status.facing);
             mTranslate.y -= mLocalDiamond.offsetTop * 0.75f;
             mExtraJumps = stats.extra_jumps;
         }
 
-        else if (mStateProgress >= STS_MIN_LEDGE_HANG_TIME)
+        else if (mStateProgress >= LEDGE_HANG_MIN_TIME)
         {
             if (consume_command(Command::Jump))
             {
-                state_transition(State::Jumping, 1u, &anims.LedgeJump, 0u, &anims.FallingLoop);
+                state_transition(State::JumpFall, 1u, &anims.LedgeJump, 0u, &anims.FallingLoop);
                 status.velocity.y = std::sqrt(2.f * stats.jump_height * stats.gravity) + stats.gravity * 0.5f;
                 status.ledge->grabber = nullptr;
                 status.ledge = nullptr;
@@ -550,7 +587,7 @@ void Fighter::update_transitions(const InputFrame& input)
             else if (consume_command(Command::MashUp) ||
                      consume_command_facing(Command::MashLeft, Command::MashRight))
             {
-                state_transition(State::LedgeClimb, 1u, &anims.LedgeClimb, 0u, nullptr);
+                state_transition_action(ActionType::LedgeClimb);
                 status.ledge->grabber = nullptr;
                 status.ledge = nullptr;
             }
@@ -558,7 +595,7 @@ void Fighter::update_transitions(const InputFrame& input)
             else if (consume_command(Command::MashDown) ||
                      consume_command_facing(Command::MashRight, Command::MashLeft))
             {
-                state_transition(State::Jumping, 0u, &anims.FallingLoop, 0u, nullptr);
+                state_transition(State::JumpFall, 0u, &anims.FallingLoop, 0u, nullptr);
                 status.ledge->grabber = nullptr;
                 status.ledge = nullptr;
                 mTranslate.x -= mLocalDiamond.halfWidth * float(status.facing);
@@ -568,25 +605,19 @@ void Fighter::update_transitions(const InputFrame& input)
         }
     }
 
-    CASE ( LedgeClimb ) //====================================//
-    {
-        if (mStateProgress == stats.ledge_climb_time)
-            state_transition(State::Neutral, 0u, nullptr, 0u, &anims.NeutralLoop);
-    }
-
     CASE ( Charge ) //========================================//
     {
-        SQASSERT(mActiveAction != nullptr, "can't charge null ptrs");
+        SQASSERT(mActiveAction != nullptr, "no active action for state 'Charge'");
 
         if (input.hold_attack == false) // todo: or max charge reached
         {
-            if (mActiveAction->get_type() == ActionType::SmashDown)
+            if (mActiveAction->type == ActionType::SmashDown)
                 state_transition(State::Action, 1u, &anims.SmashDownAttack, 0u, nullptr);
 
-            else if (mActiveAction->get_type() == ActionType::SmashForward)
+            else if (mActiveAction->type == ActionType::SmashForward)
                 state_transition(State::Action, 1u, &anims.SmashForwardAttack, 0u, nullptr);
 
-            else if (mActiveAction->get_type() == ActionType::SmashUp)
+            else if (mActiveAction->type == ActionType::SmashUp)
                 state_transition(State::Action, 1u, &anims.SmashUpAttack, 0u, nullptr);
 
             else SQASSERT(false, "only smash attacks can be charged");
@@ -595,17 +626,89 @@ void Fighter::update_transitions(const InputFrame& input)
         }
     }
 
+    CASE ( Action ) //========================================//
+    {
+        SQASSERT(mActiveAction != nullptr, "no active action for state 'Action'");
+
+        if (mActiveAction->get_status() == ActionStatus::AllowInterrupt)
+        {
+            SWITCH ( mActiveAction->type ) {
+
+            CASE ( NeutralFirst )
+            state_transition(State::Neutral, 0u, nullptr, 0u, &anims.NeutralLoop);
+
+            CASE ( DashAttack, TiltForward, TiltUp )
+            state_transition(State::Neutral, 0u, nullptr, 0u, &anims.NeutralLoop);
+
+            CASE ( TiltDown )
+            state_transition(State::Crouch, 0u, nullptr, 0u, &anims.CrouchLoop);
+
+            CASE ( EvadeBack, EvadeForward, Dodge )
+            state_transition(State::Neutral, 0u, nullptr, 0u, &anims.NeutralLoop);
+
+            CASE ( ProneAttack, ProneBack, ProneForward, ProneStand )
+            state_transition(State::Neutral, 0u, nullptr, 0u, &anims.NeutralLoop);
+
+            CASE ( LedgeClimb )
+            state_transition(State::Neutral, 0u, nullptr, 0u, &anims.NeutralLoop);
+
+            CASE ( SmashDown, SmashForward, SmashUp )
+            state_transition(State::Neutral, 0u, nullptr, 0u, &anims.NeutralLoop);
+
+            CASE ( LandLight, LandHeavy, LandAttack )
+            state_transition(State::Neutral, 0u, nullptr, 0u, &anims.NeutralLoop);
+
+            CASE ( LandTumble )
+            state_transition(State::Prone, 0u, nullptr, 0u, &anims.ProneLoop);
+
+            CASE ( SpecialDown, SpecialForward, SpecialNeutral, SpecialUp )
+            state_transition(State::Neutral, 0u, nullptr, 0u, &anims.NeutralLoop); // todo
+
+            CASE_DEFAULT { SQASSERT(false, "invalid action for state 'Action'"); }
+
+            } SWITCH_END;
+        }
+
+        else SQASSERT(mActiveAction->get_status() == ActionStatus::Running, "");
+    }
+
+    CASE ( AirAction ) //=====================================//
+    {
+        SQASSERT(mActiveAction != nullptr, "no active action for state 'AirAction'");
+
+        if (mActiveAction->get_status() == ActionStatus::AllowInterrupt)
+        {
+            SWITCH ( mActiveAction->type ) {
+
+            CASE ( AirBack, AirDown, AirForward, AirNeutral, AirUp )
+            state_transition(State::JumpFall, 0u, nullptr, 0u, &anims.FallingLoop);
+
+            CASE ( AirDodge )
+            state_transition(State::JumpFall, 0u, nullptr, 0u, &anims.FallingLoop); // todo
+
+            CASE ( SpecialDown, SpecialForward, SpecialNeutral, SpecialUp )
+            state_transition(State::JumpFall, 0u, nullptr, 0u, &anims.FallingLoop); // todo
+
+            CASE_DEFAULT { SQASSERT(false, "invalid action for state 'AirAction'"); }
+
+            } SWITCH_END;
+        }
+
+        else SQASSERT(mActiveAction->get_status() == ActionStatus::Running, "");
+    }
+
+    CASE ( Freeze ) //========================================//
+    {
+        if (mStateProgress == mFreezeTime)
+        {
+            mStateProgress = mFrozenProgress;
+            status.state = mFrozenState;
+        }
+    }
+
     //== Nothing to do here ==================================//
 
-    CASE ( Action, AirAction ) {}
-
     CASE ( EditorPreview ) {}
-
-    //== Not Yet Implemented =================================//
-
-    CASE ( Helpless, Knocked, Stunned ) {}
-
-    //--------------------------------------------------------//
 
     } SWITCH_END;
 }
@@ -614,17 +717,24 @@ void Fighter::update_transitions(const InputFrame& input)
 
 void Fighter::update_states(const InputFrame& input)
 {
+    // Everything else happens in here. This function handles:
+    // - friction, gravity, knockback decay
+    // - interacting with the stage and performing movement
+    // - transitions based on falling and landing
+    // - passive state updates that don't involve transitions
+
     Stage& stage = world.get_stage();
 
     const Animations& anims = mAnimations;
 
     mStateProgress += 1u;
 
-    //-- misc non-transition state updates -------------------//
+    //-- freeze state is frozen, so do nothing ---------------//
 
-    if (status.state == State::PreJump)
-        if (input.hold_jump == false)
-            mJumpHeld = false;
+    if (status.state == State::Freeze)
+    {
+        return; // EARLY RETURN
+    }
 
     //-- most updates don't apply when ledge hanging ---------//
 
@@ -632,7 +742,7 @@ void Fighter::update_states(const InputFrame& input)
     {
         SQASSERT(status.ledge != nullptr, "nope");
 
-        // this will be the case only if we just grabbed the ledge
+        // this will only be the case if we just grabbed the ledge
         if (status.velocity != Vec2F())
         {
             current.position = (current.position + status.ledge->position) / 2.f;
@@ -645,28 +755,58 @@ void Fighter::update_states(const InputFrame& input)
 
     mTimeSinceLedge += 1u;
 
+    //-- misc non-transition state updates -------------------//
+
+    if (status.state == State::PreJump)
+    {
+        if (input.hold_jump == false)
+            mJumpHeld = false;
+    }
+
     //-- apply friction --------------------------------------//
 
     SWITCH ( status.state ) {
 
-    CASE ( Neutral, Walking, Dashing, Brake, Crouch, Charge, Action, Landing, Shield )
+    CASE ( Neutral, Walking, Dashing, Brake, Crouch, Prone, Charge, Action, Shield )
     {
         if (status.velocity.x < -0.f) status.velocity.x = maths::min(status.velocity.x + stats.traction, -0.f);
         if (status.velocity.x > +0.f) status.velocity.x = maths::max(status.velocity.x - stats.traction, +0.f);
     }
 
-    CASE ( Jumping, Helpless, AirAction )
+    CASE ( JumpFall, TumbleFall, HitStun, TumbleStun, Helpless, AirAction )
     {
-        if (input.int_axis.x == 0)
+        if (input.int_axis.x == 0 && mLaunchSpeed == 0.f)
         {
             if (status.velocity.x < -0.f) status.velocity.x = maths::min(status.velocity.x + stats.air_friction, -0.f);
             if (status.velocity.x > +0.f) status.velocity.x = maths::max(status.velocity.x - stats.air_friction, +0.f);
         }
     }
 
-    CASE ( PreJump, Knocked, Stunned, LedgeHang, LedgeClimb, EditorPreview ) {}
+    CASE ( PreJump, Freeze, LedgeHang, EditorPreview ) {}
 
     } SWITCH_END;
+
+    //-- apply knockback decay -------------------------------//
+
+    if (mLaunchSpeed != 0.f)
+    {
+        if (status.velocity != Vec2F())
+        {
+            const Vec2F direction = maths::normalize(status.velocity);
+
+            if (mLaunchSpeed >= KNOCKBACK_DECAY)
+            {
+                status.velocity -= direction * KNOCKBACK_DECAY;
+                mLaunchSpeed -= KNOCKBACK_DECAY;
+            }
+            else
+            {
+                status.velocity -= direction * mLaunchSpeed;
+                mLaunchSpeed = 0.f;
+            }
+        }
+        else mLaunchSpeed = 0.f;
+    };
 
     //-- add horizontal velocity -----------------------------//
 
@@ -681,7 +821,7 @@ void Fighter::update_states(const InputFrame& input)
 
     if (input.int_axis.x != 0)
     {
-        if (status.state == State::Jumping || status.state == State::Helpless)
+        if (status.state == State::JumpFall || status.state == State::TumbleFall || status.state == State::Helpless)
             apply_horizontal_move(stats.air_mobility, stats.air_speed);
 
         else if (status.state == State::AirAction)
@@ -703,8 +843,8 @@ void Fighter::update_states(const InputFrame& input)
 
     //-- ask the stage where we can move ---------------------//
 
-    const bool edgeStop = ( status.state == State::Neutral || status.state == State::Shield || status.state == State::Landing ||
-                            status.state == State::PreJump || status.state == State::Action || status.state == State::Charge ) ||
+    const bool edgeStop = ( status.state == State::Neutral || status.state == State::Shield || status.state == State::PreJump ||
+                            status.state == State::Action || status.state == State::Charge ) ||
                           ( ( status.state == State::Walking || status.state == State::Dashing || status.state == State::Brake ) &&
                             !( input.int_axis.x == -2 && translation.x < -0.0f ) &&
                             !( input.int_axis.x == +2 && translation.x > +0.0f ) );
@@ -727,21 +867,42 @@ void Fighter::update_states(const InputFrame& input)
     }
     else mVertigoActive = false;
 
-    //-- handle starting to fall and landing -----------------//
+    //-- handle landing and starting to fall -----------------//
 
     SWITCH (status.state) {
 
-    // normal air states, can do light or heavy landing
-    CASE ( Jumping, Helpless )
+    // normal air state, can do light or heavy landing
+    CASE ( JumpFall )
     {
         if (moveAttempt.collideFloor == true)
         {
+            // todo: this is wrong, need a 'timeSinceFallSpeed' variable
             const bool light = status.velocity.y > -stats.fall_speed || mStateProgress < stats.land_heavy_min_time;
 
-            state_transition(State::Landing, 1u, light ? &anims.LandLight : &anims.LandHeavy, 0u, nullptr);
-            mLandingLag = light ? STS_LIGHT_LANDING_LAG : STS_HEAVY_LANDING_LAG;
+            if (light) state_transition_action(ActionType::LandLight);
+            else state_transition_action(ActionType::LandHeavy);
 
             status.velocity.y = 0.f;
+        }
+    }
+
+    // causes the fighter to land awkwardly and become prone
+    CASE ( TumbleFall, TumbleStun, Helpless )
+    {
+        if (moveAttempt.collideFloor == true)
+        {
+            state_transition_action(ActionType::LandTumble);
+            status.velocity.y = 0.f;
+        }
+    }
+
+    // don't do any transition, stay in hitstun state
+    CASE ( HitStun )
+    {
+        if (moveAttempt.collideFloor == true)
+        {
+            status.velocity.y = 0.f;
+            mLaunchSpeed = 0.f;
         }
     }
 
@@ -750,27 +911,11 @@ void Fighter::update_states(const InputFrame& input)
     {
         if (moveAttempt.collideFloor == true)
         {
-            switch_action(ActionType::None);
+            SQASSERT(mActiveAction != nullptr, "");
+            mActiveAction->do_cancel();
 
-            state_transition(State::Landing, 1u, &anims.LandHeavy, 0u, nullptr);
-            mLandingLag = STS_HEAVY_LANDING_LAG * 2u; // todo
-
-            status.velocity.y = 0.f;
-        }
-    }
-
-    // landing while knocked causes you to bounce and be stuck for a bit
-    CASE ( Knocked )
-    {
-        if (moveAttempt.collideFloor == true)
-        {
-            if (maths::length(status.velocity) > 5.f)
-            {
-                // todo
-            }
-            state_transition(State::Landing, 1u, &anims.LandHeavy, 0u, nullptr);
-            mLandingLag = STS_HEAVY_LANDING_LAG;
-
+            // todo: seperate landing action for each air attack type
+            state_transition_action(ActionType::LandAttack);
             status.velocity.y = 0.f;
         }
     }
@@ -781,57 +926,45 @@ void Fighter::update_states(const InputFrame& input)
         if (moveAttempt.collideFloor == false)
         {
             // todo
-            state_transition(State::Jumping, 1u, &anims.FallingLoop, 0u, nullptr);
-
+            state_transition(State::JumpFall, 1u, &anims.FallingLoop, 0u, nullptr);
             mExtraJumps = stats.extra_jumps;
         }
         else status.velocity.y = 0.f;
     }
 
     // misc ground states that you can fall from
-    CASE ( Neutral, Action, Brake, Crouch, Charge, Landing, Stunned, Shield )
+    CASE ( Neutral, Action, Brake, Crouch, Charge, Shield )
     {
         if (moveAttempt.collideFloor == false)
         {
-            state_transition(State::Jumping, 2u, &anims.FallingLoop, 0u, nullptr);
-
+            state_transition(State::JumpFall, 2u, &anims.FallingLoop, 0u, nullptr);
             mExtraJumps = stats.extra_jumps; // todo: is this correct for Action?
         }
         else status.velocity.y = 0.f;
     }
 
+    // not sure what smash does in this case
+    CASE ( Prone )
+    {
+        if (moveAttempt.collideFloor == false)
+        {
+            state_transition(State::TumbleFall, 4u, &anims.TumbleLoop, 0u, nullptr);
+            mExtraJumps = stats.extra_jumps;
+        }
+    }
+
     // special states that you can't fall or land from
-    CASE ( PreJump, LedgeHang, LedgeClimb, EditorPreview ) {}
+    CASE ( PreJump, Freeze, LedgeHang, EditorPreview ) {}
 
     } SWITCH_END;
 
     //-- check if we've hit a ceiling or wall ----------------//
 
-    // todo: this should cause our fighter to bounce
-    if (status.state == State::Knocked)
-    {
-        if (moveAttempt.collideCeiling == true)
-            status.velocity.y = 0.f;
+    if (moveAttempt.collideCeiling == true)
+        status.velocity.y = 0.f;
 
-        if (moveAttempt.collideWall == true)
-            status.velocity.x = 0.f;
-    }
-
-    // todo: this should probably have some animations
-    else
-    {
-        if (moveAttempt.collideCeiling == true)
-            status.velocity.y = 0.f;
-
-        if (moveAttempt.collideWall == true)
-            status.velocity.x = 0.f;
-    }
-
-    //-- update the active action ----------------------------//
-
-    if (mActiveAction != nullptr && status.state != State::Charge)
-        if (mActiveAction->do_tick() == true)
-            switch_action(ActionType::None);
+    if (moveAttempt.collideWall == true)
+        status.velocity.x = 0.f;
 }
 
 //============================================================================//
@@ -879,7 +1012,8 @@ void Fighter::update_animation()
         current.rotation = root().rotation * rootInverseRestRotation * current.rotation;
         root().rotation = mArmature.get_rest_pose().front().rotation;
 
-        sq::log_debug("pose: {} - {}", anim.key, time);
+        if (world.options.log_animation == true)
+            sq::log_debug("pose: {} - {}", anim.key, time);
 
         mPreviousAnimation = &anim;
         mPreviousAnimTimeDiscrete = time;
@@ -891,7 +1025,8 @@ void Fighter::update_animation()
         current.rotation = root().rotation * rootInverseRestRotation * current.rotation;
         root().rotation = mArmature.get_rest_pose().front().rotation;
 
-        sq::log_debug("pose: {} - {}", anim.key, time);
+        if (world.options.log_animation == true)
+            sq::log_debug("pose: {} - {}", anim.key, time);
 
         mPreviousAnimation = &anim;
         mPreviousAnimTimeContinuous = time;
@@ -983,9 +1118,12 @@ void Fighter::update_animation()
     if (mFadeProgress != mFadeFrames)
     {
         const float blend = float(++mFadeProgress) / float(mFadeFrames + 1u);
+
         current.pose = mArmature.blend_poses(mFadeStartPose, current.pose, blend);
         current.rotation = maths::slerp(mFadeStartRotation, current.rotation, blend);
-        sq::log_debug("blend - {} / {} - {}", mFadeProgress, mFadeFrames, blend);
+
+        if (world.options.log_animation == true)
+            sq::log_debug("blend - {} / {} - {}", mFadeProgress, mFadeFrames, blend);
     }
     else mFadeProgress = mFadeFrames = 0u;
 
@@ -1004,34 +1142,22 @@ void Fighter::base_tick_fighter()
 {
     previous = current;
 
-    //--------------------------------------------------------//
+    const auto input = world.options.editor_mode ? InputFrame() : mController->get_input();
 
-    if (world.options.editor_mode == true)
+    update_commands(input);
+    update_action(input);
+    update_transitions(input);
+    update_states(input);
+
+    if (status.state != State::Freeze || mStateProgress <= 1u)
     {
-        const auto input = InputFrame();
+        const int8_t rotFacing = status.facing * (mAnimChangeFacing ? -1 : +1);
+        const float rotY = status.state == State::EditorPreview ? 0.5f : 0.25f * float(rotFacing);
 
-        update_commands(input);
-        update_transitions(input);
-        update_states(input);
+        current.rotation = QuatF(0.f, rotY, 0.f);
+
+        update_animation();
     }
-    else
-    {
-        SQASSERT(mController != nullptr, "");
-        const auto input = mController->get_input();
-
-        update_commands(input);
-        update_transitions(input);
-        update_states(input);
-    }
-
-    //--------------------------------------------------------//
-
-    const int8_t rotFacing = status.facing * (mAnimChangeFacing ? -1 : +1);
-    const float rotY = status.state == State::EditorPreview ? 0.5f : 0.25f * float(rotFacing);
-
-    current.rotation = QuatF(0.f, rotY, 0.f);
-
-    update_animation();
 
     mArmature.compute_ubo_data(current.pose, mBoneMatrices.data(), uint(mBoneMatrices.size()));
 

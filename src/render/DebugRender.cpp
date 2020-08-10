@@ -95,12 +95,13 @@ void DebugRenderer::render_hit_blobs(const std::vector<HitBlob*>& blobs)
 
         mSphereMesh.draw_complete();
 
-        const float angleA = maths::radians(blob->knockAngle * float(blob->fighter->status.facing));
-        const float angleB = maths::radians((blob->knockAngle + 0.0625f) * float(blob->fighter->status.facing));
-        const float angleC = maths::radians((blob->knockAngle - 0.0625f) * float(blob->fighter->status.facing));
-        const Vec3F offsetA = Vec3F(std::sin(angleA), std::cos(angleA), 0.f) * s.radius;
-        const Vec3F offsetB = Vec3F(std::sin(angleB), std::cos(angleB), 0.f) * s.radius * 0.75f;
-        const Vec3F offsetC = Vec3F(std::sin(angleC), std::cos(angleC), 0.f) * s.radius * 0.75f;
+        const float facing = float(blob->fighter->status.facing);
+        const float angleA = maths::radians(blob->knockAngle / 360.f);
+        const float angleB = maths::radians(blob->knockAngle / 360.f + 0.0625);
+        const float angleC = maths::radians(blob->knockAngle / 360.f - 0.0625);
+        const Vec3F offsetA = Vec3F(std::cos(angleA) * facing, std::sin(angleA), 0.f) * s.radius;
+        const Vec3F offsetB = Vec3F(std::cos(angleB) * facing, std::sin(angleB), 0.f) * s.radius * 0.75f;
+        const Vec3F offsetC = Vec3F(std::cos(angleC) * facing, std::sin(angleC), 0.f) * s.radius * 0.75f;
 
         const Vec4F pA = projViewMat * Vec4F(s.origin, 1.f);
         const Vec4F pB = projViewMat * Vec4F(s.origin + offsetA, 1.f);
@@ -203,7 +204,7 @@ void DebugRenderer::render_diamond(const Fighter& fighter)
 
     //--------------------------------------------------------//
 
-    const Vec3F translate = Vec3F(fighter.get_position() + Vec2F(0.f, fighter.get_diamond().offsetCross), 0.f);
+    const Vec3F translate = Vec3F(fighter.current.position + Vec2F(0.f, fighter.get_diamond().offsetCross), 0.f);
     const float scaleBottom = fighter.get_diamond().offsetCross;
     const float scaleTop = fighter.get_diamond().offsetTop - fighter.get_diamond().offsetCross;
 

@@ -57,8 +57,8 @@ void ParticleSystem::update_and_clean()
     for (ParticleData& p : mParticles)
     {
         p.previousPos = p.currentPos;
-        p.currentPos += p.velocity / 48.f;
-        p.velocity -= maths::normalize(p.velocity) * p.friction;
+        p.currentPos += p.velocity;
+        p.velocity -= p.velocity * p.friction;
     }
 
     const auto predicate = [](ParticleData& p) { return ++p.progress == p.lifetime; };
@@ -80,11 +80,11 @@ void ParticleSystem::compute_vertices(float blend, VertexVec& vertices) const
         const float factor = (float(p.progress) + blend) / float(p.lifetime);
 
         vertex.position = maths::mix(p.previousPos, p.currentPos, blend);
-        vertex.radius = p.radius * maths::mix(1.f, p.endScale, factor);
+        vertex.radius = p.baseRadius * maths::mix(1.f, p.endScale, factor);
         vertex.colour[0] = UNorm16(p.colour.r);
         vertex.colour[1] = UNorm16(p.colour.g);
         vertex.colour[2] = UNorm16(p.colour.b);
-        vertex.opacity = UNorm16(std::pow(p.opacity * maths::mix(1.f, p.endOpacity, factor), 0.5f));
+        vertex.opacity = UNorm16(std::pow(p.baseOpacity * maths::mix(1.f, p.endOpacity, factor), 0.5f));
         vertex.misc = 0.f;
         vertex.index = float(p.sprite);
     }

@@ -28,52 +28,61 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    ActionType get_type() const { return type; }
-
-    const Fighter& get_fighter() const { return fighter; }
-
-    //--------------------------------------------------------//
-
     void do_start();
 
-    bool do_tick();
+    void do_tick();
 
     void do_cancel();
 
     //--------------------------------------------------------//
 
+    ActionStatus get_status() { return mStatus; };
+
+    //--------------------------------------------------------//
+
     void load_from_json();
+
+    void load_lua_from_fallback();
 
     void load_lua_from_file();
 
-    void load_lua_from_string(StringView source);
+    void load_lua_from_string();
 
     //--------------------------------------------------------//
 
     void lua_func_wait_until(uint frame);
 
-    void lua_func_finish_action();
+    //void lua_func_enable_blob(TinyString key);
 
-    void lua_func_enable_blob(TinyString key);
+    //void lua_func_disable_blob(TinyString key);
 
-    void lua_func_disable_blob(TinyString key);
+    void lua_func_enable_blob_group(uint8_t group);
+
+    void lua_func_disable_blob_group(uint8_t group);
 
     void lua_func_emit_particles(TinyString key, uint count);
 
+    void lua_func_allow_interrupt();
+
 private: //===================================================//
+
+    ActionStatus mStatus = ActionStatus::None;
 
     sq::PoolMap<TinyString, HitBlob> mBlobs;
 
     sq::PoolMap<TinyString, Emitter> mEmitters;
 
-    String mLuaSource; // only used for editor
+    //--------------------------------------------------------//
+
+    String mLuaSource;
+    String mErrorMessage;
 
     //--------------------------------------------------------//
 
     uint mCurrentFrame = 0u;
     uint mWaitingUntil = 0u;
 
-    bool mFinished = false;
+    bool mAllowIterrupt = false;
 
     //--------------------------------------------------------//
 
@@ -82,7 +91,7 @@ private: //===================================================//
     sol::function mTickFunction;
     sol::coroutine mTickCoroutine;
 
-    sol::function mCancelFunction;
+    //sol::function mCancelFunction;
 
     sol::thread mThread;
 
@@ -98,6 +107,11 @@ private: //===================================================//
     void apply_changes(const Action& source);
 
     std::unique_ptr<Action> clone() const;
+
+    //--------------------------------------------------------//
+
+    template <class... Args>
+    inline void log_script(StringView str, const Args&... args);
 
     //--------------------------------------------------------//
 

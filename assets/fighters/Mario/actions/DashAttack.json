@@ -1,22 +1,77 @@
 {
-  "blobs": {},
+  "blobs": {
+    "00_EarlyBack": {
+      "bone": "TransN",
+      "damage": 9.0,
+      "flavour": "Tangy",
+      "freezeFactor": 1.0,
+      "group": 0,
+      "index": 0,
+      "knockAngle": 110.0,
+      "knockBase": 70.0,
+      "knockScale": 50.0,
+      "origin": [ 0.0, 0.2, -0.04 ],
+      "radius": 0.4
+    },
+    "01_EarlyForward": {
+      "bone": "TransN",
+      "damage": 9.0,
+      "flavour": "Tangy",
+      "freezeFactor": 1.0,
+      "group": 0,
+      "index": 1,
+      "knockAngle": 80.0,
+      "knockBase": 70.0,
+      "knockScale": 50.0,
+      "origin": [ 0.0, 0.14, 0.12 ],
+      "radius": 0.3
+    },
+    "10_LateBack": {
+      "bone": "TransN",
+      "damage": 7.0,
+      "flavour": "Sour",
+      "freezeFactor": 1.0,
+      "group": 1,
+      "index": 0,
+      "knockAngle": 120.0,
+      "knockBase": 45.0,
+      "knockScale": 30.0,
+      "origin": [ 0.0, 0.2, -0.04 ],
+      "radius": 0.4
+    },
+    "11_LateForward": {
+      "bone": "TransN",
+      "damage": 9.0,
+      "flavour": "Sour",
+      "freezeFactor": 1.0,
+      "group": 1,
+      "index": 1,
+      "knockAngle": 70.0,
+      "knockBase": 45.0,
+      "knockScale": 30.0,
+      "origin": [ 0.0, 0.1, 0.12 ],
+      "radius": 0.15
+    }
+  },
   "emitters": {
     "FeetSlide": {
+      "ballOffset": [ 0.0, 0.0 ],
+      "ballSpeed": [ 0.0, 0.0 ],
+      "baseOpacity": 0.5,
+      "baseRadius": [ 0.2, 0.35 ],
       "bone": null,
-      "colour.fixed": [ 1.0, 1.0, 1.0 ],
-      "direction": [ 0.0, 1.0, 0.0 ],
+      "colour": [
+        [ 1.0, 1.0, 1.0 ]
+      ],
+      "discIncline": [ 0.0, 0.0 ],
+      "discOffset": [ 0.0, 0.05 ],
+      "discSpeed": [ 1.1, 1.8 ],
       "endOpacity": 0.0,
       "endScale": 2.0,
       "lifetime": [ 12, 18 ],
-      "opacity": [ 0.4, 0.5 ],
       "origin": [ 0.0, 0.0, 0.0 ],
-      "radius": [ 0.15, 0.3 ],
-      "shape.disc": {
-        "incline": [ -0.01, 0.04 ],
-        "speed": [ 1.1, 1.8 ]
-      },
-      "speed": [ 0.0, 0.0 ],
-      "sprite": "Smoke"
+      "sprite": "Smoke",
+      "velocity": [ 0.0, 0.0, 0.0 ]
     }
   }
 }

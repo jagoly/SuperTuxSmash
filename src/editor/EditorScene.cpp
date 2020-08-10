@@ -608,35 +608,40 @@ EditorScene::ActionContext& EditorScene::get_action_context(ActionKey key)
 
     SWITCH (key.action) {
 
-    CASE (NeutralFirst) ctx.timelineLength =  anims.NeutralFirst.anim.totalTime;
+    CASE (NeutralFirst) ctx.timelineLength = anims.NeutralFirst.anim.totalTime;
+
+    CASE (DashAttack)   ctx.timelineLength = anims.DashAttack.anim.totalTime;
+
     CASE (TiltDown)     ctx.timelineLength = anims.TiltDown.anim.totalTime;
     CASE (TiltForward)  ctx.timelineLength = anims.TiltForward.anim.totalTime;
     CASE (TiltUp)       ctx.timelineLength = anims.TiltUp.anim.totalTime;
-    CASE (DashAttack)   ctx.timelineLength = anims.DashAttack.anim.totalTime;
+
+    CASE (EvadeBack)    ctx.timelineLength = anims.EvadeBack.anim.totalTime;
+    CASE (EvadeForward) ctx.timelineLength = anims.EvadeForward.anim.totalTime;
+    CASE (Dodge)        ctx.timelineLength = anims.Dodge.anim.totalTime;
+
+    CASE (ProneAttack)  ctx.timelineLength = anims.ProneAttack.anim.totalTime;
+    CASE (ProneBack)    ctx.timelineLength = anims.ProneBack.anim.totalTime;
+    CASE (ProneForward) ctx.timelineLength = anims.ProneForward.anim.totalTime;;
+    CASE (ProneStand)   ctx.timelineLength = anims.ProneStand.anim.totalTime;;
+
+    CASE (LedgeClimb) ctx.timelineLength = anims.LedgeClimb.anim.totalTime;
+
+    CASE (SmashDown)    ctx.timelineLength = anims.SmashDownAttack.anim.totalTime;
+    CASE (SmashForward) ctx.timelineLength = anims.SmashForwardAttack.anim.totalTime;
+    CASE (SmashUp)      ctx.timelineLength = anims.SmashUpAttack.anim.totalTime;
 
     CASE (AirBack)    ctx.timelineLength = anims.AirBack.anim.totalTime;
     CASE (AirDown)    ctx.timelineLength = anims.AirDown.anim.totalTime;
     CASE (AirForward) ctx.timelineLength = anims.AirForward.anim.totalTime;
     CASE (AirNeutral) ctx.timelineLength = anims.AirNeutral.anim.totalTime;
     CASE (AirUp)      ctx.timelineLength = anims.AirUp.anim.totalTime;
+    CASE (AirDodge)   ctx.timelineLength = anims.AirDodge.anim.totalTime;
 
-    CASE (EvadeBack)    ctx.timelineLength = anims.EvadeBack.anim.totalTime;
-    CASE (EvadeForward) ctx.timelineLength = anims.EvadeForward.anim.totalTime;
-    CASE (Dodge)        ctx.timelineLength = anims.Dodge.anim.totalTime;
-
-    CASE (AirDodge) ctx.timelineLength = anims.AirDodge.anim.totalTime;
-
-    CASE (SmashDown)    ctx.timelineLength = anims.SmashDownStart.anim.totalTime
-                                            + anims.SmashDownCharge.anim.totalTime
-                                            + anims.SmashDownAttack.anim.totalTime;
-
-    CASE (SmashForward) ctx.timelineLength = anims.SmashForwardStart.anim.totalTime
-                                            + anims.SmashForwardCharge.anim.totalTime
-                                            + anims.SmashForwardAttack.anim.totalTime;
-
-    CASE (SmashUp)      ctx.timelineLength = anims.SmashUpStart.anim.totalTime
-                                            + anims.SmashUpCharge.anim.totalTime
-                                            + anims.SmashUpAttack.anim.totalTime;
+    CASE (LandLight)  ctx.timelineLength = anims.LandLight.anim.totalTime;
+    CASE (LandHeavy)  ctx.timelineLength = anims.LandHeavy.anim.totalTime;
+    CASE (LandAttack) ctx.timelineLength = anims.LandHeavy.anim.totalTime;
+    CASE (LandTumble) ctx.timelineLength = anims.LandTumble.anim.totalTime;
 
     CASE (SpecialDown)    ctx.timelineLength = 32u;
     CASE (SpecialForward) ctx.timelineLength = 32u;
@@ -798,14 +803,17 @@ void EditorScene::scrub_to_frame(ActionContext& ctx, int frame)
     ctx.world->get_particle_system().clear();
 
     if (ctx.fighter->mActiveAction != nullptr)
-        ctx.fighter->switch_action(ActionType::None);
+    {
+        ctx.fighter->mActiveAction->do_cancel();
+        ctx.fighter->mActiveAction = nullptr;
+    }
 
     ctx.fighter->previous = ctx.fighter->current = Fighter::InterpolationData();
     ctx.fighter->status = Fighter::Status();
     ctx.fighter->mTranslate = Vec2F();
 
     // todo: need special handling for air actions
-    ctx.fighter->state_transition(Fighter::State::Neutral, 0u, &ctx.fighter->mAnimations.NeutralLoop, 0u, nullptr);
+    ctx.fighter->state_transition(FighterState::Neutral, 0u, &ctx.fighter->mAnimations.NeutralLoop, 0u, nullptr);
 
     // need to tick twice so that fighter.previous has valid values
     ctx.world->tick();
@@ -813,34 +821,48 @@ void EditorScene::scrub_to_frame(ActionContext& ctx, int frame)
 
     // start the action and scrub to the frame
 
-    ctx.fighter->switch_action(ctx.key.action);
+    ctx.fighter->state_transition_action(ctx.key.action);
 
-    for (ctx.currentFrame = -1; ctx.currentFrame < frame;)
-        tick_action_context(ctx);
+    if (ctx.fighter->status.state == FighterState::Charge)
+    {
+        for (ctx.currentFrame = -2; ctx.currentFrame < frame;)
+            tick_action_context(ctx);
 
-    SQASSERT(ctx.fighter->mActiveAction == nullptr ||
-             int(ctx.fighter->mActiveAction->mCurrentFrame)-1 == ctx.currentFrame,
-             "out of sync: {} | {}"_format(int(ctx.fighter->mActiveAction->mCurrentFrame)-1, ctx.currentFrame));
+        if (ctx.fighter->mActiveAction != nullptr && ctx.currentFrame >= 0)
+        {
+            const int actionFrame = int(ctx.fighter->mActiveAction->mCurrentFrame) - 1u;
+            SQASSERT(ctx.currentFrame == actionFrame, "out of sync: timeline = {}, action = {}"_format(ctx.currentFrame, actionFrame));
+        }
+    }
+    else
+    {
+        for (ctx.currentFrame = -1; ctx.currentFrame < frame;)
+            tick_action_context(ctx);
+
+        if (ctx.fighter->mActiveAction != nullptr && ctx.currentFrame >= 0)
+        {
+            const int actionFrame = int(ctx.fighter->mActiveAction->mCurrentFrame) - 1u;
+            SQASSERT(ctx.currentFrame == actionFrame, "out of sync: timeline = {}, action = {}"_format(ctx.currentFrame, actionFrame));
+        }
+    }
 }
 
 void EditorScene::scrub_to_frame_current(ActionContext& ctx)
 {
     Action& action = *ctx.fighter->get_action(ctx.key.action);
-    scrub_to_frame(ctx, action.mCurrentFrame - 1u);
+    scrub_to_frame(ctx, action.mCurrentFrame - 1);
 }
 
 void EditorScene::tick_action_context(ActionContext& ctx)
 {
     ctx.currentFrame += 1;
-    ctx.world->tick();
 
-    if (ctx.currentFrame == ctx.timelineLength)
-        mDoRestartAction = true;
+    if (ctx.currentFrame == ctx.timelineLength) scrub_to_frame(ctx, -1);
+    else ctx.world->tick();
 }
 
 void EditorScene::scrub_to_frame_previous(ActionContext& ctx)
 {
-    Action& action = *ctx.fighter->get_action(ctx.key.action);
-    if (action.mCurrentFrame == 0u) scrub_to_frame(ctx, ctx.timelineLength - 1u);
-    else scrub_to_frame(ctx, action.mCurrentFrame - 2u);
+    if (ctx.currentFrame == -1) scrub_to_frame(ctx, ctx.timelineLength - 1);
+    else scrub_to_frame(ctx, ctx.currentFrame - 1);
 }

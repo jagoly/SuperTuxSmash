@@ -13,7 +13,7 @@
 "airhop_height": 1.4,
 "gravity":       0.005,
 "fall_speed":    0.12,
-"weight":        1.0,
+"weight":        95.0,
 
 "extra_jumps": 3,
 
@@ -22,7 +22,6 @@
 "dash_start_time":  11,
 "dash_brake_time":  12,
 "dash_turn_time":   14,
-"ledge_climb_time": 32,
 
 "anim_walk_stride": 1.0,
 "anim_dash_stride": 2.0,

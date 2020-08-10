@@ -18,73 +18,82 @@ void Mario_Fighter::tick()
 
     //--------------------------------------------------------//
 
-    Emitter emitter;
-
-    emitter.shape = Emitter::DiscShape();
-
-    emitter.direction = Vec3F(0.f, 1.f, 0.f);
-
-    emitter.endScale = 2.f;
-    emitter.endOpacity = 0.f;
-
-    emitter.lifetime = { 16u, 24u };
-    emitter.radius = { 0.3f, 0.4f };
-    emitter.opacity = { 0.4f, 0.5f };
-
-    emitter.colour_fixed() = { 1.f, 1.f, 1.f };
-
-    emitter.shape_disc().incline = { -0.01f, 0.04f };
-    emitter.shape_disc().speed = { 1.2f, 2.2f };
-
-    emitter.sprite = "Smoke";
-
     auto& partilcles = world.get_particle_system();
 
-    const auto get_bone_pos = [&](const char* boneName) -> Vec3F
-    {
-        const int8_t boneIndex = get_armature().get_bone_index(boneName);
-        const Mat4F matrix = get_model_matrix() * maths::transpose(Mat4F(get_bone_matrices()[boneIndex]));
-        return Vec3F(matrix[3]);
-    };
+    Vec3F footPosL = Vec3F(get_bone_matrix(get_armature().get_bone_index("LToeN")) * Vec4F(-0.128f, 0.f, 0.13f, 1.f));
+    Vec3F footPosR = Vec3F(get_bone_matrix(get_armature().get_bone_index("RToeN")) * Vec4F(+0.128f, 0.f, 0.13f, 1.f));
 
-    /*if (current.state == State::Landing && previous.state != State::Landing)
-    {
-        emitter.emitPosition = Vec3F(get_position(), 0.f);
-        emitter.emitVelocity = Vec3F(get_velocity().x * 0.2f, 0.f, 0.f);
+    // without this, moving into a ledge without walking off looks weird
+    if (status.facing == -1) footPosL.x = maths::max(current.position.x, footPosL.x);
+    if (status.facing == -1) footPosR.x = maths::max(current.position.x, footPosR.x);
+    if (status.facing == +1) footPosL.x = maths::min(current.position.x, footPosL.x);
+    if (status.facing == +1) footPosR.x = maths::min(current.position.x, footPosR.x);
 
-        emitter.generate(partilcles, 20u);
-    }*/
-
-    /*else if (current.state == State::Jumping && previous.state == State::PreJump)
-    {
-        emitter.emitPosition = Vec3F(get_position() - get_velocity() / 48.f, 0.f);
-        emitter.emitVelocity = Vec3F(get_velocity().x * 0.2f, 0.f, 0.f);
-
-        emitter.generate(partilcles, 20u);
-    }*/
+    //--------------------------------------------------------//
 
     if (status.state == State::Brake)
     {
-        const Vec3F leftFootPos = get_bone_pos("LFootJ");
-        const Vec3F rightFootPos = get_bone_pos("RFootJ");
+        Emitter emitter;
+        emitter.velocity.x = status.velocity.x * 0.5f;
+        emitter.baseOpacity = 0.5f;
+        emitter.endOpacity = 0.f;
+        emitter.endScale = 1.6f;
+        emitter.lifetime = { 14u, 16u };
+        emitter.baseRadius = { 0.3f, 0.4f };
+        emitter.colour = { Vec3F(1.f, 1.f, 1.f) };
+        emitter.sprite = "Smoke";
 
-        emitter.emitVelocity = Vec3F(get_velocity().x * 0.5f, 0.f, 0.f);
-        emitter.direction = Vec3F(0.f, 1.f, 0.f);
-
-        emitter.shape = Emitter::BallShape();
-
-        emitter.shape_ball().speed = { 0.f, 0.f };
-
-        if (leftFootPos.y - get_position().y < 0.1f)
+        if (footPosL.y - current.position.y < 0.1f)
         {
-            emitter.emitPosition = Vec3F(leftFootPos.x, get_position().y, leftFootPos.z);
+            emitter.origin = Vec3F(footPosL.x, current.position.y, footPosL.z);
             emitter.generate(partilcles, 1u);
         }
 
-        if (rightFootPos.y - get_position().y < 0.1f)
+        if (footPosR.y - current.position.y < 0.1f)
         {
-            emitter.emitPosition = Vec3F(rightFootPos.x, get_position().y, rightFootPos.z);
+            emitter.origin = Vec3F(footPosR.x, current.position.y, footPosR.z);
             emitter.generate(partilcles, 1u);
         }
     }
+
+//    if (status.state == State::Landing && mStateProgress == 1u)
+//    {
+//        Emitter emitter;
+//        emitter.velocity.x = status.velocity.x * 0.8f;
+//        emitter.baseOpacity = 0.5f;
+//        emitter.endOpacity = 0.f;
+//        emitter.endScale = 1.8f;
+//        emitter.lifetime = { 18u, 24u };
+//        emitter.baseRadius = { 0.3f, 0.4f };
+//        emitter.colour = { Vec3F(1.f, 1.f, 1.f) };
+//        emitter.discIncline = { 0.f, 0.03f };
+//        emitter.discOffset = { 0.f, 0.f };
+//        emitter.discSpeed = { 0.03f, 0.04f };
+//        emitter.sprite = "Smoke";
+
+//        emitter.origin = Vec3F(footPosL.x, current.position.y, footPosL.z);
+//        emitter.generate(partilcles, 10u);
+
+//        emitter.origin = Vec3F(footPosR.x, current.position.y, footPosR.z);
+//        emitter.generate(partilcles, 10u);
+//    }
+
+//    if (status.state == State::Prone && mStateProgress == 1u)
+//    {
+//        Emitter emitter;
+//        emitter.velocity.x = status.velocity.x * 0.6f;
+//        emitter.baseOpacity = 0.5f;
+//        emitter.endOpacity = 0.f;
+//        emitter.endScale = 1.8f;
+//        emitter.lifetime = { 22u, 30u };
+//        emitter.baseRadius = { 0.3f, 0.4f };
+//        emitter.colour = { Vec3F(1.f, 1.f, 1.f) };
+//        emitter.discIncline = { 0.f, 0.03f };
+//        emitter.discOffset = { 0.f, 0.f };
+//        emitter.discSpeed = { 0.08f, 0.12f };
+//        emitter.sprite = "Smoke";
+
+//        emitter.origin = Vec3F(current.position, 0.f);
+//        emitter.generate(partilcles, 24u);
+//    }
 }

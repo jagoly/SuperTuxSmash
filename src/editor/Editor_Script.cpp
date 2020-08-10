@@ -9,6 +9,10 @@ using namespace sts;
 
 //============================================================================//
 
+constexpr const float MAX_HEIGHT_ERRORS = 160;
+
+//============================================================================//
+
 void EditorScene::impl_show_widget_script()
 {
     if (mActiveActionContext == nullptr) return;
@@ -20,166 +24,24 @@ void EditorScene::impl_show_widget_script()
     if (mDoResetDockScript) ImGui::SetNextWindowDockID(mDockRightId);
     mDoResetDockScript = false;
 
-    const ImPlus::ScopeWindow window = { "Script", 0 };
+    const ImPlus::ScopeWindow window { "Script", 0 };
     if (window.show == false) return;
 
-    auto font = ImPlus::ScopeFont(ImPlus::FONT_MONO);
+    const ImPlus::ScopeFont font { ImPlus::FONT_MONO };
 
-    ImGui::SetNextItemWidth(-1);
-    const float widgetHeight = ImGui::GetContentRegionAvail().y;
-    ImPlus::InputStringMultiline("##Script", action.mLuaSource, {0.f, widgetHeight}, ImGuiInputTextFlags_NoUndoRedo);
+    const ImVec2 contentRegion = ImGui::GetContentRegionAvail();
+    const ImVec2 inputSize = { contentRegion.x, contentRegion.y - MAX_HEIGHT_ERRORS };
 
-    /*
+    const bool changed = ImPlus::InputStringMultiline("##Script", action.mLuaSource, inputSize,
+                                                      ImGuiInputTextFlags_NoUndoRedo);
 
-    const ImPlus::ScopeID ctxKeyIdScope = ctx.key.hash();
-
-    //--------------------------------------------------------//
-
-//    if (ImGui::Button("New...")) ImGui::OpenPopup("new_procedure");
-
-    ImGui::SameLine();
-    const bool collapseAll = ImGui::Button("Collapse All");
-
-    //--------------------------------------------------------//
-
-    ImPlus::if_Popup("new_procedure", 0, [&]()
+    if (changed == true)
     {
-        ImGui::TextUnformatted("Create New Procedure:");
-        TinyString newKey;
-        if (ImGui::InputText("", newKey.data(), sizeof(TinyString), ImGuiInputTextFlags_EnterReturnsTrue))
-        {
-            if (action.procedures.count(newKey) == 0u)
-            {
-                action.procedures.emplace(newKey, Action::Procedure());
-                build_working_procedures(ctx);
-                ImGui::CloseCurrentPopup();
-            }
-        }
-        if (ImGui::IsWindowAppearing()) ImGui::SetKeyboardFocusHere();
-    });
-
-    //--------------------------------------------------------//
-
-    Optional<TinyString> toDelete;
-    Optional<Pair<TinyString, TinyString>> toRename;
-    Optional<Pair<TinyString, TinyString>> toCopy;
-
-    //--------------------------------------------------------//
-    for (auto& itemIter : ctx.sortedProcedures)
-    {
-        // c++20: lambda capture structured bindings
-        // auto& [key, procedure] = *itemIter;
-        auto& key = itemIter->first; auto& procedure = itemIter->second;
-
-        const ImPlus::ScopeID procedureIdScope = { key };
-
-        if (collapseAll) ImGui::SetNextItemOpen(false);
-        const bool sectionOpen = ImGui::CollapsingHeader(key);
-
-        //--------------------------------------------------------//
-
-        enum class Choice { None, Delete, Rename, Copy } choice {};
-
-        ImPlus::if_PopupContextItem(nullptr, ImPlus::MOUSE_RIGHT, [&]()
-        {
-            if (ImGui::MenuItem("Delete...")) choice = Choice::Delete;
-            if (ImGui::MenuItem("Rename...")) choice = Choice::Rename;
-            if (ImGui::MenuItem("Copy...")) choice = Choice::Copy;
-        });
-
-        if (choice == Choice::Delete) ImGui::OpenPopup("delete_procedure");
-        if (choice == Choice::Rename) ImGui::OpenPopup("rename_procedure");
-        if (choice == Choice::Copy) ImGui::OpenPopup("copy_procedure");
-
-        ImPlus::if_Popup("delete_procedure", 0, [&]()
-        {
-            ImPlus::Text("Delete '{}'?"_fmt_(key));
-            if (ImGui::Button("Confirm"))
-            {
-                toDelete = key;
-                ImGui::CloseCurrentPopup();
-            }
-        });
-
-        ImPlus::if_Popup("rename_procedure", 0, [&]()
-        {
-            ImPlus::Text("Rename '{}':"_fmt_(key));
-            TinyString newKey = key;
-            if (ImGui::InputText("", newKey.data(), sizeof(TinyString), ImGuiInputTextFlags_EnterReturnsTrue))
-            {
-                toRename.emplace(key, newKey);
-                ImGui::CloseCurrentPopup();
-            }
-            if (ImGui::IsWindowAppearing()) ImGui::SetKeyboardFocusHere();
-        });
-
-        ImPlus::if_Popup("copy_procedure", 0, [&]()
-        {
-            ImPlus::Text("Copy '{}':"_fmt_(key));
-            TinyString newKey = key;
-            if (ImGui::InputText("", newKey.data(), sizeof(TinyString), ImGuiInputTextFlags_EnterReturnsTrue))
-            {
-                toCopy.emplace(key, newKey);
-                ImGui::CloseCurrentPopup();
-            }
-            if (ImGui::IsWindowAppearing()) ImGui::SetKeyboardFocusHere();
-        });
-
-        //--------------------------------------------------------//
-
-        if (sectionOpen == true)
-        {
-            // TODO: the builtin InputTextMultiline widget is meh, but good enough for now
-            // may want to use something like https://github.com/BalazsJako/ImGuiColorTextEdit
-
-            const ImPlus::ScopeFont font = ImPlus::FONT_MONO;
-
-            const uint numNewLines = std::count(procedure.meta.source.begin(), procedure.meta.source.end(), '\n') + 2u;
-            const float inputHeight = float(numNewLines) * ImGui::GetTextLineHeight() + ImGui::GetStyle().FramePadding.y * 2.f;
-
-            ImPlus::InputStringMultiline("", procedure.meta.source, {-1.f, inputHeight}, ImGuiInputTextFlags_NoUndoRedo);
-
-            for (const String& error : ctx.buildErrors[key])
-            {
-                ImGui::Bullet();
-                ImPlus::TextWrapped(error);
-            }
-        }
+        action.load_lua_from_string();
+        scrub_to_frame_current(ctx);
     }
 
-    //--------------------------------------------------------//
-
-    if (toDelete.has_value() == true)
-    {
-        const auto iter = action.procedures.find(*toDelete);
-        SQASSERT(iter != action.procedures.end(), "");
-        action.procedures.erase(iter);
-        build_working_procedures(ctx);
-    }
-
-    if (toRename.has_value() == true)
-    {
-        const auto iter = action.procedures.find(toRename->first);
-        SQASSERT(iter != action.procedures.end(), "");
-        if (action.procedures.count(toRename->second) == 0u)
-        {
-            auto node = action.procedures.extract(iter);
-            node.key() = toRename->second;
-            action.procedures.insert(std::move(node));
-            build_working_procedures(ctx);
-        }
-    }
-
-    if (toCopy.has_value() == true)
-    {
-        const auto iter = action.procedures.find(toCopy->first);
-        SQASSERT(iter != action.procedures.end(), "");
-        if (action.procedures.count(toCopy->second) == 0u)
-        {
-            action.procedures.emplace(toCopy->second, iter->second);
-            build_working_procedures(ctx);
-        }
-    }*/
+    ImPlus::TextWrapped(action.mErrorMessage);
 }
 
 //============================================================================//
