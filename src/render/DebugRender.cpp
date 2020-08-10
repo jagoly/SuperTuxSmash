@@ -97,8 +97,8 @@ void DebugRenderer::render_hit_blobs(const std::vector<HitBlob*>& blobs)
 
         const float facing = float(blob->fighter->status.facing);
         const float angleA = maths::radians(blob->knockAngle / 360.f);
-        const float angleB = maths::radians(blob->knockAngle / 360.f + 0.0625);
-        const float angleC = maths::radians(blob->knockAngle / 360.f - 0.0625);
+        const float angleB = maths::radians(blob->knockAngle / 360.f + 0.0625f);
+        const float angleC = maths::radians(blob->knockAngle / 360.f - 0.0625f);
         const Vec3F offsetA = Vec3F(std::cos(angleA) * facing, std::sin(angleA), 0.f) * s.radius;
         const Vec3F offsetB = Vec3F(std::cos(angleB) * facing, std::sin(angleB), 0.f) * s.radius * 0.75f;
         const Vec3F offsetC = Vec3F(std::cos(angleC) * facing, std::sin(angleC), 0.f) * s.radius * 0.75f;

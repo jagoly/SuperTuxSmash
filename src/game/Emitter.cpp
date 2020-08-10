@@ -57,7 +57,7 @@ void Emitter::generate(ParticleSystem& system, uint count)
         p.baseRadius = baseRadius(rng);
 
         p.sprite = randSprite(rng);
-        p.colour = colour[randColour(rng)];
+        p.colour = colour[uint8_t(randColour(rng))];
 
         p.friction = 0.1f;
 
