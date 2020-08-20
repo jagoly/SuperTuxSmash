@@ -57,7 +57,7 @@ void EditorScene::impl_show_widget_timeline()
     if (mDoResetDockTimeline) ImGui::SetNextWindowDockID(mDockDownId);
     mDoResetDockTimeline = false;
 
-    const ImPlus::ScopeWindow window = { "Timeline", 0 };
+    const ImPlus::ScopeWindow window { "Timeline", ImGuiWindowFlags_AlwaysHorizontalScrollbar };
     if (window.show == false) return;
 
     const ImPlus::ScopeID ctxKeyIdScope = ctx.key.hash();

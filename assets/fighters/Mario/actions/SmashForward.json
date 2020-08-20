@@ -1,21 +1,25 @@
 {
   "blobs": {
-    "0_HandL": {
-      "bone": "LHandNb",
-      "damage": 17.0,
-      "flavour": "Sweet",
+    "0_ArmL": {
+      "bone": "LArmJ",
+      "damage": 14.0,
+      "facing": "Forward",
+      "flavour": "Tangy",
       "freezeFactor": 1.0,
       "group": 0,
       "index": 0,
-      "knockAngle": 45.0,
+      "knockAngle": 0.0,
       "knockBase": 25.0,
-      "knockScale": 90.0,
-      "origin": [ -0.9964802, 0.87283003, -0.018350106 ],
-      "radius": 0.5
+      "knockScale": 100.0,
+      "origin": [ -0.3631301, 0.8716201, -0.021440106 ],
+      "radius": 0.2,
+      "useFixedKnockback": false,
+      "useSakuraiAngle": true
     },
-    "1_ArmL": {
-      "bone": "LArmJ",
+    "1_ShoulderR": {
+      "bone": "RShoulderN",
       "damage": 14.0,
+      "facing": "Forward",
       "flavour": "Tangy",
       "freezeFactor": 1.0,
       "group": 0,
@@ -23,21 +27,26 @@
       "knockAngle": 45.0,
       "knockBase": 25.0,
       "knockScale": 100.0,
-      "origin": [ -0.3631301, 0.87162006, -0.021440106 ],
-      "radius": 0.2
+      "origin": [ 0.094350025, 0.8725301, -0.020240106 ],
+      "radius": 0.25,
+      "useFixedKnockback": false,
+      "useSakuraiAngle": true
     },
-    "2_ShoulderR": {
-      "bone": "RShoulderJ",
-      "damage": 14.0,
-      "flavour": "Tangy",
+    "2_HandL": {
+      "bone": "LHandNb",
+      "damage": 17.0,
+      "facing": "Forward",
+      "flavour": "Sweet",
       "freezeFactor": 1.0,
       "group": 0,
       "index": 2,
-      "knockAngle": 45.0,
+      "knockAngle": 0.0,
       "knockBase": 25.0,
-      "knockScale": 100.0,
-      "origin": [ 0.18785006, 0.8715901, -0.021440106 ],
-      "radius": 0.25
+      "knockScale": 90.0,
+      "origin": [ -0.9964802, 0.87283015, -0.018350106 ],
+      "radius": 0.5,
+      "useFixedKnockback": false,
+      "useSakuraiAngle": true
     }
   },
   "emitters": {
@@ -52,7 +61,6 @@
         [ 1.0, 0.0, 0.0 ],
         [ 1.0, 0.5019608, 0.0 ]
       ],
-      "velocity": [ 0.0, 0.0, 0.035 ],
       "discIncline": [ 0.0, 0.0 ],
       "discOffset": [ 0.0, 0.0 ],
       "discSpeed": [ 0.0, 0.0 ],
@@ -60,7 +68,8 @@
       "endScale": 1.5,
       "lifetime": [ 8, 12 ],
       "origin": [ 0.0, 0.75, 1.5 ],
-      "sprite": "Smoke"
+      "sprite": "Smoke",
+      "velocity": [ 0.0, 0.0, 0.035 ]
     }
   }
 }

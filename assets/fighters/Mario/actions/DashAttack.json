@@ -1,8 +1,9 @@
 {
   "blobs": {
     "00_EarlyBack": {
-      "bone": "TransN",
+      "bone": null,
       "damage": 9.0,
+      "facing": "Forward",
       "flavour": "Tangy",
       "freezeFactor": 1.0,
       "group": 0,
@@ -11,11 +12,14 @@
       "knockBase": 70.0,
       "knockScale": 50.0,
       "origin": [ 0.0, 0.2, -0.04 ],
-      "radius": 0.4
+      "radius": 0.4,
+      "useFixedKnockback": false,
+      "useSakuraiAngle": false
     },
     "01_EarlyForward": {
-      "bone": "TransN",
+      "bone": null,
       "damage": 9.0,
+      "facing": "Forward",
       "flavour": "Tangy",
       "freezeFactor": 1.0,
       "group": 0,
@@ -24,11 +28,14 @@
       "knockBase": 70.0,
       "knockScale": 50.0,
       "origin": [ 0.0, 0.14, 0.12 ],
-      "radius": 0.3
+      "radius": 0.3,
+      "useFixedKnockback": false,
+      "useSakuraiAngle": false
     },
     "10_LateBack": {
-      "bone": "TransN",
+      "bone": null,
       "damage": 7.0,
+      "facing": "Forward",
       "flavour": "Sour",
       "freezeFactor": 1.0,
       "group": 1,
@@ -37,11 +44,14 @@
       "knockBase": 45.0,
       "knockScale": 30.0,
       "origin": [ 0.0, 0.2, -0.04 ],
-      "radius": 0.4
+      "radius": 0.4,
+      "useFixedKnockback": false,
+      "useSakuraiAngle": false
     },
     "11_LateForward": {
-      "bone": "TransN",
+      "bone": null,
       "damage": 9.0,
+      "facing": "Forward",
       "flavour": "Sour",
       "freezeFactor": 1.0,
       "group": 1,
@@ -50,7 +60,9 @@
       "knockBase": 45.0,
       "knockScale": 30.0,
       "origin": [ 0.0, 0.1, 0.12 ],
-      "radius": 0.15
+      "radius": 0.15,
+      "useFixedKnockback": false,
+      "useSakuraiAngle": false
     }
   },
   "emitters": {

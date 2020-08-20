@@ -29,6 +29,9 @@ Controller::Controller(const sq::InputDevices& devices, const String& configPath
 
 void Controller::handle_event(sq::Event event)
 {
+    // don't handle events while playing recording
+    if (mPlaybackIndex >= 0) return;
+
     if (event.type == sq::Event::Type::Gamepad_Press)
     {
         if (int(event.data.gamepad.port) == config.gamepad_port)
@@ -58,6 +61,16 @@ InputFrame Controller::get_input()
     using Stick = sq::Gamepad_Stick;
     using Button = sq::Gamepad_Button;
     using Key = sq::Keyboard_Key;
+
+    //--------------------------------------------------------//
+
+    if (mPlaybackIndex >= 0)
+    {
+        if (mPlaybackIndex < int(mRecordedInput.size()))
+            return mRecordedInput[size_t(mPlaybackIndex++)];
+
+        mPlaybackIndex = -2;
+    }
 
     //--------------------------------------------------------//
 
@@ -192,6 +205,9 @@ InputFrame Controller::get_input()
 
     InputFrame result = mInput;
     mInput = InputFrame();
+
+    if (mPlaybackIndex == -1)
+        mRecordedInput.push_back(result);
 
     return result;
 }

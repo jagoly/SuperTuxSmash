@@ -27,7 +27,7 @@ void StandardCamera::update_from_world(const FightWorld& world)
     {
         if (fighter == nullptr) continue;
 
-        const Vec2F centre = fighter->current.position + fighter->get_diamond().cross();
+        const Vec2F centre = fighter->status.position + fighter->get_diamond().cross();
 
         mCurrentView.min = maths::min(mCurrentView.min, centre);
         mCurrentView.max = maths::max(mCurrentView.max, centre);

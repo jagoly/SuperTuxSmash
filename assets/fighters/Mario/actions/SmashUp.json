@@ -3,28 +3,34 @@
     "0_Head": {
       "bone": "HeadN",
       "damage": 14.0,
+      "facing": "Relative",
       "flavour": "Tangy",
-      "freezeFactor": 0.0,
+      "freezeFactor": 1.0,
       "group": 0,
       "index": 0,
       "knockAngle": 83.0,
       "knockBase": 32.0,
       "knockScale": 90.0,
       "origin": [ -0.11000003, 1.2743402, -0.004770154 ],
-      "radius": 0.5
+      "radius": 0.5,
+      "useFixedKnockback": false,
+      "useSakuraiAngle": false
     },
     "1_Bust": {
       "bone": "BustN",
       "damage": 14.0,
+      "facing": "Relative",
       "flavour": "Tangy",
-      "freezeFactor": 0.0,
+      "freezeFactor": 1.0,
       "group": 0,
       "index": 1,
       "knockAngle": 83.0,
       "knockBase": 32.0,
       "knockScale": 90.0,
       "origin": [ 0.0, 0.8846101, 0.0029498953 ],
-      "radius": 0.4
+      "radius": 0.4,
+      "useFixedKnockback": false,
+      "useSakuraiAngle": false
     }
   },
   "emitters": {}

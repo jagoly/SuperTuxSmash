@@ -1,0 +1,53 @@
+{
+  "blobs": {
+    "0_ShoulderL": {
+      "bone": "LShoulderJ",
+      "damage": 3.0,
+      "facing": "Forward",
+      "flavour": "Tangy",
+      "freezeFactor": 1.0,
+      "group": 0,
+      "index": 0,
+      "knockAngle": 0.0,
+      "knockBase": 15.0,
+      "knockScale": 100.0,
+      "origin": [ -0.30785006, 0.87159014, -0.021440106 ],
+      "radius": 0.3,
+      "useFixedKnockback": true,
+      "useSakuraiAngle": true
+    },
+    "1_Bust": {
+      "bone": "BustN",
+      "damage": 3.0,
+      "facing": "Forward",
+      "flavour": "Tangy",
+      "freezeFactor": 1.0,
+      "group": 0,
+      "index": 1,
+      "knockAngle": 0.0,
+      "knockBase": 10.0,
+      "knockScale": 100.0,
+      "origin": [ 0.0, 0.78461015, 0.002949907 ],
+      "radius": 0.28,
+      "useFixedKnockback": true,
+      "useSakuraiAngle": true
+    },
+    "2_ArmL": {
+      "bone": "LArmJ",
+      "damage": 3.0,
+      "facing": "Forward",
+      "flavour": "Tangy",
+      "freezeFactor": 1.0,
+      "group": 0,
+      "index": 2,
+      "knockAngle": 80.0,
+      "knockBase": 15.0,
+      "knockScale": 100.0,
+      "origin": [ -0.6931302, 0.8716201, -0.021440106 ],
+      "radius": 0.4,
+      "useFixedKnockback": true,
+      "useSakuraiAngle": false
+    }
+  },
+  "emitters": {}
+}

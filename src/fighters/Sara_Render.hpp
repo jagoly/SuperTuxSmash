@@ -46,7 +46,7 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
-    CharacterBlock<65> mCharacterBlock;
+    CharacterBlock<67> mCharacterBlock;
 
     sq::UniformBuffer mUbo;
 

@@ -138,27 +138,28 @@ public: //====================================================//
 
         Animation LandLight;
         Animation LandHeavy;
-        //Animation LandAirBack;
-        //Animation LandAirDown;
-        //Animation LandAirForward;
-        //Animation LandAirNeutral;
-        //Animation LandAirUp;
         Animation LandTumble;
 
+        Animation LandAirBack;
+        Animation LandAirDown;
+        Animation LandAirForward;
+        Animation LandAirNeutral;
+        Animation LandAirUp;
+
         Animation HurtLowerLight;
-        //Animation HurtLowerMedium;
         Animation HurtLowerHeavy;
         Animation HurtLowerTumble;
 
         Animation HurtMiddleLight;
-        //Animation HurtMiddleMedium;
         Animation HurtMiddleHeavy;
         Animation HurtMiddleTumble;
 
         Animation HurtUpperLight;
-        //Animation HurtUpperMedium;
         Animation HurtUpperHeavy;
         Animation HurtUpperTumble;
+
+        Animation HurtAirLight;
+        Animation HurtAirHeavy;
 
         //Animation LaunchLoop;
         //Animation LaunchFinish;
@@ -197,8 +198,10 @@ public: //====================================================//
     {
         State state = State::Neutral;
         int8_t facing = +1;
+        Vec2F position = { 0.f, 0.f };
         Vec2F velocity = { 0.f, 0.f };
         bool intangible = false;
+        bool autocancel = false;
         float damage = 0.f;
         float shield = 0.f;
         Ledge* ledge = nullptr;
@@ -226,8 +229,8 @@ public: //====================================================//
 
     struct InterpolationData
     {
-        Vec2F position { 0.f, 0.f };
-        QuatF rotation { 0.f, 0.f, 0.f, 1.f };
+        Vec3F translation;
+        QuatF rotation;
         sq::Armature::Pose pose;
     }
     previous, current;
@@ -275,6 +278,9 @@ public: //====================================================//
 
     bool lua_get_intangible() const { return status.intangible; }
     void lua_set_intangible(bool value) { status.intangible = value; }
+
+    bool lua_get_autocancel() const { return status.autocancel; }
+    void lua_set_autocancel(bool value) { status.autocancel = value; }
 
     float lua_get_velocity_x() const { return status.velocity.x; }
     void lua_set_velocity_x(float value) { status.velocity.x = value; }
@@ -329,6 +335,9 @@ private: //===================================================//
 
     /// Activate an action and change to the appropriate state.
     void state_transition_action(ActionType action);
+
+    /// If we have an active and started action, cancel and deactivate it.
+    void cancel_active_action();
 
     //-- update methods, called each tick --------------------//
 
@@ -388,12 +397,12 @@ private: //===================================================//
     uint mAnimTimeDiscrete = 0u;
     float mAnimTimeContinuous = 0.f;
 
-    bool mAnimChangeFacing = false;
+    //bool mAnimChangeFacing = false;
 
     Vec3F mPrevRootMotionOffset = Vec3F();
 
-    sq::Armature::Pose mFadeStartPose;
     QuatF mFadeStartRotation;
+    sq::Armature::Pose mFadeStartPose;
 
     uint mFadeProgress = 0u;
     uint mFadeFrames = 0u;

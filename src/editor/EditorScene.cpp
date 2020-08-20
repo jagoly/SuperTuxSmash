@@ -40,9 +40,9 @@ using namespace sts;
 
 //============================================================================//
 
-constexpr const float WIDTH_EDITORS   = 480;
-constexpr const float HEIGHT_TIMELINE = 80;
-constexpr const float WIDTH_NAVIGATOR = 240;
+constexpr const float WIDTH_EDITORS   = 520.f;
+constexpr const float HEIGHT_TIMELINE = 80.f;
+constexpr const float WIDTH_NAVIGATOR = 240.f;
 
 //============================================================================//
 
@@ -288,6 +288,12 @@ void EditorScene::impl_show_widget_toolbar()
             if (ImPlus::MenuItem("Save", "Ctrl+S", false, mActiveActionContext->modified))
                 save_changes(*mActiveActionContext);
             ImPlus::HoverTooltip("Save changes to the active action");
+
+            Fighter& fighter = *mActiveActionContext->fighter;
+
+            if (ImPlus::MenuItem("Reload Animations", nullptr, false, true))
+                fighter.initialise_armature(sq::build_path("assets/fighters", sq::enum_to_string(fighter.type)));
+            ImPlus::HoverTooltip("Reload animations for the active action");
         });
 
         //--------------------------------------------------------//
@@ -640,15 +646,20 @@ EditorScene::ActionContext& EditorScene::get_action_context(ActionKey key)
 
     CASE (LandLight)  ctx.timelineLength = anims.LandLight.anim.totalTime;
     CASE (LandHeavy)  ctx.timelineLength = anims.LandHeavy.anim.totalTime;
-    CASE (LandAttack) ctx.timelineLength = anims.LandHeavy.anim.totalTime;
     CASE (LandTumble) ctx.timelineLength = anims.LandTumble.anim.totalTime;
+
+    CASE (LandAirBack)    ctx.timelineLength = anims.LandAirBack.anim.totalTime;
+    CASE (LandAirDown)    ctx.timelineLength = anims.LandAirDown.anim.totalTime;
+    CASE (LandAirForward) ctx.timelineLength = anims.LandAirForward.anim.totalTime;
+    CASE (LandAirNeutral) ctx.timelineLength = anims.LandAirNeutral.anim.totalTime;
+    CASE (LandAirUp)      ctx.timelineLength = anims.LandAirUp.anim.totalTime;
 
     CASE (SpecialDown)    ctx.timelineLength = 32u;
     CASE (SpecialForward) ctx.timelineLength = 32u;
     CASE (SpecialNeutral) ctx.timelineLength = 32u;
     CASE (SpecialUp)      ctx.timelineLength = 32u;
 
-    CASE (None) SQASSERT(false, "");
+    CASE (None) SQASSERT(false, "can't edit nothing");
 
     } SWITCH_END;
 
@@ -812,8 +823,18 @@ void EditorScene::scrub_to_frame(ActionContext& ctx, int frame)
     ctx.fighter->status = Fighter::Status();
     ctx.fighter->mTranslate = Vec2F();
 
-    // todo: need special handling for air actions
-    ctx.fighter->state_transition(FighterState::Neutral, 0u, &ctx.fighter->mAnimations.NeutralLoop, 0u, nullptr);
+    if (ctx.key.action == ActionType::AirBack || ctx.key.action == ActionType::AirDown || ctx.key.action == ActionType::AirForward ||
+        ctx.key.action == ActionType::AirNeutral || ctx.key.action == ActionType::AirUp || ctx.key.action == ActionType::AirDodge)
+    {
+        ctx.fighter->status.position = Vec2F(0.f, 1.f);
+        ctx.fighter->stats.gravity = 0.f;
+
+        ctx.fighter->state_transition(FighterState::JumpFall, 0u, &ctx.fighter->mAnimations.FallingLoop, 0u, nullptr);
+    }
+    else
+    {
+        ctx.fighter->state_transition(FighterState::Neutral, 0u, &ctx.fighter->mAnimations.NeutralLoop, 0u, nullptr);
+    }
 
     // need to tick twice so that fighter.previous has valid values
     ctx.world->tick();

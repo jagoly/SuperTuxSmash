@@ -24,10 +24,10 @@ void Mario_Fighter::tick()
     Vec3F footPosR = Vec3F(get_bone_matrix(get_armature().get_bone_index("RToeN")) * Vec4F(+0.128f, 0.f, 0.13f, 1.f));
 
     // without this, moving into a ledge without walking off looks weird
-    if (status.facing == -1) footPosL.x = maths::max(current.position.x, footPosL.x);
-    if (status.facing == -1) footPosR.x = maths::max(current.position.x, footPosR.x);
-    if (status.facing == +1) footPosL.x = maths::min(current.position.x, footPosL.x);
-    if (status.facing == +1) footPosR.x = maths::min(current.position.x, footPosR.x);
+    if (status.facing == -1) footPosL.x = maths::max(status.position.x, footPosL.x);
+    if (status.facing == -1) footPosR.x = maths::max(status.position.x, footPosR.x);
+    if (status.facing == +1) footPosL.x = maths::min(status.position.x, footPosL.x);
+    if (status.facing == +1) footPosR.x = maths::min(status.position.x, footPosR.x);
 
     //--------------------------------------------------------//
 
@@ -43,15 +43,15 @@ void Mario_Fighter::tick()
         emitter.colour = { Vec3F(1.f, 1.f, 1.f) };
         emitter.sprite = "Smoke";
 
-        if (footPosL.y - current.position.y < 0.1f)
+        if (footPosL.y - status.position.y < 0.1f)
         {
-            emitter.origin = Vec3F(footPosL.x, current.position.y, footPosL.z);
+            emitter.origin = Vec3F(footPosL.x, status.position.y, footPosL.z);
             emitter.generate(partilcles, 1u);
         }
 
-        if (footPosR.y - current.position.y < 0.1f)
+        if (footPosR.y - status.position.y < 0.1f)
         {
-            emitter.origin = Vec3F(footPosR.x, current.position.y, footPosR.z);
+            emitter.origin = Vec3F(footPosR.x, status.position.y, footPosR.z);
             emitter.generate(partilcles, 1u);
         }
     }

@@ -1,5 +1,7 @@
 Root
-Torso Root
+RotateX Root
+RotateY RotateX
+Torso RotateY
 LegA.L Torso
 LegA.R Torso
 SpineA Torso

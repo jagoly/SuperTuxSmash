@@ -11,8 +11,13 @@ namespace sts {
 // some notes about HitBlobs and HurtBlobs:
 // - the group value is equivilant to the Part value in smash bros
 // - origin is always relative to the object, even when attached to a bone
+// - BlobFacing::Reverse needs to exist for backwards sakurai hits,
+//   otherwise just use an angle > 90
 
 //============================================================================//
+
+/// how to choose the facing of the knockback
+enum class BlobFacing : int8_t { Relative, Forward, Reverse };
 
 /// doesn't do anything except pick the debug colour
 enum class BlobFlavour : int8_t { Sour, Tangy, Sweet };
@@ -38,14 +43,24 @@ struct alignas(16) HitBlob final
     uint8_t index; ///< Used to choose from blobs from the same group.
 
     float damage;       ///< How much damage the blob will do when hit.
+    float freezeFactor; ///< Multiplier for the amount of freeze frames caused.
     float knockAngle;   ///< Angle of knockback in degrees (0 = forward, 90 = up).
     float knockBase;    ///< Base knockback to apply on collision.
     float knockScale;   ///< Scale the knockback based on current fighter damage.
-    float freezeFactor; ///< Multiplier for the amount of freeze frames caused.
 
+    BlobFacing  facing;  ///< https://www.ssbwiki.com/Angle#Angle_flipper
     BlobFlavour flavour; ///< Flavour of blob from sour (worst) to sweet (best).
 
+    bool useFixedKnockback; ///< https://www.ssbwiki.com/Knockback#Set_knockback
+    bool useSakuraiAngle;   ///< https://www.ssbwiki.com/Sakurai_angle
+
     //TinyString name; ///< Name of the blob, used for debug and the edtior.
+
+    const TinyString& get_key() const
+    {
+        // todo: yikes this real bad
+        return *(reinterpret_cast<const TinyString*>(this)-1);
+    }
 
     constexpr Vec3F get_debug_colour() const
     {
@@ -107,5 +122,6 @@ bool operator==(const HurtBlob& a, const HurtBlob& b);
 
 } // namespace sts
 
+SQEE_ENUM_HELPER(sts::BlobFacing, Relative, Forward, Reverse)
 SQEE_ENUM_HELPER(sts::BlobFlavour, Sour, Tangy, Sweet)
 SQEE_ENUM_HELPER(sts::BlobRegion, Middle, Lower, Upper)

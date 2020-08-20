@@ -42,6 +42,8 @@ GameScene::GameScene(SmashApp& smashApp, GameSetup setup)
 
     options.editor_mode = false;
 
+    options.log_input = true;
+
     auto& window = mSmashApp.get_window();
 
     window.set_key_repeat(false);
@@ -260,6 +262,7 @@ void GameScene::impl_show_general_window()
         {
             ImPlus::RadioButton("0.03125×", mTickTime, 1.0 / 1.5);
             ImPlus::RadioButton("0.125×", mTickTime, 1.0 / 6.0);
+            ImPlus::RadioButton("0.25×", mTickTime, 1.0 / 12.0);
             ImPlus::RadioButton("0.5×", mTickTime, 1.0 / 24.0);
             ImPlus::RadioButton("1×", mTickTime, 1.0 / 48.0);
             ImPlus::RadioButton("2×", mTickTime, 1.0 / 96.0);

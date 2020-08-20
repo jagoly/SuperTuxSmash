@@ -65,6 +65,7 @@ FightWorld::FightWorld(const Options& _options)
     sol::usertype<Fighter> fighterType = lua.new_usertype<Fighter>("Fighter", sol::no_constructor);
 
     fighterType.set("intangible", sol::property(&Fighter::lua_get_intangible, &Fighter::lua_set_intangible));
+    fighterType.set("autocancel", sol::property(&Fighter::lua_get_autocancel, &Fighter::lua_set_autocancel));
     fighterType.set("velocity_x", sol::property(&Fighter::lua_get_velocity_x, &Fighter::lua_set_velocity_x));
     fighterType.set("velocity_y", sol::property(&Fighter::lua_get_velocity_y, &Fighter::lua_set_velocity_y));
 
@@ -83,31 +84,23 @@ void FightWorld::finish_setup()
     }
     else if (mFighterRefs.size() == 2u)
     {
-        mFighterRefs[0]->current.position.x = -2.f;
-        mFighterRefs[0]->previous.position.x = -2.f;
-        mFighterRefs[1]->current.position.x = +2.f;
-        mFighterRefs[1]->previous.position.x = +2.f;
+        mFighterRefs[0]->status.position.x = -2.f;
+        mFighterRefs[1]->status.position.x = +2.f;
         mFighterRefs[1]->status.facing = -1;
     }
     else if (mFighterRefs.size() == 3u)
     {
-        mFighterRefs[0]->current.position.x = -4.f;
-        mFighterRefs[0]->previous.position.x = -4.f;
-        mFighterRefs[2]->current.position.x = +4.f;
-        mFighterRefs[2]->previous.position.x = +4.f;
+        mFighterRefs[0]->status.position.x = -4.f;
+        mFighterRefs[2]->status.position.x = +4.f;
         mFighterRefs[2]->status.facing = -1;
     }
     else if (mFighterRefs.size() == 4u)
     {
-        mFighterRefs[0]->current.position.x = -6.f;
-        mFighterRefs[0]->previous.position.x = -6.f;
-        mFighterRefs[1]->current.position.x = -2.f;
-        mFighterRefs[1]->previous.position.x = -2.f;
-        mFighterRefs[2]->current.position.x = +2.f;
-        mFighterRefs[2]->previous.position.x = +2.f;
+        mFighterRefs[0]->status.position.x = -6.f;
+        mFighterRefs[1]->status.position.x = -2.f;
+        mFighterRefs[2]->status.position.x = +2.f;
         mFighterRefs[2]->status.facing = -1;
-        mFighterRefs[3]->current.position.x = +6.f;
-        mFighterRefs[3]->previous.position.x = +6.f;
+        mFighterRefs[3]->status.position.x = +6.f;
         mFighterRefs[3]->status.facing = -1;
     }
 }

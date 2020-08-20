@@ -37,10 +37,8 @@ void Fighter::state_transition(State state, uint fadeNow, const Animation* animN
             mAnimTimeContinuous = 0.f;
 
             mFadeProgress = 0u;
-            mFadeStartPose = current.pose;
             mFadeStartRotation = current.rotation;
-
-            mAnimChangeFacing = false;
+            mFadeStartPose = current.pose;
         }
     }
 
@@ -62,7 +60,7 @@ void Fighter::state_transition(State state, uint fadeNow, const Animation* animN
 void Fighter::state_transition_action(ActionType action)
 {
     // if there is already an active action, cancel it
-    if (mActiveAction != nullptr) mActiveAction->do_cancel();
+    cancel_active_action();
 
     const Animations& anims = mAnimations;
 
@@ -98,10 +96,15 @@ void Fighter::state_transition_action(ActionType action)
     CASE (AirUp)      state_transition(State::AirAction, 1u, &anims.AirUp, 0u, nullptr);
     CASE (AirDodge)   state_transition(State::AirAction, 1u, &anims.AirDodge, 0u, nullptr);
 
-    CASE (LandLight) state_transition(State::Action, 1u, &anims.LandLight, 0u, nullptr);
-    CASE (LandHeavy) state_transition(State::Action, 1u, &anims.LandHeavy, 0u, nullptr);
-    CASE (LandAttack) state_transition(State::Action, 1u, &anims.LandHeavy, 0u, nullptr);
+    CASE (LandLight)  state_transition(State::Action, 1u, &anims.LandLight, 0u, nullptr);
+    CASE (LandHeavy)  state_transition(State::Action, 1u, &anims.LandHeavy, 0u, nullptr);
     CASE (LandTumble) state_transition(State::Action, 1u, &anims.LandTumble, 0u, nullptr);
+
+    CASE (LandAirBack)    state_transition(State::Action, 1u, &anims.LandAirBack, 0u, nullptr);
+    CASE (LandAirDown)    state_transition(State::Action, 1u, &anims.LandAirDown, 0u, nullptr);
+    CASE (LandAirForward) state_transition(State::Action, 1u, &anims.LandAirForward, 0u, nullptr);
+    CASE (LandAirNeutral) state_transition(State::Action, 1u, &anims.LandAirNeutral, 0u, nullptr);
+    CASE (LandAirUp)      state_transition(State::Action, 1u, &anims.LandAirUp, 0u, nullptr);
 
     CASE (SpecialDown)    {} // todo
     CASE (SpecialForward) {} // todo
@@ -120,14 +123,49 @@ void Fighter::state_transition_action(ActionType action)
 
 //============================================================================//
 
+void Fighter::cancel_active_action()
+{
+    if (mActiveAction != nullptr)
+    {
+        // don't cancel an action that hasn't started yet
+        if (mActiveAction->get_status() != ActionStatus::None)
+            mActiveAction->do_cancel();
+
+        mActiveAction = nullptr;
+    }
+}
+
+//============================================================================//
+
 void Fighter::update_commands(const InputFrame& input)
 {
-    for (int i = CMD_BUFFER_SIZE - 1u; i != 0; --i)
-        mCommands[i] = std::move(mCommands[i-1]);
+    for (size_t i = CMD_BUFFER_SIZE - 1u; i != 0u; --i)
+        mCommands[i] = std::move(mCommands[i-1u]);
 
-    mCommands[0].clear();
+    mCommands.front().clear();
 
-    std::vector<Command>& cmds = mCommands[0];
+    std::vector<Command>& cmds = mCommands.front();
+
+    //--------------------------------------------------------//
+
+    const auto erase_command = [this](Command cmd)
+    {
+        for (auto& cmds : mCommands)
+            if (auto iter = algo::find(cmds, cmd); iter != cmds.end())
+                cmds.erase(iter);
+    };
+
+    if (status.facing == +1 && input.norm_axis.x == -1)
+    {
+        erase_command(Command::TurnLeft);
+        cmds.push_back(Command::TurnLeft);
+    }
+
+    if (status.facing == -1 && input.norm_axis.x == +1)
+    {
+        erase_command(Command::TurnRight);
+        cmds.push_back(Command::TurnRight);
+    }
 
     //--------------------------------------------------------//
 
@@ -136,12 +174,6 @@ void Fighter::update_commands(const InputFrame& input)
 
     if (input.press_jump == true)
         cmds.push_back(Command::Jump);
-
-    if (status.facing == +1 && input.norm_axis.x == -1)
-        cmds.push_back(Command::TurnLeft);
-
-    if (status.facing == -1 && input.norm_axis.x == +1)
-        cmds.push_back(Command::TurnRight);
 
     if (input.mash_axis.y == -1)
         cmds.push_back(Command::MashDown);
@@ -154,6 +186,8 @@ void Fighter::update_commands(const InputFrame& input)
 
     if (input.mash_axis.x == +1)
         cmds.push_back(Command::MashRight);
+
+    //--------------------------------------------------------//
 
     if (input.press_attack == true)
     {
@@ -174,6 +208,7 @@ void Fighter::update_commands(const InputFrame& input)
 void Fighter::update_action(const InputFrame& /*input*/)
 {
     // Actions can override normal fighter behaviour, so they need to be updated first.
+    // todo: actually doing this last so anims sync correctly, INVESTIGATE
 
     if (status.state == State::Charge) return;
     if (status.state == State::Freeze) return;
@@ -184,10 +219,7 @@ void Fighter::update_action(const InputFrame& /*input*/)
     //sq::log_debug("status: {}", mActiveAction->get_status());
 
     if (mActiveAction->get_status() == ActionStatus::Finished)
-    {
-        //mActiveAction->do_cancel();
         mActiveAction = nullptr;
-    }
 
     else if (mActiveAction->get_status() == ActionStatus::RuntimeError)
         SQASSERT(world.options.editor_mode == true, "");
@@ -196,7 +228,7 @@ void Fighter::update_action(const InputFrame& /*input*/)
 //============================================================================//
 
 void Fighter::update_transitions(const InputFrame& input)
-{    
+{
     // This is the heart of the fighter state machine. Each tick this should do
     // either zero or one state transition, not more. Things not coinciding with
     // these transitions should be done elsewhere.
@@ -218,7 +250,7 @@ void Fighter::update_transitions(const InputFrame& input)
             return false;
 
         // todo: unsure if position should be fighter's origin, or the centre of it's diamond
-        status.ledge = stage.find_ledge(current.position, input.norm_axis.x);
+        status.ledge = stage.find_ledge(status.position, input.norm_axis.x);
 
         if (status.ledge == nullptr)
             return false;
@@ -243,12 +275,6 @@ void Fighter::update_transitions(const InputFrame& input)
 
         mExtraJumps = stats.extra_jumps;
         mJumpHeld = true;
-    };
-
-    const auto do_animated_facing_change = [&]()
-    {
-        mAnimChangeFacing = true;
-        status.facing = -status.facing;
     };
 
     //--------------------------------------------------------//
@@ -285,12 +311,12 @@ void Fighter::update_transitions(const InputFrame& input)
             state_transition_action(ActionType::NeutralFirst);
 
         else if (consume_command(Command::MashDown))
-            current.position.y -= 0.1f;
+            status.position.y -= 0.1f; // drop through ledge
 
         else if (consume_command_facing(Command::TurnRight, Command::TurnLeft))
         {
             state_transition(State::Neutral, 0u, &anims.Turn, 0u, &anims.NeutralLoop);
-            do_animated_facing_change();
+            status.facing = -status.facing;
         }
 
         else if (input.norm_axis.x == status.facing)
@@ -365,7 +391,7 @@ void Fighter::update_transitions(const InputFrame& input)
         else if (consume_command_facing(Command::SmashLeft, Command::SmashRight))
             state_transition_action(ActionType::SmashForward);
 
-        else if (consume_command_facing(Command::AttackLeft, Command::AttackRight))
+        else if (consume_command_oldest({Command::AttackDown, Command::AttackUp, Command::AttackLeft, Command::AttackRight}))
             state_transition_action(ActionType::DashAttack);
 
         else if (input.int_axis.x != status.facing * 2)
@@ -406,7 +432,7 @@ void Fighter::update_transitions(const InputFrame& input)
             if (consume_command_facing(Command::TurnRight, Command::TurnLeft))
             {
                 state_transition(State::Brake, 0u, &anims.TurnDash, 0u, nullptr);
-                do_animated_facing_change();
+                status.facing = -status.facing;
             }
 
             else if (mStateProgress == stats.dash_brake_time)
@@ -466,10 +492,7 @@ void Fighter::update_transitions(const InputFrame& input)
     CASE ( Prone ) //=========================================//
     {
         if (consume_command_facing(Command::MashLeft, Command::MashRight))
-        {
             state_transition_action(ActionType::ProneForward);
-            do_animated_facing_change();
-        }
 
         else if (consume_command_facing(Command::MashRight, Command::MashLeft))
             state_transition_action(ActionType::ProneBack);
@@ -490,7 +513,7 @@ void Fighter::update_transitions(const InputFrame& input)
         else if (consume_command_facing(Command::MashLeft, Command::MashRight))
         {
             state_transition_action(ActionType::EvadeForward);
-            do_animated_facing_change();
+            status.facing = -status.facing;
         }
 
         else if (consume_command_facing(Command::MashRight, Command::MashLeft))
@@ -538,16 +561,16 @@ void Fighter::update_transitions(const InputFrame& input)
             state_transition_action(ActionType::AirNeutral);
     }
 
-    CASE ( HitStun ) //=======================================//
+    CASE ( Stun ) //==========================================//
     {
         if (mStateProgress == mHitStunTime)
-        {
-            // this will only be the case if we have landed already
-            if (mLaunchSpeed == 0.f)
-                state_transition(State::Neutral, 0u, nullptr, 0u, &anims.NeutralLoop);
-            else
-                state_transition(State::JumpFall, 0u, nullptr, 4u, &anims.FallingLoop);
-        }
+            state_transition(State::Neutral, 0u, nullptr, 0u, &anims.NeutralLoop);
+    }
+
+    CASE ( AirStun ) //=======================================//
+    {
+        if (mStateProgress == mHitStunTime)
+            state_transition(State::JumpFall, 0u, nullptr, 4u, &anims.FallingLoop);
     }
 
     CASE ( TumbleStun ) //====================================//
@@ -655,11 +678,14 @@ void Fighter::update_transitions(const InputFrame& input)
             CASE ( SmashDown, SmashForward, SmashUp )
             state_transition(State::Neutral, 0u, nullptr, 0u, &anims.NeutralLoop);
 
-            CASE ( LandLight, LandHeavy, LandAttack )
+            CASE ( LandLight, LandHeavy )
             state_transition(State::Neutral, 0u, nullptr, 0u, &anims.NeutralLoop);
 
             CASE ( LandTumble )
             state_transition(State::Prone, 0u, nullptr, 0u, &anims.ProneLoop);
+
+            CASE ( LandAirBack, LandAirDown, LandAirForward, LandAirNeutral, LandAirUp )
+            state_transition(State::Neutral, 0u, nullptr, 0u, &anims.NeutralLoop);
 
             CASE ( SpecialDown, SpecialForward, SpecialNeutral, SpecialUp )
             state_transition(State::Neutral, 0u, nullptr, 0u, &anims.NeutralLoop); // todo
@@ -745,10 +771,10 @@ void Fighter::update_states(const InputFrame& input)
         // this will only be the case if we just grabbed the ledge
         if (status.velocity != Vec2F())
         {
-            current.position = (current.position + status.ledge->position) / 2.f;
+            status.position = (status.position + status.ledge->position) / 2.f;
             status.velocity = Vec2F();
         }
-        else current.position = status.ledge->position;
+        else status.position = status.ledge->position;
 
         return; // EARLY RETURN
     }
@@ -767,13 +793,13 @@ void Fighter::update_states(const InputFrame& input)
 
     SWITCH ( status.state ) {
 
-    CASE ( Neutral, Walking, Dashing, Brake, Crouch, Prone, Charge, Action, Shield )
+    CASE ( Neutral, Walking, Dashing, Brake, Crouch, Prone, Stun, Charge, Action, Shield )
     {
         if (status.velocity.x < -0.f) status.velocity.x = maths::min(status.velocity.x + stats.traction, -0.f);
         if (status.velocity.x > +0.f) status.velocity.x = maths::max(status.velocity.x - stats.traction, +0.f);
     }
 
-    CASE ( JumpFall, TumbleFall, HitStun, TumbleStun, Helpless, AirAction )
+    CASE ( JumpFall, TumbleFall, AirStun, TumbleStun, Helpless, AirAction )
     {
         if (input.int_axis.x == 0 && mLaunchSpeed == 0.f)
         {
@@ -839,7 +865,7 @@ void Fighter::update_states(const InputFrame& input)
     status.velocity.y = maths::max(status.velocity.y - stats.gravity, -stats.fall_speed);
 
     const Vec2F translation = status.velocity + mTranslate;
-    const Vec2F targetPosition = current.position + translation;
+    const Vec2F targetPosition = status.position + translation;
 
     //-- ask the stage where we can move ---------------------//
 
@@ -849,9 +875,9 @@ void Fighter::update_states(const InputFrame& input)
                             !( input.int_axis.x == -2 && translation.x < -0.0f ) &&
                             !( input.int_axis.x == +2 && translation.x > +0.0f ) );
 
-    MoveAttempt moveAttempt = stage.attempt_move(mLocalDiamond, current.position, targetPosition, edgeStop);
+    MoveAttempt moveAttempt = stage.attempt_move(mLocalDiamond, status.position, targetPosition, edgeStop);
 
-    current.position = moveAttempt.result;
+    status.position = moveAttempt.result;
 
     mTranslate = Vec2F();
 
@@ -877,12 +903,10 @@ void Fighter::update_states(const InputFrame& input)
         if (moveAttempt.collideFloor == true)
         {
             // todo: this is wrong, need a 'timeSinceFallSpeed' variable
-            const bool light = status.velocity.y > -stats.fall_speed || mStateProgress < stats.land_heavy_min_time;
-
-            if (light) state_transition_action(ActionType::LandLight);
-            else state_transition_action(ActionType::LandHeavy);
-
-            status.velocity.y = 0.f;
+            if (status.velocity.y > -stats.fall_speed || mStateProgress < stats.land_heavy_min_time)
+                state_transition_action(ActionType::LandLight);
+            else
+                state_transition_action(ActionType::LandHeavy);
         }
     }
 
@@ -892,16 +916,16 @@ void Fighter::update_states(const InputFrame& input)
         if (moveAttempt.collideFloor == true)
         {
             state_transition_action(ActionType::LandTumble);
-            status.velocity.y = 0.f;
+            mLaunchSpeed = 0.f;
         }
     }
 
-    // don't do any transition, stay in hitstun state
-    CASE ( HitStun )
+    // this is an estimated guess based on what brawl seems to do
+    CASE ( AirStun )
     {
         if (moveAttempt.collideFloor == true)
         {
-            status.velocity.y = 0.f;
+            state_transition_action(ActionType::LandHeavy);
             mLaunchSpeed = 0.f;
         }
     }
@@ -911,46 +935,46 @@ void Fighter::update_states(const InputFrame& input)
     {
         if (moveAttempt.collideFloor == true)
         {
-            SQASSERT(mActiveAction != nullptr, "");
-            mActiveAction->do_cancel();
-
-            // todo: seperate landing action for each air attack type
-            state_transition_action(ActionType::LandAttack);
-            status.velocity.y = 0.f;
+            if (status.autocancel == false)
+            {
+                SWITCH (mActiveAction->type) {
+                CASE (AirBack)    state_transition_action(ActionType::LandAirBack);
+                CASE (AirDown)    state_transition_action(ActionType::LandAirDown);
+                CASE (AirForward) state_transition_action(ActionType::LandAirForward);
+                CASE (AirNeutral) state_transition_action(ActionType::LandAirNeutral);
+                CASE (AirUp)      state_transition_action(ActionType::LandAirUp);
+                CASE (AirDodge)   state_transition_action(ActionType::LandHeavy); // todo
+                CASE_DEFAULT { SQASSERT(false, "invalid air action"); }
+                } SWITCH_END;
+            }
+            else state_transition_action(ActionType::LandHeavy); // todo: light landings, maybe?
         }
-    }
-
-    // these ground states have a special dive animation
-    CASE ( Walking, Dashing )
-    {
-        if (moveAttempt.collideFloor == false)
-        {
-            // todo
-            state_transition(State::JumpFall, 1u, &anims.FallingLoop, 0u, nullptr);
-            mExtraJumps = stats.extra_jumps;
-        }
-        else status.velocity.y = 0.f;
     }
 
     // misc ground states that you can fall from
-    CASE ( Neutral, Action, Brake, Crouch, Charge, Shield )
+    CASE ( Neutral, Walking, Dashing, Brake, Crouch, Charge, Action )
     {
         if (moveAttempt.collideFloor == false)
         {
-            state_transition(State::JumpFall, 2u, &anims.FallingLoop, 0u, nullptr);
-            mExtraJumps = stats.extra_jumps; // todo: is this correct for Action?
+            // todo: actions probably need special handling here
+            cancel_active_action();
+
+            state_transition(State::JumpFall, 4u, &anims.FallingLoop, 0u, nullptr);
+            mExtraJumps = stats.extra_jumps;
         }
         else status.velocity.y = 0.f;
     }
 
-    // not sure what smash does in this case
-    CASE ( Prone )
+    // if we get pushed off of an edge, then we enter tumble
+    CASE ( Shield, Prone, Stun )
     {
         if (moveAttempt.collideFloor == false)
         {
+            // todo: this should have it's own animation
             state_transition(State::TumbleFall, 4u, &anims.TumbleLoop, 0u, nullptr);
             mExtraJumps = stats.extra_jumps;
         }
+        else status.velocity.y = 0.f;
     }
 
     // special states that you can't fall or land from
@@ -981,11 +1005,9 @@ void Fighter::update_animation()
 
     //--------------------------------------------------------//
 
-    // todo: calculate this once when we load the armature
-    const QuatF rootInverseRestRotation = maths::inverse(mArmature.get_rest_pose().front().rotation);
-
-    // helper to get the current pose of the root bone
-    const auto root = [&]() -> sq::Armature::Bone& { return current.pose.front(); };
+    // rotated because we change facing as soon as a turn anim starts
+    const QuatF restRotate = QuatF(0.f, 0.5f, 0.f) * QuatF(-0.25f, 0.f, 0.f);
+    const QuatF invRestRotate = QuatF(+0.25f, 0.f, 0.f);
 
     // called when mAnimation finishes for non-looping animations
     const auto finish_animation = [&]()
@@ -998,10 +1020,8 @@ void Fighter::update_animation()
 
         mFadeProgress = 0u;
 
-        mFadeStartPose = current.pose;
         mFadeStartRotation = current.rotation;
-
-        mAnimChangeFacing = false;
+        mFadeStartPose = current.pose;
     };
 
     //--------------------------------------------------------//
@@ -1009,8 +1029,6 @@ void Fighter::update_animation()
     const auto set_current_pose_discrete = [&](const Animation& anim, uint time)
     {
         current.pose = mArmature.compute_pose_discrete(anim.anim, time);
-        current.rotation = root().rotation * rootInverseRestRotation * current.rotation;
-        root().rotation = mArmature.get_rest_pose().front().rotation;
 
         if (world.options.log_animation == true)
             sq::log_debug("pose: {} - {}", anim.key, time);
@@ -1022,8 +1040,6 @@ void Fighter::update_animation()
     const auto set_current_pose_continuous = [&](const Animation& anim, float time)
     {
         current.pose = mArmature.compute_pose_continuous(anim.anim, time);
-        current.rotation = root().rotation * rootInverseRestRotation * current.rotation;
-        root().rotation = mArmature.get_rest_pose().front().rotation;
 
         if (world.options.log_animation == true)
             sq::log_debug("pose: {} - {}", anim.key, time);
@@ -1071,7 +1087,7 @@ void Fighter::update_animation()
 
             set_current_pose_continuous(*mAnimation, mAnimTimeContinuous);
 
-            root().offset = Vec3F();
+            current.pose[0].offset = Vec3F();
         }
 
         CASE (DashCycle) //=======================================//
@@ -1086,7 +1102,7 @@ void Fighter::update_animation()
 
             set_current_pose_continuous(*mAnimation, mAnimTimeContinuous);
 
-            root().offset = Vec3F();
+            current.pose[0].offset = Vec3F();
         }
 
         CASE (ApplyMotion) //=====================================//
@@ -1098,13 +1114,51 @@ void Fighter::update_animation()
 
             set_current_pose_discrete(*mAnimation, mAnimTimeDiscrete);
 
-            const Vec3F offsetLocal = root().offset - mPrevRootMotionOffset;
+            const Vec3F offsetLocal = current.pose[0].offset - mPrevRootMotionOffset;
+            mPrevRootMotionOffset = current.pose[0].offset;
 
-            mTranslate = { mAnimChangeFacing ? -offsetLocal.z : offsetLocal.z, offsetLocal.x };
-            mTranslate.x *= float(status.facing);
+            mTranslate += { offsetLocal.z * float(status.facing), offsetLocal.x };
+            current.translation += Vec3F(mTranslate, 0.f);
+            current.pose[0].offset = Vec3F();
 
-            mPrevRootMotionOffset = root().offset;
-            root().offset = offsetLocal;
+            if (++mAnimTimeDiscrete == mAnimation->anim.totalTime)
+                finish_animation();
+        }
+
+        CASE (ApplyTurn) //=======================================//
+        {
+            SQASSERT(mAnimation->anim.looping() == false, "");
+
+            if (mAnimTimeDiscrete == 0u)
+                mPrevRootMotionOffset = Vec3F();
+
+            set_current_pose_discrete(*mAnimation, mAnimTimeDiscrete);
+
+            current.rotation = restRotate * current.pose[2].rotation * invRestRotate * current.rotation;
+            current.pose[2].rotation = QuatF();
+
+            if (++mAnimTimeDiscrete == mAnimation->anim.totalTime)
+                finish_animation();
+        }
+
+        CASE (MotionTurn) //======================================//
+        {
+            SQASSERT(mAnimation->anim.looping() == false, "");
+
+            if (mAnimTimeDiscrete == 0u)
+                mPrevRootMotionOffset = Vec3F();
+
+            set_current_pose_discrete(*mAnimation, mAnimTimeDiscrete);
+
+            const Vec3F offsetLocal = current.pose[0].offset - mPrevRootMotionOffset;
+            mPrevRootMotionOffset = current.pose[0].offset;
+
+            mTranslate += { offsetLocal.z * float(status.facing) * -1.f, offsetLocal.x };
+            current.translation += Vec3F(mTranslate, 0.f);
+            current.pose[0].offset = Vec3F();
+
+            current.rotation = restRotate * current.pose[2].rotation * invRestRotate * current.rotation;
+            current.pose[2].rotation = QuatF();
 
             if (++mAnimTimeDiscrete == mAnimation->anim.totalTime)
                 finish_animation();
@@ -1119,8 +1173,8 @@ void Fighter::update_animation()
     {
         const float blend = float(++mFadeProgress) / float(mFadeFrames + 1u);
 
-        current.pose = mArmature.blend_poses(mFadeStartPose, current.pose, blend);
         current.rotation = maths::slerp(mFadeStartRotation, current.rotation, blend);
+        current.pose = mArmature.blend_poses(mFadeStartPose, current.pose, blend);
 
         if (world.options.log_animation == true)
             sq::log_debug("blend - {} / {} - {}", mFadeProgress, mFadeFrames, blend);
@@ -1145,21 +1199,22 @@ void Fighter::base_tick_fighter()
     const auto input = world.options.editor_mode ? InputFrame() : mController->get_input();
 
     update_commands(input);
-    update_action(input);
+    //update_action(input);
     update_transitions(input);
     update_states(input);
+    update_action(input);
 
     if (status.state != State::Freeze || mStateProgress <= 1u)
     {
-        const int8_t rotFacing = status.facing * (mAnimChangeFacing ? -1 : +1);
-        const float rotY = status.state == State::EditorPreview ? 0.5f : 0.25f * float(rotFacing);
+        current.translation = Vec3F(status.position, 0.f);
 
-        current.rotation = QuatF(0.f, rotY, 0.f);
+        if (status.state == State::EditorPreview) current.rotation = QuatF(0.f, 0.5f, 0.f);
+        else current.rotation = QuatF(0.f, 0.25f * float(status.facing), 0.f);
 
         update_animation();
     }
 
     mArmature.compute_ubo_data(current.pose, mBoneMatrices.data(), uint(mBoneMatrices.size()));
 
-    mModelMatrix = maths::transform(Vec3F(current.position, 0.f), current.rotation, Vec3F(1.f));
+    mModelMatrix = maths::transform(current.translation, current.rotation);
 }

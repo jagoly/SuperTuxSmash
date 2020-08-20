@@ -1,0 +1,37 @@
+{
+  "blobs": {
+    "0_Front": {
+      "bone": null,
+      "damage": 2.0,
+      "facing": "Relative",
+      "flavour": "Tangy",
+      "freezeFactor": 1.0,
+      "group": 0,
+      "index": 0,
+      "knockAngle": 0.0,
+      "knockBase": 60.0,
+      "knockScale": 100.0,
+      "origin": [ 0.0, 0.32, 0.4 ],
+      "radius": 0.43,
+      "useFixedKnockback": true,
+      "useSakuraiAngle": true
+    },
+    "1_Back": {
+      "bone": null,
+      "damage": 2.0,
+      "facing": "Relative",
+      "flavour": "Tangy",
+      "freezeFactor": 1.0,
+      "group": 0,
+      "index": 1,
+      "knockAngle": 0.0,
+      "knockBase": 60.0,
+      "knockScale": 100.0,
+      "origin": [ 0.0, 0.32, -0.4 ],
+      "radius": 0.43,
+      "useFixedKnockback": true,
+      "useSakuraiAngle": true
+    }
+  },
+  "emitters": {}
+}

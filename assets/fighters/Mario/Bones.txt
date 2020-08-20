@@ -1,6 +1,8 @@
 TransN
-HipN TransN
-ThrowN TransN
+XRotN TransN
+YRotN XRotN
+HipN YRotN
+ThrowN YRotN
 LLegJ HipN
 RLegJ HipN
 WaistN HipN

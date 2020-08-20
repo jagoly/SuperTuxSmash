@@ -27,6 +27,8 @@ void EditorScene::impl_show_widget_hitblobs()
     Fighter& fighter = *ctx.fighter;
     Action& action = *fighter.get_action(ctx.key.action);
 
+    const sq::Armature& armature = fighter.get_armature();
+
     if (mDoResetDockHitblobs) ImGui::SetNextWindowDockID(mDockRightId);
     mDoResetDockHitblobs = false;
 
@@ -66,9 +68,6 @@ void EditorScene::impl_show_widget_hitblobs()
     std::optional<TinyString> toDelete;
     std::optional<std::pair<TinyString, TinyString>> toRename;
     std::optional<std::pair<TinyString, TinyString>> toCopy;
-
-    const auto boneMats = fighter.get_armature().compute_skeleton_matrices(fighter.get_armature().get_rest_pose());
-    const auto& boneNames = fighter.get_armature().get_bone_names();
 
     //--------------------------------------------------------//
 
@@ -138,42 +137,51 @@ void EditorScene::impl_show_widget_hitblobs()
         {
             const ImPlus::ScopeItemWidth widthScope = -100.f;
 
+            static Vec3F localOrigin;
+
             if (ImPlus::Button(" # ##1") && blob.bone >= 0)
             {
-                mTempVec3F = Vec3F(maths::inverse(boneMats[blob.bone]) * Vec4F(blob.origin, 1.f));
-                ImGui::OpenPopup("input_bone_origin");
+                const Mat4F boneMatrix = armature.compute_bone_matrix(armature.get_rest_pose(), blob.bone);
+                localOrigin = Vec3F(maths::inverse(boneMatrix) * Vec4F(blob.origin, 1.f));
+                ImGui::OpenPopup("input_local_origin");
             }
-            ImPlus::HoverTooltip("input origin in bone space");
+            ImPlus::HoverTooltip("input value in bone local space");
             ImGui::SameLine();
             ImPlus::InputVector(" Origin", blob.origin, 0, "%.4f");
 
-            ImPlus::SliderValue(" Radius", blob.radius, BLOB_RADIUS_MIN, BLOB_RADIUS_MAX, "%.3f metres");
+            ImPlus::if_Popup("input_local_origin", 0, [&]()
+            {
+                ImPlus::InputVector("", localOrigin, 0, "%.4f");
+                const Mat4F boneMatrix = armature.compute_bone_matrix(armature.get_rest_pose(), blob.bone);
+                const Vec3F newValue = Vec3F(boneMatrix * Vec4F(localOrigin, 1.f));
+                if (std::abs(newValue.x - blob.origin.x) > 0.000001f) blob.origin.x = newValue.x;
+                if (std::abs(newValue.y - blob.origin.y) > 0.000001f) blob.origin.y = newValue.y;
+                if (std::abs(newValue.z - blob.origin.z) > 0.000001f) blob.origin.z = newValue.z;
+            });
 
-            if (ImPlus::Button(" #  ##2") && blob.bone >= 0)
-                blob.origin = Vec3F(boneMats[blob.bone][3]);
+            ImPlus::SliderValue(" Radius", blob.radius, BLOB_RADIUS_MIN, BLOB_RADIUS_MAX, "%.2f metres");
+
+            if (ImPlus::Button(" # ##2") && blob.bone >= 0)
+                blob.origin = Vec3F(armature.compute_bone_matrix(armature.get_rest_pose(), blob.bone)[3]);
             ImPlus::HoverTooltip("snap origin to bone");
             ImGui::SameLine();
-            ImPlus::Combo(" Bone", boneNames, blob.bone, "(None)");
+            ImPlus::Combo(" Bone", armature.get_bone_names(), blob.bone, "(None)");
 
             ImPlus::InputValue(" Group", blob.group, 1, "%u");
             ImPlus::InputValue(" Index", blob.index, 1, "%u");
 
-            ImPlus::InputValue(" KnockAngle", blob.knockAngle, 0.01f, "%.4f");
-            ImPlus::InputValue(" KnockBase", blob.knockBase, 0.01f, "%.4f");
-            ImPlus::InputValue(" KnockScale", blob.knockScale, 0.01f, "%.4f");
-            ImPlus::InputValue(" Damage", blob.damage, 0.01f, "%.4f");
+            ImPlus::InputValue(" Damage", blob.damage, 1.f, "%.2f %");
+            ImPlus::InputValue(" FreezeFactor", blob.freezeFactor, 0.1f, "%.2f ×");
+            ImPlus::InputValue(" KnockAngle", blob.knockAngle, 1.f, "%.2f degrees");
+            ImPlus::InputValue(" KnockBase", blob.knockBase, 1.f, "%.2f units");
+            ImPlus::InputValue(" KnockScale", blob.knockScale, 1.f, "%.2f units");
 
+            ImPlus::ComboEnum(" Facing", blob.facing);
             ImPlus::ComboEnum(" Flavour", blob.flavour);
 
-            ImPlus::if_Popup("input_bone_origin", 0, [&]()
-            {
-                ImPlus::InputVector("", mTempVec3F, 0, "%.4f");
-                if (ImPlus::Button("Confirm"))
-                {
-                    blob.origin = Vec3F(boneMats[blob.bone] * Vec4F(mTempVec3F, 1.f));
-                    ImGui::CloseCurrentPopup();
-                }
-            });
+            ImPlus::Checkbox("FixedKnockback ", &blob.useFixedKnockback);
+            ImGui::SameLine();
+            ImPlus::Checkbox("SakuraiAngle ", &blob.useSakuraiAngle);
         }
     }
 

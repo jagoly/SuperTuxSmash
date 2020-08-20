@@ -32,7 +32,7 @@ public: //====================================================//
 private: //===================================================//
 
     sq::Program mBlobShader;
-    sq::Program mArrowShader;
+    sq::Program mLinesShader;
 
     sq::Mesh mSphereMesh;
     sq::Mesh mCapsuleMesh;

@@ -1,6 +1,7 @@
 #include "main/DebugGui.hpp"
 
 #include "game/Action.hpp"
+#include "game/Controller.hpp"
 #include "game/Fighter.hpp"
 
 #include <sqee/app/GuiWidgets.hpp>
@@ -22,30 +23,33 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
     {
         const ImPlus::ScopeFont font = ImPlus::FONT_MONO;
 
-        ImPlus::Text("Position: {:+.6f}"_format(fighter.current.position));
-        ImPlus::HoverTooltip("Previous: {:+.6f}"_format(fighter.previous.position));
+        //ImPlus::Text("Translation: {:+.4f}"_format(fighter.current.translation));
+        //ImPlus::HoverTooltip("Previous: {:+.4f}"_format(fighter.previous.translation));
 
-        // todo: nicer rotation display, although rotation could probably just be a float not a quat
-        ImPlus::Text("Rotation: {:+.3f}"_format(fighter.current.rotation));
-        ImPlus::HoverTooltip("Previous: {:+.3f}"_format(fighter.previous.rotation));
+        //ImPlus::Text("Rotation: {:+.3f}"_format(fighter.current.rotation));
+        //ImPlus::HoverTooltip("Previous: {:+.3f}"_format(fighter.previous.rotation));
 
-        ImPlus::Text("Facing: {}"_format(fighter.status.facing));
+        ImPlus::Text("Position: {:+.6f}"_format(fighter.status.position));
         ImPlus::Text("Velocity: {:+.6f}"_format(fighter.status.velocity));
+        ImPlus::Text("Facing: {}"_format(fighter.status.facing));
         ImPlus::Text("Damage: {}%"_format(fighter.status.damage));
 
-        ImPlus::Text("Translate: {:+.6f}"_format(fighter.mTranslate));
+        //ImPlus::Text("Translate: {:+.6f}"_format(fighter.mTranslate));
 
         // show the progress and total time for some states
         SWITCH (fighter.status.state) {
 
         CASE (Freeze)
+        {
             ImPlus::Text("State: {} ({}/{})"_format(fighter.status.state, fighter.mStateProgress, fighter.mFreezeTime));
+            ImPlus::HoverTooltip("FrozenState: {} | FrozenProgress: {}"_format(fighter.mFrozenState, fighter.mFrozenProgress));
+        }
 
-        CASE (HitStun, TumbleStun)
-            ImPlus::Text("State: HitStun ({}/{})"_format(fighter.mStateProgress, fighter.mHitStunTime));
+        CASE (Stun, AirStun, TumbleStun)
+            ImPlus::Text("State: {} ({}/{})"_format(fighter.status.state, fighter.mStateProgress, fighter.mHitStunTime));
 
         CASE (PreJump)
-            ImPlus::Text("State: PreJump ({}/{})"_format(fighter.mStateProgress, JUMP_DELAY));
+            ImPlus::Text("State: {} ({}/{})"_format(fighter.status.state, fighter.mStateProgress, JUMP_DELAY));
 
         CASE_DEFAULT ImPlus::Text("State: {}"_format(fighter.status.state));
 
@@ -103,25 +107,41 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
         ImPlus::InputValue("anim_dash_stride", fighter.stats.anim_dash_stride, 0.01f, "%.4f");
     }
 
-    // todo: this isn't very useful coz it doesn't show commands that get consumed
     if (ImGui::CollapsingHeader("Input Commands"))
     {
+        if (ImPlus::RadioButton("Record", fighter.mController->mPlaybackIndex == -1))
+            fighter.mController->mPlaybackIndex = -1;
+
+        ImGui::SameLine();
+
+        if (ImPlus::RadioButton("Play", fighter.mController->mPlaybackIndex >= 0))
+            fighter.mController->mPlaybackIndex = 0;
+
         for (int i = 0; i != 8; ++i)
         {
             ImPlus::Text("T-{}: "_format(i));
-            for (Fighter::Command cmd : fighter.mCommands[i])
+            for (FighterCommand cmd : fighter.mCommands[i])
             {
                 ImGui::SameLine();
-                ImPlus::Text(sq::enum_to_string(cmd));
+                if (uint8_t(cmd) & 128)
+                {
+                    const ImPlus::ScopeFont bold = ImPlus::FONT_BOLD;
+                    ImPlus::Text(sq::enum_to_string(FighterCommand(uint8_t(cmd) & ~128)));
+                }
+                else
+                {
+                    const ImPlus::ScopeFont italic = ImPlus::FONT_ITALIC;
+                    ImPlus::Text(sq::enum_to_string(cmd));
+                }
             }
         }
     }
 
     if (ImGui::Button("RESET"))
     {
-        fighter.current.position = { 0.f, 0.f };
+        fighter.status = Fighter::Status();
     }
-    ImPlus::HoverTooltip("reset the fighter's position");
+    ImPlus::HoverTooltip("reset the fighter's status");
 
     ImGui::SameLine();
 

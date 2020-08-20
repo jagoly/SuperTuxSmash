@@ -58,6 +58,17 @@ void Action::do_tick()
 
     if (mTickCoroutine.status() == sol::call_status::ok)
     {
+        if (mStatus != ActionStatus::AllowInterrupt)
+        {
+            if (world.options.editor_mode == false)
+                sq::log_error_multiline("action '{}/{}':\nfinished without calling allow_interrupt()", fighter.type, type);
+
+            mErrorMessage = "finished without calling allow_interrupt()";
+
+            mStatus = ActionStatus::RuntimeError;
+            return;
+        }
+
         mStatus = ActionStatus::Finished;
         return;
     }
@@ -99,7 +110,8 @@ void Action::do_cancel()
 
     world.disable_all_hit_blobs(fighter);
     world.reset_all_hit_blob_groups(fighter);
-    mAllowIterrupt = true;
+
+    mStatus = ActionStatus::Finished;
 
     //const auto pfr = mCancelFunction.call();
 //    if (pfr.valid() == false)
@@ -158,8 +170,8 @@ void Action::load_from_json()
     if (errors.empty() == false)
     {
         sq::log_warning_multiline("errors in json '{}'{}", filePath, errors);
-        mBlobs.clear();
-        mEmitters.clear();
+        //mBlobs.clear();
+        //mEmitters.clear();
     }
 }
 

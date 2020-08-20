@@ -1,0 +1,37 @@
+{
+  "blobs": {
+    "0_LegR": {
+      "bone": "RLegJ",
+      "damage": 11.0,
+      "facing": "Relative",
+      "flavour": "Tangy",
+      "freezeFactor": 1.0,
+      "group": 0,
+      "index": 0,
+      "knockAngle": 45.0,
+      "knockBase": 9.0,
+      "knockScale": 100.0,
+      "origin": [ 0.12307003, 0.4296701, 0.0031299351 ],
+      "radius": 0.44,
+      "useFixedKnockback": false,
+      "useSakuraiAngle": false
+    },
+    "1_KneeR": {
+      "bone": "RKneeJ",
+      "damage": 11.0,
+      "facing": "Relative",
+      "flavour": "Tangy",
+      "freezeFactor": 1.0,
+      "group": 0,
+      "index": 1,
+      "knockAngle": 45.0,
+      "knockBase": 9.0,
+      "knockScale": 100.0,
+      "origin": [ 0.12462003, 0.11974999, -0.0009300407 ],
+      "radius": 0.55,
+      "useFixedKnockback": false,
+      "useSakuraiAngle": false
+    }
+  },
+  "emitters": {}
+}

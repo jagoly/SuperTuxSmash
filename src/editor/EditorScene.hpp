@@ -173,11 +173,6 @@ private: //===================================================//
     bool mDoResetDockFighter = false;
 
     bool mDoRestartAction = false;
-
-    //--------------------------------------------------------//
-
-    // instead of using static variables
-    Vec3F mTempVec3F;
 };
 
 } // namespace sts

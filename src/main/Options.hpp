@@ -37,6 +37,7 @@ struct Options final : sq::NonCopyable
     float camera_zoom_out = 1.f;    ///< Minimum distance between camera and scene
 
     bool log_animation = false;     ///< Enable logging of animation stuff
+    bool log_input = false;         ///< Enable logging of input stuff
     bool log_script = false;        ///< Enable logging of script stuff
 
     bool editor_mode = false;       ///< CANNOT BE TOGGLED, SHOULD NOT BE HERE

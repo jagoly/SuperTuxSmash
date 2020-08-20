@@ -1,0 +1,69 @@
+{
+  "blobs": {
+    "00_CleanKneeR": {
+      "bone": "RKneeJ",
+      "damage": 12.0,
+      "facing": "Reverse",
+      "flavour": "Tangy",
+      "freezeFactor": 1.0,
+      "group": 0,
+      "index": 0,
+      "knockAngle": 0.0,
+      "knockBase": 10.0,
+      "knockScale": 95.0,
+      "origin": [ 0.12462003, -0.14025003, -0.0009300407 ],
+      "radius": 0.45,
+      "useFixedKnockback": false,
+      "useSakuraiAngle": true
+    },
+    "01_CleanLegR": {
+      "bone": "RLegJ",
+      "damage": 12.0,
+      "facing": "Reverse",
+      "flavour": "Tangy",
+      "freezeFactor": 1.0,
+      "group": 0,
+      "index": 1,
+      "knockAngle": 0.0,
+      "knockBase": 10.0,
+      "knockScale": 95.0,
+      "origin": [ 0.12307003, 0.38967007, 0.0031299351 ],
+      "radius": 0.59,
+      "useFixedKnockback": false,
+      "useSakuraiAngle": true
+    },
+    "10_LateKneeR": {
+      "bone": "RKneeJ",
+      "damage": 7.0,
+      "facing": "Reverse",
+      "flavour": "Sour",
+      "freezeFactor": 1.0,
+      "group": 1,
+      "index": 0,
+      "knockAngle": 0.0,
+      "knockBase": 7.0,
+      "knockScale": 90.0,
+      "origin": [ 0.12462003, -0.14025003, -0.0009300407 ],
+      "radius": 0.45,
+      "useFixedKnockback": false,
+      "useSakuraiAngle": true
+    },
+    "11_LateLegR": {
+      "bone": "RLegJ",
+      "damage": 7.0,
+      "facing": "Reverse",
+      "flavour": "Sour",
+      "freezeFactor": 1.0,
+      "group": 1,
+      "index": 1,
+      "knockAngle": 0.0,
+      "knockBase": 7.0,
+      "knockScale": 90.0,
+      "origin": [ 0.12307003, 0.38967007, 0.0031299351 ],
+      "radius": 0.53,
+      "useFixedKnockback": false,
+      "useSakuraiAngle": true
+    }
+  },
+  "emitters": {}
+}
