@@ -8,25 +8,23 @@ before_build:
   - 7z x sfml.zip
   - rename SFML-2.5.1 sfml
 
-  - git clone --depth 1 https://github.com/jagoly/sqee.git
+  - git clone --depth 1 --branch static https://github.com/jagoly/sqee.git
   - cd c:/projects/sqee
-  - cmake . -DCMAKE_PREFIX_PATH=c:/projects/sfml -G "Visual Studio 16 2019" -A x64
-  - cmake --build . --target sqee
+  - cmake . -DCMAKE_PREFIX_PATH=c:/projects/sfml -DSQEE_STATIC_LIB -G "Visual Studio 16 2019" -A x64
+  - cmake --build . --target sqee --config Debug
 
 build_script:
 
   - cd c:/projects/SuperTuxSmash
 
-  - cmake . -G "Visual Studio 16 2019" -A x64
-  - cmake --build .
+  - cmake . -DSQEE_STATIC_LIB -G "Visual Studio 16 2019" -A x64
+  - cmake --build . --config Debug
 
 after_build:
 
   - mkdir c:\out
 
   - cd c:\projects\sfml
-  - copy bin\openal32.dll c:\out
-  - copy bin\sfml-audio-d-2.dll c:\out
   - copy bin\sfml-system-d-2.dll c:\out
   - copy bin\sfml-window-d-2.dll c:\out
 
@@ -42,12 +40,12 @@ after_build:
   - xcopy /E config c:\out\config\
   - copy Debug\sts-game.exe c:\out
 
-  - cd "c:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Redist\MSVC\14.26.28720\debug_nonredist\x64"
-  - copy Microsoft.VC142.DebugCRT\msvcp140d.dll c:\out
-  - copy Microsoft.VC142.DebugCRT\vcruntime140d.dll c:\out
-  - copy Microsoft.VC142.DebugCRT\vcruntime140_1d.dll c:\out
+#  - cd "c:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Redist\MSVC\14.26.28720\debug_nonredist\x64"
+#  - copy Microsoft.VC142.DebugCRT\msvcp140d.dll c:\out
+#  - copy Microsoft.VC142.DebugCRT\vcruntime140d.dll c:\out
+#  - copy Microsoft.VC142.DebugCRT\vcruntime140_1d.dll c:\out
 
-  - copy "c:\Program Files (x86)\Windows Kits\10\bin\10.0.19041.0\x64\ucrt\ucrtbased.dll" c:\out
+#  - copy "c:\Program Files (x86)\Windows Kits\10\bin\10.0.19041.0\x64\ucrt\ucrtbased.dll" c:\out
 
   - cd c:\
   - rename out sts-windows-debug

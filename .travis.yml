@@ -7,12 +7,11 @@ addons:
     packages:
       - libsfml-system2.5
       - libsfml-window2.5
-      - libsfml-audio2.5
       - libsfml-dev
 
 before_script:
   - cd /home/travis/build/jagoly
-  - git clone --depth 1 https://github.com/jagoly/sqee.git
+  - git clone --depth 1 --branch static https://github.com/jagoly/sqee.git
   - cd /home/travis/build/jagoly/sqee
   - cmake .
   - cmake --build . --target sqee
