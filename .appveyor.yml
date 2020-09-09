@@ -17,7 +17,7 @@ build_script:
 
   - cd c:/projects/SuperTuxSmash
 
-  - cmake . -G "Visual Studio 16 2019" -A x64
+  - cmake . -DCMAKE_BUILD_TYPE=Debug -G "Visual Studio 16 2019" -A x64
   - cmake --build .
 
 after_build:
@@ -34,7 +34,7 @@ after_build:
   - copy Debug\sqee.dll c:\out
   - copy libs\dearimgui\Debug\dearimgui.dll c:\out
   - copy libs\format\Debug\format.dll c:\out
-  - copy libs\lua54cpp\Debug\lua54cpp.dll c:\out
+  - copy libs\lua54cpp\Debug\wren.dll c:\out
 
   - cd c:\projects\SuperTuxSmash
   - xcopy /E assets c:\out\assets\

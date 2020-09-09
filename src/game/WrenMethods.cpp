@@ -7,6 +7,7 @@
 
 #include <sqee/app/AudioContext.hpp>
 #include <sqee/debug/Assert.hpp>
+#include <sqee/debug/Logging.hpp>
 
 using namespace sts;
 
