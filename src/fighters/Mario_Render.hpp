@@ -2,7 +2,10 @@
 
 #include "render/RenderObject.hpp"
 
-#include "render/ResourceCaches.hpp"
+#include "caches/MeshCache.hpp"
+#include "caches/ProgramCache.hpp"
+#include "caches/TextureCache.hpp"
+
 #include "render/UniformBlocks.hpp"
 
 #include <sqee/gl/UniformBuffer.hpp>
@@ -17,7 +20,7 @@ class Mario_Render final : public RenderObject
 {
 public: //====================================================//
 
-    Mario_Render(Renderer& renderer, const Mario_Fighter& fighter);
+    Mario_Render(Renderer&, const Mario_Fighter&);
 
     //--------------------------------------------------------//
 
@@ -36,12 +39,14 @@ private: //===================================================//
     MeshHandle MESH_Head;
     MeshHandle MESH_EyesWhite;
     MeshHandle MESH_EyesIris;
+    MeshHandle MESH_HeadHurt;
 
-    TextureHandle TX_BodyA_diff;
-    TextureHandle TX_BodyB_diff;
-    TextureHandle TX_EyeWhite_diff;
-    TextureHandle TX_EyeIris_diff;
-    TextureHandle TX_EyeIris_mask;
+    TextureHandle TEX_BodyA_diff;
+    TextureHandle TEX_BodyB_diff;
+    TextureHandle TEX_EyeWhite_diff;
+    TextureHandle TEX_EyeIris_diff;
+    TextureHandle TEX_EyeIris_mask;
+    TextureHandle TEX_EyeHurt_diff;
 
     ProgramHandle PROG_Main;
 

@@ -2,7 +2,10 @@
 
 #include "render/RenderObject.hpp"
 
-#include "render/ResourceCaches.hpp"
+#include "caches/MeshCache.hpp"
+#include "caches/ProgramCache.hpp"
+#include "caches/TextureCache.hpp"
+
 #include "render/UniformBlocks.hpp"
 
 #include <sqee/gl/UniformBuffer.hpp>
@@ -17,7 +20,7 @@ class Tux_Render final : public RenderObject
 {
 public: //====================================================//
 
-    Tux_Render(Renderer& renderer, const Tux_Fighter& fighter);
+    Tux_Render(Renderer&, const Tux_Fighter&);
 
     //--------------------------------------------------------//
 
@@ -33,8 +36,8 @@ private: //===================================================//
 
     MeshHandle MESH_Tux;
 
-    TextureHandle TX_Tux_diff;
-    TextureHandle TX_Tux_spec;
+    TextureHandle TEX_Tux_diff;
+    TextureHandle TEX_Tux_spec;
 
     ProgramHandle PROG_Tux;
 

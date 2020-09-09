@@ -6,6 +6,9 @@
 #include "game/FighterEnums.hpp"
 #include "main/MainEnums.hpp"
 
+#include "game/HurtBlob.hpp"
+
+#include <sqee/app/WrenPlus.hpp>
 #include <sqee/misc/PoolTools.hpp>
 #include <sqee/objects/Armature.hpp>
 
@@ -146,17 +149,17 @@ public: //====================================================//
         Animation LandAirNeutral;
         Animation LandAirUp;
 
-        Animation HurtLowerLight;
-        Animation HurtLowerHeavy;
+        Animation HurtMiddleTumble;
         Animation HurtLowerTumble;
+        Animation HurtUpperTumble;
+
+        Animation HurtMiddleHeavy;
+        Animation HurtLowerHeavy;
+        Animation HurtUpperHeavy;
 
         Animation HurtMiddleLight;
-        Animation HurtMiddleHeavy;
-        Animation HurtMiddleTumble;
-
+        Animation HurtLowerLight;
         Animation HurtUpperLight;
-        Animation HurtUpperHeavy;
-        Animation HurtUpperTumble;
 
         Animation HurtAirLight;
         Animation HurtAirHeavy;
@@ -203,7 +206,7 @@ public: //====================================================//
         bool intangible = false;
         bool autocancel = false;
         float damage = 0.f;
-        float shield = 0.f;
+        float shield = SHIELD_MAX_HP;
         Ledge* ledge = nullptr;
     };
 
@@ -246,8 +249,20 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    /// Called when hit by a basic attack.
-    void apply_hit_basic(const HitBlob& hit, const HurtBlob& hurt);
+    /// Call the appropriate function based on current state.
+    void apply_hit_generic(const HitBlob& hit, const HurtBlob& hurt);
+
+    /// Called when hit while on the ground.
+    //void apply_hit_ground(const HitBlob& hit, const HurtBlob& hurt);
+
+    /// Called when hit while in the air.
+    //void apply_hit_air(const HitBlob& hit, const HurtBlob& hurt);
+
+    /// Called when hit while shield is active.
+    //void apply_hit_shield(const HitBlob& hit, const HurtBlob& hurt);
+
+    /// Called when shield is broken by attack or decay.
+    void apply_shield_break();
 
     /// Called when passing the stage boundary.
     void pass_boundary();
@@ -263,6 +278,9 @@ public: //====================================================//
     /// Get the collision diamond.
     const LocalDiamond& get_diamond() const { return mLocalDiamond; }
 
+    /// Get the active action.
+    const Action* get_active_action() const { return mActiveAction; }
+
     //-- compute data needed for update and render -----------//
 
     /// Compute matrix for the specified bone, or model matrix if -1.
@@ -274,21 +292,20 @@ public: //====================================================//
     /// Compute interpolated armature pose matrices.
     void interpolate_bone_matrices(float blend, Mat34F* out, size_t len) const;
 
-    //-- lua properties and methods --------------------------//
+    /// Should hurt/flinch models be used if available.
+    bool should_render_flinch_models() const;
 
-    bool lua_get_intangible() const { return status.intangible; }
-    void lua_set_intangible(bool value) { status.intangible = value; }
+    //-- wren methods and properties -------------------------//
 
-    bool lua_get_autocancel() const { return status.autocancel; }
-    void lua_set_autocancel(bool value) { status.autocancel = value; }
+    void wren_set_intangible(bool value);
 
-    float lua_get_velocity_x() const { return status.velocity.x; }
-    void lua_set_velocity_x(float value) { status.velocity.x = value; }
+    void wren_enable_hurtblob(TinyString key);
 
-    float lua_get_velocity_y() const { return status.velocity.y; }
-    void lua_set_velocity_y(float value) { status.velocity.y = value; }
+    void wren_disable_hurtblob(TinyString key);
 
-    int lua_get_facing() const { return int(status.facing); }
+    void wren_set_velocity_x(float value);
+
+    void wren_set_autocancel(bool value);
 
 protected: //=================================================//
 
@@ -343,11 +360,11 @@ private: //===================================================//
 
     void update_commands(const InputFrame& input);
 
-    void update_action(const InputFrame& input);
-
     void update_transitions(const InputFrame& input);
 
     void update_states(const InputFrame& input);
+
+    void update_action(const InputFrame& input);
 
     void update_animation();
 
@@ -366,6 +383,8 @@ private: //===================================================//
     //--------------------------------------------------------//
 
     Action* mActiveAction = nullptr;
+
+    ActionType mForceSwitchAction = ActionType::None;
 
     //uint mStateProgress = 0u;
 
@@ -396,8 +415,6 @@ private: //===================================================//
 
     uint mAnimTimeDiscrete = 0u;
     float mAnimTimeContinuous = 0.f;
-
-    //bool mAnimChangeFacing = false;
 
     Vec3F mPrevRootMotionOffset = Vec3F();
 
@@ -431,3 +448,9 @@ public: //== debug and editor stuff ==========================//
 //============================================================================//
 
 } // namespace sts
+
+template<> struct wren::Traits<sts::Fighter> : std::true_type
+{
+    static constexpr const char module[] = "sts";
+    static constexpr const char className[] = "Fighter";
+};

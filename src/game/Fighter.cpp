@@ -43,15 +43,11 @@ void Fighter::initialise_armature(const String& path)
     {
         const bool looping = mode == AnimMode::Looping || mode == AnimMode::WalkCycle || mode == AnimMode::DashCycle;
 
-        String filePath = sq::build_path(path, "anims", name) + ".sqa";
+        const String filePath = sq::build_string(path, "/anims/", name, ".sqa");
         if (sq::check_file_exists(filePath) == false)
         {
-            filePath = sq::build_path(path, "anims", name) + ".txt";
-            if (sq::check_file_exists(filePath) == false)
-            {
-                sq::log_warning("missing animation '{}'", filePath);
-                return { mArmature.make_null_animation(1u, looping), mode, name };
-            }
+            sq::log_warning("missing animation '{}'", filePath);
+            return { mArmature.make_null_animation(1u, looping), mode, name };
         }
         Animation result = { mArmature.make_animation(filePath), mode, name };
         if (!result.anim.looping() && looping) sq::log_warning("animation '{}' should loop", filePath);
@@ -215,7 +211,7 @@ void Fighter::initialise_hurt_blobs(const String& path)
             sq::log_warning("problem loading hurt blob '{}': {}", item.key(), e.what());
         }
 
-        world.enable_hurt_blob(&blob);
+        world.enable_hurtblob(&blob);
     }
 }
 
@@ -266,7 +262,7 @@ void Fighter::initialise_actions(const String& path)
         mActions[i] = std::make_unique<Action>(world, *this, actionType, actionPath);
 
         mActions[i]->load_from_json();
-        mActions[i]->load_lua_from_file();
+        mActions[i]->load_wren_from_file();
     }
 }
 
@@ -327,18 +323,16 @@ bool Fighter::consume_command_oldest_facing(std::initializer_list<Command> leftC
 
 //============================================================================//
 
-void Fighter::apply_hit_basic(const HitBlob& hit, const HurtBlob& hurt)
+void Fighter::apply_hit_generic(const HitBlob& hit, const HurtBlob& hurt)
 {
-    SQASSERT(hit.fighter != this, "invalid hitblob");
+    SQASSERT(&hit.action->fighter != this, "invalid hitblob");
     SQASSERT(hurt.fighter == this, "invalid hurtblob");
 
-    // todo: individual regions/hurtblobs can become can intangible
+    // todo: individual regions/hurtblobs can become intangible
     if (status.intangible == true) return;
 
     // if we were in the middle of an action, cancel it
     cancel_active_action();
-
-    status.damage += hit.damage;
 
     //--------------------------------------------------------//
 
@@ -348,120 +342,147 @@ void Fighter::apply_hit_basic(const HitBlob& hit, const HurtBlob& hurt)
     // hitstun should always end before launch speed completely decays
     // non-launching attacks can not cause tumbling
 
-    const bool airborne = status.state == State::JumpFall || (status.state == State::Freeze && mFrozenState == State::JumpFall) ||
-                          status.state == State::TumbleFall || (status.state == State::Freeze && mFrozenState == State::TumbleFall) ||
-                          status.state == State::AirStun || (status.state == State::Freeze && mFrozenState == State::AirStun) ||
-                          status.state == State::AirAction || (status.state == State::Freeze && mFrozenState == State::AirAction);
+    const bool shielding = status.state == State::Shield || (status.state == State::Freeze && mFrozenState == State::Shield) ||
+                           status.state == State::ShieldStun || (status.state == State::Freeze && mFrozenState == State::ShieldStun);
 
-    const float damageFactor = status.damage / 10.f + (status.damage * hit.damage) / 20.f;
-    const float weightFactor = 200.f / (stats.weight + 100.f);
-
-    const float knockbackNormal = hit.knockBase + (damageFactor * weightFactor * 1.4f + 18.f) * hit.knockScale * 0.01f;
-    const float knockbackFixed = (1.f + 10.f * hit.knockBase / 20.f) * weightFactor * 1.4f + 18.f;
-    const float knockback = hit.useFixedKnockback ? knockbackFixed : knockbackNormal;
+    const float facing = hit.facing == BlobFacing::Relative ? hit.action->fighter.status.position.x < status.position.x ? +1.f : -1.f :
+                         hit.facing == BlobFacing::Forward ? float(hit.action->fighter.status.facing) : -float(hit.action->fighter.status.facing);
 
     const uint freezeTime = uint((hit.damage * 0.4f + 4.f) * hit.freezeFactor);
 
-    const float launchSpeed = knockback * 0.003f;
-    const uint hitStunTime = uint(knockback * 0.4f);
+    //--------------------------------------------------------//
 
-    const float facingRelative = hit.fighter->status.position.x < status.position.x ? +1.f : -1.f;
-    const float facing = hit.facing == BlobFacing::Relative ? facingRelative : hit.facing == BlobFacing::Forward
-                         ? float(hit.fighter->status.facing) : float(-hit.fighter->status.facing);
+    if (shielding == true)
+    {
+        status.shield -= hit.damage;
 
-    const float angleNormal = maths::radians(hit.knockAngle / 360.f);
-    const float angleSakurai = maths::radians((airborne ? 45.f : hitStunTime > 16u ? 40.f : 0.f) / 360.f);
-    const float angle = hit.useSakuraiAngle ? angleSakurai : angleNormal;
+        if (status.shield > 0.f)
+        {
+            status.velocity.x += facing * (SHIELD_PUSH_HURT_BASE + hit.damage * SHIELD_PUSH_HURT_FACTOR);
+            hit.action->fighter.status.velocity.x -= facing * (SHIELD_PUSH_HIT_BASE + hit.damage * SHIELD_PUSH_HIT_FACTOR);
 
-    const Vec2F knockDir = { std::cos(angle) * facing, std::sin(angle) };
-
-    sq::log_debug_multiline("fighter {} hit by fighter {}:"
-                            "\naction:      {}" "\nknockback:   {}" "\nfreezeTime:  {}"
-                            "\nhitStun:     {}" "\nknockDir:    {}" "\nlaunchSpeed: {}"
-                            "\ndecayFrames: {}" "\nhitKey:      {}" "\nhurtRegion:  {}",
-                            index, hit.fighter->index,
-                            hit.action->type, knockback, freezeTime,
-                            hitStunTime, knockDir, launchSpeed,
-                            uint(launchSpeed / KNOCKBACK_DECAY), hit.get_key(), hurt.region);
-
-    SQASSERT(hitStunTime < uint(launchSpeed / KNOCKBACK_DECAY), "something is broken");
+            mHitStunTime = uint(SHIELD_STUN_BASE + SHIELD_STUN_FACTOR * hit.damage);
+            mFrozenState = State::ShieldStun;
+        }
+        else apply_shield_break(); // todo
+    }
 
     //--------------------------------------------------------//
 
-    // for non-launching hits, our traction will slow us down
-    if (airborne == true || angle != 0.f)
-        mLaunchSpeed = launchSpeed;
+    else // not shielding
+    {
+        const bool airborne = status.state == State::JumpFall || (status.state == State::Freeze && mFrozenState == State::JumpFall) ||
+                              status.state == State::TumbleFall || (status.state == State::Freeze && mFrozenState == State::TumbleFall) ||
+                              status.state == State::AirStun || (status.state == State::Freeze && mFrozenState == State::AirStun) ||
+                              status.state == State::AirAction || (status.state == State::Freeze && mFrozenState == State::AirAction);
 
-    mHitStunTime = hitStunTime;
+        status.damage += hit.damage;
+
+        const float damageFactor = status.damage / 10.f + (status.damage * hit.damage) / 20.f;
+        const float weightFactor = 200.f / (stats.weight + 100.f);
+
+        const float knockbackNormal = hit.knockBase + (damageFactor * weightFactor * 1.4f + 18.f) * hit.knockScale * 0.01f;
+        const float knockbackFixed = (1.f + 10.f * hit.knockBase / 20.f) * weightFactor * 1.4f + 18.f;
+        const float knockback = hit.useFixedKnockback ? knockbackFixed : knockbackNormal;
+
+        const float launchSpeed = knockback * 0.003f;
+        const uint hitStunTime = uint(knockback * 0.4f);
+
+        const float angleNormal = maths::radians(hit.knockAngle / 360.f);
+        const float angleSakurai = maths::radians((airborne ? 45.f : hitStunTime > 16u ? 40.f : 0.f) / 360.f);
+        const float angle = hit.useSakuraiAngle ? angleSakurai : angleNormal;
+
+        const Vec2F knockDir = { std::cos(angle) * facing, std::sin(angle) };
+
+        sq::log_debug_multiline("fighter {} hit by fighter {}:"
+                                "\nknockback:   {}" "\nfreezeTime:  {}" "\nhitStun:     {}"
+                                "\nknockDir:    {}" "\nlaunchSpeed: {}" "\ndecayFrames: {}"
+                                "\nhitKey:      {}" "\nhurtKey:     {}" "\nhurtRegion:  {}",
+                                index, hit.action->fighter.index,
+                                knockback, freezeTime, hitStunTime,
+                                knockDir, launchSpeed, uint(launchSpeed / KNOCKBACK_DECAY),
+                                hit.get_key(), hurt.get_key(), hurt.region);
+
+        SQASSERT(hitStunTime < uint(launchSpeed / KNOCKBACK_DECAY), "something is broken");
+
+        mHitStunTime = hitStunTime;
+
+        status.velocity = maths::normalize(knockDir) * launchSpeed;
+        status.facing = -hit.action->fighter.status.facing;
+
+        const auto& anims = mAnimations;
+
+        if (airborne == true || angle != 0.f)
+        {
+            if (mHitStunTime >= MIN_HITSTUN_TUMBLE)
+            {
+                mFrozenState = State::TumbleStun;
+
+                if (hurt.region == BlobRegion::Middle)
+                    state_transition(State::Freeze, 0u, &anims.HurtMiddleTumble, 0u, &anims.TumbleLoop);
+                else if (hurt.region == BlobRegion::Lower)
+                    state_transition(State::Freeze, 0u, &anims.HurtLowerTumble, 0u, &anims.TumbleLoop);
+                else if (hurt.region == BlobRegion::Upper)
+                    state_transition(State::Freeze, 0u, &anims.HurtUpperTumble, 0u, &anims.TumbleLoop);
+            }
+            else
+            {
+                mFrozenState = State::AirStun;
+
+                if (mHitStunTime >= MIN_HITSTUN_HEAVY)
+                    state_transition(State::Freeze, 0u, &anims.HurtAirHeavy, 0u, &anims.FallingLoop);
+                else
+                    state_transition(State::Freeze, 0u, &anims.HurtAirLight, 0u, &anims.FallingLoop);
+            }
+        }
+        else
+        {
+            mFrozenState = State::Stun;
+
+            if (mHitStunTime >= MIN_HITSTUN_HEAVY)
+            {
+                if (hurt.region == BlobRegion::Middle)
+                    state_transition(State::Freeze, 0u, &anims.HurtMiddleHeavy, 0u, &anims.NeutralLoop);
+                else if (hurt.region == BlobRegion::Lower)
+                    state_transition(State::Freeze, 0u, &anims.HurtLowerHeavy, 0u, &anims.NeutralLoop);
+                else if (hurt.region == BlobRegion::Upper)
+                    state_transition(State::Freeze, 0u, &anims.HurtUpperHeavy, 0u, &anims.NeutralLoop);
+            }
+            else
+            {
+                if (hurt.region == BlobRegion::Middle)
+                    state_transition(State::Freeze, 0u, &anims.HurtMiddleLight, 0u, &anims.NeutralLoop);
+                else if (hurt.region == BlobRegion::Lower)
+                    state_transition(State::Freeze, 0u, &anims.HurtLowerLight, 0u, &anims.NeutralLoop);
+                else if (hurt.region == BlobRegion::Upper)
+                    state_transition(State::Freeze, 0u, &anims.HurtUpperLight, 0u, &anims.NeutralLoop);
+            }
+        }
+    }
+
+
+    //--------------------------------------------------------//
 
     mFreezeTime = freezeTime;
     mFrozenProgress = 0u;
 
-    status.velocity = maths::normalize(knockDir) * launchSpeed;
-    status.facing = -hit.fighter->status.facing;
-
-    //--------------------------------------------------------//
-
-    const auto& anims = mAnimations;
-
-    if (airborne == true || angle != 0.f)
-    {
-        if (mHitStunTime >= MIN_HITSTUN_TUMBLE)
-        {
-            mFrozenState = State::TumbleStun;
-
-            if (hurt.region == BlobRegion::Middle)
-                state_transition(State::Freeze, 0u, &anims.HurtMiddleTumble, 0u, &anims.TumbleLoop);
-            else if (hurt.region == BlobRegion::Lower)
-                state_transition(State::Freeze, 0u, &anims.HurtLowerTumble, 0u, &anims.TumbleLoop);
-            else if (hurt.region == BlobRegion::Upper)
-                state_transition(State::Freeze, 0u, &anims.HurtUpperTumble, 0u, &anims.TumbleLoop);
-        }
-        else
-        {
-            mFrozenState = State::AirStun;
-
-            if (mHitStunTime >= MIN_HITSTUN_HEAVY)
-                state_transition(State::Freeze, 0u, &anims.HurtAirHeavy, 0u, &anims.FallingLoop);
-            else
-                state_transition(State::Freeze, 0u, &anims.HurtAirLight, 0u, &anims.FallingLoop);
-        }
-    }
-    else
-    {
-        mFrozenState = State::Stun;
-
-        if (mHitStunTime >= MIN_HITSTUN_HEAVY)
-        {
-            if (hurt.region == BlobRegion::Middle)
-                state_transition(State::Freeze, 0u, &anims.HurtMiddleHeavy, 0u, &anims.NeutralLoop);
-            else if (hurt.region == BlobRegion::Lower)
-                state_transition(State::Freeze, 0u, &anims.HurtLowerHeavy, 0u, &anims.NeutralLoop);
-            else if (hurt.region == BlobRegion::Upper)
-                state_transition(State::Freeze, 0u, &anims.HurtUpperHeavy, 0u, &anims.NeutralLoop);
-        }
-        else
-        {
-            if (hurt.region == BlobRegion::Middle)
-                state_transition(State::Freeze, 0u, &anims.HurtMiddleLight, 0u, &anims.NeutralLoop);
-            else if (hurt.region == BlobRegion::Lower)
-                state_transition(State::Freeze, 0u, &anims.HurtLowerLight, 0u, &anims.NeutralLoop);
-            else if (hurt.region == BlobRegion::Upper)
-                state_transition(State::Freeze, 0u, &anims.HurtUpperLight, 0u, &anims.NeutralLoop);
-        }
-    }
-
-    //--------------------------------------------------------//
-
     // happens when fighters hit each other at the same time, or if a fighter hits multiple others
-    if (hit.fighter->status.state != State::Freeze)
+    if (hit.action->fighter.status.state != State::Freeze)
     {
-        hit.fighter->mFreezeTime = freezeTime;
-        hit.fighter->mFrozenProgress = hit.fighter->mStateProgress;
-        hit.fighter->mFrozenState = hit.fighter->status.state;
+        hit.action->fighter.mFreezeTime = freezeTime;
+        hit.action->fighter.mFrozenProgress = hit.action->fighter.mStateProgress;
+        hit.action->fighter.mFrozenState = hit.action->fighter.status.state;
 
-        hit.fighter->state_transition(State::Freeze, 0u, nullptr, 0u, nullptr);
+        hit.action->fighter.state_transition(State::Freeze, 0u, nullptr, 0u, nullptr);
     }
+}
+
+//============================================================================//
+
+void Fighter::apply_shield_break()
+{
+    //mHitStunTime = 240u; // 5 seconds
+    //mFrozenState =
 }
 
 //============================================================================//
@@ -495,6 +516,19 @@ void Fighter::interpolate_bone_matrices(float blend, Mat34F* out, size_t len) co
     mArmature.compute_ubo_data(blendPose, out, uint(len));
 }
 
+bool Fighter::should_render_flinch_models() const
+{
+    // in smash proper, this is done with a flag that gets set by various actions
+    // this is much more limited, but works well enough for now
+
+    const bool stun = status.state == State::Stun || status.state == State::AirStun || status.state == State::TumbleStun;
+    const bool freezeStun = mFrozenState == State::Stun || mFrozenState == State::AirStun || mFrozenState == State::TumbleStun;
+    const bool tumbleState = status.state == State::TumbleFall || status.state == State::Prone;
+    const bool tumbleAction = status.state == State::Action && mActiveAction->type == ActionType::LandTumble;
+
+    return stun || (status.state == State::Freeze && freezeStun) || tumbleState || tumbleAction;
+}
+
 //============================================================================//
 
 Action* Fighter::get_action(ActionType type)
@@ -510,11 +544,9 @@ void Fighter::debug_reload_actions()
     for (int8_t i = 0; i < sq::enum_count_v<ActionType>; ++i)
     {
         mActions[i]->load_from_json();
-        mActions[i]->load_lua_from_file();
+        mActions[i]->load_wren_from_file();
     }
 }
-
-//============================================================================//
 
 std::vector<Mat4F> Fighter::debug_get_skeleton_mats() const
 {

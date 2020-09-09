@@ -32,15 +32,18 @@ void Controller::handle_event(sq::Event event)
     // don't handle events while playing recording
     if (mPlaybackIndex >= 0) return;
 
+    // note that if a button is pressed, it will be marked as held for a minimum
+    // of one frame, even if it is released before get_input() is called
+
     if (event.type == sq::Event::Type::Gamepad_Press)
     {
         if (int(event.data.gamepad.port) == config.gamepad_port)
         {
             const auto button = event.data.gamepad.button;
 
-            if (button == config.button_attack) mInput.press_attack = true;
-            if (button == config.button_jump)   mInput.press_jump   = true;
-            if (button == config.button_shield) mInput.press_shield = true;
+            if (button == config.button_attack) mInput.press_attack = mInput.hold_attack = true;
+            if (button == config.button_jump)   mInput.press_jump   = mInput.hold_jump   = true;
+            if (button == config.button_shield) mInput.press_shield = mInput.hold_shield = true;
         }
     }
 
@@ -48,9 +51,9 @@ void Controller::handle_event(sq::Event event)
     {
         const auto key = event.data.keyboard.key;
 
-        if (key == config.key_attack) mInput.press_attack = true;
-        if (key == config.key_jump)   mInput.press_jump   = true;
-        if (key == config.key_shield) mInput.press_shield = true;
+        if (key == config.key_attack) mInput.press_attack = mInput.hold_attack = true;
+        if (key == config.key_jump)   mInput.press_jump   = mInput.hold_jump   = true;
+        if (key == config.key_shield) mInput.press_shield = mInput.hold_shield = true;
     }
 }
 

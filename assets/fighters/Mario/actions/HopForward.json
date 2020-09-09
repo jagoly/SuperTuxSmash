@@ -1,0 +1,10 @@
+{
+  "blobs": {},
+  "emitters": {},
+  "sounds": {
+    "Hop": {
+      "path": "fighters/Mario/sounds/Hop",
+      "volume": 0.6
+    }
+  }
+}

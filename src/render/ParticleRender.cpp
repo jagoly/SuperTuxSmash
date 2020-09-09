@@ -49,7 +49,9 @@ void ParticleRenderer::integrate_set(float blend, const ParticleSystem& system)
 
     //info.texture = renderer.resources.texarrays.acquire(system.texturePath);
     info.startIndex = uint16_t(mVertices.size());
-    info.vertexCount = uint16_t(system.get_particles().size());
+    info.vertexCount = uint16_t(system.get_vertex_count());
+
+    mVertices.reserve(mVertices.size() + system.get_vertex_count());
     system.compute_vertices(blend, mVertices);
 }
 
@@ -66,10 +68,10 @@ void ParticleRenderer::render_particles()
 
     auto& context = renderer.context;
 
-    context.bind_FrameBuffer(renderer.fbos.Resolve);
+    context.bind_FrameBuffer(renderer.FB_Resolve);
 
     context.bind_VertexArray(mVertexArray);
-    context.bind_Program(renderer.shaders.Particles);
+    context.bind_Program(renderer.PROG_Particles);
 
     //gl::Enable(gl::PROGRAM_POINT_SIZE);
 
@@ -80,7 +82,7 @@ void ParticleRenderer::render_particles()
 
     context.bind_Texture(mTexture, 0u);
 
-    context.bind_Texture(renderer.textures.Depth, 1u);
+    context.bind_Texture(renderer.TEX_Depth, 1u);
 
     for (const ParticleSetInfo& info : mParticleSetInfo)
     {

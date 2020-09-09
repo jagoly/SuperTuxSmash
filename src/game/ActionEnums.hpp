@@ -43,6 +43,12 @@ enum class ActionType : int8_t
     SpecialForward,
     SpecialNeutral,
     SpecialUp,
+    HopBack,
+    HopForward,
+    JumpBack,
+    JumpForward,
+    AirHopBack,
+    AirHopForward,
 };
 
 enum class ActionStatus : int8_t
@@ -95,7 +101,13 @@ SQEE_ENUM_HELPER
     SpecialDown,
     SpecialForward,
     SpecialNeutral,
-    SpecialUp
+    SpecialUp,
+    HopBack,
+    HopForward,
+    JumpBack,
+    JumpForward,
+    AirHopBack,
+    AirHopForward
 )
 
 SQEE_ENUM_HELPER

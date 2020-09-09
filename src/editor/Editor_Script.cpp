@@ -32,14 +32,7 @@ void EditorScene::impl_show_widget_script()
     const ImVec2 contentRegion = ImGui::GetContentRegionAvail();
     const ImVec2 inputSize = { contentRegion.x, contentRegion.y - MAX_HEIGHT_ERRORS };
 
-    const bool changed = ImPlus::InputStringMultiline("##Script", action.mLuaSource, inputSize,
-                                                      ImGuiInputTextFlags_NoUndoRedo);
-
-    if (changed == true)
-    {
-        action.load_lua_from_string();
-        scrub_to_frame_current(ctx);
-    }
+    ImPlus::InputStringMultiline("##Script", action.mWrenSource, inputSize, ImGuiInputTextFlags_NoUndoRedo);
 
     ImPlus::TextWrapped(action.mErrorMessage);
 }

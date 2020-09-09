@@ -5,10 +5,11 @@
 #include "main/SmashApp.hpp"
 
 #include "game/Action.hpp"
-#include "game/Blobs.hpp"
 #include "game/Emitter.hpp"
 #include "game/FightWorld.hpp"
 #include "game/Fighter.hpp"
+#include "game/HitBlob.hpp"
+#include "game/HurtBlob.hpp"
 #include "game/ParticleSystem.hpp"
 #include "game/Stage.hpp"
 
@@ -117,13 +118,16 @@ void EditorScene::refresh_options()
 void EditorScene::update()
 {
     if (mActiveActionContext != nullptr)
-        apply_working_changes(*mActiveActionContext);
 
     if (mActiveHurtblobsContext != nullptr)
+    {
         apply_working_changes(*mActiveHurtblobsContext);
+    }
 
     if (mActiveActionContext != nullptr)
     {
+        apply_working_changes(*mActiveActionContext);
+
         if (mDoRestartAction == true)
         {
             scrub_to_frame(*mActiveActionContext, -1);
@@ -223,6 +227,7 @@ void EditorScene::impl_show_widget_toolbar()
         mDoResetDockNavigator = true;
         mDoResetDockHitblobs = true;
         mDoResetDockEmitters = true;
+        mDoResetDockSounds = true;
         mDoResetDockScript = true;
         mDoResetDockHurtblobs = true;
         mDoResetDockTimeline = true;
@@ -430,7 +435,7 @@ void EditorScene::impl_show_widget_navigator()
                     if (loaded) ImPlus::PushFont(ImPlus::FONT_BOLD);
                     if (ImPlus::Selectable(label, active || highlight) && !active)
                     {
-                        mSmashApp.get_window().set_window_title("SuperTuxSmash - Action Editor - " + label);
+                        mSmashApp.get_window().set_window_title("SuperTuxSmash - Action Editor - {}/{}"_format(fighterName, actionName));
 
                         mActiveHurtblobsContext = nullptr;
                         mActiveContext = mActiveActionContext = &get_action_context(key);
@@ -537,6 +542,7 @@ void EditorScene::show_imgui_widgets()
     impl_show_widget_navigator();
     impl_show_widget_hitblobs();
     impl_show_widget_emitters();
+    impl_show_widget_sounds();
     impl_show_widget_script();
     impl_show_widget_hurtblobs();
     impl_show_widget_timeline();
@@ -547,7 +553,7 @@ void EditorScene::show_imgui_widgets()
 
 void EditorScene::create_base_context(FighterEnum fighterKey, BaseContext& ctx)
 {
-    ctx.world = std::make_unique<FightWorld>(mSmashApp.get_options());
+    ctx.world = std::make_unique<FightWorld>(mSmashApp.get_options(), mSmashApp.get_audio_context());
     ctx.renderer = std::make_unique<Renderer>(mSmashApp.get_options());
 
     ctx.renderer->set_camera(std::make_unique<EditorCamera>(*ctx.renderer));
@@ -663,6 +669,8 @@ EditorScene::ActionContext& EditorScene::get_action_context(ActionKey key)
 
     } SWITCH_END;
 
+    ctx.timelineLength += 1u;
+
     return ctx;
 }
 
@@ -699,6 +707,11 @@ void EditorScene::apply_working_changes(ActionContext& ctx)
 
     if (action.has_changes(*ctx.undoStack[ctx.undoIndex]))
     {
+        ctx.world->editor_clear_hitblobs();
+
+        if (action.mWrenSource != ctx.undoStack[ctx.undoIndex]->mWrenSource)
+            action.load_wren_from_string();
+
         scrub_to_frame_current(ctx);
 
         ctx.undoStack.erase(ctx.undoStack.begin() + ++ctx.undoIndex, ctx.undoStack.end());
@@ -712,10 +725,9 @@ void EditorScene::apply_working_changes(HurtblobsContext& ctx)
 {
     if (ctx.fighter->mHurtBlobs != *ctx.undoStack[ctx.undoIndex])
     {
-        ctx.world->editor_disable_all_hurtblobs();
+        ctx.world->editor_clear_hurtblobs();
         for (auto& [key, blob] : ctx.fighter->mHurtBlobs)
-            if (ctx.hiddenKeys.find(key) == ctx.hiddenKeys.end())
-                ctx.world->enable_hurt_blob(&blob);
+            ctx.world->enable_hurtblob(&blob);
 
         ctx.world->tick();
 
@@ -728,7 +740,7 @@ void EditorScene::apply_working_changes(HurtblobsContext& ctx)
 
 //----------------------------------------------------------------------------//
 
-void EditorScene::do_undo_redo(ActionContext &ctx, bool redo)
+void EditorScene::do_undo_redo(ActionContext& ctx, bool redo)
 {
     const size_t oldIndex = ctx.undoIndex;
 
@@ -737,6 +749,8 @@ void EditorScene::do_undo_redo(ActionContext &ctx, bool redo)
 
     if (ctx.undoIndex != oldIndex)
     {
+        ctx.world->editor_clear_hitblobs();
+
         Action& action = *ctx.fighter->get_action(ctx.key.action);
         action.apply_changes(*ctx.undoStack[ctx.undoIndex]);
 
@@ -746,7 +760,7 @@ void EditorScene::do_undo_redo(ActionContext &ctx, bool redo)
     }
 }
 
-void EditorScene::do_undo_redo(HurtblobsContext &ctx, bool redo)
+void EditorScene::do_undo_redo(HurtblobsContext& ctx, bool redo)
 {
     const size_t oldIndex = ctx.undoIndex;
 
@@ -757,10 +771,9 @@ void EditorScene::do_undo_redo(HurtblobsContext &ctx, bool redo)
     {
         ctx.fighter->mHurtBlobs = *ctx.undoStack[ctx.undoIndex];
 
-        ctx.world->editor_disable_all_hurtblobs();
+        ctx.world->editor_clear_hurtblobs();
         for (auto& [key, blob] : ctx.fighter->mHurtBlobs)
-            if (ctx.hiddenKeys.find(key) == ctx.hiddenKeys.end())
-                ctx.world->enable_hurt_blob(&blob);
+            ctx.world->enable_hurtblob(&blob);
 
         ctx.world->tick();
 
@@ -778,6 +791,7 @@ void EditorScene::save_changes(ActionContext& ctx)
 
     auto& blobs = json["blobs"] = JsonValue::object();
     auto& emitters = json["emitters"] = JsonValue::object();
+    auto& sounds = json["sounds"] = JsonValue::object();
 
     for (const auto& [key, blob] : action.mBlobs)
         blob.to_json(blobs[key.c_str()]);
@@ -785,8 +799,11 @@ void EditorScene::save_changes(ActionContext& ctx)
     for (const auto& [key, emitter] : action.mEmitters)
         emitter.to_json(emitters[key.c_str()]);
 
+    for (const auto& [key, sound] : action.mSounds)
+        sound.to_json(sounds[key.c_str()]);
+
     sq::save_string_to_file(action.path + ".json", json.dump(2));
-    sq::save_string_to_file(action.path + ".lua", action.mLuaSource);
+    sq::save_string_to_file(action.path + ".wren", action.mWrenSource);
 
     ctx.savedData = action.clone();
     ctx.modified = false;
@@ -810,7 +827,7 @@ void EditorScene::scrub_to_frame(ActionContext& ctx, int frame)
 {
     // reset the world and fighter
 
-    Emitter::reset_random_seed(mRandomSeed);
+    ctx.world->get_particle_system().reset_random_seed(mRandomSeed);
     ctx.world->get_particle_system().clear();
 
     if (ctx.fighter->mActiveAction != nullptr)
@@ -820,7 +837,9 @@ void EditorScene::scrub_to_frame(ActionContext& ctx, int frame)
     }
 
     ctx.fighter->previous = ctx.fighter->current = Fighter::InterpolationData();
+    ctx.fighter->current.pose = ctx.fighter->mArmature.get_rest_pose();
     ctx.fighter->status = Fighter::Status();
+    ctx.fighter->mForceSwitchAction = ActionType::None;
     ctx.fighter->mTranslate = Vec2F();
 
     if (ctx.key.action == ActionType::AirBack || ctx.key.action == ActionType::AirDown || ctx.key.action == ActionType::AirForward ||
@@ -836,42 +855,32 @@ void EditorScene::scrub_to_frame(ActionContext& ctx, int frame)
         ctx.fighter->state_transition(FighterState::Neutral, 0u, &ctx.fighter->mAnimations.NeutralLoop, 0u, nullptr);
     }
 
-    // need to tick twice so that fighter.previous has valid values
+    // tick once to apply neutral/falling animation
     ctx.world->tick();
-    ctx.world->tick();
 
-    // start the action and scrub to the frame
+    // start the action on the next tick
+    ctx.fighter->mForceSwitchAction = ctx.key.action;
 
-    ctx.fighter->state_transition_action(ctx.key.action);
+    // todo: should be possible to charge some special actions, so need more generic test for this
+    const bool chargeAction = ctx.key.action == ActionType::SmashDown ||
+                              ctx.key.action == ActionType::SmashForward ||
+                              ctx.key.action == ActionType::SmashUp;
 
-    if (ctx.fighter->status.state == FighterState::Charge)
+    // finally, scrub to the desired frame
+    for (ctx.currentFrame = chargeAction ? -2 : -1; ctx.currentFrame < frame;)
+        tick_action_context(ctx);
+
+    if (ctx.fighter->mActiveAction != nullptr && ctx.currentFrame >= 0)
     {
-        for (ctx.currentFrame = -2; ctx.currentFrame < frame;)
-            tick_action_context(ctx);
-
-        if (ctx.fighter->mActiveAction != nullptr && ctx.currentFrame >= 0)
-        {
-            const int actionFrame = int(ctx.fighter->mActiveAction->mCurrentFrame) - 1u;
-            SQASSERT(ctx.currentFrame == actionFrame, "out of sync: timeline = {}, action = {}"_format(ctx.currentFrame, actionFrame));
-        }
-    }
-    else
-    {
-        for (ctx.currentFrame = -1; ctx.currentFrame < frame;)
-            tick_action_context(ctx);
-
-        if (ctx.fighter->mActiveAction != nullptr && ctx.currentFrame >= 0)
-        {
-            const int actionFrame = int(ctx.fighter->mActiveAction->mCurrentFrame) - 1u;
-            SQASSERT(ctx.currentFrame == actionFrame, "out of sync: timeline = {}, action = {}"_format(ctx.currentFrame, actionFrame));
-        }
+        const int actionFrame = int(ctx.fighter->mActiveAction->mCurrentFrame) - 1;
+        SQASSERT(ctx.currentFrame == actionFrame, "out of sync: timeline = {}, action = {}"_format(ctx.currentFrame, actionFrame));
     }
 }
 
 void EditorScene::scrub_to_frame_current(ActionContext& ctx)
 {
-    Action& action = *ctx.fighter->get_action(ctx.key.action);
-    scrub_to_frame(ctx, action.mCurrentFrame - 1);
+    // this function is called when some value is updated
+    scrub_to_frame(ctx, ctx.currentFrame);
 }
 
 void EditorScene::tick_action_context(ActionContext& ctx)

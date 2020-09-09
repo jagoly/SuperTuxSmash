@@ -16,25 +16,25 @@ Mario_Render::Mario_Render(Renderer& renderer, const Mario_Fighter& fighter)
 {
     mUbo.create_and_allocate(sizeof(Mario_Render::mCharacterBlock));
 
-    ResourceCaches& cache = renderer.resources;
+    MESH_Body = renderer.meshes.acquire("fighters/Mario/meshes/Body");
+    MESH_HairHat = renderer.meshes.acquire("fighters/Mario/meshes/HairHat");
+    MESH_Head = renderer.meshes.acquire("fighters/Mario/meshes/Head");
+    MESH_EyesWhite = renderer.meshes.acquire("fighters/Mario/meshes/EyesWhite");
+    MESH_EyesIris = renderer.meshes.acquire("fighters/Mario/meshes/EyesIris");
+    MESH_HeadHurt = renderer.meshes.acquire("fighters/Mario/meshes/HeadHurt");
 
-    MESH_Body = cache.meshes.acquire("assets/fighters/Mario/meshes/Body");
-    MESH_HairHat = cache.meshes.acquire("assets/fighters/Mario/meshes/HairHat");
-    MESH_Head = cache.meshes.acquire("assets/fighters/Mario/meshes/Head");
-    MESH_EyesWhite = cache.meshes.acquire("assets/fighters/Mario/meshes/EyesWhite");
-    MESH_EyesIris = cache.meshes.acquire("assets/fighters/Mario/meshes/EyesIris");
-
-    TX_BodyA_diff = cache.textures.acquire("assets/fighters/Mario/textures/BodyA_diff");
-    TX_BodyB_diff = cache.textures.acquire("assets/fighters/Mario/textures/BodyB_diff");
-    TX_EyeWhite_diff = cache.textures.acquire("assets/fighters/Mario/textures/EyeWhite_diff");
-    TX_EyeIris_diff = cache.textures.acquire("assets/fighters/Mario/textures/EyeIris_diff");
-    TX_EyeIris_mask = cache.textures.acquire("assets/fighters/Mario/textures/EyeIris_mask");
+    TEX_BodyA_diff = renderer.textures.acquire("fighters/Mario/textures/BodyA_diff");
+    TEX_BodyB_diff = renderer.textures.acquire("fighters/Mario/textures/BodyB_diff");
+    TEX_EyeWhite_diff = renderer.textures.acquire("fighters/Mario/textures/EyeWhite_diff");
+    TEX_EyeIris_diff = renderer.textures.acquire("fighters/Mario/textures/EyeIris_diff");
+    TEX_EyeIris_mask = renderer.textures.acquire("fighters/Mario/textures/EyeIris_mask");
+    TEX_EyeHurt_diff = renderer.textures.acquire("fighters/Mario/textures/EyeHurt_diff");
 
     sq::ProgramKey programKey;
     programKey.vertexPath = "fighters/BasicFighter_vs";
     programKey.fragmentDefines = "#define OPT_TEX_DIFFUSE";
     programKey.fragmentPath = "fighters/BasicFighter_fs";
-    PROG_Main = cache.programs.acquire(programKey);
+    PROG_Main = renderer.programs.acquire(programKey);
 }
 
 //============================================================================//
@@ -57,28 +57,38 @@ void Mario_Render::integrate(float blend)
 void Mario_Render::render_depth()
 {
     auto& context = renderer.context;
-    auto& shaders = renderer.shaders;
 
     context.set_state(Context::Depth_Compare::LessEqual);
     context.set_state(Context::Depth_Test::Replace);
-    context.bind_VertexArray(MESH_Body->get_vao());
     context.bind_UniformBuffer(mUbo, 2u);
 
     context.set_state(Context::Cull_Face::Back);
-    context.bind_Program(shaders.Depth_FighterSolid);
+    context.bind_Program(renderer.PROG_Depth_FighterSolid);
+
     context.bind_VertexArray(MESH_Body->get_vao());
     MESH_Body->draw_complete();
+
     context.bind_VertexArray(MESH_HairHat->get_vao());
     MESH_HairHat->draw_complete();
-    context.bind_VertexArray(MESH_Head->get_vao());
-    MESH_Head->draw_complete();
-    context.bind_VertexArray(MESH_EyesWhite->get_vao());
-    MESH_EyesWhite->draw_complete();
 
-    context.bind_Texture(TX_EyeIris_mask.get(), 0u);
-    context.bind_Program(shaders.Depth_FighterPunch);
-    context.bind_VertexArray(MESH_EyesIris->get_vao());
-    MESH_EyesIris->draw_complete();
+    if (fighter.should_render_flinch_models() == false)
+    {
+        context.bind_VertexArray(MESH_Head->get_vao());
+        MESH_Head->draw_complete();
+
+        context.bind_VertexArray(MESH_EyesWhite->get_vao());
+        MESH_EyesWhite->draw_complete();
+
+        context.bind_Program(renderer.PROG_Depth_FighterPunch);
+        context.bind_Texture(TEX_EyeIris_mask.get(), 0u);
+        context.bind_VertexArray(MESH_EyesIris->get_vao());
+        MESH_EyesIris->draw_complete();
+    }
+    else
+    {
+        context.bind_VertexArray(MESH_HeadHurt->get_vao());
+        MESH_HeadHurt->draw_complete();
+    }
 }
 
 //============================================================================//
@@ -94,28 +104,43 @@ void Mario_Render::render_main()
     context.set_state(Context::Cull_Face::Back);
     context.bind_Program(PROG_Main.get());
 
-    context.bind_Texture(TX_BodyA_diff.get(), 0u);
+    context.bind_Texture(TEX_BodyA_diff.get(), 0u);
 
     context.bind_VertexArray(MESH_Body->get_vao());
     MESH_Body->draw_partial(0u);
+
     context.bind_VertexArray(MESH_HairHat->get_vao());
     MESH_HairHat->draw_complete();
-    context.bind_VertexArray(MESH_Head->get_vao());
-    MESH_Head->draw_complete();
 
-    context.bind_Texture(TX_BodyB_diff.get(), 0u);
+    if (fighter.should_render_flinch_models() == false)
+    {
+        context.bind_VertexArray(MESH_Head->get_vao());
+        MESH_Head->draw_complete();
+    }
+    else
+    {
+        context.bind_VertexArray(MESH_HeadHurt->get_vao());
 
+        context.bind_Texture(TEX_BodyA_diff.get(), 0u);
+        MESH_HeadHurt->draw_partial(0u);
+
+        context.bind_Texture(TEX_EyeHurt_diff.get(), 0u);
+        MESH_HeadHurt->draw_partial(1u);
+    }
+
+    context.bind_Texture(TEX_BodyB_diff.get(), 0u);
     context.bind_VertexArray(MESH_Body->get_vao());
     MESH_Body->draw_partial(1u);
     MESH_Body->draw_partial(2u);
 
-    context.bind_Texture(TX_EyeWhite_diff.get(), 0u);
+    if (fighter.should_render_flinch_models() == false)
+    {
+        context.bind_Texture(TEX_EyeWhite_diff.get(), 0u);
+        context.bind_VertexArray(MESH_EyesWhite->get_vao());
+        MESH_EyesWhite->draw_complete();
 
-    context.bind_VertexArray(MESH_EyesWhite->get_vao());
-    MESH_EyesWhite->draw_complete();
-
-    context.bind_Texture(TX_EyeIris_diff.get(), 0u);
-
-    context.bind_VertexArray(MESH_EyesIris->get_vao());
-    MESH_EyesIris->draw_complete();
+        context.bind_Texture(TEX_EyeIris_diff.get(), 0u);
+        context.bind_VertexArray(MESH_EyesIris->get_vao());
+        MESH_EyesIris->draw_complete();
+    }
 }

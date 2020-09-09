@@ -30,6 +30,7 @@ void SmashApp::initialise(std::vector<String> /*args*/)
 
     mInputDevices = std::make_unique<sq::InputDevices>(*mWindow);
     mDebugOverlay = std::make_unique<sq::DebugOverlay>();
+    mAudioContext = std::make_unique<sq::AudioContext>();
 
     mOptions = std::make_unique<Options>();
 

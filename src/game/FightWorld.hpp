@@ -2,10 +2,14 @@
 
 #include "setup.hpp"
 
-#include "Blobs.hpp"
-#include "Emitter.hpp"
+#include "caches/SoundCache.hpp"
 
-#include <sqee/redist/sol_fwd.hpp>
+#include "game/Emitter.hpp"
+#include "game/HitBlob.hpp"
+#include "game/HurtBlob.hpp"
+#include "game/SoundEffect.hpp"
+
+#include <sqee/app/WrenPlus.hpp>
 
 namespace sts {
 
@@ -15,13 +19,27 @@ class FightWorld final : sq::NonCopyable
 {
 public: //====================================================//
 
-    FightWorld(const Options& options);
+    FightWorld(const Options& options, sq::AudioContext& audio);
 
     ~FightWorld();
 
     //--------------------------------------------------------//
 
     const Options& options;
+
+    sq::AudioContext& audio;
+
+    SoundCache sounds;
+
+    wren::WrenPlusVM vm;
+
+    struct {
+        WrenHandle* script_new = nullptr;
+        WrenHandle* script_reset = nullptr;
+        WrenHandle* script_cancel = nullptr;
+        WrenHandle* fiber_call = nullptr;
+        WrenHandle* fiber_isDone = nullptr;
+    } handles;
 
     //--------------------------------------------------------//
 
@@ -40,28 +58,39 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    /// Enable a hit blob.
-    void enable_hit_blob(HitBlob* blob);
+    /// Enable a hitblob.
+    void enable_hitblob(HitBlob* blob);
 
-    /// Disable a hit blob.
-    void disable_hit_blob(HitBlob* blob);
+    /// Disable a hitblob.
+    void disable_hitblob(HitBlob* blob);
 
-    /// Enable a hurt blob.
-    void enable_hurt_blob(HurtBlob* blob);
+    /// Disable an action's hitblobs.
+    void disable_hitblobs(const Action& action);
 
-    /// Disable a hurt blob.
-    void disable_hurt_blob(HurtBlob* blob);
+    /// Disable all hitblobs.
+    void editor_clear_hitblobs();
 
     //--------------------------------------------------------//
 
-    /// Reset all of a fighter's hit blob groups.
-    void reset_all_hit_blob_groups(Fighter& fighter);
+    /// Enable a hurtblob.
+    void enable_hurtblob(HurtBlob* blob);
 
-    /// Disable all of a fighter's hit blobs.
-    void disable_all_hit_blobs(Fighter& fighter);
+    /// Disable a hurtblob.
+    void disable_hurtblob(HurtBlob* blob);
 
-    /// Disable all of a fighter's hurt blobs.
-    void disable_all_hurt_blobs(Fighter& fighter);
+    /// Disable a fighter's hurtblobs.
+    void disable_hurtblobs(const Fighter& fighter);
+
+    /// Disable all hurtblobs.
+    void editor_clear_hurtblobs();
+
+    //--------------------------------------------------------//
+
+    /// Reset a fighter's collision group.
+    void reset_collisions(uint8_t fighter, uint8_t group);
+
+    /// Reset all of a fighter's collision groups.
+    void reset_all_collisions(uint8_t fighter);
 
     //--------------------------------------------------------//
 
@@ -94,6 +123,9 @@ public: //====================================================//
     /// Access the Emitter Allocator.
     auto get_emitter_allocator() { return mEmitterAlloc.get(); }
 
+    /// Access the SoundEffect Allocator.
+    auto get_sound_effect_allocator() { return mSoundEffectAlloc.get(); }
+
     /// Access the enabled HurtBlobs.
     const std::vector<HurtBlob*>& get_hurt_blobs() const { return mEnabledHurtBlobs; };
 
@@ -102,10 +134,7 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    /// Access the shared Lua State.
-    sol::state& get_lua_state() { return *mLuaState; }
-
-    /// Access the ParticleSystem.
+    /// Access this world's ParticleSystem.
     ParticleSystem& get_particle_system() { return *mParticleSystem; }
 
 private: //===================================================//
@@ -113,9 +142,12 @@ private: //===================================================//
     // undo stack in the editor can cause us to run out of slots, so we reserve more space
     // todo: for the editor, use big pools shared between all contexts
 
+    // better todo: WOW, std::pmr is a thing, why the shit am I not using it?
+
     sq::PoolAllocatorStore<std::pair<const TinyString, HurtBlob>> mHurtBlobAlloc;
     sq::PoolAllocatorStore<std::pair<const TinyString, HitBlob>> mHitBlobAlloc;
     sq::PoolAllocatorStore<std::pair<const TinyString, Emitter>> mEmitterAlloc;
+    sq::PoolAllocatorStore<std::pair<const TinyString, SoundEffect>> mSoundEffectAlloc;
 
     //--------------------------------------------------------//
 
@@ -123,11 +155,7 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
-    std::unique_ptr<sol::state> mLuaState;
-
     std::unique_ptr<ParticleSystem> mParticleSystem;
-
-    //--------------------------------------------------------//
 
     std::unique_ptr<Stage> mStage;
 
@@ -149,8 +177,6 @@ private: //===================================================//
 public: //== debug and editor interfaces =====================//
 
     void debug_reload_actions();
-
-    void editor_disable_all_hurtblobs();
 };
 
 //============================================================================//

@@ -33,5 +33,11 @@
       "useSakuraiAngle": true
     }
   },
-  "emitters": {}
+  "emitters": {},
+  "sounds": {
+    "LandHeavy": {
+      "path": "fighters/Mario/sounds/LandHeavy",
+      "volume": 0.3
+    }
+  }
 }

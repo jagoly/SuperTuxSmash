@@ -2,15 +2,13 @@
 
 #include "setup.hpp"
 
-//============================================================================//
+#include <random> // mt19937
 
 namespace sts {
 
-struct Emitter;
-
 //============================================================================//
 
-struct ParticleData
+struct alignas(16) ParticleData final
 {
     Vec3F previousPos;
     uint16_t progress;
@@ -24,10 +22,9 @@ struct ParticleData
     float endOpacity;
     float friction;
     uint16_t sprite;
-    char _padding[6];
 };
 
-struct ParticleVertex
+struct alignas(16) ParticleVertex final
 {
     Vec3F position;
     float radius;
@@ -46,36 +43,49 @@ class ParticleSystem final : sq::NonCopyable
 {
 public: //====================================================//
 
+    /// Vertex data that the renderer passes to compute_vertices().
     using VertexVec = std::vector<ParticleVertex>;
 
     //--------------------------------------------------------//
 
     ParticleSystem();
 
-    /// Immediately destroy all particles.
-    void clear();
+    //--------------------------------------------------------//
+
+    /// Destroy all particles.
+    void clear() { mParticles.clear(); };
+
+    /// Reset the seed used for random number generation.
+    void reset_random_seed(uint_fast32_t seed) { mGenerator.seed(seed); };
+
+    /// Get the number of particles in this system.
+    size_t get_vertex_count() const { return mParticles.size(); }
 
     //--------------------------------------------------------//
 
-    struct SpriteRange { uint16_t first, last; };
-    std::map<TinyString, SpriteRange> sprites;
+    /// Generate particles specified by an Emitter.
+    void generate(const Emitter& emitter);
 
     //--------------------------------------------------------//
 
     /// Simulate all particles, then destroy dead particles.
     void update_and_clean();
 
+    /// Fill a vector with vertex data for rendering.
     void compute_vertices(float blend, VertexVec& vertices) const;
-
-    const std::vector<ParticleData>& get_particles() const { return mParticles; }
-
-private: //===================================================//
-
-    std::vector<ParticleData> mParticles;
 
     //--------------------------------------------------------//
 
-    friend Emitter;
+    // temporarily hardcoded list of sprites
+
+    struct SpriteRange { uint16_t first, last; };
+    std::map<TinyString, SpriteRange> sprites;
+
+private: //===================================================//
+
+    std::mt19937 mGenerator;
+
+    std::vector<ParticleData> mParticles;
 };
 
 //============================================================================//

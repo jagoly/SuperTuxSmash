@@ -2,6 +2,7 @@
 
 #include "game/Emitter.hpp"
 #include "game/FightWorld.hpp"
+#include "game/ParticleSystem.hpp"
 
 using namespace sts;
 
@@ -34,6 +35,7 @@ void Mario_Fighter::tick()
     if (status.state == State::Brake)
     {
         Emitter emitter;
+        emitter.count = 1u;
         emitter.velocity.x = status.velocity.x * 0.5f;
         emitter.baseOpacity = 0.5f;
         emitter.endOpacity = 0.f;
@@ -46,13 +48,13 @@ void Mario_Fighter::tick()
         if (footPosL.y - status.position.y < 0.1f)
         {
             emitter.origin = Vec3F(footPosL.x, status.position.y, footPosL.z);
-            emitter.generate(partilcles, 1u);
+            partilcles.generate(emitter);
         }
 
         if (footPosR.y - status.position.y < 0.1f)
         {
             emitter.origin = Vec3F(footPosR.x, status.position.y, footPosR.z);
-            emitter.generate(partilcles, 1u);
+            partilcles.generate(emitter);
         }
     }
 

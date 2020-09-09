@@ -74,6 +74,9 @@ if (NOT CMAKE_BINARY_DIR STREQUAL PROJECT_SOURCE_DIR)
         "${PROJECT_SOURCE_DIR}/shaders" "${CMAKE_BINARY_DIR}/shaders")
 
     add_custom_command(TARGET sts-game POST_BUILD COMMAND ${CMAKE_COMMAND} -E create_symlink
+        "${PROJECT_SOURCE_DIR}/wren" "${CMAKE_BINARY_DIR}/wren")
+
+    add_custom_command(TARGET sts-game POST_BUILD COMMAND ${CMAKE_COMMAND} -E create_symlink
         "${PROJECT_SOURCE_DIR}/config" "${CMAKE_BINARY_DIR}/config")
 
 endif ()

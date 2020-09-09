@@ -73,8 +73,6 @@ private: //===================================================//
         std::vector<std::unique_ptr<Action>> undoStack;
         size_t undoIndex = 0u;
 
-        std::map<TinyString, std::vector<String>> buildErrors;
-
         int timelineLength = 0;
         int currentFrame = -1;
     };
@@ -88,8 +86,6 @@ private: //===================================================//
 
         std::vector<std::unique_ptr<sq::PoolMap<TinyString, HurtBlob>>> undoStack;
         size_t undoIndex = 0u;
-
-        std::set<TinyString> hiddenKeys;
     };
 
     std::map<ActionKey, ActionContext> mActionContexts;
@@ -109,6 +105,7 @@ private: //===================================================//
 
     void impl_show_widget_hitblobs();
     void impl_show_widget_emitters();
+    void impl_show_widget_sounds();
     void impl_show_widget_script();
     void impl_show_widget_hurtblobs();
     void impl_show_widget_timeline();
@@ -167,12 +164,20 @@ private: //===================================================//
     bool mDoResetDockNavigator = false;
     bool mDoResetDockHitblobs = false;
     bool mDoResetDockEmitters = false;
+    bool mDoResetDockSounds = false;
     bool mDoResetDockScript = false;
     bool mDoResetDockHurtblobs = false;
     bool mDoResetDockTimeline = false;
     bool mDoResetDockFighter = false;
 
     bool mDoRestartAction = false;
+
+    //--------------------------------------------------------//
+
+    // make sure any source file that uses these includes EditorHelpers.hpp
+
+    template <class Map, class FuncInit, class FuncEdit>
+    void helper_edit_objects(Map& objects, FuncInit funcInit, FuncEdit funcEdit);
 };
 
 } // namespace sts

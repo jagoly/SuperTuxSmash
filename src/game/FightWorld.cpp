@@ -3,7 +3,7 @@
 #include "main/Options.hpp"
 
 #include "game/Action.hpp"
-#include "game/Blobs.hpp"
+#include "game/Controller.hpp"
 #include "game/Fighter.hpp"
 #include "game/ParticleSystem.hpp"
 #include "game/Stage.hpp"
@@ -15,64 +15,46 @@ using namespace sts;
 
 //============================================================================//
 
-// todo: might want to move the lua setup stuff to a different file
-
-template <class Handler>
-bool sol_lua_check(sol::types<TinyString>, lua_State* L, int index, Handler&& handler, sol::stack::record& tracking)
+FightWorld::FightWorld(const Options& options, sq::AudioContext& audio)
+    : options(options)
+    , audio(audio)
+    , sounds(audio)
+    , mHurtBlobAlloc    (options.editor_mode ? 1280 : 128)
+    , mHitBlobAlloc     (options.editor_mode ? 10240 : 1024)
+    , mEmitterAlloc     (options.editor_mode ? 5120 : 512)
+    , mSoundEffectAlloc (options.editor_mode ? 5120 : 512)
 {
-    const int absIndex = sol::absolute_index(L, index);
-    const bool success = sol::stack::check<const char*>(L, absIndex, handler);
-    tracking.use(1); return success;
-}
+    vm.add_foreign_method<&Action::wren_set_wait_until>("set_wait_until(_)");
+    vm.add_foreign_method<&Action::wren_allow_interrupt>("allow_interrupt()");
+    vm.add_foreign_method<&Action::wren_enable_hitblob_group>("enable_hitblob_group(_)");
+    vm.add_foreign_method<&Action::wren_disable_hitblob_group>("disable_hitblob_group(_)");
+    vm.add_foreign_method<&Action::wren_disable_hitblobs>("disable_hitblobs()");
+    vm.add_foreign_method<&Action::wren_emit_particles>("emit_particles(_)");
+    vm.add_foreign_method<&Action::wren_play_sound>("play_sound(_)");
 
-TinyString sol_lua_get(sol::types<TinyString>, lua_State* L, int index, sol::stack::record& tracking)
-{
-    const int absIndex = sol::absolute_index(L, index);
-    const char* const result = sol::stack::get<const char*>(L, absIndex);
-    tracking.use(1); return result;
-}
+    vm.add_foreign_method<&Fighter::wren_set_intangible>("set_intangible(_)");
+    vm.add_foreign_method<&Fighter::wren_enable_hurtblob>("enable_hurtblob(_)");
+    vm.add_foreign_method<&Fighter::wren_disable_hurtblob>("disable_hurtblob(_)");
+    vm.add_foreign_method<&Fighter::wren_set_velocity_x>("set_velocity_x(_)");
+    vm.add_foreign_method<&Fighter::wren_set_autocancel>("set_autocancel(_)");
 
-int sol_lua_push(sol::types<TinyString>, lua_State* L, const TinyString& str)
-{
-    return sol::stack::push(L, str.c_str());
-}
+    handles.script_new = wrenMakeCallHandle(vm, "new(_,_)");
+    handles.script_reset = wrenMakeCallHandle(vm, "reset()");
+    handles.script_cancel = wrenMakeCallHandle(vm, "cancel()");
+    handles.fiber_call = wrenMakeCallHandle(vm, "call()");
+    handles.fiber_isDone = wrenMakeCallHandle(vm, "isDone");
 
-//============================================================================//
-
-FightWorld::FightWorld(const Options& _options)
-    : options(_options)
-    , mHurtBlobAlloc(options.editor_mode ? 128 * 64 : 128)
-    , mHitBlobAlloc(options.editor_mode ? 1024 * 64 : 1024)
-    , mEmitterAlloc(options.editor_mode ? 1024 * 64 : 1024)
-{
-    mLuaState = std::make_unique<sol::state>();
     mParticleSystem = std::make_unique<ParticleSystem>();
-
-    sol::state& lua = *mLuaState;
-
-    lua.open_libraries(sol::lib::base, sol::lib::coroutine);
-
-    sol::usertype<Action> actionType = lua.new_usertype<Action>("Action", sol::no_constructor);
-
-    actionType.set_function("wait_until", sol::yielding(&Action::lua_func_wait_until));
-    actionType.set_function("allow_interrupt", &Action::lua_func_allow_interrupt);
-    //actionType.set_function("enable_blob", &Action::lua_func_enable_blob);
-    //actionType.set_function("disable_blob", &Action::lua_func_disable_blob);
-    actionType.set_function("enable_blob_group", &Action::lua_func_enable_blob_group);
-    actionType.set_function("disable_blob_group", &Action::lua_func_disable_blob_group);
-    actionType.set_function("emit_particles", &Action::lua_func_emit_particles);
-
-    sol::usertype<Fighter> fighterType = lua.new_usertype<Fighter>("Fighter", sol::no_constructor);
-
-    fighterType.set("intangible", sol::property(&Fighter::lua_get_intangible, &Fighter::lua_set_intangible));
-    fighterType.set("autocancel", sol::property(&Fighter::lua_get_autocancel, &Fighter::lua_set_autocancel));
-    fighterType.set("velocity_x", sol::property(&Fighter::lua_get_velocity_x, &Fighter::lua_set_velocity_x));
-    fighterType.set("velocity_y", sol::property(&Fighter::lua_get_velocity_y, &Fighter::lua_set_velocity_y));
-
-    fighterType.set("facing", sol::readonly_property(&Fighter::lua_get_facing));
 }
 
-FightWorld::~FightWorld() = default;
+FightWorld::~FightWorld()
+{
+    wrenReleaseHandle(vm, handles.script_new);
+    wrenReleaseHandle(vm, handles.script_reset);
+    wrenReleaseHandle(vm, handles.script_cancel);
+    wrenReleaseHandle(vm, handles.fiber_call);
+    wrenReleaseHandle(vm, handles.fiber_isDone);
+}
 
 //============================================================================//
 
@@ -136,7 +118,7 @@ void FightWorld::impl_update_collisions()
 
     for (HitBlob* blob : mEnabledHitBlobs)
     {
-        const Mat4F matrix = blob->fighter->get_bone_matrix(blob->bone);
+        const Mat4F matrix = blob->action->fighter.get_bone_matrix(blob->bone);
 
         blob->sphere.origin = Vec3F(matrix * Vec4F(blob->origin, 1.f));
         blob->sphere.radius = blob->radius;// * matrix[0][0];
@@ -159,13 +141,13 @@ void FightWorld::impl_update_collisions()
         for (HurtBlob* hurt : mEnabledHurtBlobs)
         {
             // check if both blobs belong to the same fighter
-            if (hit->fighter == hurt->fighter) continue;
+            if (&hit->action->fighter == hurt->fighter) continue;
 
             // check if the blobs are not intersecting
             if (maths::intersect_sphere_capsule(hit->sphere, hurt->capsule) == -1) continue;
 
             // check if the group has already hit the fighter
-            if (mHitBlobGroups[hit->fighter->index][hit->group][hurt->fighter->index]) continue;
+            if (mHitBlobGroups[hit->action->fighter.index][hit->group][hurt->fighter->index]) continue;
 
             // add the collision to the appropriate vector
             mCollisions[hurt->fighter->index].push_back({*hit, *hurt});
@@ -195,8 +177,8 @@ void FightWorld::impl_update_collisions()
     for (Collision* champ : bestCollisions)
     {
         if (champ == nullptr) continue;
-        mHitBlobGroups[champ->hit.fighter->index][champ->hit.group][champ->hurt.fighter->index] = true;
-        champ->hurt.fighter->apply_hit_basic(champ->hit, champ->hurt);
+        mHitBlobGroups[champ->hit.action->fighter.index][champ->hit.group][champ->hurt.fighter->index] = true;
+        champ->hurt.fighter->apply_hit_generic(champ->hit, champ->hurt);
     }
 
     // todo: maybe remove only the best collisions, leave others for next frame
@@ -223,17 +205,20 @@ void FightWorld::add_fighter(std::unique_ptr<Fighter> fighter)
 
 //============================================================================//
 
-// for now these can silently fail, they may throw in the future
-
-void FightWorld::enable_hit_blob(HitBlob* blob)
+void FightWorld::enable_hitblob(HitBlob* blob)
 {
-    const auto iter = algo::find(mEnabledHitBlobs, blob);
-    if (iter != mEnabledHitBlobs.end()) return;
+    auto iter = mEnabledHitBlobs.end();
+    while (iter != mEnabledHitBlobs.begin())
+    {
+        if (*std::prev(iter) == blob) return;
+        if (*std::prev(iter) < blob) break;
+        iter = std::prev(iter);
+    }
 
-    mEnabledHitBlobs.push_back(blob);
+    mEnabledHitBlobs.insert(iter, blob);
 }
 
-void FightWorld::disable_hit_blob(HitBlob* blob)
+void FightWorld::disable_hitblob(HitBlob* blob)
 {
     const auto iter = algo::find(mEnabledHitBlobs, blob);
     if (iter == mEnabledHitBlobs.end()) return;
@@ -241,15 +226,33 @@ void FightWorld::disable_hit_blob(HitBlob* blob)
     mEnabledHitBlobs.erase(iter);
 }
 
-void FightWorld::enable_hurt_blob(HurtBlob *blob)
+void FightWorld::disable_hitblobs(const Action& action)
 {
-    const auto iter = algo::find(mEnabledHurtBlobs, blob);
-    if (iter != mEnabledHurtBlobs.end()) return;
-
-    mEnabledHurtBlobs.push_back(blob);
+    const auto predicate = [&](HitBlob* blob) { return blob->action == &action; };
+    algo::erase_if(mEnabledHitBlobs, predicate);
 }
 
-void FightWorld::disable_hurt_blob(HurtBlob* blob)
+void FightWorld::editor_clear_hitblobs()
+{
+    mEnabledHitBlobs.clear();
+}
+
+//============================================================================//
+
+void FightWorld::enable_hurtblob(HurtBlob* blob)
+{
+    auto iter = mEnabledHurtBlobs.end();
+    while (iter != mEnabledHurtBlobs.begin())
+    {
+        if (*std::prev(iter) == blob) return;
+        if (*std::prev(iter) < blob) break;
+        iter = std::prev(iter);
+    }
+
+    mEnabledHurtBlobs.insert(iter, blob);
+}
+
+void FightWorld::disable_hurtblob(HurtBlob* blob)
 {
     const auto iter = algo::find(mEnabledHurtBlobs, blob);
     if (iter == mEnabledHurtBlobs.end()) return;
@@ -257,31 +260,26 @@ void FightWorld::disable_hurt_blob(HurtBlob* blob)
     mEnabledHurtBlobs.erase(iter);
 }
 
-//============================================================================//
-
-void FightWorld::reset_all_hit_blob_groups(Fighter& fighter)
-{
-    for (auto& array : mHitBlobGroups[fighter.index])
-        array.fill(false);
-}
-
-void FightWorld::disable_all_hit_blobs(Fighter& fighter)
-{
-    const auto predicate = [&](HitBlob* blob) { return blob->fighter == &fighter; };
-    const auto end = std::remove_if(mEnabledHitBlobs.begin(), mEnabledHitBlobs.end(), predicate);
-    mEnabledHitBlobs.erase(end, mEnabledHitBlobs.end());
-}
-
-void FightWorld::disable_all_hurt_blobs(Fighter &fighter)
+void FightWorld::disable_hurtblobs(const Fighter& fighter)
 {
     const auto predicate = [&](HurtBlob* blob) { return blob->fighter == &fighter; };
-    const auto end = std::remove_if(mEnabledHurtBlobs.begin(), mEnabledHurtBlobs.end(), predicate);
-    mEnabledHurtBlobs.erase(end, mEnabledHurtBlobs.end());
+    algo::erase_if(mEnabledHurtBlobs, predicate);
+}
+
+void FightWorld::editor_clear_hurtblobs()
+{
+    mEnabledHurtBlobs.clear();
 }
 
 //============================================================================//
 
-void FightWorld::editor_disable_all_hurtblobs()
+void FightWorld::reset_collisions(uint8_t fighter, uint8_t group)
 {
-    mEnabledHurtBlobs.clear();
+    mHitBlobGroups[fighter][group].fill(false);
+}
+
+void FightWorld::reset_all_collisions(uint8_t fighter)
+{
+    for (auto& group : mHitBlobGroups[fighter])
+        group.fill(false);
 }

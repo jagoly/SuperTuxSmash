@@ -12,7 +12,7 @@
       "knockBase": 32.0,
       "knockScale": 90.0,
       "origin": [ -0.11000003, 1.2743402, -0.004770154 ],
-      "radius": 0.5,
+      "radius": 0.76,
       "useFixedKnockback": false,
       "useSakuraiAngle": false
     },
@@ -33,5 +33,15 @@
       "useSakuraiAngle": false
     }
   },
-  "emitters": {}
+  "emitters": {},
+  "sounds": {
+    "SwingExtra": {
+      "path": "fighters/Mario/sounds/SwingExtra",
+      "volume": 0.4
+    },
+    "SwingLarge": {
+      "path": "fighters/Mario/sounds/SwingLarge",
+      "volume": 0.5
+    }
+  }
 }

@@ -97,5 +97,11 @@
       "useSakuraiAngle": true
     }
   },
-  "emitters": {}
+  "emitters": {},
+  "sounds": {
+    "SwingLarge": {
+      "path": "fighters/Mario/sounds/SwingLarge",
+      "volume": 0.5
+    }
+  }
 }

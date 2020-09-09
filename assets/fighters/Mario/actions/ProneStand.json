@@ -1,4 +1,10 @@
 {
   "blobs": {},
-  "emitters": {}
+  "emitters": {},
+  "sounds": {
+    "Stand": {
+      "path": "fighters/Mario/sounds/Stand",
+      "volume": 0.6
+    }
+  }
 }

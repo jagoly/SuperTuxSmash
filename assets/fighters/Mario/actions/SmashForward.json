@@ -61,6 +61,7 @@
         [ 1.0, 0.0, 0.0 ],
         [ 1.0, 0.5019608, 0.0 ]
       ],
+      "count": 28,
       "discIncline": [ 0.0, 0.0 ],
       "discOffset": [ 0.0, 0.0 ],
       "discSpeed": [ 0.0, 0.0 ],
@@ -70,6 +71,16 @@
       "origin": [ 0.0, 0.75, 1.5 ],
       "sprite": "Smoke",
       "velocity": [ 0.0, 0.0, 0.035 ]
+    }
+  },
+  "sounds": {
+    "SwingExtra": {
+      "path": "fighters/Mario/sounds/SwingExtra",
+      "volume": 0.4
+    },
+    "SwingFire": {
+      "path": "fighters/Mario/sounds/SwingFire",
+      "volume": 0.6
     }
   }
 }

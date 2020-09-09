@@ -177,5 +177,15 @@
       "useSakuraiAngle": false
     }
   },
-  "emitters": {}
+  "emitters": {},
+  "sounds": {
+    "Spin": {
+      "path": "fighters/Mario/sounds/Spin",
+      "volume": 0.4
+    },
+    "SpinLoud": {
+      "path": "fighters/Mario/sounds/Spin",
+      "volume": 0.8
+    }
+  }
 }

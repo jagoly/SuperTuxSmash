@@ -2,7 +2,9 @@
 
 #include "render/RenderObject.hpp"
 
-#include "render/ResourceCaches.hpp"
+#include "caches/MeshCache.hpp"
+#include "caches/ProgramCache.hpp"
+#include "caches/TextureCache.hpp"
 
 namespace sts {
 

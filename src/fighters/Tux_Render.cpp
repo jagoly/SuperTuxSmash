@@ -16,18 +16,16 @@ Tux_Render::Tux_Render(Renderer& renderer, const Tux_Fighter& fighter)
 {
     mUbo.create_and_allocate(sizeof(Tux_Render::mCharacterBlock));
 
-    ResourceCaches& cache = renderer.resources;
+    MESH_Tux = renderer.meshes.acquire("fighters/Tux/meshes/Mesh");
 
-    MESH_Tux = cache.meshes.acquire("assets/fighters/Tux/meshes/Mesh");
-
-    TX_Tux_diff = cache.textures.acquire("assets/fighters/Tux/textures/Tux_diff");
-    TX_Tux_spec = cache.textures.acquire("assets/fighters/Tux/textures/Tux_spec");
+    TEX_Tux_diff = renderer.textures.acquire("fighters/Tux/textures/Tux_diff");
+    TEX_Tux_spec = renderer.textures.acquire("fighters/Tux/textures/Tux_spec");
 
     sq::ProgramKey programKey;
     programKey.fragmentDefines = "#define OPT_TEX_DIFFUSE\n#define OPT_TEX_SPECULAR";
     programKey.vertexPath = "fighters/BasicFighter_vs";
     programKey.fragmentPath = "fighters/BasicFighter_fs";
-    PROG_Tux = cache.programs.acquire(programKey);
+    PROG_Tux = renderer.programs.acquire(programKey);
 }
 
 //============================================================================//
@@ -50,7 +48,6 @@ void Tux_Render::integrate(float blend)
 void Tux_Render::render_depth()
 {
     auto& context = renderer.context;
-    auto& shaders = renderer.shaders;
 
     context.set_state(Context::Cull_Face::Back);
     context.set_state(Context::Depth_Compare::LessEqual);
@@ -59,7 +56,7 @@ void Tux_Render::render_depth()
     context.bind_VertexArray(MESH_Tux->get_vao());
     context.bind_UniformBuffer(mUbo, 2u);
 
-    context.bind_Program(shaders.Depth_FighterSolid);
+    context.bind_Program(renderer.PROG_Depth_FighterSolid);
 
     MESH_Tux->draw_complete();
 }
@@ -77,8 +74,8 @@ void Tux_Render::render_main()
     context.bind_VertexArray(MESH_Tux->get_vao());
     context.bind_UniformBuffer(mUbo, 2u);
 
-    context.bind_Texture(TX_Tux_diff.get(), 0u);
-    context.bind_Texture(TX_Tux_spec.get(), 2u);
+    context.bind_Texture(TEX_Tux_diff.get(), 0u);
+    context.bind_Texture(TEX_Tux_spec.get(), 2u);
 
     context.bind_Program(PROG_Tux.get());
 

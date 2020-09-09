@@ -1,0 +1,10 @@
+{
+  "blobs": {},
+  "emitters": {},
+  "sounds": {
+    "AirHop": {
+      "path": "fighters/Mario/sounds/AirHop",
+      "volume": 0.5
+    }
+  }
+}

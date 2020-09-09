@@ -1,7 +1,9 @@
 #include "render/DebugRender.hpp"
 
-#include "game/Blobs.hpp"
+#include "game/Action.hpp"
 #include "game/Fighter.hpp"
+#include "game/HitBlob.hpp"
+#include "game/HurtBlob.hpp"
 
 #include "render/Camera.hpp"
 #include "render/Renderer.hpp"
@@ -65,7 +67,7 @@ void DebugRenderer::render_hit_blobs(const std::vector<HitBlob*>& blobs)
 
     //--------------------------------------------------------//
 
-    context.bind_FrameBuffer(renderer.fbos.Resolve);
+    context.bind_FrameBuffer(renderer.FB_Resolve);
 
     context.set_state(Context::Blend_Mode::Alpha);
     context.set_state(Context::Cull_Face::Back);
@@ -95,9 +97,9 @@ void DebugRenderer::render_hit_blobs(const std::vector<HitBlob*>& blobs)
 
         // for relative facing, we just show an arrow in the most likely direction
         // can give weird results when origin is close to zero
-        const float facingRelative = blob->fighter->status.position.x < blob->sphere.origin.x ? +1.f : -1.f;
+        const float facingRelative = blob->action->fighter.status.position.x < blob->sphere.origin.x ? +1.f : -1.f;
         const float facing = blob->facing == BlobFacing::Relative ? facingRelative : blob->facing == BlobFacing::Forward
-                             ? float(blob->fighter->status.facing) : float(-blob->fighter->status.facing);
+                             ? float(blob->action->fighter.status.facing) : float(-blob->action->fighter.status.facing);
 
         if (blob->useSakuraiAngle == true)
         {
@@ -154,7 +156,7 @@ void DebugRenderer::render_hurt_blobs(const std::vector<HurtBlob*>& blobs)
 
     //--------------------------------------------------------//
 
-    context.bind_FrameBuffer(renderer.fbos.Resolve);
+    context.bind_FrameBuffer(renderer.FB_Resolve);
 
     context.set_state(Context::Blend_Mode::Alpha);
     context.set_state(Context::Cull_Face::Back);
@@ -208,7 +210,7 @@ void DebugRenderer::render_diamond(const Fighter& fighter)
 
     //--------------------------------------------------------//
 
-    context.bind_FrameBuffer(renderer.fbos.Resolve);
+    context.bind_FrameBuffer(renderer.FB_Resolve);
 
     context.set_state(Context::Blend_Mode::Alpha);
     context.set_state(Context::Cull_Face::Back);
@@ -248,7 +250,7 @@ void DebugRenderer::render_skeleton(const Fighter& fighter)
 
     //--------------------------------------------------------//
 
-    context.bind_FrameBuffer(renderer.fbos.Resolve);
+    context.bind_FrameBuffer(renderer.FB_Resolve);
 
     //--------------------------------------------------------//
 

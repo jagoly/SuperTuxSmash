@@ -1,4 +1,10 @@
 {
   "blobs": {},
-  "emitters": {}
+  "emitters": {},
+  "sounds": {
+    "LandLight": {
+      "path": "fighters/Mario/sounds/LandLight",
+      "volume": 0.3
+    }
+  }
 }

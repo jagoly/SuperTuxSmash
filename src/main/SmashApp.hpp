@@ -7,6 +7,7 @@
 #include <sqee/app/Window.hpp> // IWYU pragma: export
 #include <sqee/app/InputDevices.hpp> // IWYU pragma: export
 #include <sqee/app/DebugOverlay.hpp> // IWYU pragma: export
+#include <sqee/app/AudioContext.hpp> // IWYU pragma: export
 #include <sqee/app/Scene.hpp> // IWYU pragma: export
 
 namespace sts {
@@ -34,6 +35,7 @@ public: //====================================================//
     sq::Window& get_window() { return *mWindow; }
     sq::InputDevices& get_input_devices() { return *mInputDevices; }
     sq::DebugOverlay& get_debug_overlay() { return *mDebugOverlay; }
+    sq::AudioContext& get_audio_context() { return *mAudioContext; }
 
     Options& get_options() { return *mOptions; }
 
@@ -54,6 +56,7 @@ private: //===================================================//
     std::unique_ptr<sq::Window> mWindow;
     std::unique_ptr<sq::InputDevices> mInputDevices;
     std::unique_ptr<sq::DebugOverlay> mDebugOverlay;
+    std::unique_ptr<sq::AudioContext> mAudioContext;
 
     std::unique_ptr<Options> mOptions;
 

@@ -4,7 +4,7 @@
 
 #include "game/ActionEnums.hpp"
 
-#include <sqee/redist/sol.hpp>
+#include <sqee/app/WrenPlus.hpp>
 
 namespace sts {
 
@@ -14,10 +14,11 @@ class Action : private sq::NonCopyable
 {
 public: //====================================================//
 
-    FightWorld& world;
-    Fighter& fighter;
-
     const ActionType type;
+
+    Fighter& fighter;
+    FightWorld& world;
+
     const String path;
 
     //--------------------------------------------------------//
@@ -31,74 +32,60 @@ public: //====================================================//
     void do_start();
 
     void do_tick();
+    //void do_tick(const InputFrame& input);
 
     void do_cancel();
 
     //--------------------------------------------------------//
 
-    ActionStatus get_status() { return mStatus; };
+    ActionStatus get_status() const { return mStatus; };
+
+    uint get_current_frame() const { return mCurrentFrame; }
 
     //--------------------------------------------------------//
 
     void load_from_json();
 
-    void load_lua_from_fallback();
+    void load_wren_from_file();
 
-    void load_lua_from_file();
+    void load_wren_from_string();
 
-    void load_lua_from_string();
+    //-- wren methods and properties -------------------------//
 
-    //--------------------------------------------------------//
+    void wren_set_wait_until(uint frame);
 
-    void lua_func_wait_until(uint frame);
+    void wren_allow_interrupt();
 
-    //void lua_func_enable_blob(TinyString key);
+    void wren_enable_hitblob_group(uint8_t group);
 
-    //void lua_func_disable_blob(TinyString key);
+    void wren_disable_hitblob_group(uint8_t group);
 
-    void lua_func_enable_blob_group(uint8_t group);
+    void wren_disable_hitblobs();
 
-    void lua_func_disable_blob_group(uint8_t group);
+    void wren_emit_particles(TinyString key);
 
-    void lua_func_emit_particles(TinyString key, uint count);
-
-    void lua_func_allow_interrupt();
+    void wren_play_sound(TinyString key);
 
 private: //===================================================//
 
     ActionStatus mStatus = ActionStatus::None;
 
+    uint mCurrentFrame = 0u;
+    uint mWaitingUntil = 0u;
+
+    String mWrenSource;
+    String mErrorMessage;
+
+    WrenHandle* mScriptInstance = nullptr;
+    WrenHandle* mFiberInstance = nullptr;
+
+    //--------------------------------------------------------//
+
     sq::PoolMap<TinyString, HitBlob> mBlobs;
 
     sq::PoolMap<TinyString, Emitter> mEmitters;
 
-    //--------------------------------------------------------//
-
-    String mLuaSource;
-    String mErrorMessage;
-
-    //--------------------------------------------------------//
-
-    uint mCurrentFrame = 0u;
-    uint mWaitingUntil = 0u;
-
-    bool mAllowIterrupt = false;
-
-    //--------------------------------------------------------//
-
-    sol::environment mEnvironment;
-
-    sol::function mTickFunction;
-    sol::coroutine mTickCoroutine;
-
-    //sol::function mCancelFunction;
-
-    sol::thread mThread;
-
-    //--------------------------------------------------------//
-
-    void reset_lua_thread();
-    void reset_lua_environment();
+    sq::PoolMap<TinyString, SoundEffect> mSounds;
 
     //--------------------------------------------------------//
 
@@ -111,7 +98,7 @@ private: //===================================================//
     //--------------------------------------------------------//
 
     template <class... Args>
-    inline void log_script(StringView str, const Args&... args);
+    void set_error_status(StringView str, const Args&... args);
 
     //--------------------------------------------------------//
 
@@ -122,3 +109,9 @@ private: //===================================================//
 //============================================================================//
 
 } // namespace sts
+
+template<> struct wren::Traits<sts::Action> : std::true_type
+{
+    static constexpr const char module[] = "sts";
+    static constexpr const char className[] = "Action";
+};

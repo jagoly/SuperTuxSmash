@@ -42,15 +42,13 @@ GameScene::GameScene(SmashApp& smashApp, GameSetup setup)
 
     options.editor_mode = false;
 
-    options.log_input = true;
-
     auto& window = mSmashApp.get_window();
 
     window.set_key_repeat(false);
 
     //--------------------------------------------------------//
 
-    mFightWorld = std::make_unique<FightWorld>(options);
+    mFightWorld = std::make_unique<FightWorld>(options, mSmashApp.get_audio_context());
     mRenderer = std::make_unique<Renderer>(options);
 
     mRenderer->set_camera(std::make_unique<StandardCamera>(*mRenderer));
@@ -149,10 +147,14 @@ void GameScene::handle_event(sq::Event event)
     if (event.type == sq::Event::Type::Keyboard_Press)
     {
         if (event.data.keyboard.key == sq::Keyboard_Key::F1)
+        {
             mGamePaused = !mGamePaused;
+            mSmashApp.get_audio_context().set_groups_paused(sq::SoundGroup::Sfx, mGamePaused);
+        }
 
         if (mGamePaused == true)
         {
+            // todo: what should sound do here?
             if (event.data.keyboard.key == sq::Keyboard_Key::F2)
                 mFightWorld->tick();
         }

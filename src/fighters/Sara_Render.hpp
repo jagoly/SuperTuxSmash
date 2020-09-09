@@ -2,7 +2,10 @@
 
 #include "render/RenderObject.hpp"
 
-#include "render/ResourceCaches.hpp"
+#include "caches/MeshCache.hpp"
+#include "caches/ProgramCache.hpp"
+#include "caches/TextureCache.hpp"
+
 #include "render/UniformBlocks.hpp"
 
 #include <sqee/gl/UniformBuffer.hpp>
@@ -17,7 +20,7 @@ class Sara_Render final : public RenderObject
 {
 public: //====================================================//
 
-    Sara_Render(Renderer& renderer, const Sara_Fighter& fighter);
+    Sara_Render(Renderer&, const Sara_Fighter&);
 
     //--------------------------------------------------------//
 
@@ -33,13 +36,13 @@ private: //===================================================//
 
     MeshHandle MESH_Sara;
 
-    TextureHandle TX_Main_diff;
-    TextureHandle TX_Main_spec;
+    TextureHandle TEX_Main_diff;
+    TextureHandle TEX_Main_spec;
 
-    TextureHandle TX_Hair_mask;
-    TextureHandle TX_Hair_diff;
-    TextureHandle TX_Hair_norm;
-    TextureHandle TX_Hair_spec;
+    TextureHandle TEX_Hair_mask;
+    TextureHandle TEX_Hair_diff;
+    TextureHandle TEX_Hair_norm;
+    TextureHandle TEX_Hair_spec;
 
     ProgramHandle PROG_Main;
     ProgramHandle PROG_Hair;

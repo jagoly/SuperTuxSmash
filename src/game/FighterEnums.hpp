@@ -22,6 +22,7 @@ enum class FighterState : uint8_t
     JumpFall,
     TumbleFall,
     Stun,
+    ShieldStun,
     AirStun,
     TumbleStun,
     Helpless,
@@ -37,7 +38,7 @@ enum class FighterState : uint8_t
 enum class FighterCommand : uint8_t
 {
     INVALID = 0,   ///< helper requires the first value to be zero
-    Shield,        ///< used to perform evades/dodges
+    Dodge,         ///< used to perform air dodges
     Jump,          ///< used to jump and airhop
     MashDown,      ///< used to drop through platforms and fastfall
     MashUp,        ///< used for getting up from prone
@@ -87,6 +88,7 @@ SQEE_ENUM_HELPER
     JumpFall,
     TumbleFall,
     Stun,
+    ShieldStun,
     AirStun,
     TumbleStun,
     Helpless,
@@ -102,7 +104,7 @@ SQEE_ENUM_HELPER
 (
     sts::FighterCommand,
     INVALID,
-    Shield,
+    Dodge,
     Jump,
     MashDown,
     MashUp,

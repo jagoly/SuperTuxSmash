@@ -8,120 +8,122 @@
 #include <sqee/debug/Logging.hpp>
 #include <sqee/misc/Files.hpp>
 #include <sqee/misc/Json.hpp>
-#include <sqee/misc/Parsing.hpp>
 
 using namespace sts;
 
 //============================================================================//
 
-const char* const FALLBACK_SCRIPT = R"lua(
-function tick()
-  action:wait_until(32)
-  action:allow_interrupt()
-end
-)lua";
+const char* const FALLBACK_SCRIPT
+= R"wren(
+
+import "sts" for ScriptBase
+
+class Script is ScriptBase {
+  construct new(a, f) { super(a, f) }
+
+  execute() {
+    wait_until(32)
+    action.allow_interrupt()
+  }
+
+  cancel() {
+    //fighter.set_intangible(false)
+    //action.disable_hitblobs()
+  }
+}
+
+)wren";
 
 //============================================================================//
 
 Action::Action(FightWorld& world, Fighter& fighter, ActionType type, String path)
-    : world(world), fighter(fighter), type(type), path(path)
+    : type(type), fighter(fighter), world(world), path(path)
     , mBlobs(world.get_hit_blob_allocator())
-    , mEmitters(world.get_emitter_allocator()) {}
+    , mEmitters(world.get_emitter_allocator())
+    , mSounds(world.get_sound_effect_allocator()) {}
 
-Action::~Action() = default;
+Action::~Action()
+{
+    if (mScriptInstance) wrenReleaseHandle(world.vm, mScriptInstance);
+    if (mFiberInstance) wrenReleaseHandle(world.vm, mFiberInstance);
+}
 
 //============================================================================//
 
 void Action::do_start()
 {
     if (world.options.log_script == true)
-        sq::log_debug("{}/{}: do_start()", fighter.type, type);
+        sq::log_debug("{}/{}     | do_start()", fighter.type, type);
 
-    reset_lua_thread();
+    if (mFiberInstance) wrenReleaseHandle(world.vm, mFiberInstance);
 
-    mTickCoroutine = sol::coroutine(mThread.state(), mTickFunction);
-    sol::set_environment(mEnvironment, mTickCoroutine);
-
-    SQASSERT(mTickCoroutine.valid(), "error creating coroutine");
+    mFiberInstance = world.vm.call<WrenHandle*>(world.handles.script_reset, mScriptInstance);
 
     mCurrentFrame = 0u;
     mWaitingUntil = 0u;
 
-    mAllowIterrupt = false;
+    mStatus = ActionStatus::Running;
 }
 
-//----------------------------------------------------------------------------//
+//============================================================================//
 
 void Action::do_tick()
+//void Action::do_tick(const InputFrame& input)
 {
-    mCurrentFrame += 1u;
+    SQASSERT(mStatus != ActionStatus::None, "do_tick() called on unstarted action");
+    SQASSERT(mStatus != ActionStatus::Finished, "do_tick() called on finished action");
 
-    if (mTickCoroutine.status() == sol::call_status::ok)
+    if (world.vm.call<bool>(world.handles.fiber_isDone, mFiberInstance))
     {
-        if (mStatus != ActionStatus::AllowInterrupt)
+        if (mStatus == ActionStatus::RuntimeError)
         {
-            if (world.options.editor_mode == false)
-                sq::log_error_multiline("action '{}/{}':\nfinished without calling allow_interrupt()", fighter.type, type);
-
-            mErrorMessage = "finished without calling allow_interrupt()";
-
-            mStatus = ActionStatus::RuntimeError;
-            return;
+            world.disable_hitblobs(*this);
+            world.reset_all_collisions(fighter.index);
+            mStatus = ActionStatus::Finished;
         }
 
-        mStatus = ActionStatus::Finished;
-        return;
-    }
-
-    if (mTickCoroutine.status() != sol::call_status::yielded)
-    {
-        mStatus = ActionStatus::RuntimeError;
-        return;
-    }
-
-    SQASSERT(mTickCoroutine.runnable() == true, "");
-
-    if (mCurrentFrame >= mWaitingUntil)
-    {
-        const auto pfr = mTickCoroutine.call();
-        if (pfr.valid() == false)
+        else if (mStatus == ActionStatus::AllowInterrupt)
         {
-            try { sol::script_throw_on_error(mThread.state(), pfr); }
-            catch (const sol::error& error)
-            {
-                if (world.options.editor_mode == false)
-                    sq::log_error_multiline("action '{}/{}', frame {}:\n{}", fighter.type, type, mCurrentFrame, error.what());
-
-                mErrorMessage = "error on frame {}:\n{}"_format(mCurrentFrame, error.what());
-                do_cancel();
-            }
+            mStatus = ActionStatus::Finished;
         }
+
+        else if (mStatus == ActionStatus::Running)
+            set_error_status("frame {}:\nexecute() returned before calling allow_interrupt()", mCurrentFrame);
     }
 
-    mStatus = mAllowIterrupt ? ActionStatus::AllowInterrupt : ActionStatus::Running;
+    else
+    {
+        if (mCurrentFrame == mWaitingUntil)
+        {
+            const auto errors = world.vm.safe_call_void(world.handles.fiber_call, mFiberInstance);
+
+            if (errors.has_value() == true)
+                set_error_status("frame {}:\n{}", mCurrentFrame, *errors);
+        }
+
+        mCurrentFrame += 1u;
+    }
+
+    // status == Running:        the coroutine is running or just finished, allow_interrupt has not been called
+    // status == AllowInterrupt: the coroutine is running or just finished, allow_interrupt has been called
+    // status == Finished:       the coroutine finished last frame, the action should be deactivated
+    // status == RuntimeError:   some kind of error has occured while in editor mode
 }
 
-//----------------------------------------------------------------------------//
+//============================================================================//
 
 void Action::do_cancel()
 {
     if (world.options.log_script == true)
-        sq::log_debug("{}/{}: do_cancel()", fighter.type, type);
+        sq::log_debug("{}/{}     | do_cancel()", fighter.type, type);
 
-    world.disable_all_hit_blobs(fighter);
-    world.reset_all_hit_blob_groups(fighter);
+    const auto errors = world.vm.safe_call_void(world.handles.script_cancel, mScriptInstance);
 
+    if (errors.has_value() == true)
+        set_error_status("cancel():\n{}", *errors);
+
+    // even if cancel() raised an error, always set status to finished
     mStatus = ActionStatus::Finished;
-
-    //const auto pfr = mCancelFunction.call();
-//    if (pfr.valid() == false)
-//    {
-//        sq::log_warning("caught script error, will crash now");
-//        sol::script_throw_on_error(mThread.state(), pfr);
-//    }
-
-//    world.reset_all_hit_blob_groups(fighter);
-//    world.disable_all_hit_blobs(fighter);
 }
 
 //============================================================================//
@@ -131,23 +133,21 @@ void Action::load_from_json()
     mBlobs.clear();
     mEmitters.clear();
 
-    const String filePath = path + ".json";
+    // todo: make sqee better so we don't have use check_file_exists
 
-    if (sq::check_file_exists(filePath) == false)
+    if (sq::check_file_exists(path + ".json") == false)
     {
-        sq::log_warning("missing json   '{}'", filePath);
+        sq::log_warning("missing json   '{}.json'", path);
         return;
     }
 
-    const JsonValue root = sq::parse_json_from_file(filePath);
+    const JsonValue root = sq::parse_json_from_file(path + ".json");
 
     String errors;
 
     TRY_FOR (auto iter : root.at("blobs").items())
     {
         HitBlob& blob = mBlobs[iter.key()];
-
-        blob.fighter = &fighter;
         blob.action = this;
 
         try { blob.from_json(iter.value()); }
@@ -158,122 +158,89 @@ void Action::load_from_json()
     TRY_FOR (auto iter : root.at("emitters").items())
     {
         Emitter& emitter = mEmitters[iter.key()];
-
         emitter.fighter = &fighter;
-        emitter.action = this;
 
         try { emitter.from_json(iter.value()); }
         catch (const std::exception& e) { errors += "\nemitter '{}': {}"_format(iter.key(), e.what()); }
     }
     CATCH (const std::exception& e) { errors += '\n'; errors += e.what(); }
 
+    TRY_FOR (auto iter : root.at("sounds").items())
+    {
+        SoundEffect& sound = mSounds[iter.key()];
+        sound.cache = &world.sounds;
+
+        try { sound.from_json(iter.value()); }
+        catch (const std::exception& e) { errors += "\nsound '{}': {}"_format(iter.key(), e.what()); }
+    }
+    CATCH (const std::exception& e) { errors += '\n'; errors += e.what(); }
+
     if (errors.empty() == false)
-    {
-        sq::log_warning_multiline("errors in json '{}'{}", filePath, errors);
-        //mBlobs.clear();
-        //mEmitters.clear();
-    }
-}
-
-//----------------------------------------------------------------------------//
-
-void Action::load_lua_from_fallback()
-{
-    sol::state& lua = world.get_lua_state();
-
-    reset_lua_environment();
-
-    lua.script(FALLBACK_SCRIPT, mEnvironment, "fallback", sol::load_mode::text);
-
-    mTickFunction = mEnvironment["tick"];
-}
-
-//----------------------------------------------------------------------------//
-
-void Action::load_lua_from_file()
-{
-    const String filePath = path + ".lua";
-
-    if (sq::check_file_exists(filePath) == false)
-    {
-        sq::log_warning("missing script '{}'", filePath);
-        load_lua_from_fallback();
-
-        if (world.options.editor_mode == true)
-        {
-            mLuaSource = FALLBACK_SCRIPT;
-            mErrorMessage.clear();
-        }
-    }
-
-    else if (world.options.editor_mode == true)
-    {
-        mLuaSource = sq::get_string_from_file(filePath);
-        load_lua_from_string();
-    }
-
-    else try
-    {
-        sol::state& lua = world.get_lua_state();
-        reset_lua_environment();
-
-        lua.script_file(filePath, mEnvironment, sol::load_mode::text);
-
-        mTickFunction = mEnvironment["tick"];
-    }
-    catch (const sol::error& error)
-    {
-        sq::log_warning_multiline("failed to load script '{}'\n{}", filePath, error.what());
-        load_lua_from_fallback();
-    }
-}
-
-//----------------------------------------------------------------------------//
-
-void Action::load_lua_from_string()
-{
-    try
-    {
-        sol::state& lua = world.get_lua_state();
-        reset_lua_environment();
-
-        lua.script(mLuaSource, mEnvironment, "src", sol::load_mode::text);
-
-        mTickFunction = mEnvironment["tick"];
-
-        mErrorMessage.clear();
-    }
-    catch (const sol::error& error)
-    {
-        load_lua_from_fallback();
-        mErrorMessage = "error loading from string:\n{}"_format(error.what());
-    }
-
-    //reset_lua_thread();
+        sq::log_warning_multiline("errors in '{}.json'{}", path, errors);
 }
 
 //============================================================================//
 
-void Action::reset_lua_environment()
+void Action::load_wren_from_file()
 {
-    sol::state& lua = world.get_lua_state();
+    // Called to load the script from a file. Real work is done load_wren_from_string().
 
-    mEnvironment = { lua, sol::create, lua.globals() };
+    auto source = sq::try_get_string_from_file(path + ".wren");
 
-    mEnvironment["action"] = this;
-    mEnvironment["fighter"] = &fighter;
+    if (source.has_value() == false)
+    {
+        sq::log_warning("missing script '{}.wren'", path);
+        mWrenSource = FALLBACK_SCRIPT;
+    }
+    else mWrenSource = std::move(*source);
+
+    load_wren_from_string();
 }
 
-void Action::reset_lua_thread()
-{
-    sol::state& lua = world.get_lua_state();
+//----------------------------------------------------------------------------//
 
-    if (mThread.valid() == true)
+void Action::load_wren_from_string()
+{
+    // Load and construct wren script instance. In editor mode, will load fallback on failure.
+
+    const String module = "{}_{}"_format(fighter.index, type);
+
+    // if the script is already loaded, unload it
+    if (mScriptInstance != nullptr)
     {
-        //lua_gc(mThread.state(), LUA_GCCOLLECT);
-        lua_resetthread(mThread.state());
+        wrenReleaseHandle(world.vm, mScriptInstance);
+        wrenUnloadModule(world.vm, module.c_str());
+        mErrorMessage.clear();
     }
-    else mThread = sol::thread::create(lua);
+
+    auto errors = world.vm.safe_interpret(module.c_str(), mWrenSource.c_str());
+    if (errors.has_value() == true)
+    {
+        if (world.options.editor_mode) mErrorMessage = std::move(*errors);
+        else sq::log_error_multiline("failed to load script '{}.wren'\n{}", path, *errors);
+
+        wrenUnloadModule(world.vm, module.c_str());
+        world.vm.interpret(module.c_str(), FALLBACK_SCRIPT);
+    }
+
+    const auto safe = world.vm.safe_call<WrenHandle*>(world.handles.script_new, wren::GetVar{module.c_str(), "Script"}, this, &fighter);
+    if (safe.errors.empty() == false)
+    {
+        if (world.options.editor_mode) mErrorMessage = std::move(safe.errors);
+        else sq::log_error_multiline("failed to load script '{}.wren'\n{}", path, safe.errors);
+
+        wrenUnloadModule(world.vm, module.c_str());
+        world.vm.interpret(module.c_str(), FALLBACK_SCRIPT);
+        mScriptInstance = world.vm.call<WrenHandle*>(world.handles.script_new, wren::GetVar{module.c_str(), "Script"}, this, &fighter);
+    }
+    else mScriptInstance = *safe.value;
+
+    // don't need the source anymore, so free some memory
+    if (world.options.editor_mode == false)
+    {
+        mWrenSource.clear();
+        mWrenSource.shrink_to_fit();
+    }
 }
 
 //============================================================================//
@@ -282,7 +249,8 @@ bool Action::has_changes(const Action& reference) const
 {
     if (mBlobs != reference.mBlobs) return true;
     if (mEmitters != reference.mEmitters) return true;
-    if (mLuaSource != reference.mLuaSource) return true;
+    if (mSounds != reference.mSounds) return true;
+    if (mWrenSource != reference.mWrenSource) return true;
     return false;
 }
 
@@ -296,8 +264,12 @@ void Action::apply_changes(const Action& source)
     for (const auto& [key, emitter] : source.mEmitters)
         mEmitters.try_emplace(key, emitter);
 
-    mLuaSource = source.mLuaSource;
-    load_lua_from_string();
+    mSounds.clear();
+    for (const auto& [key, sound] : source.mSounds)
+        mSounds.try_emplace(key, sound);
+
+    mWrenSource = source.mWrenSource;
+    load_wren_from_string();
 }
 
 std::unique_ptr<Action> Action::clone() const
@@ -312,103 +284,11 @@ std::unique_ptr<Action> Action::clone() const
 //============================================================================//
 
 template <class... Args>
-static inline void throw_error(StringView str, const Args&... args)
+inline void Action::set_error_status(StringView str, const Args&... args)
 {
-    throw std::runtime_error(fmt::format(str, args...));
-}
+    if (world.options.editor_mode == false)
+        sq::log_error_multiline(sq::build_string("action '{}/{}' - ", str), fighter.type, type, args...);
 
-template <class... Args>
-inline void Action::log_script(StringView str, const Args&... args)
-{
-    if (world.options.log_script == true)
-        sq::log_debug(sq::build_string("{}/{} {:02d}: ", str), fighter.type, type, mCurrentFrame, args...);
-}
-
-//============================================================================//
-
-//void Action::lua_func_enable_blob(TinyString key)
-//{
-//    if (world.options.log_script) sq::log_debug("enable_blob('{}')", key);
-
-//    const auto iter = mBlobs.find(key);
-//    if (iter == mBlobs.end())
-//        throw_error("invalid blob '{}'", key);
-
-//    world.enable_hit_blob(&iter->second);
-//};
-
-//----------------------------------------------------------------------------//
-
-//void Action::lua_func_disable_blob(TinyString key)
-//{
-//    if (world.options.log_script) sq::log_debug("disable_blob('{}')", key);
-
-//    const auto iter = mBlobs.find(key);
-//    if (iter == mBlobs.end())
-//        throw_error("invalid blob '{}'", key);
-
-//    world.disable_hit_blob(&iter->second);
-//};
-
-//----------------------------------------------------------------------------//
-
-void Action::lua_func_enable_blob_group(uint8_t group)
-{
-    log_script("enable_blob_group('{}')", group);
-
-    for (auto& [key, blob] : mBlobs)
-        if (blob.group == group)
-            world.enable_hit_blob(&blob);
-};
-
-//----------------------------------------------------------------------------//
-
-void Action::lua_func_disable_blob_group(uint8_t group)
-{
-    log_script("disable_blob_group('{}')", group);
-
-    for (auto& [key, blob] : mBlobs)
-        if (blob.group == group)
-            world.disable_hit_blob(&blob);
-};
-
-//----------------------------------------------------------------------------//
-
-void Action::lua_func_allow_interrupt()
-{
-    log_script("allow_interrupt()");
-
-    world.disable_all_hit_blobs(fighter);
-    world.reset_all_hit_blob_groups(fighter);
-    mAllowIterrupt = true;
-};
-
-//----------------------------------------------------------------------------//
-
-void Action::lua_func_emit_particles(TinyString key, uint count)
-{
-    log_script("emit_particles('{}', {})", key, count);
-
-    if (count > 256u)
-        throw_error("count {} too high, limit is 256", count);
-
-    const auto iter = mEmitters.find(key);
-    if (iter == mEmitters.end())
-        throw_error("invalid emitter '{}'", key);
-
-    Emitter& emitter = iter->second;
-
-    emitter.generate(world.get_particle_system(), count);
-}
-
-//----------------------------------------------------------------------------//
-
-void Action::lua_func_wait_until(uint frame)
-{
-    log_script("wait_until({})", frame);
-
-    if (frame <= mCurrentFrame)
-        throw_error("can't wait for {} on {}", frame, mCurrentFrame);
-
-    mWaitingUntil = frame;
+    mErrorMessage = fmt::format(str, args...);
+    mStatus = ActionStatus::RuntimeError;
 }

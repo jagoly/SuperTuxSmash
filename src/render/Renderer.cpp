@@ -18,14 +18,14 @@ using namespace sts;
 //============================================================================//
 
 Renderer::Renderer(const Options& options)
-    : resources(processor)
+    : programs(processor)
     , context(sq::Context::get())
     , options(options)
 {
     //-- Set Texture Paramaters ------------------------------//
 
-    textures.MsColour.set_filter_mode(true);
-    textures.Colour.set_filter_mode(true);
+    TEX_MsColour.set_filter_mode(true);
+    TEX_Colour.set_filter_mode(true);
 
     //-- Import GLSL Headers ---------------------------------//
 
@@ -35,7 +35,7 @@ Renderer::Renderer(const Options& options)
 
     //-- Create Uniform Buffers ------------------------------//
 
-    light.ubo.create_and_allocate(112u);
+    mLightUbo.create_and_allocate(112u);
 
     //--------------------------------------------------------//
 
@@ -72,54 +72,54 @@ void Renderer::refresh_options()
 
     const uint msaaNum = std::max(4u * options.msaa_quality * options.msaa_quality, 1u);
 
-    textures.MsDepth.allocate_storage(Vec3U(options.window_size, msaaNum));
-    textures.MsColour.allocate_storage(Vec3U(options.window_size, msaaNum));
+    TEX_MsDepth.allocate_storage(Vec3U(options.window_size, msaaNum));
+    TEX_MsColour.allocate_storage(Vec3U(options.window_size, msaaNum));
 
-    textures.Depth.allocate_storage(options.window_size);
-    textures.Colour.allocate_storage(options.window_size);
+    TEX_Depth.allocate_storage(options.window_size);
+    TEX_Colour.allocate_storage(options.window_size);
 
     //-- Attach Textures to FrameBuffers ---------------------//
 
-    fbos.MsDepth.attach(gl::DEPTH_STENCIL_ATTACHMENT, textures.MsDepth);
+    FB_MsDepth.attach(gl::DEPTH_STENCIL_ATTACHMENT, TEX_MsDepth);
 
-    fbos.MsMain.attach(gl::DEPTH_STENCIL_ATTACHMENT, textures.MsDepth);
-    fbos.MsMain.attach(gl::COLOR_ATTACHMENT0, textures.MsColour);
+    FB_MsMain.attach(gl::DEPTH_STENCIL_ATTACHMENT, TEX_MsDepth);
+    FB_MsMain.attach(gl::COLOR_ATTACHMENT0, TEX_MsColour);
 
-    fbos.Resolve.attach(gl::DEPTH_ATTACHMENT, textures.Depth);
-    fbos.Resolve.attach(gl::COLOR_ATTACHMENT0, textures.Colour);
+    FB_Resolve.attach(gl::DEPTH_ATTACHMENT, TEX_Depth);
+    FB_Resolve.attach(gl::COLOR_ATTACHMENT0, TEX_Colour);
 
     //-- Load GLSL Shader Sources ----------------------------//
 
-    processor.load_vertex(shaders.Depth_StaticSolid, "depth/Static_vs");
-    processor.load_vertex(shaders.Depth_StaticPunch, "depth/Static_vs");
-    processor.load_fragment(shaders.Depth_StaticPunch, "depth/Mask_fs");
+    processor.load_vertex(PROG_Depth_StaticSolid, "depth/Static_vs");
+    processor.load_vertex(PROG_Depth_StaticPunch, "depth/Static_vs");
+    processor.load_fragment(PROG_Depth_StaticPunch, "depth/Mask_fs");
 
-    processor.load_vertex(shaders.Depth_FighterSolid, "depth/Fighter_vs");
-    processor.load_vertex(shaders.Depth_FighterPunch, "depth/Fighter_vs");
-    processor.load_fragment(shaders.Depth_FighterPunch, "depth/Mask_fs");
+    processor.load_vertex(PROG_Depth_FighterSolid, "depth/Fighter_vs");
+    processor.load_vertex(PROG_Depth_FighterPunch, "depth/Fighter_vs");
+    processor.load_fragment(PROG_Depth_FighterPunch, "depth/Mask_fs");
 
-    processor.load_vertex(shaders.Particles, "particles/test_vs");
-    processor.load_geometry(shaders.Particles, "particles/test_gs");
-    processor.load_fragment(shaders.Particles, "particles/test_fs");
+    processor.load_vertex(PROG_Particles, "particles/test_vs");
+    processor.load_geometry(PROG_Particles, "particles/test_gs");
+    processor.load_fragment(PROG_Particles, "particles/test_fs");
 
-    processor.load_vertex(shaders.Lighting_Skybox, "lighting/Skybox_vs");
-    processor.load_fragment(shaders.Lighting_Skybox, "lighting/Skybox_fs");
+    processor.load_vertex(PROG_Lighting_Skybox, "lighting/Skybox_vs");
+    processor.load_fragment(PROG_Lighting_Skybox, "lighting/Skybox_fs");
 
-    processor.load_vertex(shaders.Composite, "FullScreen_vs");
-    processor.load_fragment(shaders.Composite, "Composite_fs");
+    processor.load_vertex(PROG_Composite, "FullScreen_vs");
+    processor.load_fragment(PROG_Composite, "Composite_fs");
 
     //-- Link Shader Program Stages --------------------------//
 
-    shaders.Depth_StaticSolid.link_program_stages();
-    shaders.Depth_StaticPunch.link_program_stages();
+    PROG_Depth_StaticSolid.link_program_stages();
+    PROG_Depth_StaticPunch.link_program_stages();
 
-    shaders.Depth_FighterSolid.link_program_stages();
-    shaders.Depth_FighterPunch.link_program_stages();
+    PROG_Depth_FighterSolid.link_program_stages();
+    PROG_Depth_FighterPunch.link_program_stages();
 
-    shaders.Particles.link_program_stages();
+    PROG_Particles.link_program_stages();
 
-    shaders.Lighting_Skybox.link_program_stages();
-    shaders.Composite.link_program_stages();
+    PROG_Lighting_Skybox.link_program_stages();
+    PROG_Composite.link_program_stages();
 
     //--------------------------------------------------------//
 
@@ -182,7 +182,7 @@ void Renderer::render_objects(float blend)
     const Vec3F skyColour = { 0.7f, 0.7f, 0.7f };
     const Mat4F skyMatrix = Mat4F();
 
-    light.ubo.update(0u, sq::Structure(ambiColour, 0, skyColour, 0, skyDirection, 0, skyMatrix));
+    mLightUbo.update(0u, sq::Structure(ambiColour, 0, skyColour, 0, skyDirection, 0, skyMatrix));
 
     //-- Integrate Object Changes ----------------------------//
 
@@ -194,11 +194,11 @@ void Renderer::render_objects(float blend)
     context.set_ViewPort(options.window_size);
 
     context.bind_UniformBuffer(mCamera->get_ubo(), 0u);
-    context.bind_UniformBuffer(light.ubo, 1u);
+    context.bind_UniformBuffer(mLightUbo, 1u);
 
     //-- Clear the FrameBuffer -------------------------------//
 
-    context.bind_FrameBuffer(fbos.MsMain);
+    context.bind_FrameBuffer(FB_MsMain);
 
     context.clear_Colour({0.f, 0.f, 0.f, 0.f});
     context.clear_Depth_Stencil();
@@ -210,27 +210,27 @@ void Renderer::render_objects(float blend)
     context.set_state(Context::Depth_Test::Disable);
 
     context.bind_Texture(shit.TEX_Skybox, 0u);
-    context.bind_Program(shaders.Lighting_Skybox);
+    context.bind_Program(PROG_Lighting_Skybox);
 
     sq::draw_screen_quad();
 
     //-- Render Depth Pass -----------------------------------//
 
-    context.bind_FrameBuffer(fbos.MsDepth);
+    context.bind_FrameBuffer(FB_MsDepth);
 
     for (const auto& object : mRenderObjects)
         object->render_depth();
 
     //-- Render Main Pass ------------------------------------//
 
-    context.bind_FrameBuffer(fbos.MsMain);
+    context.bind_FrameBuffer(FB_MsMain);
 
     for (const auto& object : mRenderObjects)
         object->render_main();
 
     //-- Render Alpha Pass -----------------------------------//
 
-    context.bind_FrameBuffer(fbos.MsMain);
+    context.bind_FrameBuffer(FB_MsMain);
 
     for (const auto& object : mRenderObjects)
         object->render_alpha();
@@ -253,7 +253,7 @@ void Renderer::resolve_multisample()
 {
     //-- Resolve the Multi Sample Texture --------------------//
 
-    fbos.MsMain.blit(fbos.Resolve, options.window_size, gl::DEPTH_BUFFER_BIT | gl::COLOR_BUFFER_BIT);
+    FB_MsMain.blit(FB_Resolve, options.window_size, gl::DEPTH_BUFFER_BIT | gl::COLOR_BUFFER_BIT);
 }
 
 //============================================================================//
@@ -268,8 +268,8 @@ void Renderer::finish_rendering()
     context.set_state(Context::Cull_Face::Disable);
     context.set_state(Context::Depth_Test::Disable);
 
-    context.bind_Texture(textures.Colour, 0u);
-    context.bind_Program(shaders.Composite);
+    context.bind_Texture(TEX_Colour, 0u);
+    context.bind_Program(PROG_Composite);
 
     sq::draw_screen_quad();
 }

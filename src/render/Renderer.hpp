@@ -2,12 +2,13 @@
 
 #include "setup.hpp"
 
-#include "render/ResourceCaches.hpp"
+#include "caches/MeshCache.hpp"
+#include "caches/ProgramCache.hpp"
+#include "caches/TexArrayCache.hpp"
+#include "caches/TextureCache.hpp"
 
 #include <sqee/app/PreProcessor.hpp>
 #include <sqee/gl/FrameBuffer.hpp>
-#include <sqee/gl/Program.hpp>
-#include <sqee/gl/Textures.hpp>
 #include <sqee/gl/UniformBuffer.hpp>
 
 //============================================================================//
@@ -61,57 +62,47 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    struct {
+    sq::FrameBuffer FB_MsDepth;
+    sq::FrameBuffer FB_MsMain;
+    sq::FrameBuffer FB_Resolve;
 
-        sq::FrameBuffer MsDepth;
-        sq::FrameBuffer MsMain;
-        sq::FrameBuffer Resolve;
+    sq::TextureMulti TEX_MsDepth { sq::Texture::Format::DEP24S8 };
+    sq::TextureMulti TEX_MsColour { sq::Texture::Format::RGB16_FP };
+    sq::Texture2D TEX_Depth { sq::Texture::Format::DEP24S8 };
+    sq::Texture2D TEX_Colour { sq::Texture::Format::RGB16_FP };
 
-    } fbos;
+    sq::Program PROG_Depth_StaticSolid;
+    sq::Program PROG_Depth_StaticPunch;
 
-    //--------------------------------------------------------//
+    sq::Program PROG_Depth_FighterSolid;
+    sq::Program PROG_Depth_FighterPunch;
 
-    struct {
+    sq::Program PROG_Particles;
 
-        sq::TextureMulti MsDepth { sq::Texture::Format::DEP24S8 };
-        sq::TextureMulti MsColour { sq::Texture::Format::RGB16_FP };
-        sq::Texture2D Depth { sq::Texture::Format::DEP24S8 };
-        sq::Texture2D Colour { sq::Texture::Format::RGB16_FP };
-
-    } textures;
-
-    //--------------------------------------------------------//
-
-    struct {
-
-        sq::Program Depth_StaticSolid;
-        sq::Program Depth_StaticPunch;
-
-        sq::Program Depth_FighterSolid;
-        sq::Program Depth_FighterPunch;
-
-        sq::Program Particles;
-
-        sq::Program Lighting_Skybox;
-        sq::Program Composite;
-
-    } shaders;
+    sq::Program PROG_Lighting_Skybox;
+    sq::Program PROG_Composite;
 
     //--------------------------------------------------------//
 
-    struct { sq::UniformBuffer ubo; } light;
-
-    //--------------------------------------------------------//
-
-    ResourceCaches resources;
+    // todo: These should be shared between all renderers, to reduce memory usage and loading time for the editor.
+    //       We could share the fbos/textures/shaders above as well, unless we want a split viewports feature.
 
     sq::PreProcessor processor;
+
+    MeshCache meshes;
+    ProgramCache programs;
+    TexArrayCache texarrays;
+    TextureCache textures;
+
+    //--------------------------------------------------------//
 
     sq::Context& context;
 
     const Options& options;
 
 private: //===================================================//
+
+    sq::UniformBuffer mLightUbo;
 
     std::unique_ptr<Camera> mCamera;
 

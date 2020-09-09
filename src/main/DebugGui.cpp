@@ -32,7 +32,8 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
         ImPlus::Text("Position: {:+.6f}"_format(fighter.status.position));
         ImPlus::Text("Velocity: {:+.6f}"_format(fighter.status.velocity));
         ImPlus::Text("Facing: {}"_format(fighter.status.facing));
-        ImPlus::Text("Damage: {}%"_format(fighter.status.damage));
+        ImPlus::Text("Damage: {:.2f}"_format(fighter.status.damage));
+        ImPlus::Text("Shield: {:.2f}"_format(fighter.status.shield));
 
         //ImPlus::Text("Translate: {:+.6f}"_format(fighter.mTranslate));
 

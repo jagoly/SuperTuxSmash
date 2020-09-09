@@ -1,11 +1,11 @@
 {
 
-"comment": "values from sm4sh, so might look weird with anims from brawl",
+"comment": "stats and actions are a mix of brawl, sm4sh, and in between",
 
 "walk_speed":    0.11,
 "dash_speed":    0.16,
 "air_speed":     0.115,
-"traction":      0.0045,
+"traction":      0.0055,
 "air_mobility":  0.008,
 "air_friction":  0.0015,
 "hop_height":    1.75,
