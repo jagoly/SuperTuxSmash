@@ -32,7 +32,14 @@ set_property(TARGET sts-game PROPERTY MSVC_RUNTIME_LIBRARY MultiThreaded$<$<CONF
 # todo: proper cmake support for sqee would be good, sadly I have no idea how to use cmake
 
 if (SQEE_STATIC_LIB)
+
     find_package(Threads REQUIRED)
+
+    if (SQEE_WINDOWS)
+        set(SFML_STATIC_LIBRARIES True)
+        find_package(SFML 2.5 COMPONENTS window system REQUIRED)
+    endif ()
+
 endif ()
 
 if (SQEE_BUILD_ROOT)
