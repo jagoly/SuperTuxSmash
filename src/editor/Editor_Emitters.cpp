@@ -1,6 +1,5 @@
 #include "editor/EditorScene.hpp" // IWYU pragma: associated
-
-#include "editor/EditorHelpers.hpp"
+#include "editor/Editor_Helpers.hpp"
 
 #include "game/Action.hpp"
 #include "game/Emitter.hpp"
