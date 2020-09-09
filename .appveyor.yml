@@ -2,15 +2,16 @@ image: Visual Studio 2019
 
 before_build:
 
-  - cd c:/projects
-
 #  - curl -fsSL -o sfml.zip https://www.sfml-dev.org/files/SFML-2.5.1-windows-vc15-64-bit.zip
 #  - 7z x sfml.zip
 #  - rename SFML-2.5.1 sfml
+  - cd c:/projects
   - git clone https://github.com/SFML/SFML
   - cd c:/projects/SFML
   - cmake . -DBUILD_SHARED_LIBS=False -DSFML_BUILD_AUDIO=False -DSFML_BUILD_GRAPHICS=False -DSFML_BUILD_WINDOW=True -DSFML_BUILD_NETWORK=False -DSFML_USE_STATIC_STD_LIBS=True
+  - cmake --build . --config Debug
 
+  - cd c:/projects
   - git clone --depth 1 --branch static https://github.com/jagoly/sqee.git
   - cd c:/projects/sqee
   - cmake . -DCMAKE_PREFIX_PATH=c:/projects/SFML -DSQEE_STATIC_LIB=True -G "Visual Studio 16 2019" -A x64
