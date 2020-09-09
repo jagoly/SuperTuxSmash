@@ -38,7 +38,7 @@ struct alignas(16) HurtBlob final
         return *std::prev(reinterpret_cast<const TinyString*>(this));
     }
 
-    constexpr Vec3F get_debug_colour() const
+    Vec3F get_debug_colour() const
     {
         SWITCH (region) {
         CASE (Lower)  return { 0.8f, 0.0f, 1.0f };

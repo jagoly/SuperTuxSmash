@@ -65,7 +65,7 @@ struct alignas(16) HitBlob final
         return *std::prev(reinterpret_cast<const TinyString*>(this));
     }
 
-    constexpr Vec3F get_debug_colour() const
+    Vec3F get_debug_colour() const
     {
         SWITCH (flavour) {
         CASE (Sour)  return { 0.6f, 0.6f, 0.0f };
