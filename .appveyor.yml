@@ -17,7 +17,7 @@ build_script:
 
   - cd c:/projects/SuperTuxSmash
 
-  - cmake . -DSQEE_STATIC_LIB=True -G "Visual Studio 16 2019" -A x64
+  - cmake . -DCMAKE_PREFIX_PATH=c:/projects/sfml -DSQEE_STATIC_LIB=True -G "Visual Studio 16 2019" -A x64
   - cmake --build . --config Debug
 
 after_build:
