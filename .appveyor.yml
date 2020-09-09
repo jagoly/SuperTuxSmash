@@ -10,33 +10,34 @@ before_build:
 
   - git clone --depth 1 --branch static https://github.com/jagoly/sqee.git
   - cd c:/projects/sqee
-  - cmake . -DCMAKE_PREFIX_PATH=c:/projects/sfml -G "Visual Studio 16 2019" -A x64
+  - cmake . -DCMAKE_PREFIX_PATH=c:/projects/sfml -DSQEE_STATIC_LIB=True -G "Visual Studio 16 2019" -A x64
   - cmake --build . --target sqee --config Debug
 
 build_script:
 
   - cd c:/projects/SuperTuxSmash
 
-  - cmake . -G "Visual Studio 16 2019" -A x64
+  - cmake . -DSQEE_STATIC_LIB=True -G "Visual Studio 16 2019" -A x64
   - cmake --build . --config Debug
 
 after_build:
 
   - mkdir c:\out
 
-  - cd c:\projects\sfml
-  - copy bin\sfml-system-d-2.dll c:\out
-  - copy bin\sfml-window-d-2.dll c:\out
+#  - cd c:\projects\sfml
+#  - copy bin\sfml-system-d-2.dll c:\out
+#  - copy bin\sfml-window-d-2.dll c:\out
 
-  - cd c:\projects\sqee
-  - copy Debug\sqee.dll c:\out
-  - copy libs\dearimgui\Debug\dearimgui.dll c:\out
-  - copy libs\format\Debug\format.dll c:\out
-  - copy libs\wren\Debug\wren.dll c:\out
+#  - cd c:\projects\sqee
+#  - copy Debug\sqee.dll c:\out
+#  - copy libs\dearimgui\Debug\dearimgui.dll c:\out
+#  - copy libs\format\Debug\format.dll c:\out
+#  - copy libs\wren\Debug\wren.dll c:\out
 
   - cd c:\projects\SuperTuxSmash
   - xcopy /E assets c:\out\assets\
   - xcopy /E shaders c:\out\shaders\
+  - xcopy /E wren c:\out\wren\
   - xcopy /E config c:\out\config\
   - copy Debug\sts-game.exe c:\out
 
