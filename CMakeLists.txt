@@ -29,6 +29,22 @@ set_property(TARGET sts-game PROPERTY MSVC_RUNTIME_LIBRARY MultiThreaded$<$<CONF
 
 ################################################################################
 
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    set(SQEE_LINUX True)
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    set(SQEE_WINDOWS True)
+endif ()
+
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    set(SQEE_GNU True)
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    set(SQEE_CLANG True)
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    set(SQEE_MSVC True)
+endif ()
+
+################################################################################
+
 # todo: proper cmake support for sqee would be good, sadly I have no idea how to use cmake
 
 if (SQEE_STATIC_LIB)
@@ -48,20 +64,6 @@ elseif (EXISTS "../sqee/sqee-exports.cmake")
     include("../sqee/sqee-exports.cmake")
 else ()
     message(FATAL_ERROR "Could not find SQEE, try specifying SQEE_BUILD_ROOT")
-endif ()
-
-if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    set(SQEE_LINUX True)
-elseif (CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    set(SQEE_WINDOWS True)
-endif ()
-
-if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    set(SQEE_GNU True)
-elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    set(SQEE_CLANG True)
-elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    set(SQEE_MSVC True)
 endif ()
 
 ################################################################################
