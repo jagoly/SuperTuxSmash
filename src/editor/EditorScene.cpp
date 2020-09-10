@@ -665,6 +665,14 @@ EditorScene::ActionContext& EditorScene::get_action_context(ActionKey key)
     CASE (SpecialNeutral) ctx.timelineLength = 32u;
     CASE (SpecialUp)      ctx.timelineLength = 32u;
 
+    CASE (HopBack, JumpBack)       ctx.timelineLength = anims.JumpBack.anim.totalTime;
+    CASE (HopForward, JumpForward) ctx.timelineLength = anims.JumpForward.anim.totalTime;
+    CASE (AirHopBack)              ctx.timelineLength = anims.AirHopBack.anim.totalTime;
+    CASE (AirHopForward)           ctx.timelineLength = anims.AirHopForward.anim.totalTime;
+
+    CASE (DashStart) ctx.timelineLength = anims.DashStart.anim.totalTime;
+    CASE (DashBrake) ctx.timelineLength = anims.Brake.anim.totalTime;
+
     CASE (None) SQASSERT(false, "can't edit nothing");
 
     } SWITCH_END;
@@ -709,8 +717,8 @@ void EditorScene::apply_working_changes(ActionContext& ctx)
     {
         ctx.world->editor_clear_hitblobs();
 
-        if (action.mWrenSource != ctx.undoStack[ctx.undoIndex]->mWrenSource)
-            action.load_wren_from_string();
+        // always reload script so that error message updates
+        action.load_wren_from_string();
 
         scrub_to_frame_current(ctx);
 
@@ -850,10 +858,13 @@ void EditorScene::scrub_to_frame(ActionContext& ctx, int frame)
 
         ctx.fighter->state_transition(FighterState::JumpFall, 0u, &ctx.fighter->mAnimations.FallingLoop, 0u, nullptr);
     }
-    else
+    else if (ctx.key.action == ActionType::DashBrake)
     {
-        ctx.fighter->state_transition(FighterState::Neutral, 0u, &ctx.fighter->mAnimations.NeutralLoop, 0u, nullptr);
+        ctx.fighter->status.velocity.x = ctx.fighter->stats.dash_speed + ctx.fighter->stats.traction;
+        ctx.fighter->state_transition(FighterState::Neutral, 0u, &ctx.fighter->mAnimations.DashingLoop, 0u, nullptr);
     }
+    else
+        ctx.fighter->state_transition(FighterState::Neutral, 0u, &ctx.fighter->mAnimations.NeutralLoop, 0u, nullptr);
 
     // tick once to apply neutral/falling animation
     ctx.world->tick();
@@ -887,7 +898,11 @@ void EditorScene::tick_action_context(ActionContext& ctx)
 {
     ctx.currentFrame += 1;
 
-    if (ctx.currentFrame == ctx.timelineLength) scrub_to_frame(ctx, -1);
+    if (ctx.currentFrame == ctx.timelineLength)
+    {
+        if (mIncrementSeed) ++mRandomSeed;
+        scrub_to_frame(ctx, -1);
+    }
     else ctx.world->tick();
 }
 

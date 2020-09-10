@@ -33,6 +33,12 @@ GameSetup GameSetup::get_quickstart()
     result.players[1].enabled = true;
     result.players[1].fighter = FighterEnum::Mario;
 
+    result.players[2].enabled = true;
+    result.players[2].fighter = FighterEnum::Mario;
+
+    result.players[3].enabled = true;
+    result.players[3].fighter = FighterEnum::Mario;
+
     result.stage = StageEnum::TestZone;
 
     return result;

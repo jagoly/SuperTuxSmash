@@ -9,12 +9,11 @@
 #include "game/HurtBlob.hpp"
 
 #include <sqee/app/WrenPlus.hpp>
-#include <sqee/misc/PoolTools.hpp>
 #include <sqee/objects/Armature.hpp>
 
-//============================================================================//
-
 namespace sts {
+
+//============================================================================//
 
 struct InputFrame;
 struct Ledge;
@@ -376,7 +375,8 @@ private: //===================================================//
 
     std::array<std::unique_ptr<Action>, sq::enum_count_v<ActionType>> mActions;
 
-    sq::PoolMap<TinyString, HurtBlob> mHurtBlobs;
+    //sq::PoolMap<TinyString, HurtBlob> mHurtBlobs;
+    std::pmr::map<TinyString, HurtBlob> mHurtBlobs;
 
     LocalDiamond mLocalDiamond;
 

@@ -38,9 +38,16 @@ class Script is ScriptBase {
 
 Action::Action(FightWorld& world, Fighter& fighter, ActionType type, String path)
     : type(type), fighter(fighter), world(world), path(path)
-    , mBlobs(world.get_hit_blob_allocator())
-    , mEmitters(world.get_emitter_allocator())
-    , mSounds(world.get_sound_effect_allocator()) {}
+//    , mBlobs(world.get_hit_blob_allocator())
+//    , mEmitters(world.get_emitter_allocator())
+//    , mSounds(world.get_sound_effect_allocator())
+    , mBlobs(world.get_memory_resource())
+    , mEmitters(world.get_memory_resource())
+    , mSounds(world.get_memory_resource())
+{
+    load_from_json();
+    load_wren_from_file();
+}
 
 Action::~Action()
 {

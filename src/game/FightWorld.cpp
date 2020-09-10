@@ -16,14 +16,22 @@ using namespace sts;
 //============================================================================//
 
 FightWorld::FightWorld(const Options& options, sq::AudioContext& audio)
-    : options(options)
-    , audio(audio)
-    , sounds(audio)
-    , mHurtBlobAlloc    (options.editor_mode ? 1280 : 128)
-    , mHitBlobAlloc     (options.editor_mode ? 10240 : 1024)
-    , mEmitterAlloc     (options.editor_mode ? 5120 : 512)
-    , mSoundEffectAlloc (options.editor_mode ? 5120 : 512)
+    : options(options), audio(audio), sounds(audio)
+//    , mHurtBlobAlloc    (options.editor_mode ? 1280 : 128)
+//    , mHitBlobAlloc     (options.editor_mode ? 10240 : 1024)
+//    , mEmitterAlloc     (options.editor_mode ? 5120 : 512)
+//    , mSoundEffectAlloc (options.editor_mode ? 5120 : 512)
 {
+    if (options.editor_mode == false)
+    {
+        // four fighters currently uses less than 64KB, so 1MB is heaps... hehehe heap
+        constexpr size_t MEMORY_BUFFER_SIZE = 1024u * 1024u * 1u;
+
+        mMemoryBuffer = std::make_unique<std::byte[]>(MEMORY_BUFFER_SIZE);
+        mMemoryResource = std::make_unique<std::pmr::monotonic_buffer_resource>(mMemoryBuffer.get(), MEMORY_BUFFER_SIZE,
+                                                                                std::pmr::null_memory_resource());
+    }
+
     vm.add_foreign_method<&Action::wren_set_wait_until>("set_wait_until(_)");
     vm.add_foreign_method<&Action::wren_allow_interrupt>("allow_interrupt()");
     vm.add_foreign_method<&Action::wren_enable_hitblob_group>("enable_hitblob_group(_)");
@@ -282,4 +290,12 @@ void FightWorld::reset_all_collisions(uint8_t fighter)
 {
     for (auto& group : mHitBlobGroups[fighter])
         group.fill(false);
+}
+
+//============================================================================//
+
+std::pmr::memory_resource* FightWorld::get_memory_resource()
+{
+    if (!options.editor_mode) return mMemoryResource.get();
+    return std::pmr::new_delete_resource();
 }

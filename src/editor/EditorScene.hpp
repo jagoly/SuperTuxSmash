@@ -7,8 +7,6 @@
 
 #include <sqee/app/Scene.hpp>
 
-#include <set>
-
 // IWYU pragma: no_include "game/Action.hpp"
 // IWYU pragma: no_include "game/FightWorld.hpp"
 // IWYU pragma: no_include "render/Renderer.hpp"
@@ -32,6 +30,8 @@ public: //====================================================//
     void refresh_options() override;
 
     void show_imgui_widgets() override;
+
+    //--------------------------------------------------------//
 
     // only public so we can use SQEE_ENUM_HELPER
     enum class PreviewMode { Pause, Normal, Slow, Slower };
@@ -81,10 +81,12 @@ private: //===================================================//
     {
         FighterEnum key;
 
-        std::unique_ptr<sq::PoolMap<TinyString, HurtBlob>> savedData;
+        //std::unique_ptr<sq::PoolMap<TinyString, HurtBlob>> savedData;
+        std::unique_ptr<std::pmr::map<TinyString, HurtBlob>> savedData;
         bool modified = false;
 
-        std::vector<std::unique_ptr<sq::PoolMap<TinyString, HurtBlob>>> undoStack;
+        //std::vector<std::unique_ptr<sq::PoolMap<TinyString, HurtBlob>>> undoStack;
+        std::vector<std::unique_ptr<std::pmr::map<TinyString, HurtBlob>>> undoStack;
         size_t undoIndex = 0u;
     };
 
@@ -174,14 +176,14 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
-    // make sure any source file that uses these includes EditorHelpers.hpp
+    // make sure any source file that uses these includes Editor_Helpers.hpp
 
     template <class Map, class FuncInit, class FuncEdit>
     void helper_edit_objects(Map& objects, FuncInit funcInit, FuncEdit funcEdit);
 };
 
-} // namespace sts
-
 //============================================================================//
+
+} // namespace sts
 
 SQEE_ENUM_HELPER(sts::EditorScene::PreviewMode, Pause, Normal, Slow, Slower)

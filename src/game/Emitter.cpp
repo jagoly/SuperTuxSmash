@@ -53,6 +53,8 @@ void Emitter::to_json(JsonValue& json) const
     if (bone == -1) json["bone"] = nullptr;
     else json["bone"] = fighter->get_armature().get_bone_name(bone);
 
+    json["count"] = count;
+
     json["origin"] = origin;
     json["velocity"] = velocity;
 
@@ -82,6 +84,7 @@ DISABLE_WARNING_FLOAT_EQUALITY;
 bool sts::operator==(const Emitter& a, const Emitter& b)
 {
     if (a.bone        != b.bone)        return false;
+    if (a.count       != b.count)       return false;
     if (a.origin      != b.origin)      return false;
     if (a.velocity    != b.velocity)    return false;
     if (a.sprite      != b.sprite)      return false;

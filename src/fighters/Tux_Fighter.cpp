@@ -1,7 +1,5 @@
 #include "fighters/Tux_Fighter.hpp"
 
-#include "game/FightWorld.hpp"
-
 using namespace sts;
 
 //============================================================================//

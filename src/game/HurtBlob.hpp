@@ -44,7 +44,7 @@ struct alignas(16) HurtBlob final
         CASE (Lower)  return { 0.8f, 0.0f, 1.0f };
         CASE (Middle) return { 0.4f, 0.4f, 1.0f };
         CASE (Upper)  return { 0.0f, 0.8f, 1.0f };
-        CASE_DEFAULT  throw std::exception();
+        CASE_DEFAULT  std::abort();
         } SWITCH_END;
     }
 

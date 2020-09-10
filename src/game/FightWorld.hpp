@@ -115,16 +115,19 @@ public: //====================================================//
     //--------------------------------------------------------//
 
     /// Access the HurtBlob Allocator.
-    auto get_hurt_blob_allocator() { return mHurtBlobAlloc.get(); }
+    //auto get_hurt_blob_allocator() { return mHurtBlobAlloc.get(); }
 
     /// Access the HitBlob Allocator.
-    auto get_hit_blob_allocator() { return mHitBlobAlloc.get(); }
+    //auto get_hit_blob_allocator() { return mHitBlobAlloc.get(); }
 
     /// Access the Emitter Allocator.
-    auto get_emitter_allocator() { return mEmitterAlloc.get(); }
+    //auto get_emitter_allocator() { return mEmitterAlloc.get(); }
 
     /// Access the SoundEffect Allocator.
-    auto get_sound_effect_allocator() { return mSoundEffectAlloc.get(); }
+    //auto get_sound_effect_allocator() { return mSoundEffectAlloc.get(); }
+
+    /// Access the polymorphic memory resource.
+    std::pmr::memory_resource* get_memory_resource();
 
     /// Access the enabled HurtBlobs.
     const std::vector<HurtBlob*>& get_hurt_blobs() const { return mEnabledHurtBlobs; };
@@ -142,12 +145,13 @@ private: //===================================================//
     // undo stack in the editor can cause us to run out of slots, so we reserve more space
     // todo: for the editor, use big pools shared between all contexts
 
-    // better todo: WOW, std::pmr is a thing, why the shit am I not using it?
+    //sq::PoolAllocatorStore<std::pair<const TinyString, HurtBlob>> mHurtBlobAlloc;
+    //sq::PoolAllocatorStore<std::pair<const TinyString, HitBlob>> mHitBlobAlloc;
+    //sq::PoolAllocatorStore<std::pair<const TinyString, Emitter>> mEmitterAlloc;
+    //sq::PoolAllocatorStore<std::pair<const TinyString, SoundEffect>> mSoundEffectAlloc;
 
-    sq::PoolAllocatorStore<std::pair<const TinyString, HurtBlob>> mHurtBlobAlloc;
-    sq::PoolAllocatorStore<std::pair<const TinyString, HitBlob>> mHitBlobAlloc;
-    sq::PoolAllocatorStore<std::pair<const TinyString, Emitter>> mEmitterAlloc;
-    sq::PoolAllocatorStore<std::pair<const TinyString, SoundEffect>> mSoundEffectAlloc;
+    std::unique_ptr<std::byte[]> mMemoryBuffer;
+    std::unique_ptr<std::pmr::monotonic_buffer_resource> mMemoryResource;
 
     //--------------------------------------------------------//
 

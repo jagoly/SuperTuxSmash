@@ -71,7 +71,7 @@ struct alignas(16) HitBlob final
         CASE (Sour)  return { 0.6f, 0.6f, 0.0f };
         CASE (Tangy) return { 0.2f, 1.0f, 0.0f };
         CASE (Sweet) return { 1.0f, 0.1f, 0.1f };
-        CASE_DEFAULT throw std::exception();
+        CASE_DEFAULT std::abort();
         } SWITCH_END;
     }
 

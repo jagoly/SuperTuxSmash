@@ -119,6 +119,9 @@ void Fighter::state_transition_action(ActionType action)
     CASE (AirHopBack)    state_transition(State::JumpFall, 2u, &anims.AirHopBack, 1u, &anims.FallingLoop);
     CASE (AirHopForward) state_transition(State::JumpFall, 2u, &anims.AirHopForward, 1u, &anims.FallingLoop);
 
+    CASE (DashStart) state_transition(State::Dashing, 0u, &anims.DashStart, 0u, nullptr);
+    CASE (DashBrake) state_transition(State::Brake, 4u, &anims.Brake, 0u, nullptr);
+
     CASE (None) SQASSERT(false, "can't switch to None");
 
     } SWITCH_END;
@@ -371,7 +374,7 @@ void Fighter::update_transitions(const InputFrame& input)
             state_transition_action(ActionType::TiltForward);
 
         else if (consume_command_facing(Command::MashLeft, Command::MashRight))
-            state_transition(State::Dashing, 0u, &anims.DashStart, 0u, nullptr);
+            state_transition_action(ActionType::DashStart);
 
         else if (input.int_axis.x == 0)
         {
@@ -411,7 +414,7 @@ void Fighter::update_transitions(const InputFrame& input)
             if (mAnimation == &anims.DashStart)
                 state_transition(State::Neutral, 0u, nullptr, 0u, &anims.NeutralLoop);
             else
-                state_transition(State::Brake, 4u, &anims.Brake, 0u, nullptr);
+                state_transition_action(ActionType::DashBrake);
         }
 
         // this shouldn't need a fade, but mario's animation doesn't line up

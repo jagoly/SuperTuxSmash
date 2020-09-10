@@ -81,11 +81,14 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
-    sq::PoolMap<TinyString, HitBlob> mBlobs;
+//    sq::PoolMap<TinyString, HitBlob> mBlobs;
+    std::pmr::map<TinyString, HitBlob> mBlobs;
 
-    sq::PoolMap<TinyString, Emitter> mEmitters;
+//    sq::PoolMap<TinyString, Emitter> mEmitters;
+    std::pmr::map<TinyString, Emitter> mEmitters;
 
-    sq::PoolMap<TinyString, SoundEffect> mSounds;
+//    sq::PoolMap<TinyString, SoundEffect> mSounds;
+    std::pmr::map<TinyString, SoundEffect> mSounds;
 
     //--------------------------------------------------------//
 

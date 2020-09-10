@@ -49,6 +49,8 @@ enum class ActionType : int8_t
     JumpForward,
     AirHopBack,
     AirHopForward,
+    DashStart,
+    DashBrake,
 };
 
 enum class ActionStatus : int8_t
@@ -107,7 +109,9 @@ SQEE_ENUM_HELPER
     JumpBack,
     JumpForward,
     AirHopBack,
-    AirHopForward
+    AirHopForward,
+    DashStart,
+    DashBrake
 )
 
 SQEE_ENUM_HELPER

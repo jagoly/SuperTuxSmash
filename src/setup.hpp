@@ -8,10 +8,12 @@
 #include <sqee/core/Types.hpp> // IWYU pragma: export
 #include <sqee/core/Utilities.hpp> // IWYU pragma: export
 
-#include <sqee/misc/PoolTools.hpp> // IWYU pragma: export
+//#include <sqee/misc/PoolTools.hpp> // IWYU pragma: export
 #include <sqee/misc/StackVector.hpp> // IWYU pragma: export
 
 #include <fmt/format.h> // IWYU pragma: export
+
+#include <memory_resource> // IWYU pragma: export
 
 namespace sts {
 
@@ -23,7 +25,8 @@ using namespace sq::coretypes;
 namespace algo = sq::algo;
 namespace maths = sq::maths;
 
-using sq::PoolMap;
+//using sq::PoolMap;
+using sq::StackString;
 using sq::StackVector;
 
 //============================================================================//

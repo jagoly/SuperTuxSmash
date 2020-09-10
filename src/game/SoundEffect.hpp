@@ -22,7 +22,7 @@ struct SoundEffect final
     //--------------------------------------------------------//
 
     /// Path to the sound file to use.
-    sq::StackString<63u> path;
+    StackString<63u> path;
 
     /// Volume factor to apply to playback.
     float volume;

@@ -1,6 +1,27 @@
 {
   "blobs": {},
-  "emitters": {},
+  "emitters": {
+    "Ring": {
+      "ballOffset": [ 0.0, 0.0 ],
+      "ballSpeed": [ 0.0, 0.0 ],
+      "baseOpacity": 0.8,
+      "baseRadius": [ 0.3, 0.4 ],
+      "bone": null,
+      "colour": [
+        [ 1.0, 1.0, 1.0 ]
+      ],
+      "count": 40,
+      "discIncline": [ 0.02, 0.04 ],
+      "discOffset": [ 0.05, 0.2 ],
+      "discSpeed": [ 0.06, 0.07 ],
+      "endOpacity": 0.0,
+      "endScale": 1.5,
+      "lifetime": [ 20, 24 ],
+      "origin": [ 0.0, -0.1, 0.0 ],
+      "sprite": "Smoke",
+      "velocity": [ 0.0, 0.0, 0.0 ]
+    }
+  },
   "sounds": {
     "LandLight": {
       "path": "fighters/Mario/sounds/LandLight",

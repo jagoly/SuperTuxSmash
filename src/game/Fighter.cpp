@@ -16,7 +16,9 @@ using namespace sts;
 //============================================================================//
 
 Fighter::Fighter(uint8_t index, FightWorld& world, FighterEnum type)
-    : index(index), type(type), world(world), mHurtBlobs(world.get_hurt_blob_allocator())
+    : index(index), type(type), world(world)
+    //, mHurtBlobs(world.get_hurt_blob_allocator())
+    , mHurtBlobs(world.get_memory_resource())
 {
     const String path = sq::build_path("assets/fighters", sq::enum_to_string(type));
 
@@ -257,12 +259,9 @@ void Fighter::initialise_actions(const String& path)
     for (int8_t i = 0; i < sq::enum_count_v<ActionType>; ++i)
     {
         const auto actionType = ActionType(i);
-        const auto actionPath = sq::build_string(path, "/actions/", sq::to_c_string(actionType));
+        const auto actionPath = sq::build_string(path, "/actions/", sq::enum_to_string(actionType));
 
         mActions[i] = std::make_unique<Action>(world, *this, actionType, actionPath);
-
-        mActions[i]->load_from_json();
-        mActions[i]->load_wren_from_file();
     }
 }
 
