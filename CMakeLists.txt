@@ -1,9 +1,11 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.16)
 project(SuperTuxSmash CXX)
 
 ################################################################################
 
 set(SQEE_BUILD_ROOT CACHE PATH "The build directory for the SQEE Library")
+
+option(SQEE_STATIC_LIB "Link to SQEE statically" False)
 
 ################################################################################
 
@@ -17,24 +19,15 @@ target_include_directories(sts-game PRIVATE "${PROJECT_SOURCE_DIR}/src")
 set_property(TARGET sts-game PROPERTY CXX_STANDARD 17)
 set_property(TARGET sts-game PROPERTY CXX_STANDARD_REQUIRED True)
 
+# force use of the static msvc runtime so we don't need a bunch of extra dlls
+set_property(TARGET sts-game PROPERTY MSVC_RUNTIME_LIBRARY MultiThreaded$<$<CONFIG:Debug>:Debug>)
+
 #set_property(TARGET sts-game PROPERTY CXX_INCLUDE_WHAT_YOU_USE
 #    "iwyu;-Xiwyu;any;-Xiwyu;iwyu;-Xiwyu;--mapping_file=/storage/Projects/SQEE/sqee/extras/iwyu-mapping.imp")
 
 #target_precompile_headers(sts-game PUBLIC <setup.hpp>)
 
 ################################################################################
-
-# todo: proper support for finding sqee would be good
-
-if (SQEE_BUILD_ROOT)
-    include("${SQEE_BUILD_ROOT}/sqee-exports.cmake")
-elseif (EXISTS "../sqee/sqee-exports.cmake")
-    include("../sqee/sqee-exports.cmake")
-else ()
-    message(FATAL_ERROR "Could not find SQEE, try specifying SQEE_BUILD_ROOT")
-endif ()
-
-# todo: these variables should come from finding sqee
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     set(SQEE_LINUX True)
@@ -52,6 +45,29 @@ endif ()
 
 ################################################################################
 
+# todo: proper cmake support for sqee would be good, sadly I have no idea how to use cmake
+
+if (SQEE_STATIC_LIB)
+
+    find_package(Threads REQUIRED)
+
+    if (SQEE_WINDOWS)
+        set(SFML_STATIC_LIBRARIES True)
+        find_package(SFML 2.5 COMPONENTS window system REQUIRED)
+    endif ()
+
+endif ()
+
+if (SQEE_BUILD_ROOT)
+    include("${SQEE_BUILD_ROOT}/sqee-exports.cmake")
+elseif (EXISTS "../sqee/sqee-exports.cmake")
+    include("../sqee/sqee-exports.cmake")
+else ()
+    message(FATAL_ERROR "Could not find SQEE, try specifying SQEE_BUILD_ROOT")
+endif ()
+
+################################################################################
+
 if (SQEE_GNU OR SQEE_CLANG)
     target_compile_options(sts-game PRIVATE -Wall -Wextra)
 elseif (SQEE_MSVC)
@@ -60,8 +76,6 @@ endif ()
 
 # this will automatically link dependencies and add include paths
 target_link_libraries(sts-game sqee)
-
-target_compile_definitions(sts-game PRIVATE SQEE_GLOBAL_BUILTINS)
 
 ################################################################################
 
