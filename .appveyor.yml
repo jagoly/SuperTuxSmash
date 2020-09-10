@@ -5,37 +5,37 @@ before_build:
   - cd c:/projects
   - git clone --depth 1 https://github.com/SFML/SFML.git
   - cd c:/projects/SFML
-#  - cmake . -DBUILD_SHARED_LIBS=False -DSFML_BUILD_AUDIO=False -DSFML_BUILD_GRAPHICS=False -DSFML_BUILD_NETWORK=False -DSFML_USE_STATIC_STD_LIBS=True
-  - cmake . -DSFML_BUILD_AUDIO=False -DSFML_BUILD_GRAPHICS=False -DSFML_BUILD_NETWORK=False -DSFML_USE_STATIC_STD_LIBS=True
+  - cmake . -DBUILD_SHARED_LIBS=False -DSFML_BUILD_AUDIO=False -DSFML_BUILD_GRAPHICS=False -DSFML_BUILD_NETWORK=False -DSFML_USE_STATIC_STD_LIBS=True
+#  - cmake . -DSFML_BUILD_AUDIO=False -DSFML_BUILD_GRAPHICS=False -DSFML_BUILD_NETWORK=False
   - cmake --build . --config Debug
 
   - cd c:/projects
   - git clone --depth 1 https://github.com/jagoly/sqee.git
   - cd c:/projects/sqee
-#  - cmake . -DCMAKE_PREFIX_PATH=c:/projects/SFML -DSQEE_STATIC_LIB=True -G "Visual Studio 16 2019" -A x64
-  - cmake . -DCMAKE_PREFIX_PATH=c:/projects/SFML -G "Visual Studio 16 2019" -A x64
+  - cmake . -DCMAKE_PREFIX_PATH=c:/projects/SFML -DSQEE_STATIC_LIB=True -G "Visual Studio 16 2019" -A x64
+#  - cmake . -DCMAKE_PREFIX_PATH=c:/projects/SFML -G "Visual Studio 16 2019" -A x64
   - cmake --build . --target sqee --config Debug
 
 build_script:
 
   - cd c:/projects/SuperTuxSmash
-#  - cmake . -DCMAKE_PREFIX_PATH=c:/projects/SFML -DSQEE_STATIC_LIB=True -G "Visual Studio 16 2019" -A x64
-  - cmake . -G "Visual Studio 16 2019" -A x64
+  - cmake . -DCMAKE_PREFIX_PATH=c:/projects/SFML -DSQEE_STATIC_LIB=True -G "Visual Studio 16 2019" -A x64
+#  - cmake . -G "Visual Studio 16 2019" -A x64
   - cmake --build . --config Debug
 
 after_build:
 
   - mkdir c:\out
 
-  - cd c:\projects\SFML
-  - copy bin\sfml-system-d-2.dll c:\out
-  - copy bin\sfml-window-d-2.dll c:\out
+#  - cd c:\projects\SFML
+#  - copy bin\sfml-system-d-2.dll c:\out
+#  - copy bin\sfml-window-d-2.dll c:\out
 
-  - cd c:\projects\sqee
-  - copy Debug\sqee.dll c:\out
-  - copy libs\dearimgui\Debug\dearimgui.dll c:\out
-  - copy libs\format\Debug\format.dll c:\out
-  - copy libs\wren\Debug\wren.dll c:\out
+#  - cd c:\projects\sqee
+#  - copy Debug\sqee.dll c:\out
+#  - copy libs\dearimgui\Debug\dearimgui.dll c:\out
+#  - copy libs\format\Debug\format.dll c:\out
+#  - copy libs\wren\Debug\wren.dll c:\out
 
   - cd c:\projects\SuperTuxSmash
   - xcopy /E assets c:\out\assets\
