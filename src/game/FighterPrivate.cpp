@@ -274,7 +274,7 @@ void Fighter::update_action(const InputFrame& input)
     {
         if (mActiveAction->check_flag(ActionFlag::AllowNext))
         {
-            if (not mActiveAction->check_flag(ActionFlag::AttackHeld))
+            if (!mActiveAction->check_flag(ActionFlag::AttackHeld))
                 state_transition_action(smashAction);
 
             else if (mActiveAction->get_status() == ActionStatus::Finished)

@@ -127,9 +127,6 @@ private: //===================================================//
 
 //============================================================================//
 
-
-static_assert (sizeof(Action) == 280, "");
-
 } // namespace sts
 
 template<> struct wren::Traits<sts::Action> : std::true_type
