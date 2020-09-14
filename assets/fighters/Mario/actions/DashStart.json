@@ -1,6 +1,27 @@
 {
   "blobs": {},
-  "emitters": {},
+  "emitters": {
+    "Zoom": {
+      "ballOffset": [ 0.05, 0.05 ],
+      "ballSpeed": [ 0.0, 0.0 ],
+      "baseOpacity": 1.0,
+      "baseRadius": [ 0.4, 0.5 ],
+      "bone": null,
+      "colour": [
+        [ 1.0, 1.0, 1.0 ]
+      ],
+      "count": 2,
+      "discIncline": [ 0.0, 0.0 ],
+      "discOffset": [ 0.0, 0.0 ],
+      "discSpeed": [ 0.01, 0.01 ],
+      "endOpacity": 0.0,
+      "endScale": 2.0,
+      "lifetime": [ 24, 30 ],
+      "origin": [ 0.0, 0.0, 0.8 ],
+      "sprite": "Smoke",
+      "velocity": [ 0.0, 0.0, -0.08 ]
+    }
+  },
   "sounds": {
     "Dash": {
       "path": "fighters/Mario/sounds/Dash",

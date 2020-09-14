@@ -10,29 +10,26 @@ namespace sts {
 
 //============================================================================//
 
-class Action : private sq::NonCopyable
+class Action final : sq::NonCopyable
 {
 public: //====================================================//
-
-    const ActionType type;
 
     Fighter& fighter;
     FightWorld& world;
 
-    const String path;
+    const ActionType type;
 
     //--------------------------------------------------------//
 
-    Action(FightWorld& world, Fighter& fighter, ActionType type, String path);
+    Action(Fighter& fighter, ActionType type);
 
-    virtual ~Action();
+    ~Action();
 
     //--------------------------------------------------------//
 
     void do_start();
 
     void do_tick();
-    //void do_tick(const InputFrame& input);
 
     void do_cancel();
 
@@ -44,7 +41,13 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    void load_from_json();
+    void set_flag(ActionFlag flag, bool value) { if (value) mFlags |= uint8_t(flag); else mFlags &= ~uint8_t(flag); }
+
+    bool check_flag(ActionFlag flag) const { return (uint8_t(flag) & mFlags) != 0u; }
+
+    //--------------------------------------------------------//
+
+    void load_json_from_file();
 
     void load_wren_from_file();
 
@@ -60,15 +63,29 @@ public: //====================================================//
 
     void wren_disable_hitblob_group(uint8_t group);
 
+    void wren_enable_hitblob(TinyString key);
+
+    void wren_disable_hitblob(TinyString key);
+
     void wren_disable_hitblobs();
 
     void wren_emit_particles(TinyString key);
 
     void wren_play_sound(TinyString key);
 
+    void wren_cancel_sound(TinyString key);
+
+    void wren_set_flag_AllowNext();
+    void wren_set_flag_AutoJab();
+
+    bool wren_check_flag_AttackHeld() const;
+    bool wren_check_flag_HitCollide() const;
+
 private: //===================================================//
 
     ActionStatus mStatus = ActionStatus::None;
+
+    uint8_t mFlags = 0u;
 
     uint mCurrentFrame = 0u;
     uint mWaitingUntil = 0u;
@@ -81,16 +98,15 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
-//    sq::PoolMap<TinyString, HitBlob> mBlobs;
     std::pmr::map<TinyString, HitBlob> mBlobs;
 
-//    sq::PoolMap<TinyString, Emitter> mEmitters;
     std::pmr::map<TinyString, Emitter> mEmitters;
 
-//    sq::PoolMap<TinyString, SoundEffect> mSounds;
     std::pmr::map<TinyString, SoundEffect> mSounds;
 
     //--------------------------------------------------------//
+
+    String build_path(StringView extension) const;
 
     bool has_changes(const Action& reference) const;
 
@@ -101,7 +117,7 @@ private: //===================================================//
     //--------------------------------------------------------//
 
     template <class... Args>
-    void set_error_status(StringView str, const Args&... args);
+    void impl_set_error_message(StringView str, const Args&... args);
 
     //--------------------------------------------------------//
 
@@ -110,6 +126,9 @@ private: //===================================================//
 };
 
 //============================================================================//
+
+
+static_assert (sizeof(Action) == 280, "");
 
 } // namespace sts
 

@@ -222,14 +222,12 @@ void SmashApp::refresh_options()
 void SmashApp::start_game(GameSetup setup)
 {
     mActiveScene = std::make_unique<GameScene>(*this, setup);
-    mWindow->set_window_title("SuperTuxSmash - Game");
     refresh_options();
 }
 
 void SmashApp::start_action_editor()
 {
     mActiveScene = std::make_unique<EditorScene>(*this);
-    mWindow->set_window_title("SuperTuxSmash - Action Editor");
     refresh_options();
 }
 

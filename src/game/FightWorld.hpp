@@ -4,11 +4,6 @@
 
 #include "caches/SoundCache.hpp"
 
-#include "game/Emitter.hpp"
-#include "game/HitBlob.hpp"
-#include "game/HurtBlob.hpp"
-#include "game/SoundEffect.hpp"
-
 #include <sqee/app/WrenPlus.hpp>
 
 namespace sts {

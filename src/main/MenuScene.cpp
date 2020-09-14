@@ -99,5 +99,5 @@ void MenuScene::show_imgui_widgets()
     {
         mSmashApp.start_game(GameSetup::get_quickstart());
     }
-    ImPlus::HoverTooltip("currently this starts a game in TestZone with two Marios");
+    ImPlus::HoverTooltip("currently this starts a game in TestZone with four Marios");
 }

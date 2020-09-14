@@ -2,8 +2,11 @@
 
 #include "main/Options.hpp"
 
+#include "game/Emitter.hpp"
 #include "game/FightWorld.hpp"
 #include "game/Fighter.hpp"
+#include "game/HitBlob.hpp"
+#include "game/SoundEffect.hpp"
 
 #include <sqee/debug/Logging.hpp>
 #include <sqee/misc/Files.hpp>
@@ -13,10 +16,8 @@ using namespace sts;
 
 //============================================================================//
 
-const char* const FALLBACK_SCRIPT
-= R"wren(
-
-import "sts" for ScriptBase
+static const auto FALLBACK_SCRIPT
+= R"wren(import "sts" for ScriptBase
 
 class Script is ScriptBase {
   construct new(a, f) { super(a, f) }
@@ -30,22 +31,14 @@ class Script is ScriptBase {
     //fighter.set_intangible(false)
     //action.disable_hitblobs()
   }
-}
-
-)wren";
+})wren";
 
 //============================================================================//
 
-Action::Action(FightWorld& world, Fighter& fighter, ActionType type, String path)
-    : type(type), fighter(fighter), world(world), path(path)
-//    , mBlobs(world.get_hit_blob_allocator())
-//    , mEmitters(world.get_emitter_allocator())
-//    , mSounds(world.get_sound_effect_allocator())
-    , mBlobs(world.get_memory_resource())
-    , mEmitters(world.get_memory_resource())
-    , mSounds(world.get_memory_resource())
+Action::Action(Fighter& fighter, ActionType type)
+    : fighter(fighter), world(fighter.world), type(type)
 {
-    load_from_json();
+    load_json_from_file();
     load_wren_from_file();
 }
 
@@ -75,27 +68,35 @@ void Action::do_start()
 //============================================================================//
 
 void Action::do_tick()
-//void Action::do_tick(const InputFrame& input)
 {
     SQASSERT(mStatus != ActionStatus::None, "do_tick() called on unstarted action");
     SQASSERT(mStatus != ActionStatus::Finished, "do_tick() called on finished action");
 
-    if (world.vm.call<bool>(world.handles.fiber_isDone, mFiberInstance))
+    if (world.vm.call<bool>(world.handles.fiber_isDone, mFiberInstance) == true)
     {
-        if (mStatus == ActionStatus::RuntimeError)
+        if (mStatus == ActionStatus::AllowInterrupt)
         {
+            // the action completed without any issues
+            mStatus = ActionStatus::Finished;
+        }
+
+        else if (mStatus == ActionStatus::RuntimeError)
+        {
+            // finished with an error, do some clean up
             world.disable_hitblobs(*this);
             world.reset_all_collisions(fighter.index);
             mStatus = ActionStatus::Finished;
         }
 
-        else if (mStatus == ActionStatus::AllowInterrupt)
-        {
-            mStatus = ActionStatus::Finished;
-        }
-
         else if (mStatus == ActionStatus::Running)
-            set_error_status("frame {}:\nexecute() returned before calling allow_interrupt()", mCurrentFrame);
+        {
+            if (ActionTraits::get(type).needInterrupt == true)
+            {
+                impl_set_error_message("execute():\nreturned before calling allow_interrupt()");
+                mStatus = ActionStatus::RuntimeError;
+            }
+            else mStatus = ActionStatus::Finished;
+        }
     }
 
     else
@@ -105,7 +106,10 @@ void Action::do_tick()
             const auto errors = world.vm.safe_call_void(world.handles.fiber_call, mFiberInstance);
 
             if (errors.has_value() == true)
-                set_error_status("frame {}:\n{}", mCurrentFrame, *errors);
+            {
+                impl_set_error_message("frame {}:\n{}", mCurrentFrame, *errors);
+                mStatus = ActionStatus::RuntimeError;
+            }
         }
 
         mCurrentFrame += 1u;
@@ -127,28 +131,30 @@ void Action::do_cancel()
     const auto errors = world.vm.safe_call_void(world.handles.script_cancel, mScriptInstance);
 
     if (errors.has_value() == true)
-        set_error_status("cancel():\n{}", *errors);
+        impl_set_error_message("cancel():\n{}", *errors);
 
-    // even if cancel() raised an error, always set status to finished
+    // always set to finished, even if cancel raises an error
     mStatus = ActionStatus::Finished;
 }
 
 //============================================================================//
 
-void Action::load_from_json()
+void Action::load_json_from_file()
 {
     mBlobs.clear();
     mEmitters.clear();
 
     // todo: make sqee better so we don't have use check_file_exists
 
-    if (sq::check_file_exists(path + ".json") == false)
+    const String path = build_path(".json");
+
+    if (sq::check_file_exists(path) == false)
     {
-        sq::log_warning("missing json   '{}.json'", path);
+        sq::log_warning("missing json   '{}'", path);
         return;
     }
 
-    const JsonValue root = sq::parse_json_from_file(path + ".json");
+    const JsonValue root = sq::parse_json_from_file(path);
 
     String errors;
 
@@ -183,66 +189,64 @@ void Action::load_from_json()
     CATCH (const std::exception& e) { errors += '\n'; errors += e.what(); }
 
     if (errors.empty() == false)
-        sq::log_warning_multiline("errors in '{}.json'{}", path, errors);
+        sq::log_warning_multiline("errors in '{}'{}", path, errors);
 }
 
 //============================================================================//
 
 void Action::load_wren_from_file()
 {
-    // Called to load the script from a file. Real work is done load_wren_from_string().
+    const String path = build_path(".wren");
 
-    auto source = sq::try_get_string_from_file(path + ".wren");
-
+    // set mWrenSource to either the file contents or the fallback script
+    auto source = sq::try_get_string_from_file(path);
     if (source.has_value() == false)
     {
-        sq::log_warning("missing script '{}.wren'", path);
+        sq::log_warning("missing script '{}'", path);
         mWrenSource = FALLBACK_SCRIPT;
     }
     else mWrenSource = std::move(*source);
 
+    // parse mWrenSource and construct wren Script object
     load_wren_from_string();
 }
 
-//----------------------------------------------------------------------------//
+//============================================================================//
 
 void Action::load_wren_from_string()
 {
-    // Load and construct wren script instance. In editor mode, will load fallback on failure.
-
     const String module = "{}_{}"_format(fighter.index, type);
 
     // if the script is already loaded, unload it
     if (mScriptInstance != nullptr)
     {
+        // editor crashes sometimes, probably because of my hacky module unloading
         wrenReleaseHandle(world.vm, mScriptInstance);
         wrenUnloadModule(world.vm, module.c_str());
         mErrorMessage.clear();
     }
 
-    auto errors = world.vm.safe_interpret(module.c_str(), mWrenSource.c_str());
+    // interpret wren source string into a new module
+    const auto errors = world.vm.safe_interpret(module.c_str(), mWrenSource.c_str());
     if (errors.has_value() == true)
     {
-        if (world.options.editor_mode) mErrorMessage = std::move(*errors);
-        else sq::log_error_multiline("failed to load script '{}.wren'\n{}", path, *errors);
-
+        impl_set_error_message("failed to load wren script\n{}", *errors);
         wrenUnloadModule(world.vm, module.c_str());
         world.vm.interpret(module.c_str(), FALLBACK_SCRIPT);
     }
 
+    // create a new instance of the Script object
     const auto safe = world.vm.safe_call<WrenHandle*>(world.handles.script_new, wren::GetVar{module.c_str(), "Script"}, this, &fighter);
     if (safe.errors.empty() == false)
     {
-        if (world.options.editor_mode) mErrorMessage = std::move(safe.errors);
-        else sq::log_error_multiline("failed to load script '{}.wren'\n{}", path, safe.errors);
-
+        impl_set_error_message("failed to load wren script\n{}", *errors);
         wrenUnloadModule(world.vm, module.c_str());
         world.vm.interpret(module.c_str(), FALLBACK_SCRIPT);
         mScriptInstance = world.vm.call<WrenHandle*>(world.handles.script_new, wren::GetVar{module.c_str(), "Script"}, this, &fighter);
     }
     else mScriptInstance = *safe.value;
 
-    // don't need the source anymore, so free some memory
+    // don't need the string anymore, so free some memory
     if (world.options.editor_mode == false)
     {
         mWrenSource.clear();
@@ -281,7 +285,7 @@ void Action::apply_changes(const Action& source)
 
 std::unique_ptr<Action> Action::clone() const
 {
-    auto result = std::make_unique<Action>(world, fighter, type, path);
+    auto result = std::make_unique<Action>(fighter, type);
 
     result->apply_changes(*this);
 
@@ -290,12 +294,17 @@ std::unique_ptr<Action> Action::clone() const
 
 //============================================================================//
 
-template <class... Args>
-inline void Action::set_error_status(StringView str, const Args&... args)
+String Action::build_path(StringView extension) const
 {
-    if (world.options.editor_mode == false)
-        sq::log_error_multiline(sq::build_string("action '{}/{}' - ", str), fighter.type, type, args...);
+    return sq::build_string("assets/fighters/", sq::enum_to_string(fighter.type), "/actions/",
+                            sq::enum_to_string(type), extension);
+}
 
+template <class... Args>
+inline void Action::impl_set_error_message(StringView str, const Args&... args)
+{
     mErrorMessage = fmt::format(str, args...);
-    mStatus = ActionStatus::RuntimeError;
+
+    if (world.options.editor_mode == false)
+        sq::log_error_multiline("action '{}/{}' - {}", fighter.type, type, mErrorMessage);
 }

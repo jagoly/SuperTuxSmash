@@ -13,21 +13,23 @@ enum class FighterState : uint8_t
 {
     Neutral,
     Walking,
+    DashStart,
     Dashing,
     Brake,
+    BrakeTurn,
     Crouch,
     PreJump,
     Prone,
     Shield,
     JumpFall,
     TumbleFall,
+    FastFall,
     Stun,
     ShieldStun,
     AirStun,
     TumbleStun,
     Helpless,
     LedgeHang,
-    Charge,
     Action,
     AirAction,
     Freeze,
@@ -70,6 +72,18 @@ enum class FighterAnimMode : uint8_t
     MotionTurn,   ///< non-looping, ApplyMotion + ApplyTurn
 };
 
+/// Init list of all attack commands.
+constexpr const auto FIGHTER_COMMANDS_ANY_ATTACK [[maybe_unused]] =
+{
+    FighterCommand::SmashDown, FighterCommand::SmashUp,
+    FighterCommand::SmashLeft, FighterCommand::SmashRight,
+    FighterCommand::AttackDown, FighterCommand::AttackUp,
+    FighterCommand::AttackLeft, FighterCommand::AttackRight,
+    FighterCommand::AttackNeutral
+};
+
+// the above is used, clang code model just gets confused in qtcreator
+
 } // namespace sts
 
 //============================================================================//
@@ -79,21 +93,23 @@ SQEE_ENUM_HELPER
     sts::FighterState,
     Neutral,
     Walking,
+    DashStart,
     Dashing,
     Brake,
+    BrakeTurn,
     Crouch,
     PreJump,
     Prone,
     Shield,
     JumpFall,
     TumbleFall,
+    FastFall,
     Stun,
     ShieldStun,
     AirStun,
     TumbleStun,
     Helpless,
     LedgeHang,
-    Charge,
     Action,
     AirAction,
     Freeze,

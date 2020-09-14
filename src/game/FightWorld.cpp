@@ -5,6 +5,8 @@
 #include "game/Action.hpp"
 #include "game/Controller.hpp"
 #include "game/Fighter.hpp"
+#include "game/HitBlob.hpp"
+#include "game/HurtBlob.hpp"
 #include "game/ParticleSystem.hpp"
 #include "game/Stage.hpp"
 
@@ -17,10 +19,6 @@ using namespace sts;
 
 FightWorld::FightWorld(const Options& options, sq::AudioContext& audio)
     : options(options), audio(audio), sounds(audio)
-//    , mHurtBlobAlloc    (options.editor_mode ? 1280 : 128)
-//    , mHitBlobAlloc     (options.editor_mode ? 10240 : 1024)
-//    , mEmitterAlloc     (options.editor_mode ? 5120 : 512)
-//    , mSoundEffectAlloc (options.editor_mode ? 5120 : 512)
 {
     if (options.editor_mode == false)
     {
@@ -36,9 +34,14 @@ FightWorld::FightWorld(const Options& options, sq::AudioContext& audio)
     vm.add_foreign_method<&Action::wren_allow_interrupt>("allow_interrupt()");
     vm.add_foreign_method<&Action::wren_enable_hitblob_group>("enable_hitblob_group(_)");
     vm.add_foreign_method<&Action::wren_disable_hitblob_group>("disable_hitblob_group(_)");
+    vm.add_foreign_method<&Action::wren_enable_hitblob>("enable_hitblob(_)");
+    vm.add_foreign_method<&Action::wren_disable_hitblob>("disable_hitblob(_)");
     vm.add_foreign_method<&Action::wren_disable_hitblobs>("disable_hitblobs()");
     vm.add_foreign_method<&Action::wren_emit_particles>("emit_particles(_)");
     vm.add_foreign_method<&Action::wren_play_sound>("play_sound(_)");
+    vm.add_foreign_method<&Action::wren_cancel_sound>("cancel_sound(_)");
+    vm.add_foreign_method<&Action::wren_set_flag_AllowNext>("set_flag_AllowNext()");
+    vm.add_foreign_method<&Action::wren_set_flag_AutoJab>("set_flag_AutoJab()");
 
     vm.add_foreign_method<&Fighter::wren_set_intangible>("set_intangible(_)");
     vm.add_foreign_method<&Fighter::wren_enable_hurtblob>("enable_hurtblob(_)");

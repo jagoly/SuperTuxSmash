@@ -1,0 +1,10 @@
+{
+  "blobs": {},
+  "emitters": {},
+  "sounds": {
+    "SmashStart": {
+      "path": "fighters/Mario/sounds/SmashStart",
+      "volume": 0.5
+    }
+  }
+}

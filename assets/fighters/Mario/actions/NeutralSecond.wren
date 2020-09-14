@@ -6,19 +6,19 @@ class Script is ScriptBase {
   execute() {
 
     wait_until(1)
-    action.play_sound("SwingSmall")
+    action.play_sound("SwingMedium")
     action.enable_hitblob_group(0)
 
     wait_until(3)
     action.disable_hitblob_group(0)
 
-    wait_until(6)
+    wait_until(5)
     action.set_flag_AllowNext()
 
     wait_until(9)
     action.set_flag_AutoJab()
 
-    wait_until(15)
+    wait_until(18)
     action.allow_interrupt()
 
     wait_until(23)

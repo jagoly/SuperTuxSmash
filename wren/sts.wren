@@ -6,9 +6,14 @@ foreign class Action {
   foreign allow_interrupt()
   foreign enable_hitblob_group(group)
   foreign disable_hitblob_group(group)
+  foreign enable_hitblob(key)
+  foreign disable_hitblob(key)
   foreign disable_hitblobs()
   foreign emit_particles(key)
   foreign play_sound(key)
+  foreign cancel_sound(key)
+  foreign set_flag_AllowNext()
+  foreign set_flag_AutoJab()
 }
 
 //========================================================//

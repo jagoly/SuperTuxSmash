@@ -1,0 +1,10 @@
+{
+  "blobs": {},
+  "emitters": {},
+  "sounds": {
+    "ShieldOff": {
+      "path": "fighters/Mario/sounds/ShieldOff",
+      "volume": 0.2
+    }
+  }
+}

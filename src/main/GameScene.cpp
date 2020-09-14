@@ -46,6 +46,17 @@ GameScene::GameScene(SmashApp& smashApp, GameSetup setup)
 
     window.set_key_repeat(false);
 
+    String title = "SuperTuxSmash - {}"_format(setup.stage);
+
+    if (setup.players[0].enabled == true)
+        title += " - {}"_format(setup.players[0].fighter);
+
+    for (uint8_t index = 1u; index < MAX_FIGHTERS; ++index)
+        if (setup.players[index].enabled)
+            title += " vs. {}"_format(setup.players[index].fighter);
+
+    window.set_window_title(std::move(title));
+
     //--------------------------------------------------------//
 
     mFightWorld = std::make_unique<FightWorld>(options, mSmashApp.get_audio_context());
@@ -55,10 +66,8 @@ GameScene::GameScene(SmashApp& smashApp, GameSetup setup)
 
     auto& inputDevices = mSmashApp.get_input_devices();
 
-    mControllers[0] = std::make_unique<Controller>(inputDevices, "config/player1.json");
-    mControllers[1] = std::make_unique<Controller>(inputDevices, "config/player2.json");
-    mControllers[2] = std::make_unique<Controller>(inputDevices, "config/player3.json");
-    mControllers[3] = std::make_unique<Controller>(inputDevices, "config/player4.json");
+    for (uint8_t index = 0u; index < MAX_FIGHTERS; ++index)
+        mControllers[index] = std::make_unique<Controller>(inputDevices, "config/player{}.json"_format(index+1u));
 
     //--------------------------------------------------------//
 
@@ -82,7 +91,7 @@ GameScene::GameScene(SmashApp& smashApp, GameSetup setup)
 
     //--------------------------------------------------------//
 
-    for (uint8_t index = 0u; index < 4u; ++index)
+    for (uint8_t index = 0u; index < MAX_FIGHTERS; ++index)
     {
         if (setup.players[index].enabled == false) continue;
 

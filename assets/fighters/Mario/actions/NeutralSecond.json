@@ -1,0 +1,59 @@
+{
+  "blobs": {
+    "0_ShoulderR": {
+      "bone": "RShoulderJ",
+      "damage": 2.0,
+      "facing": "Forward",
+      "flavour": "Tangy",
+      "freezeFactor": 1.0,
+      "group": 0,
+      "index": 0,
+      "knockAngle": 0.0,
+      "knockBase": 18.0,
+      "knockScale": 100.0,
+      "origin": [ 0.32785007, 0.8715901, -0.021440106 ],
+      "radius": 0.3,
+      "useFixedKnockback": true,
+      "useSakuraiAngle": true
+    },
+    "1_Chest": {
+      "bone": "BustN",
+      "damage": 2.0,
+      "facing": "Forward",
+      "flavour": "Tangy",
+      "freezeFactor": 1.0,
+      "group": 0,
+      "index": 1,
+      "knockAngle": 0.0,
+      "knockBase": 15.0,
+      "knockScale": 100.0,
+      "origin": [ 0.0, 0.7846101, 0.002949907 ],
+      "radius": 0.25,
+      "useFixedKnockback": true,
+      "useSakuraiAngle": true
+    },
+    "2_ArmR": {
+      "bone": "RArmJ",
+      "damage": 2.0,
+      "facing": "Forward",
+      "flavour": "Tangy",
+      "freezeFactor": 1.0,
+      "group": 0,
+      "index": 2,
+      "knockAngle": 80.0,
+      "knockBase": 25.0,
+      "knockScale": 100.0,
+      "origin": [ 0.78313017, 0.87162006, -0.021440106 ],
+      "radius": 0.4,
+      "useFixedKnockback": true,
+      "useSakuraiAngle": false
+    }
+  },
+  "emitters": {},
+  "sounds": {
+    "SwingMedium": {
+      "path": "fighters/Mario/sounds/SwingMedium",
+      "volume": 0.5
+    }
+  }
+}

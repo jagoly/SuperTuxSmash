@@ -1,8 +1,13 @@
 #include "game/Action.hpp"
 #include "game/Fighter.hpp"
 
+#include "game/Emitter.hpp"
 #include "game/FightWorld.hpp"
+#include "game/HitBlob.hpp"
+#include "game/HurtBlob.hpp"
 #include "game/ParticleSystem.hpp"
+#include "game/SoundEffect.hpp"
+
 #include "main/Options.hpp"
 
 #include <sqee/app/AudioContext.hpp>
@@ -47,7 +52,10 @@ void Action::wren_allow_interrupt()
 {
     log_call(*this, "allow_interrupt()");
 
-    mStatus = ActionStatus::AllowInterrupt;
+    if (ActionTraits::get(type).needInterrupt == false)
+        throw wren::Exception("can't interrupt this action type");
+
+    else mStatus = ActionStatus::AllowInterrupt;
 }
 
 void Action::wren_enable_hitblob_group(uint8_t group)
@@ -68,6 +76,28 @@ void Action::wren_disable_hitblob_group(uint8_t group)
     for (auto& [key, blob] : mBlobs)
         if (blob.group == group)
             world.disable_hitblob(&blob);
+}
+
+void Action::wren_enable_hitblob(TinyString key)
+{
+    log_call(*this, "enable_hitblob('{}')", key);
+
+    const auto iter = mBlobs.find(key);
+    if (iter == mBlobs.end())
+        throw wren::Exception("invalid hitblob '{}'", key);
+
+    world.enable_hitblob(&iter->second);
+}
+
+void Action::wren_disable_hitblob(TinyString key)
+{
+    log_call(*this, "disable_hitblob('{}')", key);
+
+    const auto iter = mBlobs.find(key);
+    if (iter == mBlobs.end())
+        throw wren::Exception("invalid hitblob '{}'", key);
+
+    world.disable_hitblob(&iter->second);
 }
 
 void Action::wren_disable_hitblobs()
@@ -104,6 +134,44 @@ void Action::wren_play_sound(TinyString key)
         throw wren::Exception("could not load sound '{}'", sound.get_key());
 
     sound.id = world.audio.play_sound(sound.handle.get(), sq::SoundGroup::Sfx, sound.volume, false);
+}
+
+void Action::wren_cancel_sound(TinyString key)
+{
+    log_call(*this, "cancel_sound('{}')", key);
+
+    const auto iter = mSounds.find(key);
+    if (iter == mSounds.end())
+        throw wren::Exception("invalid sound '{}'", key);
+
+    if (iter->second.id != -1)
+        world.audio.stop_sound(iter->second.id);
+}
+
+//============================================================================//
+
+void Action::wren_set_flag_AllowNext()
+{
+    log_call(*this, "set_flag_AllowNext()");
+    set_flag(ActionFlag::AllowNext, true);
+}
+
+void Action::wren_set_flag_AutoJab()
+{
+    log_call(*this, "set_flag_AutoJab()");
+    set_flag(ActionFlag::AutoJab, true);
+}
+
+bool Action::wren_check_flag_AttackHeld() const
+{
+    log_call(*this, "check_flag_AttackHeld()");
+    return check_flag(ActionFlag::AttackHeld);
+}
+
+bool Action::wren_check_flag_HitCollide() const
+{
+    log_call(*this, "check_flag_HitCollide()");
+    return check_flag(ActionFlag::HitCollide);
 }
 
 //============================================================================//

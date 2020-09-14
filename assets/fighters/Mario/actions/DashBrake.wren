@@ -5,7 +5,6 @@ class Script is ScriptBase {
 
   execute() {
     action.emit_particles("BrakeSmoke")
-    action.allow_interrupt()
 
     wait_until(4)
     action.emit_particles("BrakeSmoke")
@@ -14,6 +13,5 @@ class Script is ScriptBase {
     action.play_sound("Brake")
   }
 
-  cancel() {
-  }
+  cancel() {}
 }

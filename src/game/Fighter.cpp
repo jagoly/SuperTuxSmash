@@ -4,6 +4,8 @@
 
 #include "game/Action.hpp"
 #include "game/FightWorld.hpp"
+#include "game/HitBlob.hpp"
+#include "game/HurtBlob.hpp"
 
 #include <sqee/debug/Assert.hpp>
 #include <sqee/debug/Logging.hpp>
@@ -17,18 +19,55 @@ using namespace sts;
 
 Fighter::Fighter(uint8_t index, FightWorld& world, FighterEnum type)
     : index(index), type(type), world(world)
-    //, mHurtBlobs(world.get_hurt_blob_allocator())
     , mHurtBlobs(world.get_memory_resource())
 {
-    const String path = sq::build_path("assets/fighters", sq::enum_to_string(type));
+    const String path = sq::build_string("assets/fighters/", sq::enum_to_string(type));
 
-    initialise_armature(path);
-    initialise_hurt_blobs(path);
     initialise_stats(path);
-    initialise_actions(path);
+    initialise_armature(path);
+    initialise_hurtblobs(path);
+
+    for (int8_t i = 0; i < sq::enum_count_v<ActionType>; ++i)
+        mActions[i] = std::make_unique<Action>(*this, ActionType(i));
 }
 
 Fighter::~Fighter() = default;
+
+//============================================================================//
+
+void Fighter::initialise_stats(const String& path)
+{
+    const auto json = sq::parse_json_from_file(path + "/Stats.json");
+
+    stats.walk_speed     = json.at("walk_speed");
+    stats.dash_speed     = json.at("dash_speed");
+    stats.air_speed      = json.at("air_speed");
+    stats.traction       = json.at("traction");
+    stats.air_mobility   = json.at("air_mobility");
+    stats.air_friction   = json.at("air_friction");
+    stats.hop_height     = json.at("hop_height");
+    stats.jump_height    = json.at("jump_height");
+    stats.airhop_height  = json.at("airhop_height");
+    stats.gravity        = json.at("gravity");
+    stats.fall_speed     = json.at("fall_speed");
+    stats.fastfall_speed = json.at("fastfall_speed");
+    stats.weight         = json.at("weight");
+
+    stats.extra_jumps = json.at("extra_jumps");
+
+    stats.land_heavy_fall_time = json.at("land_heavy_fall_time");
+
+    stats.dash_start_time  = json.at("dash_start_time");
+    stats.dash_brake_time  = json.at("dash_brake_time");
+    stats.dash_turn_time   = json.at("dash_turn_time");
+
+    stats.anim_walk_stride = json.at("anim_walk_stride");
+    stats.anim_dash_stride = json.at("anim_dash_stride");
+
+    // todo: move this to the per-fighter lua init script
+
+    mLocalDiamond = LocalDiamond(json.at("diamond_halfWidth"), json.at("diamond_offsetTop"), json.at("diamond_offsetCross"));
+}
 
 //============================================================================//
 
@@ -112,6 +151,8 @@ void Fighter::initialise_armature(const String& path)
     anims.LedgeJump = load_anim("LedgeJump", AnimMode::Standard);
 
     anims.NeutralFirst = load_anim("NeutralFirst", AnimMode::ApplyMotion);
+    anims.NeutralSecond = load_anim("NeutralSecond", AnimMode::ApplyMotion);
+    anims.NeutralThird = load_anim("NeutralThird", AnimMode::ApplyMotion);
 
     anims.DashAttack = load_anim("DashAttack", AnimMode::ApplyMotion);
 
@@ -180,7 +221,7 @@ void Fighter::initialise_armature(const String& path)
         if (anim.anim.totalTime > time) return; // anim is longer than time
 
         if (anim.anim.totalTime != 1u) // fallback animation, don't print another warning
-            sq::log_warning("anim '{}' shorter than '{}'", anim.key, timeName);
+            sq::log_error("anim '{}' shorter than '{}'", anim.key, timeName);
 
         anim.anim.totalTime = anim.anim.times.front() = time + 1u;
     };
@@ -200,7 +241,7 @@ void Fighter::initialise_armature(const String& path)
 
 //============================================================================//
 
-void Fighter::initialise_hurt_blobs(const String& path)
+void Fighter::initialise_hurtblobs(const String& path)
 {
     const JsonValue root = sq::parse_json_from_file(path + "/HurtBlobs.json");
     for (const auto& item : root.items())
@@ -210,58 +251,10 @@ void Fighter::initialise_hurt_blobs(const String& path)
 
         try { blob.from_json(item.value()); }
         catch (const std::exception& e) {
-            sq::log_warning("problem loading hurt blob '{}': {}", item.key(), e.what());
+            sq::log_warning("problem loading hurtblob '{}': {}", item.key(), e.what());
         }
 
         world.enable_hurtblob(&blob);
-    }
-}
-
-//============================================================================//
-
-void Fighter::initialise_stats(const String& path)
-{
-    const auto json = sq::parse_json_from_file(path + "/Stats.json");
-
-    stats.walk_speed    = json.at("walk_speed");
-    stats.dash_speed    = json.at("dash_speed");
-    stats.air_speed     = json.at("air_speed");
-    stats.traction      = json.at("traction");
-    stats.air_mobility  = json.at("air_mobility");
-    stats.air_friction  = json.at("air_friction");
-    stats.hop_height    = json.at("hop_height");
-    stats.jump_height   = json.at("jump_height");
-    stats.airhop_height = json.at("airhop_height");
-    stats.gravity       = json.at("gravity");
-    stats.fall_speed    = json.at("fall_speed");
-    stats.weight        = json.at("weight");
-
-    stats.extra_jumps = json.at("extra_jumps");
-
-    stats.land_heavy_min_time = json.at("land_heavy_min_time");
-
-    stats.dash_start_time  = json.at("dash_start_time");
-    stats.dash_brake_time  = json.at("dash_brake_time");
-    stats.dash_turn_time   = json.at("dash_turn_time");
-
-    stats.anim_walk_stride = json.at("anim_walk_stride");
-    stats.anim_dash_stride = json.at("anim_dash_stride");
-
-    // todo: move this to the per-fighter lua init script
-
-    mLocalDiamond = LocalDiamond(json.at("diamond_halfWidth"), json.at("diamond_offsetTop"), json.at("diamond_offsetCross"));
-}
-
-//============================================================================//
-
-void Fighter::initialise_actions(const String& path)
-{
-    for (int8_t i = 0; i < sq::enum_count_v<ActionType>; ++i)
-    {
-        const auto actionType = ActionType(i);
-        const auto actionPath = sq::build_string(path, "/actions/", sq::enum_to_string(actionType));
-
-        mActions[i] = std::make_unique<Action>(world, *this, actionType, actionPath);
     }
 }
 
@@ -285,7 +278,7 @@ bool Fighter::consume_command(Command cmd)
     return false;
 }
 
-bool Fighter::consume_command_oldest(std::initializer_list<Command> cmds)
+bool Fighter::consume_command(std::initializer_list<Command> cmds)
 {
     for (size_t i = CMD_BUFFER_SIZE; i != 0u; --i)
     {
@@ -313,10 +306,10 @@ bool Fighter::consume_command_facing(Command leftCmd, Command rightCmd)
     return false; // make compiler happy
 }
 
-bool Fighter::consume_command_oldest_facing(std::initializer_list<Command> leftCmds, std::initializer_list<Command> rightCmds)
+bool Fighter::consume_command_facing(std::initializer_list<Command> leftCmds, std::initializer_list<Command> rightCmds)
 {
-    if (status.facing == -1) return consume_command_oldest(leftCmds);
-    if (status.facing == +1) return consume_command_oldest(rightCmds);
+    if (status.facing == -1) return consume_command(leftCmds);
+    if (status.facing == +1) return consume_command(rightCmds);
     return false; // make compiler happy
 }
 
@@ -465,6 +458,8 @@ void Fighter::apply_hit_generic(const HitBlob& hit, const HurtBlob& hurt)
     mFreezeTime = freezeTime;
     mFrozenProgress = 0u;
 
+    hit.action->set_flag(ActionFlag::HitCollide, true);
+
     // happens when fighters hit each other at the same time, or if a fighter hits multiple others
     if (hit.action->fighter.status.state != State::Freeze)
     {
@@ -542,7 +537,7 @@ void Fighter::debug_reload_actions()
 {
     for (int8_t i = 0; i < sq::enum_count_v<ActionType>; ++i)
     {
-        mActions[i]->load_from_json();
+        mActions[i]->load_json_from_file();
         mActions[i]->load_wren_from_file();
     }
 }

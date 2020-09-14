@@ -11,6 +11,7 @@
 #include "game/HitBlob.hpp"
 #include "game/HurtBlob.hpp"
 #include "game/ParticleSystem.hpp"
+#include "game/SoundEffect.hpp"
 #include "game/Stage.hpp"
 
 #include "render/DebugRender.hpp"
@@ -61,6 +62,7 @@ EditorScene::EditorScene(SmashApp& smashApp)
 
     auto& window = mSmashApp.get_window();
 
+    window.set_window_title("SuperTuxSmash - Action Editor");
     window.set_key_repeat(true);
 }
 
@@ -297,7 +299,7 @@ void EditorScene::impl_show_widget_toolbar()
             Fighter& fighter = *mActiveActionContext->fighter;
 
             if (ImPlus::MenuItem("Reload Animations", nullptr, false, true))
-                fighter.initialise_armature(sq::build_path("assets/fighters", sq::enum_to_string(fighter.type)));
+                fighter.initialise_armature(sq::build_string("assets/fighters/", sq::enum_to_string(fighter.type)));
             ImPlus::HoverTooltip("Reload animations for the active action");
         });
 
@@ -620,13 +622,15 @@ EditorScene::ActionContext& EditorScene::get_action_context(ActionKey key)
 
     SWITCH (key.action) {
 
-    CASE (NeutralFirst) ctx.timelineLength = anims.NeutralFirst.anim.totalTime;
+    CASE (NeutralFirst)  ctx.timelineLength = anims.NeutralFirst.anim.totalTime;
+    CASE (NeutralSecond) ctx.timelineLength = anims.NeutralSecond.anim.totalTime;
+    CASE (NeutralThird)  ctx.timelineLength = anims.NeutralThird.anim.totalTime;
 
-    CASE (DashAttack)   ctx.timelineLength = anims.DashAttack.anim.totalTime;
+    CASE (DashAttack) ctx.timelineLength = anims.DashAttack.anim.totalTime;
 
-    CASE (TiltDown)     ctx.timelineLength = anims.TiltDown.anim.totalTime;
-    CASE (TiltForward)  ctx.timelineLength = anims.TiltForward.anim.totalTime;
-    CASE (TiltUp)       ctx.timelineLength = anims.TiltUp.anim.totalTime;
+    CASE (TiltDown)    ctx.timelineLength = anims.TiltDown.anim.totalTime;
+    CASE (TiltForward) ctx.timelineLength = anims.TiltForward.anim.totalTime;
+    CASE (TiltUp)      ctx.timelineLength = anims.TiltUp.anim.totalTime;
 
     CASE (EvadeBack)    ctx.timelineLength = anims.EvadeBack.anim.totalTime;
     CASE (EvadeForward) ctx.timelineLength = anims.EvadeForward.anim.totalTime;
@@ -638,6 +642,10 @@ EditorScene::ActionContext& EditorScene::get_action_context(ActionKey key)
     CASE (ProneStand)   ctx.timelineLength = anims.ProneStand.anim.totalTime;;
 
     CASE (LedgeClimb) ctx.timelineLength = anims.LedgeClimb.anim.totalTime;
+
+    CASE (ChargeDown)    ctx.timelineLength = anims.SmashDownStart.anim.totalTime + anims.SmashDownCharge.anim.totalTime;
+    CASE (ChargeForward) ctx.timelineLength = anims.SmashForwardStart.anim.totalTime + anims.SmashForwardCharge.anim.totalTime;
+    CASE (ChargeUp)      ctx.timelineLength = anims.SmashUpStart.anim.totalTime + anims.SmashUpCharge.anim.totalTime;
 
     CASE (SmashDown)    ctx.timelineLength = anims.SmashDownAttack.anim.totalTime;
     CASE (SmashForward) ctx.timelineLength = anims.SmashForwardAttack.anim.totalTime;
@@ -810,8 +818,8 @@ void EditorScene::save_changes(ActionContext& ctx)
     for (const auto& [key, sound] : action.mSounds)
         sound.to_json(sounds[key.c_str()]);
 
-    sq::save_string_to_file(action.path + ".json", json.dump(2));
-    sq::save_string_to_file(action.path + ".wren", action.mWrenSource);
+    sq::save_string_to_file(action.build_path(".json"), json.dump(2));
+    sq::save_string_to_file(action.build_path(".wren"), action.mWrenSource);
 
     ctx.savedData = action.clone();
     ctx.modified = false;
@@ -858,6 +866,11 @@ void EditorScene::scrub_to_frame(ActionContext& ctx, int frame)
 
         ctx.fighter->state_transition(FighterState::JumpFall, 0u, &ctx.fighter->mAnimations.FallingLoop, 0u, nullptr);
     }
+    else if (ctx.key.action == ActionType::DashStart)
+    {
+        ctx.fighter->status.velocity.x = ctx.fighter->stats.dash_speed + ctx.fighter->stats.traction;
+        ctx.fighter->state_transition(FighterState::Neutral, 0u, &ctx.fighter->mAnimations.NeutralLoop, 0u, nullptr);
+    }
     else if (ctx.key.action == ActionType::DashBrake)
     {
         ctx.fighter->status.velocity.x = ctx.fighter->stats.dash_speed + ctx.fighter->stats.traction;
@@ -872,13 +885,8 @@ void EditorScene::scrub_to_frame(ActionContext& ctx, int frame)
     // start the action on the next tick
     ctx.fighter->mForceSwitchAction = ctx.key.action;
 
-    // todo: should be possible to charge some special actions, so need more generic test for this
-    const bool chargeAction = ctx.key.action == ActionType::SmashDown ||
-                              ctx.key.action == ActionType::SmashForward ||
-                              ctx.key.action == ActionType::SmashUp;
-
     // finally, scrub to the desired frame
-    for (ctx.currentFrame = chargeAction ? -2 : -1; ctx.currentFrame < frame;)
+    for (ctx.currentFrame = -1; ctx.currentFrame < frame;)
         tick_action_context(ctx);
 
     if (ctx.fighter->mActiveAction != nullptr && ctx.currentFrame >= 0)

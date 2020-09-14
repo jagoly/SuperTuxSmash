@@ -6,8 +6,6 @@
 #include "game/FighterEnums.hpp"
 #include "main/MainEnums.hpp"
 
-#include "game/HurtBlob.hpp"
-
 #include <sqee/app/WrenPlus.hpp>
 #include <sqee/objects/Armature.hpp>
 
@@ -103,6 +101,8 @@ public: //====================================================//
         Animation LedgeJump;
 
         Animation NeutralFirst;
+        Animation NeutralSecond;
+        Animation NeutralThird;
 
         Animation DashAttack;
 
@@ -170,22 +170,23 @@ public: //====================================================//
     /// Structure containing stats that generally don't change during a game.
     struct Stats
     {
-        float walk_speed    = 0.1f;
-        float dash_speed    = 0.15f;
-        float air_speed     = 0.1f;
-        float traction      = 0.005f;
-        float air_mobility  = 0.008f;
-        float air_friction  = 0.002f;
-        float hop_height    = 1.5f;
-        float jump_height   = 3.5f;
-        float airhop_height = 3.5f;
-        float gravity       = 0.01f;
-        float fall_speed    = 0.15f;
-        float weight        = 100.f;
+        float walk_speed        = 0.1f;
+        float dash_speed        = 0.15f;
+        float air_speed         = 0.1f;
+        float traction          = 0.005f;
+        float air_mobility      = 0.008f;
+        float air_friction      = 0.002f;
+        float hop_height        = 1.5f;
+        float jump_height       = 3.5f;
+        float airhop_height     = 3.5f;
+        float gravity           = 0.01f;
+        float fall_speed        = 0.15f;
+        float fastfall_speed    = 0.24f;
+        float weight            = 100.f;
 
         uint extra_jumps = 2u;
 
-        uint land_heavy_min_time = 32u;
+        uint land_heavy_fall_time = 4u;
 
         uint dash_start_time  = 11u;
         uint dash_brake_time  = 12u;
@@ -322,23 +323,21 @@ private: //===================================================//
 
     //-- init methods, called by constructor -----------------//
 
-    void initialise_armature(const String& path);
-
-    void initialise_hurt_blobs(const String& path);
-
     void initialise_stats(const String& path);
 
-    void initialise_actions(const String& path);
+    void initialise_armature(const String& path);
+
+    void initialise_hurtblobs(const String& path);
 
     //-- control and command buffer stuff --------------------//
 
     bool consume_command(Command cmd);
 
-    bool consume_command_oldest(std::initializer_list<Command> cmds);
+    bool consume_command(std::initializer_list<Command> cmds);
 
     bool consume_command_facing(Command leftCmd, Command rightCmd);
 
-    bool consume_command_oldest_facing(std::initializer_list<Command> leftCmds, std::initializer_list<Command> rightCmds);
+    bool consume_command_facing(std::initializer_list<Command> leftCmds, std::initializer_list<Command> rightCmds);
 
     Controller* mController = nullptr;
 
@@ -351,6 +350,9 @@ private: //===================================================//
 
     /// Activate an action and change to the appropriate state.
     void state_transition_action(ActionType action);
+
+    /// Finish a charge action and switch to its attack action.
+    void state_transition_charge_done();
 
     /// If we have an active and started action, cancel and deactivate it.
     void cancel_active_action();
@@ -375,7 +377,6 @@ private: //===================================================//
 
     std::array<std::unique_ptr<Action>, sq::enum_count_v<ActionType>> mActions;
 
-    //sq::PoolMap<TinyString, HurtBlob> mHurtBlobs;
     std::pmr::map<TinyString, HurtBlob> mHurtBlobs;
 
     LocalDiamond mLocalDiamond;
@@ -393,6 +394,7 @@ private: //===================================================//
     bool mJumpHeld = false;
 
     uint mTimeSinceLedge = 0u;
+    uint mTimeSinceFallSpeed = 0u;
     uint mExtraJumps = 0u;
 
     uint mFreezeTime = 0u;

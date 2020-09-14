@@ -98,7 +98,7 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
 
         ImPlus::InputValue("extra_jumps", fighter.stats.extra_jumps, 1u);
 
-        ImPlus::InputValue("land_heavy_min_time", fighter.stats.land_heavy_min_time, 1u);
+        ImPlus::InputValue("land_heavy_fall_time", fighter.stats.land_heavy_fall_time, 1u);
 
         ImPlus::InputValue("dash_start_time",  fighter.stats.dash_start_time,  1u);
         ImPlus::InputValue("dash_brake_time",  fighter.stats.dash_brake_time,  1u);
