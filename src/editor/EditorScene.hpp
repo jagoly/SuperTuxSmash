@@ -81,11 +81,9 @@ private: //===================================================//
     {
         FighterEnum key;
 
-        //std::unique_ptr<sq::PoolMap<TinyString, HurtBlob>> savedData;
         std::unique_ptr<std::pmr::map<TinyString, HurtBlob>> savedData;
         bool modified = false;
 
-        //std::vector<std::unique_ptr<sq::PoolMap<TinyString, HurtBlob>>> undoStack;
         std::vector<std::unique_ptr<std::pmr::map<TinyString, HurtBlob>>> undoStack;
         size_t undoIndex = 0u;
     };

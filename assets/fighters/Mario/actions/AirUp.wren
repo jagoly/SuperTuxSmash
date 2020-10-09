@@ -10,15 +10,15 @@ class Script is ScriptBase {
 
     wait_until(3)
     action.play_sound("SwingSmall")
-    action.enable_hitblob_group(0)
+    action.enable_hitblobs("")
 
     wait_until(9)
-    action.disable_hitblob_group(0)
+    action.disable_hitblobs()
 
     wait_until(15)
     fighter.set_autocancel(true)
 
-    wait_until(29) // anim 34
+    wait_until(29) // 34
     action.allow_interrupt()
   }
   

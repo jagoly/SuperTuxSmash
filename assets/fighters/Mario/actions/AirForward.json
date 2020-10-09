@@ -1,6 +1,40 @@
 {
   "blobs": {
-    "00_EarlyArmR": {
+    "CLEAN_0_Shldr": {
+      "bone": "RShoulderJ",
+      "damage": 13.0,
+      "facing": "Forward",
+      "flavour": "Tangy",
+      "freezeFactor": 1.0,
+      "group": 1,
+      "index": 0,
+      "knockAngle": 280.0,
+      "knockBase": 20.0,
+      "knockScale": 75.0,
+      "origin": [ 0.18785004, 0.87159014, -0.021440106 ],
+      "radius": 0.4,
+      "sound": "PunchStrong",
+      "useFixedKnockback": false,
+      "useSakuraiAngle": false
+    },
+    "CLEAN_1_Arm": {
+      "bone": "RArmJ",
+      "damage": 13.0,
+      "facing": "Forward",
+      "flavour": "Tangy",
+      "freezeFactor": 1.0,
+      "group": 1,
+      "index": 1,
+      "knockAngle": 280.0,
+      "knockBase": 20.0,
+      "knockScale": 75.0,
+      "origin": [ 0.68313015, 0.8716201, -0.021440106 ],
+      "radius": 0.46,
+      "sound": "PunchStrong",
+      "useFixedKnockback": false,
+      "useSakuraiAngle": false
+    },
+    "EARLY_0_Arm": {
       "bone": "RArmJ",
       "damage": 12.0,
       "facing": "Forward",
@@ -13,42 +47,11 @@
       "knockScale": 80.0,
       "origin": [ 0.68313015, 0.8716201, -0.021440106 ],
       "radius": 0.3,
+      "sound": "PunchMedium",
       "useFixedKnockback": false,
       "useSakuraiAngle": true
     },
-    "10_CleanShouldR": {
-      "bone": "RShoulderJ",
-      "damage": 13.0,
-      "facing": "Forward",
-      "flavour": "Tangy",
-      "freezeFactor": 1.0,
-      "group": 1,
-      "index": 0,
-      "knockAngle": 280.0,
-      "knockBase": 20.0,
-      "knockScale": 75.0,
-      "origin": [ 0.18785004, 0.87159014, -0.021440106 ],
-      "radius": 0.4,
-      "useFixedKnockback": false,
-      "useSakuraiAngle": false
-    },
-    "11_CleanArmR": {
-      "bone": "RArmJ",
-      "damage": 13.0,
-      "facing": "Forward",
-      "flavour": "Tangy",
-      "freezeFactor": 1.0,
-      "group": 1,
-      "index": 1,
-      "knockAngle": 280.0,
-      "knockBase": 20.0,
-      "knockScale": 75.0,
-      "origin": [ 0.68313015, 0.8716201, -0.021440106 ],
-      "radius": 0.46,
-      "useFixedKnockback": false,
-      "useSakuraiAngle": false
-    },
-    "20_LateShouldR": {
+    "LATE_0_Shldr": {
       "bone": "RShoulderJ",
       "damage": 10.0,
       "facing": "Forward",
@@ -61,10 +64,11 @@
       "knockScale": 80.0,
       "origin": [ 0.18785004, 0.87159014, -0.021440106 ],
       "radius": 0.4,
+      "sound": "PunchMedium",
       "useFixedKnockback": false,
       "useSakuraiAngle": true
     },
-    "21_LateArmR": {
+    "LATE_1_Arm": {
       "bone": "RArmJ",
       "damage": 10.0,
       "facing": "Forward",
@@ -77,12 +81,21 @@
       "knockScale": 80.0,
       "origin": [ 0.68313015, 0.8716201, -0.021440106 ],
       "radius": 0.46,
+      "sound": "PunchMedium",
       "useFixedKnockback": false,
       "useSakuraiAngle": true
     }
   },
   "emitters": {},
   "sounds": {
+    "PunchMedium": {
+      "path": "fighters/Mario/sounds/PunchMedium",
+      "volume": 0.5
+    },
+    "PunchStrong": {
+      "path": "fighters/Mario/sounds/PunchStrong",
+      "volume": 0.5
+    },
     "SwingSmall": {
       "path": "fighters/Mario/sounds/SwingSmall",
       "volume": 0.5

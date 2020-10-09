@@ -1,0 +1,144 @@
+{
+  "assets": {
+    "meshes": {
+      "Body": "fighters/Mario/meshes/Body",
+      "EyesIris": "fighters/Mario/meshes/EyesIris",
+      "EyesWhite": "fighters/Mario/meshes/EyesWhite",
+      "HairHat": "fighters/Mario/meshes/HairHat",
+      "Head": "fighters/Mario/meshes/Head",
+      "HeadHurt": "fighters/Mario/meshes/HeadHurt"
+    },
+    "textures": {
+      "BodyA_diff": "fighters/Mario/textures/BodyA_diff",
+      "BodyB_diff": "fighters/Mario/textures/BodyB_diff",
+      "EyeWhite_diff": "fighters/Mario/textures/EyeWhite_diff",
+      "EyeHurt_diff": "fighters/Mario/textures/EyeHurt_diff",
+      "EyeIris_diff": "fighters/Mario/textures/EyeIris_diff",
+      "EyeIris_mask": "fighters/Mario/textures/EyeIris_mask"
+    },
+    "programs": {
+      "Basic": {
+        "path": "super/BasicModel",
+        "options": {
+          "APPLY_SKELETON": "1",
+          "DIFFUSE_TEXTURE": "1"
+        }
+      },
+      "Mask": {
+        "path": "super/BasicModel",
+        "options": {
+          "APPLY_SKELETON": "1",
+          "DIFFUSE_TEXTURE": "1",
+          "MASK_TEXTURE": "1"
+        }
+      }
+    },
+    "materials": {
+      "BodyA": {
+        "cullface": "back",
+        "program": "Basic",
+        "uniforms": {
+          "tx_Diffuse": "BodyA_diff",
+          "uf_Specular": [ 0.0, 0.0, 0.0 ]
+        }
+      },
+      "BodyB": {
+        "cullface": "back",
+        "program": "Basic",
+        "uniforms": {
+          "tx_Diffuse": "BodyB_diff",
+          "uf_Specular": [ 0.0, 0.0, 0.0 ]
+        }
+      },
+      "Buttons": {
+        "cullface": "back",
+        "program": "Basic",
+        "uniforms": {
+          "tx_Diffuse": "BodyB_diff",
+          "uf_Specular": [ 0.5, 0.5, 0.4 ]
+        }
+      },
+      "EyesHurt": {
+        "cullface": "back",
+        "program": "Basic",
+        "uniforms": {
+          "tx_Diffuse": "EyeHurt_diff",
+          "uf_Specular": [ 0.0, 0.0, 0.0 ]
+        }
+      },
+      "EyesIris": {
+        "cullface": "back",
+        "program": "Mask",
+        "uniforms": {
+          "tx_Diffuse": "EyeIris_diff",
+          "tx_Mask": "EyeIris_mask",
+          "uf_Specular": [ 0.3, 0.3, 0.3 ]
+        }
+      },
+      "EyesWhite": {
+        "cullface": "back",
+        "program": "Basic",
+        "uniforms": {
+          "tx_Diffuse": "EyeWhite_diff",
+          "uf_Specular": [ 0.2, 0.2, 0.2 ]
+        }
+      }
+    }
+  },
+  "pass_opaque": [
+    {
+      "condition": null,
+      "material": "BodyA",
+      "mesh": "Body",
+      "submesh": 0
+    },
+    {
+      "condition": null,
+      "material": "BodyB",
+      "mesh": "Body",
+      "submesh": 1
+    },
+    {
+      "condition": null,
+      "material": "Buttons",
+      "mesh": "Body",
+      "submesh": 2
+    },
+    {
+      "condition": null,
+      "material": "BodyA",
+      "mesh": "HairHat",
+      "submesh": null
+    },
+    {
+      "condition": "!flinch",
+      "material": "BodyA",
+      "mesh": "Head",
+      "submesh": null
+    },
+    {
+      "condition": "!flinch",
+      "material": "EyesWhite",
+      "mesh": "EyesWhite",
+      "submesh": null
+    },
+    {
+      "condition": "!flinch",
+      "material": "EyesIris",
+      "mesh": "EyesIris",
+      "submesh": null
+    },
+    {
+      "condition": "flinch",
+      "material": "BodyA",
+      "mesh": "HeadHurt",
+      "submesh": 0
+    },
+    {
+      "condition": "flinch",
+      "material": "EyesHurt",
+      "mesh": "HeadHurt",
+      "submesh": 1
+    }
+  ]
+}

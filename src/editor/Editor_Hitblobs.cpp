@@ -72,7 +72,6 @@ void EditorScene::impl_show_widget_hitblobs()
         ImGui::SameLine();
         ImPlus::Combo(" Bone", armature.get_bone_names(), blob.bone, "(None)");
 
-        ImPlus::InputValue(" Group", blob.group, 1, "%u");
         ImPlus::InputValue(" Index", blob.index, 1, "%u");
 
         ImPlus::InputValue(" Damage", blob.damage, 1.f, "%.2f %");
@@ -87,6 +86,9 @@ void EditorScene::impl_show_widget_hitblobs()
         ImPlus::Checkbox("FixedKnockback ", &blob.useFixedKnockback);
         ImGui::SameLine();
         ImPlus::Checkbox("SakuraiAngle ", &blob.useSakuraiAngle);
+
+        // todo: make this a combo box, or at least show a warning if the sound doesn't exist
+        ImGui::InputText(" Sound", blob.sound.data(), blob.sound.buffer_size());
     };
 
     //--------------------------------------------------------//

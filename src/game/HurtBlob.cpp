@@ -45,7 +45,7 @@ void HurtBlob::to_json(JsonValue& json) const
 
 //============================================================================//
 
-DISABLE_WARNING_FLOAT_EQUALITY;
+DISABLE_WARNING_FLOAT_EQUALITY()
 
 bool sts::operator==(const HurtBlob& a, const HurtBlob& b)
 {
@@ -58,4 +58,4 @@ bool sts::operator==(const HurtBlob& a, const HurtBlob& b)
     return true;
 }
 
-ENABLE_WARNING_FLOAT_EQUALITY;
+ENABLE_WARNING_FLOAT_EQUALITY()

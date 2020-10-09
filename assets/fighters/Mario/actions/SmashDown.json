@@ -1,38 +1,6 @@
 {
   "blobs": {
-    "00_ForwardA": {
-      "bone": null,
-      "damage": 15.0,
-      "facing": "Relative",
-      "flavour": "Tangy",
-      "freezeFactor": 1.0,
-      "group": 0,
-      "index": 0,
-      "knockAngle": 0.0,
-      "knockBase": 40.0,
-      "knockScale": 73.0,
-      "origin": [ 0.0, 0.36, 1.2 ],
-      "radius": 0.48,
-      "useFixedKnockback": false,
-      "useSakuraiAngle": true
-    },
-    "01_ForwardB": {
-      "bone": null,
-      "damage": 15.0,
-      "facing": "Relative",
-      "flavour": "Tangy",
-      "freezeFactor": 1.0,
-      "group": 0,
-      "index": 1,
-      "knockAngle": 0.0,
-      "knockBase": 40.0,
-      "knockScale": 73.0,
-      "origin": [ 0.0, 0.36, 0.9 ],
-      "radius": 0.384,
-      "useFixedKnockback": false,
-      "useSakuraiAngle": true
-    },
-    "10_BackA": {
+    "BACK_0_Outer": {
       "bone": null,
       "damage": 12.0,
       "facing": "Relative",
@@ -45,10 +13,11 @@
       "knockScale": 75.0,
       "origin": [ 0.0, 0.36, -1.2 ],
       "radius": 0.48,
+      "sound": "KickMedium",
       "useFixedKnockback": false,
       "useSakuraiAngle": true
     },
-    "11_BackB": {
+    "BACK_1_Inner": {
       "bone": null,
       "damage": 12.0,
       "facing": "Relative",
@@ -61,12 +30,55 @@
       "knockScale": 75.0,
       "origin": [ 0.0, 0.36, -0.9 ],
       "radius": 0.384,
+      "sound": "KickMedium",
+      "useFixedKnockback": false,
+      "useSakuraiAngle": true
+    },
+    "FRONT_0_Outer": {
+      "bone": null,
+      "damage": 15.0,
+      "facing": "Relative",
+      "flavour": "Tangy",
+      "freezeFactor": 1.0,
+      "group": 0,
+      "index": 0,
+      "knockAngle": 0.0,
+      "knockBase": 40.0,
+      "knockScale": 73.0,
+      "origin": [ 0.0, 0.36, 1.2 ],
+      "radius": 0.48,
+      "sound": "KickStrong",
+      "useFixedKnockback": false,
+      "useSakuraiAngle": true
+    },
+    "FRONT_1_Inner": {
+      "bone": null,
+      "damage": 15.0,
+      "facing": "Relative",
+      "flavour": "Tangy",
+      "freezeFactor": 1.0,
+      "group": 0,
+      "index": 1,
+      "knockAngle": 0.0,
+      "knockBase": 40.0,
+      "knockScale": 73.0,
+      "origin": [ 0.0, 0.36, 0.9 ],
+      "radius": 0.384,
+      "sound": "KickStrong",
       "useFixedKnockback": false,
       "useSakuraiAngle": true
     }
   },
   "emitters": {},
   "sounds": {
+    "KickMedium": {
+      "path": "fighters/Mario/sounds/KickMedium",
+      "volume": 0.5
+    },
+    "KickStrong": {
+      "path": "fighters/Mario/sounds/KickStrong",
+      "volume": 0.5
+    },
     "SwingExtra": {
       "path": "fighters/Mario/sounds/SwingExtra",
       "volume": 0.4

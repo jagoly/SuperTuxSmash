@@ -11,3 +11,5 @@ struct CameraBlock
 
     // TOTAL: 288
 };
+
+layout(std140, binding=0) uniform CAMERA { CameraBlock CB; };

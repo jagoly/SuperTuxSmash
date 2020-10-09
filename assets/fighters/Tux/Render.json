@@ -1,0 +1,39 @@
+{
+  "assets": {
+    "meshes": {
+      "": "fighters/Tux/meshes/Mesh"
+    },
+    "textures": {
+      "Tux_diff": "fighters/Tux/textures/Tux_diff",
+      "Tux_spec": "fighters/Tux/textures/Tux_spec"
+    },
+    "programs": {
+      "": {
+        "path": "super/BasicModel",
+        "options": {
+          "APPLY_SKELETON": "1",
+          "DIFFUSE_TEXTURE": "1",
+          "SPECULAR_TEXTURE": "1"
+        }
+      }
+    },
+    "materials": {
+      "": {
+        "cullface": "back",
+        "program": "",
+        "uniforms": {
+          "tx_Diffuse": "Tux_diff",
+          "tx_Specular": "Tux_spec"
+        }
+      }
+    }
+  },
+  "pass_opaque": [
+    {
+      "condition": null,
+      "material": "",
+      "mesh": "",
+      "submesh": null
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 {
   "blobs": {
-    "00_Lower": {
+    "A_0_lower": {
       "bone": null,
       "damage": 1.0,
       "facing": "Relative",
@@ -13,10 +13,11 @@
       "knockScale": 100.0,
       "origin": [ 0.0, -0.05, 0.0 ],
       "radius": 0.5,
+      "sound": "KickWeak",
       "useFixedKnockback": true,
       "useSakuraiAngle": false
     },
-    "01_Upper": {
+    "A_1_Upper": {
       "bone": null,
       "damage": 1.0,
       "facing": "Relative",
@@ -29,10 +30,11 @@
       "knockScale": 100.0,
       "origin": [ 0.0, 0.6, 0.0 ],
       "radius": 0.7,
+      "sound": "KickWeak",
       "useFixedKnockback": true,
       "useSakuraiAngle": false
     },
-    "10_Lower": {
+    "B_0_Lower": {
       "bone": null,
       "damage": 1.0,
       "facing": "Relative",
@@ -45,10 +47,11 @@
       "knockScale": 100.0,
       "origin": [ 0.0, -0.05, 0.0 ],
       "radius": 0.5,
+      "sound": "KickWeak",
       "useFixedKnockback": true,
       "useSakuraiAngle": false
     },
-    "11_Upper": {
+    "B_1_Upper": {
       "bone": null,
       "damage": 1.0,
       "facing": "Relative",
@@ -61,10 +64,11 @@
       "knockScale": 100.0,
       "origin": [ 0.0, 0.6, 0.0 ],
       "radius": 0.7,
+      "sound": "KickWeak",
       "useFixedKnockback": true,
       "useSakuraiAngle": false
     },
-    "20_Lower": {
+    "C_0_Lower": {
       "bone": null,
       "damage": 1.0,
       "facing": "Relative",
@@ -77,10 +81,11 @@
       "knockScale": 100.0,
       "origin": [ 0.0, -0.05, 0.0 ],
       "radius": 0.5,
+      "sound": "KickWeak",
       "useFixedKnockback": true,
       "useSakuraiAngle": false
     },
-    "21_Upper": {
+    "C_1_Upper": {
       "bone": null,
       "damage": 1.0,
       "facing": "Relative",
@@ -93,10 +98,11 @@
       "knockScale": 100.0,
       "origin": [ 0.0, 0.6, 0.0 ],
       "radius": 0.7,
+      "sound": "KickWeak",
       "useFixedKnockback": true,
       "useSakuraiAngle": false
     },
-    "30_Lower": {
+    "D_0_Lower": {
       "bone": null,
       "damage": 1.0,
       "facing": "Relative",
@@ -109,10 +115,11 @@
       "knockScale": 100.0,
       "origin": [ 0.0, -0.05, 0.0 ],
       "radius": 0.5,
+      "sound": "KickWeak",
       "useFixedKnockback": true,
       "useSakuraiAngle": false
     },
-    "31_Upper": {
+    "D_1_Upper": {
       "bone": null,
       "damage": 1.0,
       "facing": "Relative",
@@ -125,10 +132,11 @@
       "knockScale": 100.0,
       "origin": [ 0.0, 0.6, 0.0 ],
       "radius": 0.7,
+      "sound": "KickWeak",
       "useFixedKnockback": true,
       "useSakuraiAngle": false
     },
-    "40_Lower": {
+    "E_0_Lower": {
       "bone": null,
       "damage": 1.0,
       "facing": "Relative",
@@ -141,10 +149,11 @@
       "knockScale": 100.0,
       "origin": [ 0.0, -0.05, 0.0 ],
       "radius": 0.5,
+      "sound": "KickWeak",
       "useFixedKnockback": true,
       "useSakuraiAngle": false
     },
-    "41_Upper": {
+    "E_1_Upper": {
       "bone": null,
       "damage": 1.0,
       "facing": "Relative",
@@ -157,10 +166,11 @@
       "knockScale": 100.0,
       "origin": [ 0.0, 0.6, 0.0 ],
       "radius": 0.7,
+      "sound": "KickWeak",
       "useFixedKnockback": true,
       "useSakuraiAngle": false
     },
-    "50_Final": {
+    "FINAL_0": {
       "bone": null,
       "damage": 7.0,
       "facing": "Relative",
@@ -173,12 +183,21 @@
       "knockScale": 80.0,
       "origin": [ 0.0, 0.68, 0.0 ],
       "radius": 1.1,
+      "sound": "KickStrong",
       "useFixedKnockback": false,
       "useSakuraiAngle": false
     }
   },
   "emitters": {},
   "sounds": {
+    "KickStrong": {
+      "path": "fighters/Mario/sounds/KickStrong",
+      "volume": 0.5
+    },
+    "KickWeak": {
+      "path": "fighters/Mario/sounds/KickWeak",
+      "volume": 0.5
+    },
     "Spin": {
       "path": "fighters/Mario/sounds/Spin",
       "volume": 0.4

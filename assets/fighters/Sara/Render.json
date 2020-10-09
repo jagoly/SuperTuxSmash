@@ -1,0 +1,69 @@
+{
+  "assets": {
+    "meshes": {
+      "": "fighters/Sara/meshes/Mesh"
+    },
+    "textures": {
+      "Hair_diff": "fighters/Sara/textures/Hair_diff",
+      "Hair_norm": "fighters/Sara/textures/Hair_norm",
+      "Hair_mask": "fighters/Sara/textures/Hair_mask",
+      "Hair_spec": "fighters/Sara/textures/Hair_spec",
+      "Main_diff": "fighters/Sara/textures/Main_diff",
+      "Main_spec": "fighters/Sara/textures/Main_spec"
+    },
+    "programs": {
+      "Main": {
+        "path": "super/BasicModel",
+        "options": {
+          "APPLY_SKELETON": "1",
+          "DIFFUSE_TEXTURE": "1",
+          "SPECULAR_TEXTURE": "1"
+        }
+      },
+      "Hair": {
+        "path": "super/BasicModel",
+        "options": {
+          "APPLY_SKELETON": "1",
+          "DIFFUSE_TEXTURE": "1",
+          "SPECULAR_TEXTURE": "1",
+          "MASK_TEXTURE": "1",
+          "NORMAL_TEXTURE": "1"
+        }
+      }
+    },
+    "materials": {
+      "Main": {
+        "cullface": "back",
+        "program": "Main",
+        "uniforms": {
+          "tx_Diffuse": "Main_diff",
+          "tx_Specular": "Main_spec"
+        }
+      },
+      "Hair": {
+        "cullface": "back",
+        "program": "Hair",
+        "uniforms": {
+          "tx_Diffuse": "Hair_diff",
+          "tx_Mask": "Hair_mask",
+          "tx_Normal": "Hair_norm",
+          "tx_Specular": "Hair_spec"
+        }
+      }
+    }
+  },
+  "pass_opaque": [
+    {
+      "condition": null,
+      "material": "Main",
+      "mesh": "",
+      "submesh": 0
+    },
+    {
+      "condition": null,
+      "material": "Hair",
+      "mesh": "",
+      "submesh": 1
+    }
+  ]
+}

@@ -8,6 +8,7 @@
 
 #include <sqee/app/GuiWidgets.hpp>
 #include <sqee/misc/Files.hpp>
+#include <sqee/objects/Sound.hpp>
 
 using namespace sts;
 
@@ -39,25 +40,24 @@ void EditorScene::impl_show_widget_sounds()
         sound.path = fmt::format("fighters/{}/sounds/{}", fighter.type, sound.get_key());
         if (sq::check_file_exists(sq::build_string("assets/", sound.path.c_str(), ".wav")))
             sound.handle = sound.cache->acquire(sound.path.c_str());
-        sound.volume = 0.7f;
+        sound.volume = 100.f; // very loud, in case you forget to set it
     };
 
     const auto funcEdit = [&](SoundEffect& sound)
     {
         const ImPlus::ScopeItemWidth widthScope = -100.f;
 
-        if (ImGui::InputText(" Resource", sound.path.data(), sound.path.capacity()))
+        if (ImPlus::InputString(" Resource", sound.path))
         {
-            sound.handle.set_null();
-            if (sq::check_file_exists(sq::build_string("assets/", sound.path.c_str(), ".wav")))
+            sound.handle = nullptr;
+            if (sq::check_file_exists(sq::build_string("assets/", sound.path, ".wav")))
                 sound.handle = sound.cache->acquire(sound.path.c_str());
         }
 
-        ImPlus::Text(sq::build_string("  assets/", sound.path.c_str(), ".wav"));
-        if (!sound.handle.check()) ImPlus::Text("FILE NOT FOUND");
+        ImPlus::Text(sq::build_string("  assets/", sound.path, ".wav"));
+        if (sound.handle == nullptr) ImPlus::Text("FILE NOT FOUND");
 
         ImPlus::SliderValue(" Volume", sound.volume, 0.2f, 1.f, "%.2f ×");
-        //sound.volume = std::round(sound.volume * 100.f) * 0.01f;
     };
 
     //--------------------------------------------------------//

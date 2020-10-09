@@ -2,8 +2,9 @@
 
 #include "setup.hpp"
 
-#include "caches/SoundCache.hpp"
+#include "main/Resources.hpp"
 
+#include <sqee/app/AudioContext.hpp>
 #include <sqee/app/WrenPlus.hpp>
 
 namespace sts {
@@ -24,7 +25,7 @@ public: //====================================================//
 
     sq::AudioContext& audio;
 
-    SoundCache sounds;
+    sq::ResourceCache<String, sq::Sound> sounds;
 
     wren::WrenPlusVM vm;
 
@@ -82,10 +83,10 @@ public: //====================================================//
     //--------------------------------------------------------//
 
     /// Reset a fighter's collision group.
-    void reset_collisions(uint8_t fighter, uint8_t group);
+    void reset_collisions(uint8_t fighter/*, uint8_t group*/);
 
-    /// Reset all of a fighter's collision groups.
-    void reset_all_collisions(uint8_t fighter);
+//    /// Reset all of a fighter's collision groups.
+//    void reset_all_collisions(uint8_t fighter);
 
     //--------------------------------------------------------//
 
@@ -102,24 +103,12 @@ public: //====================================================//
     const Fighter* get_fighter(uint8_t index) const { return mFighters[index].get(); }
 
     /// Acquire an iterable of all added fighters.
-    auto get_fighters() { return sq::StackVector<Fighter*, 4>(mFighterRefs.begin(), mFighterRefs.end()); }
+    StackVector<Fighter*, MAX_FIGHTERS> get_fighters() { return { mFighterRefs.begin(), mFighterRefs.end() }; }
 
     /// Acquire an iterable of all added fighters (const).
-    auto get_fighters() const { return sq::StackVector<const Fighter*, 4>(mFighterRefs.begin(), mFighterRefs.end()); }
+    StackVector<const Fighter*, MAX_FIGHTERS> get_fighters() const { return { mFighterRefs.begin(), mFighterRefs.end() }; }
 
     //--------------------------------------------------------//
-
-    /// Access the HurtBlob Allocator.
-    //auto get_hurt_blob_allocator() { return mHurtBlobAlloc.get(); }
-
-    /// Access the HitBlob Allocator.
-    //auto get_hit_blob_allocator() { return mHitBlobAlloc.get(); }
-
-    /// Access the Emitter Allocator.
-    //auto get_emitter_allocator() { return mEmitterAlloc.get(); }
-
-    /// Access the SoundEffect Allocator.
-    //auto get_sound_effect_allocator() { return mSoundEffectAlloc.get(); }
 
     /// Access the polymorphic memory resource.
     std::pmr::memory_resource* get_memory_resource();
@@ -140,11 +129,6 @@ private: //===================================================//
     // undo stack in the editor can cause us to run out of slots, so we reserve more space
     // todo: for the editor, use big pools shared between all contexts
 
-    //sq::PoolAllocatorStore<std::pair<const TinyString, HurtBlob>> mHurtBlobAlloc;
-    //sq::PoolAllocatorStore<std::pair<const TinyString, HitBlob>> mHitBlobAlloc;
-    //sq::PoolAllocatorStore<std::pair<const TinyString, Emitter>> mEmitterAlloc;
-    //sq::PoolAllocatorStore<std::pair<const TinyString, SoundEffect>> mSoundEffectAlloc;
-
     std::unique_ptr<std::byte[]> mMemoryBuffer;
     std::unique_ptr<std::pmr::monotonic_buffer_resource> mMemoryResource;
 
@@ -154,12 +138,14 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
+    //std::map<SmallString, VisualEffect>
+
     std::unique_ptr<ParticleSystem> mParticleSystem;
 
     std::unique_ptr<Stage> mStage;
 
     std::array<std::unique_ptr<Fighter>, MAX_FIGHTERS> mFighters;
-    sq::StackVector<Fighter*, MAX_FIGHTERS> mFighterRefs;
+    StackVector<Fighter*, MAX_FIGHTERS> mFighterRefs;
 
     std::vector<HitBlob*> mEnabledHitBlobs;
     std::vector<HurtBlob*> mEnabledHurtBlobs;
@@ -169,7 +155,8 @@ private: //===================================================//
     struct Collision { HitBlob& hit; HurtBlob& hurt; };
 
     // turns out you can do value-aggregate initialisation with nested std arrays
-    std::array<std::array<std::array<bool, MAX_FIGHTERS>, MAX_HITBLOB_GROUPS>, MAX_FIGHTERS> mHitBlobGroups {};
+    //std::array<std::array<std::array<bool, MAX_FIGHTERS>, MAX_HITBLOB_GROUPS>, MAX_FIGHTERS> mHitBlobGroups {};
+    std::array<std::array<bool, MAX_FIGHTERS>, MAX_FIGHTERS> mIgnoreCollisions {};
 
     std::array<std::vector<Collision>, MAX_FIGHTERS> mCollisions;
 

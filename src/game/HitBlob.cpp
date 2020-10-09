@@ -29,7 +29,6 @@ void HitBlob::from_json(const JsonValue& json)
     json.at("origin").get_to(origin);
     json.at("radius").get_to(radius);
 
-    json.at("group").get_to(group);
     json.at("index").get_to(index);
 
     json.at("damage").get_to(damage);
@@ -43,6 +42,8 @@ void HitBlob::from_json(const JsonValue& json)
 
     json.at("useFixedKnockback").get_to(useFixedKnockback);
     json.at("useSakuraiAngle").get_to(useSakuraiAngle);
+
+    json.at("sound").get_to(sound);
 }
 
 //============================================================================//
@@ -57,7 +58,6 @@ void HitBlob::to_json(JsonValue& json) const
     json["origin"] = origin;
     json["radius"] = radius;
 
-    json["group"] = group;
     json["index"] = index;
 
     json["damage"] = damage;
@@ -71,18 +71,19 @@ void HitBlob::to_json(JsonValue& json) const
 
     json["useFixedKnockback"] = useFixedKnockback;
     json["useSakuraiAngle"] = useSakuraiAngle;
+
+    json["sound"] = sound;
 }
 
 //============================================================================//
 
-DISABLE_WARNING_FLOAT_EQUALITY;
+DISABLE_WARNING_FLOAT_EQUALITY()
 
 bool sts::operator==(const HitBlob& a, const HitBlob& b)
 {
     if (a.origin != b.origin) return false;
     if (a.radius != b.radius) return false;
     if (a.bone != b.bone) return false;
-    if (a.group != b.group) return false;
     if (a.index != b.index) return false;
     if (a.damage != b.damage) return false;
     if (a.freezeFactor != b.freezeFactor) return false;
@@ -93,8 +94,9 @@ bool sts::operator==(const HitBlob& a, const HitBlob& b)
     if (a.flavour != b.flavour) return false;
     if (a.useFixedKnockback != b.useFixedKnockback) return false;
     if (a.useSakuraiAngle != b.useSakuraiAngle) return false;
+    if (a.sound != b.sound) return false;
 
     return true;
 }
 
-ENABLE_WARNING_FLOAT_EQUALITY;
+ENABLE_WARNING_FLOAT_EQUALITY()

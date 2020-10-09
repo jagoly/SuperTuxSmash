@@ -17,13 +17,13 @@ using namespace sts;
 
 //============================================================================//
 
-Fighter::Fighter(uint8_t index, FightWorld& world, FighterEnum type)
-    : index(index), type(type), world(world)
+Fighter::Fighter(FightWorld& world, FighterEnum type, uint8_t index)
+    : world(world), type(type), index(index)
     , mHurtBlobs(world.get_memory_resource())
 {
     const String path = sq::build_string("assets/fighters/", sq::enum_to_string(type));
 
-    initialise_stats(path);
+    initialise_attributes(path);
     initialise_armature(path);
     initialise_hurtblobs(path);
 
@@ -35,46 +35,50 @@ Fighter::~Fighter() = default;
 
 //============================================================================//
 
-void Fighter::initialise_stats(const String& path)
+void Fighter::initialise_attributes(const String& path)
 {
-    const auto json = sq::parse_json_from_file(path + "/Stats.json");
+    const auto json = sq::parse_json_from_file(path + "/Attributes.json");
 
-    stats.walk_speed     = json.at("walk_speed");
-    stats.dash_speed     = json.at("dash_speed");
-    stats.air_speed      = json.at("air_speed");
-    stats.traction       = json.at("traction");
-    stats.air_mobility   = json.at("air_mobility");
-    stats.air_friction   = json.at("air_friction");
-    stats.hop_height     = json.at("hop_height");
-    stats.jump_height    = json.at("jump_height");
-    stats.airhop_height  = json.at("airhop_height");
-    stats.gravity        = json.at("gravity");
-    stats.fall_speed     = json.at("fall_speed");
-    stats.fastfall_speed = json.at("fastfall_speed");
-    stats.weight         = json.at("weight");
+    SQASSERT(json.size() >= 23+1, "not enough attributes in json");
+    SQASSERT(json.size() <= 23+1, "too many attributes in json");
 
-    stats.extra_jumps = json.at("extra_jumps");
+    attributes.walk_speed     = json.at("walk_speed");
+    attributes.dash_speed     = json.at("dash_speed");
+    attributes.air_speed      = json.at("air_speed");
+    attributes.traction       = json.at("traction");
+    attributes.air_mobility   = json.at("air_mobility");
+    attributes.air_friction   = json.at("air_friction");
+    attributes.hop_height     = json.at("hop_height");
+    attributes.jump_height    = json.at("jump_height");
+    attributes.airhop_height  = json.at("airhop_height");
+    attributes.gravity        = json.at("gravity");
+    attributes.fall_speed     = json.at("fall_speed");
+    attributes.fastfall_speed = json.at("fastfall_speed");
+    attributes.weight         = json.at("weight");
 
-    stats.land_heavy_fall_time = json.at("land_heavy_fall_time");
+    attributes.extra_jumps = json.at("extra_jumps");
 
-    stats.dash_start_time  = json.at("dash_start_time");
-    stats.dash_brake_time  = json.at("dash_brake_time");
-    stats.dash_turn_time   = json.at("dash_turn_time");
+    attributes.land_heavy_fall_time = json.at("land_heavy_fall_time");
 
-    stats.anim_walk_stride = json.at("anim_walk_stride");
-    stats.anim_dash_stride = json.at("anim_dash_stride");
+    attributes.dash_start_time  = json.at("dash_start_time");
+    attributes.dash_brake_time  = json.at("dash_brake_time");
+    attributes.dash_turn_time   = json.at("dash_turn_time");
 
-    // todo: move this to the per-fighter lua init script
+    attributes.anim_walk_stride = json.at("anim_walk_stride");
+    attributes.anim_dash_stride = json.at("anim_dash_stride");
 
-    mLocalDiamond = LocalDiamond(json.at("diamond_halfWidth"), json.at("diamond_offsetTop"), json.at("diamond_offsetCross"));
+    mLocalDiamond.halfWidth   = json.at("diamond_half_width");
+    mLocalDiamond.offsetCross = json.at("diamond_offset_cross");
+    mLocalDiamond.offsetTop   = json.at("diamond_offset_top");
+
+    mLocalDiamond.compute_normals();
 }
 
 //============================================================================//
 
 void Fighter::initialise_armature(const String& path)
 {
-    mArmature.load_bones(path + "/Bones.txt", true);
-    mArmature.load_rest_pose(path + "/RestPose.txt");
+    mArmature.load_from_file(path + "/Armature.json");
 
     current.pose = previous.pose = mArmature.get_rest_pose();
 
@@ -82,35 +86,13 @@ void Fighter::initialise_armature(const String& path)
 
     const auto load_anim = [&](const char* name, AnimMode mode) -> Animation
     {
-        const bool looping = mode == AnimMode::Looping || mode == AnimMode::WalkCycle || mode == AnimMode::DashCycle;
-
         const String filePath = sq::build_string(path, "/anims/", name, ".sqa");
         if (sq::check_file_exists(filePath) == false)
         {
             sq::log_warning("missing animation '{}'", filePath);
-            return { mArmature.make_null_animation(1u, looping), mode, name };
+            return { mArmature.make_null_animation(1u), mode, name };
         }
-        Animation result = { mArmature.make_animation(filePath), mode, name };
-        if (!result.anim.looping() && looping) sq::log_warning("animation '{}' should loop", filePath);
-        if (result.anim.looping() && !looping) sq::log_warning("animation '{}' should not loop", filePath);
-
-//        bool foundRootX = false, foundRootOffset = false;
-//        for (const auto& pose : result.anim.poses)
-//        {
-//            if (!foundRootX && pose[0].offset.x != mArmature.get_rest_pose()[0].offset.x)
-//            {
-//                sq::log_warning_multiline("root motion on x axis in {}:\n{}\n{}", name, pose[0].offset, mArmature.get_rest_pose()[0].offset);
-//                foundRootX = true;
-//            }
-//            if (mode != AnimMode::ApplyMotion && mode != AnimMode::WalkCycle && mode != AnimMode::DashCycle &&
-//                !foundRootOffset && pose[0].offset != mArmature.get_rest_pose()[0].offset)
-//            {
-//                sq::log_warning_multiline("unexpected root motion in {}:\n{}\n{}", name, pose[0].offset, mArmature.get_rest_pose()[0].offset);
-//                foundRootOffset = true;
-//            }
-//        }
-
-        return result;
+        return { mArmature.make_animation(filePath), mode, name };
     };
 
     Animations& anims = mAnimations;
@@ -218,17 +200,18 @@ void Fighter::initialise_armature(const String& path)
 
     const auto ensure_anim_at_least = [](Animation& anim, uint time, const char* timeName)
     {
-        if (anim.anim.totalTime > time) return; // anim is longer than time
+        if (anim.anim.frameCount > time) return; // anim is longer than time
 
-        if (anim.anim.totalTime != 1u) // fallback animation, don't print another warning
+        if (anim.anim.frameCount != 1u) // fallback animation, don't print another warning
             sq::log_error("anim '{}' shorter than '{}'", anim.key, timeName);
 
-        anim.anim.totalTime = anim.anim.times.front() = time + 1u;
+        anim.anim.frameCount = time + 1u;
+        //anim.anim.poses.resize(time + 1u, anim.anim.poses.back());
     };
 
-    ensure_anim_at_least(anims.DashStart, stats.dash_start_time, "dash_start_time");
-    ensure_anim_at_least(anims.Brake, stats.dash_brake_time, "dash_brake_time");
-    ensure_anim_at_least(anims.TurnDash, stats.dash_turn_time, "dash_turn_time");
+    ensure_anim_at_least(anims.DashStart, attributes.dash_start_time, "dash_start_time");
+    ensure_anim_at_least(anims.Brake, attributes.dash_brake_time, "dash_brake_time");
+    ensure_anim_at_least(anims.TurnDash, attributes.dash_turn_time, "dash_turn_time");
 
     ensure_anim_at_least(anims.HurtLowerHeavy, MIN_HITSTUN_HEAVY, "MIN_HITSTUN_HEAVY");
     ensure_anim_at_least(anims.HurtMiddleHeavy, MIN_HITSTUN_HEAVY, "MIN_HITSTUN_HEAVY");
@@ -371,7 +354,7 @@ void Fighter::apply_hit_generic(const HitBlob& hit, const HurtBlob& hurt)
         status.damage += hit.damage;
 
         const float damageFactor = status.damage / 10.f + (status.damage * hit.damage) / 20.f;
-        const float weightFactor = 200.f / (stats.weight + 100.f);
+        const float weightFactor = 200.f / (attributes.weight + 100.f);
 
         const float knockbackNormal = hit.knockBase + (damageFactor * weightFactor * 1.4f + 18.f) * hit.knockScale * 0.01f;
         const float knockbackFixed = (1.f + 10.f * hit.knockBase / 20.f) * weightFactor * 1.4f + 18.f;
@@ -400,6 +383,7 @@ void Fighter::apply_hit_generic(const HitBlob& hit, const HurtBlob& hurt)
         mHitStunTime = hitStunTime;
 
         status.velocity = maths::normalize(knockDir) * launchSpeed;
+        // todo: should be based on knockback dir (see back air for why this wrong)
         status.facing = -hit.action->fighter.status.facing;
 
         const auto& anims = mAnimations;
@@ -469,6 +453,9 @@ void Fighter::apply_hit_generic(const HitBlob& hit, const HurtBlob& hurt)
 
         hit.action->fighter.state_transition(State::Freeze, 0u, nullptr, 0u, nullptr);
     }
+
+    // feels wrong to call a wren_ method here, but Action::mSounds is private
+    hit.action->wren_play_sound(hit.sound);
 }
 
 //============================================================================//
@@ -496,20 +483,6 @@ Mat4F Fighter::get_bone_matrix(int8_t bone) const
     return mModelMatrix * maths::transpose(Mat4F(mBoneMatrices[bone]));
 }
 
-Mat4F Fighter::interpolate_model_matrix(float blend) const
-{
-    const Vec3F translation = maths::mix(previous.translation, current.translation, blend);
-    const QuatF rotation = maths::slerp(previous.rotation, current.rotation, blend);
-    return maths::transform(translation, rotation);
-}
-
-void Fighter::interpolate_bone_matrices(float blend, Mat34F* out, size_t len) const
-{
-    SQASSERT(len == mArmature.get_bone_count(), "buffer size does not match");
-    const auto blendPose = mArmature.blend_poses(previous.pose, current.pose, blend);
-    mArmature.compute_ubo_data(blendPose, out, uint(len));
-}
-
 bool Fighter::should_render_flinch_models() const
 {
     // in smash proper, this is done with a flag that gets set by various actions
@@ -529,20 +502,4 @@ Action* Fighter::get_action(ActionType type)
 {
     if (type == ActionType::None) return nullptr;
     return mActions[int8_t(type)].get();
-}
-
-//============================================================================//
-
-void Fighter::debug_reload_actions()
-{
-    for (int8_t i = 0; i < sq::enum_count_v<ActionType>; ++i)
-    {
-        mActions[i]->load_json_from_file();
-        mActions[i]->load_wren_from_file();
-    }
-}
-
-std::vector<Mat4F> Fighter::debug_get_skeleton_mats() const
-{
-    return mArmature.compute_skeleton_matrices(current.pose);
 }

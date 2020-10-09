@@ -2,7 +2,7 @@
 
 #include "setup.hpp"
 
-#include <caches/SoundCache.hpp>
+#include "main/Resources.hpp"
 
 namespace sts {
 
@@ -10,19 +10,19 @@ namespace sts {
 
 struct SoundEffect final
 {
-    /// Must be set before calling from_json().
+    /// Must be set before calling from_json.
     SoundCache* cache = nullptr;
-
-    /// ID of the sound when playing.
-    int64_t id = -1;
 
     /// Handle to the loaded sound resource.
     SoundHandle handle;
 
+    /// ID of the sound when playing.
+    int64_t id = -1;
+
     //--------------------------------------------------------//
 
     /// Path to the sound file to use.
-    StackString<63u> path;
+    String path;
 
     /// Volume factor to apply to playback.
     float volume;

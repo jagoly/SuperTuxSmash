@@ -10,18 +10,18 @@ class Script is ScriptBase {
 
     wait_until(15)
     action.play_sound("SwingSmall")
-    action.enable_hitblob_group(0)
+    action.enable_hitblobs("EARLY")
 
     wait_until(16)
-    action.disable_hitblob_group(0)
-    action.enable_hitblob_group(1)
+    action.disable_hitblobs()
+    action.enable_hitblobs("CLEAN")
 
     wait_until(19)
-    action.disable_hitblob_group(1)
-    action.enable_hitblob_group(2)
+    action.disable_hitblobs()
+    action.enable_hitblobs("LATE")
 
     wait_until(21)
-    action.disable_hitblob_group(2)
+    action.disable_hitblobs()
 
     wait_until(42)
     fighter.set_autocancel(true)

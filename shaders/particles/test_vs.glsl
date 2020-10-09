@@ -5,8 +5,6 @@
 //#include runtime/Options
 #include headers/blocks/Camera
 
-layout(std140, binding=0) uniform CAMERA { CameraBlock CB; };
-
 //============================================================================//
 
 layout(location=0) in vec3 v_Position;

@@ -59,13 +59,7 @@ public: //====================================================//
 
     void wren_allow_interrupt();
 
-    void wren_enable_hitblob_group(uint8_t group);
-
-    void wren_disable_hitblob_group(uint8_t group);
-
-    void wren_enable_hitblob(TinyString key);
-
-    void wren_disable_hitblob(TinyString key);
+    void wren_enable_hitblobs(TinyString prefix);
 
     void wren_disable_hitblobs();
 

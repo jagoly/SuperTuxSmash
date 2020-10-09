@@ -2,6 +2,8 @@
 
 #include "setup.hpp" // IWYU pragma: export
 
+#include "main/MainEnums.hpp"
+
 //============================================================================//
 
 namespace sts {
@@ -51,15 +53,21 @@ struct MoveAttempt
 
 //============================================================================//
 
-class Stage : sq::NonCopyable
+class Stage final : sq::NonCopyable
 {
 public: //====================================================//
 
-    Stage(FightWorld& world);
+    Stage(FightWorld& world, StageEnum type);
 
-    virtual ~Stage();
+    ~Stage();
 
-    virtual void tick() = 0;
+    void tick();
+
+    //--------------------------------------------------------//
+
+    FightWorld& world;
+
+    const StageEnum type;
 
     //--------------------------------------------------------//
 
@@ -86,10 +94,6 @@ protected: //=================================================//
     std::vector<AlignedBlock> mAlignedBlocks;
 
     std::vector<Ledge> mLedges;
-
-    //--------------------------------------------------------//
-
-    FightWorld& mFightWorld;
 };
 
 //============================================================================//

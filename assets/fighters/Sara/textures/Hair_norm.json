@@ -1,0 +1,7 @@
+{
+  "format": "RGB8_SN",
+  "wrap": "RC",
+  "swizzle": "RGB1",
+  "filter": true,
+  "mipmaps": true
+}

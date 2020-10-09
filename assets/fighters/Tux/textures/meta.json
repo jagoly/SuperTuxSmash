@@ -1,6 +1,0 @@
-{
-
-"Tux_diff.png": { "format": "RGB8_UN", "wrap": "CC", "swizzle": "RGB1", "filter": true, "mipmaps": true },
-"Tux_spec.png": { "format": "R8_UN",   "wrap": "CC", "swizzle": "RRR1", "filter": true, "mipmaps": true }
-
-}

@@ -8,7 +8,6 @@
 #include <sqee/core/Types.hpp> // IWYU pragma: export
 #include <sqee/core/Utilities.hpp> // IWYU pragma: export
 
-//#include <sqee/misc/PoolTools.hpp> // IWYU pragma: export
 #include <sqee/misc/StackVector.hpp> // IWYU pragma: export
 
 #include <fmt/format.h> // IWYU pragma: export
@@ -24,18 +23,12 @@ using namespace sq::coretypes;
 
 namespace algo = sq::algo;
 namespace maths = sq::maths;
+namespace gl = sq::gl;
 
-//using sq::PoolMap;
 using sq::StackString;
 using sq::StackVector;
 
 //============================================================================//
-
-class MeshCache;
-class ProgramCache;
-class SoundCache;
-class TexArrayCache;
-class TextureCache;
 
 class Action;
 class Camera;

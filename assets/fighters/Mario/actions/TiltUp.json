@@ -13,6 +13,7 @@
       "knockScale": 130.0,
       "origin": [ 0.0, 0.9119801, -0.024320113 ],
       "radius": 0.4,
+      "sound": "PunchMedium",
       "useFixedKnockback": false,
       "useSakuraiAngle": false
     },
@@ -29,6 +30,7 @@
       "knockScale": 130.0,
       "origin": [ 0.3631301, 0.87162006, -0.021440106 ],
       "radius": 0.45,
+      "sound": "PunchMedium",
       "useFixedKnockback": false,
       "useSakuraiAngle": false
     },
@@ -45,12 +47,17 @@
       "knockScale": 130.0,
       "origin": [ 0.7631302, 0.87162006, -0.021440106 ],
       "radius": 0.55,
+      "sound": "PunchMedium",
       "useFixedKnockback": false,
       "useSakuraiAngle": false
     }
   },
   "emitters": {},
   "sounds": {
+    "PunchMedium": {
+      "path": "fighters/Mario/sounds/PunchMedium",
+      "volume": 0.5
+    },
     "SwingMedium": {
       "path": "fighters/Mario/sounds/SwingMedium",
       "volume": 0.5

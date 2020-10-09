@@ -12,10 +12,19 @@ using namespace sts;
 
 void DebugGui::show_widget_fighter(Fighter& fighter)
 {
-    if (!ImPlus::CollapsingHeader("Fighter {} - {}"_format(fighter.index, fighter.type),
-                                  ImGuiTreeNodeFlags_DefaultOpen)) return;
-
     const ImPlus::ScopeID scopeId = fighter.index;
+
+    const ImGuiStyle& style = ImGui::GetStyle();
+    {
+        const ImPlus::ScopeUnindent indent = style.WindowPadding.x * 0.5f - 1.f;
+        if (ImGui::Button("RESET")) fighter.status = Fighter::Status();
+        ImPlus::HoverTooltip("reset the fighter's status");
+    }
+    ImGui::SameLine(0.f, style.ItemSpacing.x + style.WindowPadding.x * 0.5f - 1.f);
+
+    const auto flags = fighter.index == 0 ? ImGuiTreeNodeFlags_DefaultOpen : 0;
+    if (!ImPlus::CollapsingHeader("Fighter {} - {}"_format(fighter.index, fighter.type), flags))
+        return;
 
     //--------------------------------------------------------//
 
@@ -65,10 +74,10 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
 
         const char* const nextAnimation = [&]() {
             if (fighter.mNextAnimation) return fighter.mNextAnimation->key.c_str();
-            if (fighter.mAnimation && fighter.mAnimation->anim.looping()) return "loop";
+            if (fighter.mAnimation && fighter.mAnimation->is_looping()) return "loop";
             return "null"; }();
 
-        const uint animTotalTime = fighter.mAnimation ? fighter.mAnimation->anim.totalTime : 0u;
+        const uint animTotalTime = fighter.mAnimation ? fighter.mAnimation->anim.frameCount : 0u;
 
         ImPlus::Text("animation: {} -> {}"_format(animation, nextAnimation));
         ImPlus::Text("animation time: {} / {}"_format(fighter.mAnimTimeDiscrete, animTotalTime));
@@ -78,34 +87,41 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
         else ImPlus::Text("action: {} ({})"_format(fighter.mActiveAction->type, fighter.mActiveAction->mCurrentFrame));
     }
 
-    if (ImGui::CollapsingHeader("Edit Stats"))
+    if (ImGui::CollapsingHeader("Edit Attributes"))
     {
         const ImPlus::ScopeFont font = ImPlus::FONT_MONO;
-        const ImPlus::ScopeItemWidth width = 160.f;
+        const ImPlus::ScopeItemWidth width = 150.f;
 
-        ImPlus::InputValue("walk_speed",    fighter.stats.walk_speed,    0.001f, "%.6f");
-        ImPlus::InputValue("dash_speed",    fighter.stats.dash_speed,    0.001f, "%.6f");
-        ImPlus::InputValue("air_speed",     fighter.stats.air_speed,     0.001f, "%.6f");
-        ImPlus::InputValue("traction",      fighter.stats.traction,      0.001f, "%.6f");
-        ImPlus::InputValue("air_mobility",  fighter.stats.air_mobility,  0.001f, "%.6f");
-        ImPlus::InputValue("air_friction",  fighter.stats.air_friction,  0.001f, "%.6f");
-        ImPlus::InputValue("hop_height",    fighter.stats.hop_height,    0.001f, "%.6f");
-        ImPlus::InputValue("jump_height",   fighter.stats.jump_height,   0.001f, "%.6f");
-        ImPlus::InputValue("airhop_height", fighter.stats.airhop_height, 0.001f, "%.6f");
-        ImPlus::InputValue("gravity",       fighter.stats.gravity,       0.001f, "%.6f");
-        ImPlus::InputValue("fall_speed",    fighter.stats.fall_speed,    0.001f, "%.6f");
-        ImPlus::InputValue("weight",        fighter.stats.weight,        0.001f, "%.6f");
+        ImPlus::InputValue("walk_speed",     fighter.attributes.walk_speed,     0.1f, "%.6f");
+        ImPlus::InputValue("dash_speed",     fighter.attributes.dash_speed,     0.1f, "%.6f");
+        ImPlus::InputValue("air_speed",      fighter.attributes.air_speed,      0.1f, "%.6f");
+        ImPlus::InputValue("traction",       fighter.attributes.traction,       0.1f, "%.6f");
+        ImPlus::InputValue("air_mobility",   fighter.attributes.air_mobility,   0.1f, "%.6f");
+        ImPlus::InputValue("air_friction",   fighter.attributes.air_friction,   0.1f, "%.6f");
+        ImPlus::InputValue("hop_height",     fighter.attributes.hop_height,     0.1f, "%.6f");
+        ImPlus::InputValue("jump_height",    fighter.attributes.jump_height,    0.1f, "%.6f");
+        ImPlus::InputValue("airhop_height",  fighter.attributes.airhop_height,  0.1f, "%.6f");
+        ImPlus::InputValue("gravity",        fighter.attributes.gravity,        0.1f, "%.6f");
+        ImPlus::InputValue("fall_speed",     fighter.attributes.fall_speed,     0.1f, "%.6f");
+        ImPlus::InputValue("fastfall_speed", fighter.attributes.fastfall_speed, 0.1f, "%.6f");
+        ImPlus::InputValue("weight",         fighter.attributes.weight,         1.f,  "%.5f");
 
-        ImPlus::InputValue("extra_jumps", fighter.stats.extra_jumps, 1u);
+        ImPlus::InputValue("extra_jumps", fighter.attributes.extra_jumps, 1u);
 
-        ImPlus::InputValue("land_heavy_fall_time", fighter.stats.land_heavy_fall_time, 1u);
+        ImPlus::InputValue("land_heavy_fall_time", fighter.attributes.land_heavy_fall_time, 1u);
 
-        ImPlus::InputValue("dash_start_time",  fighter.stats.dash_start_time,  1u);
-        ImPlus::InputValue("dash_brake_time",  fighter.stats.dash_brake_time,  1u);
-        ImPlus::InputValue("dash_turn_time",   fighter.stats.dash_turn_time,   1u);
+        ImPlus::InputValue("dash_start_time",  fighter.attributes.dash_start_time,  1u);
+        ImPlus::InputValue("dash_brake_time",  fighter.attributes.dash_brake_time,  1u);
+        ImPlus::InputValue("dash_turn_time",   fighter.attributes.dash_turn_time,   1u);
 
-        ImPlus::InputValue("anim_walk_stride", fighter.stats.anim_walk_stride, 0.01f, "%.4f");
-        ImPlus::InputValue("anim_dash_stride", fighter.stats.anim_dash_stride, 0.01f, "%.4f");
+        ImPlus::InputValue("anim_walk_stride", fighter.attributes.anim_walk_stride, 0.1f, "%.3f");
+        ImPlus::InputValue("anim_dash_stride", fighter.attributes.anim_dash_stride, 0.1f, "%.3f");
+
+        bool diamondChange = false;
+        diamondChange |= ImPlus::InputValue("diamond_half_width",   fighter.mLocalDiamond.halfWidth,   0.1f, "%.3f");
+        diamondChange |= ImPlus::InputValue("diamond_offset_cross", fighter.mLocalDiamond.offsetCross, 0.1f, "%.3f");
+        diamondChange |= ImPlus::InputValue("diamond_offset_top",   fighter.mLocalDiamond.offsetTop,   0.1f, "%.3f");
+        if (diamondChange) fighter.mLocalDiamond.compute_normals();
     }
 
     if (ImGui::CollapsingHeader("Input Commands"))
@@ -124,10 +140,10 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
             for (FighterCommand cmd : fighter.mCommands[i])
             {
                 ImGui::SameLine();
-                if (uint8_t(cmd) & 128)
+                if (uint8_t(cmd) & 128u)
                 {
                     const ImPlus::ScopeFont bold = ImPlus::FONT_BOLD;
-                    ImPlus::Text(sq::enum_to_string(FighterCommand(uint8_t(cmd) & ~128)));
+                    ImPlus::Text(sq::enum_to_string(FighterCommand(uint8_t(cmd) & ~128u)));
                 }
                 else
                 {
@@ -137,18 +153,4 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
             }
         }
     }
-
-    if (ImGui::Button("RESET"))
-    {
-        fighter.status = Fighter::Status();
-    }
-    ImPlus::HoverTooltip("reset the fighter's status");
-
-    ImGui::SameLine();
-
-    if (ImGui::Button("BOUNCE"))
-    {
-        fighter.status.velocity.y = +10.f;
-    }
-    ImPlus::HoverTooltip("make the fighter bounce");
 }

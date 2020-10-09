@@ -8,14 +8,14 @@ class Script is ScriptBase {
     wait_until(5)
     fighter.set_autocancel(false)
     action.play_sound("SwingSmall")
-    action.enable_hitblob_group(0)
+    action.enable_hitblobs("CLEAN")
 
     wait_until(8)
-    action.disable_hitblob_group(0)
-    action.enable_hitblob_group(1)
+    action.disable_hitblobs()
+    action.enable_hitblobs("LATE")
 
     wait_until(13)
-    action.disable_hitblob_group(1)
+    action.disable_hitblobs()
 
     wait_until(18)
     fighter.set_autocancel(true)

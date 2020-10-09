@@ -69,7 +69,7 @@ endif ()
 ################################################################################
 
 if (SQEE_GNU OR SQEE_CLANG)
-    target_compile_options(sts-game PRIVATE -Wall -Wextra)
+    target_compile_options(sts-game PRIVATE -Wall -Wextra -Wpedantic)
 elseif (SQEE_MSVC)
     target_compile_options(sts-game PRIVATE /W3 /wd4251)
 endif ()

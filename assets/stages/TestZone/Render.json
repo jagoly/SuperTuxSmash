@@ -1,0 +1,36 @@
+{
+  "assets": {
+    "meshes": {
+      "": "stages/TestZone/meshes/Mesh"
+    },
+    "textures": {
+      "TestZone_diff": "stages/TestZone/textures/TestZone_diff"
+    },
+    "programs": {
+      "": {
+        "path": "super/BasicModel",
+        "options": {
+          "DIFFUSE_TEXTURE": "1"
+        }
+      }
+    },
+    "materials": {
+      "": {
+        "cullface": "back",
+        "program": "",
+        "uniforms": {
+          "tx_Diffuse": "TestZone_diff",
+          "uf_Specular": [ 0.5, 0.5, 0.5 ]
+        }
+      }
+    }
+  },
+  "pass_opaque": [
+    {
+      "condition": null,
+      "material": "",
+      "mesh": "",
+      "submesh": null
+    }
+  ]
+}

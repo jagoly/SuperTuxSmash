@@ -2,6 +2,7 @@
 
 #include <sqee/debug/Assert.hpp>
 #include <sqee/misc/Json.hpp>
+#include <sqee/objects/Sound.hpp>
 
 using namespace sts;
 
@@ -29,7 +30,7 @@ void SoundEffect::to_json(JsonValue& json) const
 
 //============================================================================//
 
-DISABLE_WARNING_FLOAT_EQUALITY;
+DISABLE_WARNING_FLOAT_EQUALITY()
 
 bool sts::operator==(const SoundEffect& a, const SoundEffect& b)
 {
@@ -39,4 +40,4 @@ bool sts::operator==(const SoundEffect& a, const SoundEffect& b)
     return true;
 }
 
-ENABLE_WARNING_FLOAT_EQUALITY;
+ENABLE_WARNING_FLOAT_EQUALITY()

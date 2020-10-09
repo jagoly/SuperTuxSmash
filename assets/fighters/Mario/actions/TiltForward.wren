@@ -7,10 +7,10 @@ class Script is ScriptBase {
 
     wait_until(4)
     action.play_sound("SwingMedium")
-    action.enable_hitblob_group(0)
+    action.enable_hitblobs("")
 
     wait_until(7)
-    action.disable_hitblob_group(0)
+    action.disable_hitblobs()
 
     wait_until(24) // 33
     action.allow_interrupt()

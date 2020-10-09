@@ -8,5 +8,5 @@ Camera::Camera(const Renderer& renderer) : renderer(renderer)
 {
     //-- Create Uniform Buffers ------------------------------//
 
-    mUbo.create_and_allocate(sizeof(CameraBlock));
+    mUbo.allocate_dynamic(sizeof(CameraBlock));
 }

@@ -13,18 +13,11 @@
 #include "render/DebugRender.hpp"
 #include "render/Renderer.hpp"
 #include "render/StandardCamera.hpp"
-
-#include "stages/TestZone_Stage.hpp"
-#include "fighters/Sara_Fighter.hpp"
-#include "fighters/Tux_Fighter.hpp"
-#include "fighters/Mario_Fighter.hpp"
-
-#include "stages/TestZone_Render.hpp"
-#include "fighters/Sara_Render.hpp"
-#include "fighters/Tux_Render.hpp"
-#include "fighters/Mario_Render.hpp"
+#include "render/RenderFighter.hpp"
+#include "render/RenderStage.hpp"
 
 #include <sqee/app/GuiWidgets.hpp>
+#include <sqee/debug/Text.hpp>
 
 using namespace sts;
 
@@ -33,6 +26,11 @@ using namespace sts;
 GameScene::GameScene(SmashApp& smashApp, GameSetup setup)
     : Scene(1.0 / 48.0), mSmashApp(smashApp)
 {
+    // default to testzone, it's the only stage anyway
+    if (setup.stage == StageEnum::Null) setup.stage = StageEnum::TestZone;
+
+    //--------------------------------------------------------//
+
     auto& options = mSmashApp.get_options();
 
     options.render_hit_blobs = false;
@@ -71,20 +69,8 @@ GameScene::GameScene(SmashApp& smashApp, GameSetup setup)
 
     //--------------------------------------------------------//
 
-    std::unique_ptr<Stage> stage;
-    std::unique_ptr<RenderObject> renderStage;
-
-    SWITCH (setup.stage)
-    {
-        CASE (Null, TestZone)
-        {
-            stage = std::make_unique<TestZone_Stage>(*mFightWorld);
-            renderStage = std::make_unique<TestZone_Render>(*mRenderer, static_cast<TestZone_Stage&>(*stage));
-        }
-
-        CASE_DEFAULT SQASSERT(false, "bad stage setup");
-    }
-    SWITCH_END;
+    auto stage = std::make_unique<Stage>(*mFightWorld, setup.stage);
+    auto renderStage = std::make_unique<RenderStage>(*mRenderer, *stage);;
 
     mFightWorld->set_stage(std::move(stage));
     mRenderer->add_object(std::move(renderStage));
@@ -95,32 +81,8 @@ GameScene::GameScene(SmashApp& smashApp, GameSetup setup)
     {
         if (setup.players[index].enabled == false) continue;
 
-        std::unique_ptr<Fighter> fighter;
-        std::unique_ptr<RenderObject> renderFighter;
-
-        SWITCH (setup.players[index].fighter)
-        {
-            CASE (Sara)
-            {
-                fighter = std::make_unique<Sara_Fighter>(index, *mFightWorld);
-                renderFighter = std::make_unique<Sara_Render>(*mRenderer, static_cast<Sara_Fighter&>(*fighter));
-            }
-
-            CASE (Tux)
-            {
-                fighter = std::make_unique<Tux_Fighter>(index, *mFightWorld);
-                renderFighter = std::make_unique<Tux_Render>(*mRenderer, static_cast<Tux_Fighter&>(*fighter));
-            }
-
-            CASE (Mario)
-            {
-                fighter = std::make_unique<Mario_Fighter>(index, *mFightWorld);
-                renderFighter = std::make_unique<Mario_Render>(*mRenderer, static_cast<Mario_Fighter&>(*fighter));
-            }
-
-            CASE_DEFAULT SQASSERT(false, "bad fighter setup");
-        }
-        SWITCH_END;
+        auto fighter = std::make_unique<Fighter>(*mFightWorld, setup.players[index].fighter, index);
+        auto renderFighter = std::make_unique<RenderFighter>(*mRenderer, *fighter);
 
         fighter->set_controller(mControllers[index].get());
 
@@ -210,6 +172,27 @@ void GameScene::render(double /*elapsed*/)
             debugRenderer.render_skeleton(*fighter);
 
     mRenderer->finish_rendering();
+
+    //--------------------------------------------------------//
+
+    // yes, this is gross, but sqee's debug text rendering is very limited
+
+    String damageString; damageString.reserve(47u);
+
+    for (const Fighter* fighter : mFightWorld->get_fighters())
+    {
+        const int damage = int(std::round(fighter->status.damage));
+        damageString.clear();
+        damageString += "P{}: {}%  "_format(fighter->index + 1u, damage);
+        if (damage < 100) damageString += ' ';
+        if (damage < 10) damageString += ' ';
+        for (size_t i = mFightWorld->get_fighters().size() - 1u; i > fighter->index; --i) damageString += "           ";
+        Vec4F damageColour = { 1.f, 1.f, 1.f, 1.f };
+        if (damage >= 25) damageColour = { 1.f, 1.f, 0.6f, 1.f };
+        if (damage >= 55) damageColour = { 1.f, 0.9f, 0.3f, 1.f };
+        if (damage >= 90) damageColour = { 1.f, 0.3f, 0.3f, 1.f };
+        sq::render_text_basic(damageString, {+1, +1}, {+1, -1}, {28.f, 40.f}, damageColour, true);
+    }
 }
 
 //============================================================================//
@@ -227,13 +210,6 @@ void GameScene::impl_show_general_window()
     //--------------------------------------------------------//
 
     auto& options = mSmashApp.get_options();
-
-    if (ImGui::Button("reload actions"))
-    {
-        for (Fighter* fighter : mFightWorld->get_fighters())
-            fighter->debug_reload_actions();
-    }
-    ImPlus::HoverTooltip("reload action from json");
 
     ImGui::SameLine();
 
@@ -299,8 +275,8 @@ void GameScene::impl_show_fighters_window()
 {
     const auto flags = ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize |
                        ImGuiWindowFlags_NoMove;
-    ImGui::SetNextWindowSizeConstraints({420, 0}, {420, ImPlus::FromScreenBottom(20+20)});
-    ImGui::SetNextWindowPos({ImPlus::FromScreenRight(420+20), 20});
+    ImGui::SetNextWindowSizeConstraints({360, 0}, {360, ImPlus::FromScreenBottom(20+20)});
+    ImGui::SetNextWindowPos({ImPlus::FromScreenRight(360+20), 20});
 
     const ImPlus::ScopeWindow window = { "Fighter Debug", flags };
     if (window.show == false) return;

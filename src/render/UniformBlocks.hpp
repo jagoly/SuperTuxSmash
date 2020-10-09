@@ -2,11 +2,6 @@
 
 #include "setup.hpp"
 
-#ifndef SQEE_MSVC
-_Pragma("GCC diagnostic push")
-_Pragma("GCC diagnostic ignored \"-Wpadded\"")
-#endif
-
 namespace sts {
 
 //============================================================================//
@@ -21,24 +16,23 @@ struct alignas(16) CameraBlock
     Vec3F direction;  // 16
 };
 
-static_assert(sizeof(CameraBlock) == 288);
+//============================================================================//
+
+struct alignas(16) StaticBlock
+{
+    Mat4F  matrix;    // 64
+    Mat34F normMat;   // 48
+};
 
 //============================================================================//
 
-template <size_t NumBones>
-struct alignas(16) CharacterBlock
+struct alignas(16) SkellyBlock
 {
-    Mat4F  matrix;  // 64
-    Mat34F normMat; // 48
-    std::array<Mat34F, NumBones> bones;
+    Mat4F  matrix;    // 64
+    Mat34F normMat;   // 48
+    Mat34F bones[80]; // 3840
 };
-
-//static_assert(sizeof(CharacterBlock<80>) == 3952);
 
 //============================================================================//
 
 } // namespace sts
-
-#ifndef SQEE_MSVC
-_Pragma("GCC diagnostic pop")
-#endif

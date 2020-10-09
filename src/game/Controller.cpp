@@ -129,7 +129,7 @@ InputFrame Controller::get_input()
 
     //--------------------------------------------------------//
 
-    DISABLE_WARNING_FLOAT_EQUALITY;
+    DISABLE_WARNING_FLOAT_EQUALITY();
 
     //--------------------------------------------------------//
 
@@ -190,7 +190,7 @@ InputFrame Controller::get_input()
 
     //--------------------------------------------------------//
 
-    ENABLE_WARNING_FLOAT_EQUALITY;
+    ENABLE_WARNING_FLOAT_EQUALITY();
 
     //--------------------------------------------------------//
 

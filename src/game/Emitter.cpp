@@ -79,7 +79,7 @@ void Emitter::to_json(JsonValue& json) const
 
 //============================================================================//
 
-DISABLE_WARNING_FLOAT_EQUALITY;
+DISABLE_WARNING_FLOAT_EQUALITY()
 
 bool sts::operator==(const Emitter& a, const Emitter& b)
 {
@@ -103,4 +103,4 @@ bool sts::operator==(const Emitter& a, const Emitter& b)
     return true;
 }
 
-ENABLE_WARNING_FLOAT_EQUALITY;
+ENABLE_WARNING_FLOAT_EQUALITY()

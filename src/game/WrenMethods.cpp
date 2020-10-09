@@ -58,46 +58,17 @@ void Action::wren_allow_interrupt()
     else mStatus = ActionStatus::AllowInterrupt;
 }
 
-void Action::wren_enable_hitblob_group(uint8_t group)
+void Action::wren_enable_hitblobs(TinyString prefix)
 {
-    log_call(*this, "enable_hitblob_group({})", group);
+    log_call(*this, "enable_hitblobs({})", prefix);
 
+    bool found = false;
     for (auto& [key, blob] : mBlobs)
-        if (blob.group == group)
-            world.enable_hitblob(&blob);
+        if (prefix == StringView(key.c_str(), prefix.length()))
+            world.enable_hitblob(&blob), found = true;
 
-    world.reset_collisions(fighter.index, group);
-}
-
-void Action::wren_disable_hitblob_group(uint8_t group)
-{
-    log_call(*this, "disable_hitblob_group({})", group);
-
-    for (auto& [key, blob] : mBlobs)
-        if (blob.group == group)
-            world.disable_hitblob(&blob);
-}
-
-void Action::wren_enable_hitblob(TinyString key)
-{
-    log_call(*this, "enable_hitblob('{}')", key);
-
-    const auto iter = mBlobs.find(key);
-    if (iter == mBlobs.end())
-        throw wren::Exception("invalid hitblob '{}'", key);
-
-    world.enable_hitblob(&iter->second);
-}
-
-void Action::wren_disable_hitblob(TinyString key)
-{
-    log_call(*this, "disable_hitblob('{}')", key);
-
-    const auto iter = mBlobs.find(key);
-    if (iter == mBlobs.end())
-        throw wren::Exception("invalid hitblob '{}'", key);
-
-    world.disable_hitblob(&iter->second);
+    if (found == false)
+        throw wren::Exception("no hitblobs matching '{}*'", prefix);
 }
 
 void Action::wren_disable_hitblobs()
@@ -130,7 +101,7 @@ void Action::wren_play_sound(TinyString key)
 
     SoundEffect& sound = iter->second;
 
-    if (sound.handle.check() == false)
+    if (sound.handle == nullptr)
         throw wren::Exception("could not load sound '{}'", sound.get_key());
 
     sound.id = world.audio.play_sound(sound.handle.get(), sq::SoundGroup::Sfx, sound.volume, false);
@@ -153,28 +124,39 @@ void Action::wren_cancel_sound(TinyString key)
 void Action::wren_set_flag_AllowNext()
 {
     log_call(*this, "set_flag_AllowNext()");
+
     set_flag(ActionFlag::AllowNext, true);
 }
 
 void Action::wren_set_flag_AutoJab()
 {
     log_call(*this, "set_flag_AutoJab()");
+
     set_flag(ActionFlag::AutoJab, true);
 }
 
 bool Action::wren_check_flag_AttackHeld() const
 {
     log_call(*this, "check_flag_AttackHeld()");
+
     return check_flag(ActionFlag::AttackHeld);
 }
 
 bool Action::wren_check_flag_HitCollide() const
 {
     log_call(*this, "check_flag_HitCollide()");
+
     return check_flag(ActionFlag::HitCollide);
 }
 
 //============================================================================//
+
+void Fighter::wren_reset_collisions()
+{
+    log_call(*this, "reset_collisions()");
+
+    world.reset_collisions(index);
+}
 
 void Fighter::wren_set_intangible(bool value)
 {

@@ -1,0 +1,7 @@
+{
+  "format": "R8_UN",
+  "wrap": "CC",
+  "swizzle": "000R",
+  "filter": true,
+  "mipmaps": true
+}

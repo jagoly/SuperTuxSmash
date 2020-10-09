@@ -9,10 +9,10 @@ class Script is ScriptBase {
     action.play_sound("SwingExtra")
     action.play_sound("SwingFire")
     action.emit_particles("Fire")
-    action.enable_hitblob_group(0)
+    action.enable_hitblobs("")
 
     wait_until(12)
-    action.disable_hitblob_group(0)
+    action.disable_hitblobs()
 
     wait_until(43) // 52
     action.allow_interrupt()

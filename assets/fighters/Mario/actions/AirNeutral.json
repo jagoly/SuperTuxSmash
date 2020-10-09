@@ -1,6 +1,6 @@
 {
   "blobs": {
-    "00_CleanBack": {
+    "CLEAN_0_Back": {
       "bone": "RKneeJ",
       "damage": 10.0,
       "facing": "Relative",
@@ -13,10 +13,11 @@
       "knockScale": 100.0,
       "origin": [ 0.12462003, 0.33975002, -0.08093005 ],
       "radius": 0.4,
+      "sound": "PunchMedium",
       "useFixedKnockback": false,
       "useSakuraiAngle": true
     },
-    "01_CleanFront": {
+    "CLEAN_1_Front": {
       "bone": "LKneeJ",
       "damage": 10.0,
       "facing": "Relative",
@@ -29,10 +30,11 @@
       "knockScale": 100.0,
       "origin": [ -0.12462003, 0.25975, -0.0009300407 ],
       "radius": 0.4,
+      "sound": "PunchMedium",
       "useFixedKnockback": false,
       "useSakuraiAngle": true
     },
-    "10_LateBack": {
+    "LATE_0_Back": {
       "bone": "RKneeJ",
       "damage": 5.0,
       "facing": "Relative",
@@ -45,10 +47,11 @@
       "knockScale": 90.0,
       "origin": [ 0.12462003, 0.33975002, -0.08093005 ],
       "radius": 0.3,
+      "sound": "KickWeak",
       "useFixedKnockback": false,
       "useSakuraiAngle": true
     },
-    "11_CleanFront": {
+    "LATE_1_Front": {
       "bone": "LKneeJ",
       "damage": 5.0,
       "facing": "Relative",
@@ -61,12 +64,21 @@
       "knockScale": 90.0,
       "origin": [ -0.12462003, 0.25975, -0.0009300407 ],
       "radius": 0.3,
+      "sound": "KickWeak",
       "useFixedKnockback": false,
       "useSakuraiAngle": true
     }
   },
   "emitters": {},
   "sounds": {
+    "KickWeak": {
+      "path": "fighters/Mario/sounds/KickWeak",
+      "volume": 0.5
+    },
+    "PunchMedium": {
+      "path": "fighters/Mario/sounds/PunchMedium",
+      "volume": 0.5
+    },
     "SwingSmall": {
       "path": "fighters/Mario/sounds/SwingSmall",
       "volume": 0.5

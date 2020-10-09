@@ -1,0 +1,34 @@
+{
+
+"comment": "not based on anything, just things that seemed ok",
+
+"walk_speed":     0.1,
+"dash_speed":     0.15,
+"air_speed":      0.1,
+"traction":       0.006,
+"air_mobility":   0.008,
+"air_friction":   0.002,
+"hop_height":     1.6,
+"jump_height":    3.6,
+"airhop_height":  3.6,
+"gravity":        0.01,
+"fall_speed":     0.14,
+"fastfall_speed": 0.22,
+"weight":         95.0,
+
+"extra_jumps": 1,
+
+"land_heavy_fall_time": 4,
+
+"dash_start_time":  11,
+"dash_brake_time":  12,
+"dash_turn_time":   14,
+
+"anim_walk_stride": 1.8,
+"anim_dash_stride": 2.2,
+
+"diamond_half_width": 0.3,
+"diamond_offset_top": 1.4,
+"diamond_offset_cross": 0.8
+
+}

@@ -22,14 +22,6 @@ enum class BlobFlavour : int8_t { Sour, Tangy, Sweet };
 
 //============================================================================//
 
-//enum class BlobSound : int8_t
-//{
-//    None = -1,
-//    PunchSmall, PunchMedium, PunchLarge
-//};
-
-//============================================================================//
-
 struct alignas(16) HitBlob final
 {
     Action* action = nullptr; ///< Action that owns this blob.
@@ -43,7 +35,7 @@ struct alignas(16) HitBlob final
 
     int8_t bone; ///< Index of the bone to attach to.
 
-    uint8_t group; ///< Groups may only collide once per fighter per action.
+    // todo: compute index based on ordering of hitblob keys, should be less error prone
     uint8_t index; ///< Used to choose from blobs from the same group.
 
     float damage;       ///< How much damage the blob will do when hit.
@@ -57,6 +49,8 @@ struct alignas(16) HitBlob final
 
     bool useFixedKnockback; ///< https://www.ssbwiki.com/Knockback#Set_knockback
     bool useSakuraiAngle;   ///< https://www.ssbwiki.com/Sakurai_angle
+
+    TinyString sound; ///< Sound to play on collision.
 
     //-- debug / editor methods ------------------------------//
 
@@ -91,10 +85,3 @@ bool operator==(const HitBlob& a, const HitBlob& b);
 
 SQEE_ENUM_HELPER(sts::BlobFacing, Relative, Forward, Reverse)
 SQEE_ENUM_HELPER(sts::BlobFlavour, Sour, Tangy, Sweet)
-
-//SQEE_ENUM_HELPER
-//(
-//    sts::BlobSound,
-//    None,
-//    PunchSmall, PunchMedium, PunchLarge
-//)

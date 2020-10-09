@@ -8,19 +8,19 @@ class Script is ScriptBase {
     wait_until(2)
     fighter.set_autocancel(false)
     action.play_sound("SwingSmall")
-    action.enable_hitblob_group(0)
+    action.enable_hitblobs("CLEAN")
 
     wait_until(5)
-    action.disable_hitblob_group(0)
-    action.enable_hitblob_group(1)
+    action.disable_hitblobs()
+    action.enable_hitblobs("LATE")
 
     wait_until(29)
-    action.disable_hitblob_group(1)
+    action.disable_hitblobs()
 
     wait_until(33)
     fighter.set_autocancel(true)
 
-    wait_until(45) // anim 46
+    wait_until(45) // 46
     action.allow_interrupt()
   }
   

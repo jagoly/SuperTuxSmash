@@ -63,6 +63,10 @@ void Action::do_start()
     mWaitingUntil = 0u;
 
     mStatus = ActionStatus::Running;
+
+    // in brawl, this effectively gets done at the end of attack scripts
+    // for now at least, it seems reasonable to just do it at the start of any action
+    world.reset_collisions(fighter.index);
 }
 
 //============================================================================//
@@ -84,7 +88,7 @@ void Action::do_tick()
         {
             // finished with an error, do some clean up
             world.disable_hitblobs(*this);
-            world.reset_all_collisions(fighter.index);
+            world.reset_collisions(fighter.index);
             mStatus = ActionStatus::Finished;
         }
 

@@ -3,14 +3,54 @@
 #include "game/Fighter.hpp"
 
 #include <sqee/maths/Culling.hpp>
+#include <sqee/misc/Json.hpp>
 
 using namespace sts;
 
 //============================================================================//
 
-Stage::Stage(FightWorld& world) : mFightWorld(world) {}
+Stage::Stage(FightWorld& world, StageEnum type)
+    : world(world), type(type)
+{
+    const String path = sq::build_string("assets/stages/", sq::enum_to_string(type), "/Stage.json");
+    const JsonValue json = sq::parse_json_from_file(path);
+
+    const JsonValue& general = json.at("general");
+    mInnerBoundary.min = general.at("inner_boundary_min");
+    mInnerBoundary.max = general.at("inner_boundary_max");
+    mOuterBoundary.min = general.at("outer_boundary_min");
+    mOuterBoundary.max = general.at("outer_boundary_max");
+
+    for (const JsonValue& jblock : json.at("blocks"))
+    {
+        AlignedBlock& block = mAlignedBlocks.emplace_back();
+        block.minimum = jblock.at("minimum");
+        block.maximum = jblock.at("maximum");
+    }
+
+    for (const JsonValue& jledge : json.at("ledges"))
+    {
+        Ledge& ledge = mLedges.emplace_back();
+        ledge.position = jledge.at("position");
+        ledge.direction = jledge.at("direction");
+    }
+
+    for (const JsonValue& jplatform : json.at("platforms"))
+    {
+        Platform& platform = mPlatforms.emplace_back();
+        platform.originY = jplatform.at("originY");
+        platform.minX = jplatform.at("minX");
+        platform.maxX = jplatform.at("maxX");
+    }
+}
 
 Stage::~Stage() = default;
+
+//============================================================================//
+
+void Stage::tick()
+{
+}
 
 //============================================================================//
 
@@ -171,15 +211,13 @@ MoveAttempt Stage::attempt_move(const LocalDiamond& diamond, Vec2F current, Vec2
 
     for (const auto& platform : mPlatforms)
     {
-        const Vec2F currentMin = current + diamond.min();
-        //const Vec2F currentMax = current + diamond.max();
+        const float currentMinY = current.y + diamond.min().y;
         const Vec2F currentCross = current + diamond.cross();
 
-        const Vec2F targetMin = target + diamond.min();
-        //const Vec2F targetMax = target + diamond.max();
+        const float targetMinY = target.y + diamond.min().y;
         const Vec2F targetCross = target + diamond.cross();
 
-        if (currentMin.y >= platform.originY && targetMin.y < platform.originY)
+        if (currentMinY >= platform.originY && targetMinY < platform.originY)
         {
             if (edgeStop == true)
             {

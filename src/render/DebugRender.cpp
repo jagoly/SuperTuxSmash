@@ -13,9 +13,6 @@
 #include <sqee/maths/Functions.hpp>
 #include <sqee/objects/Armature.hpp>
 
-#include <sqee/redist/gl_loader.hpp>
-
-using sq::Context;
 using namespace sts;
 
 //============================================================================//
@@ -34,7 +31,7 @@ DebugRenderer::DebugRenderer(Renderer& renderer) : renderer(renderer)
     mLineVertexArray.add_float_attribute(0u, 4u, gl::FLOAT, false, 0u);
 
     // allocate space for up to 128 lines
-    mLineVertexBuffer.allocate_dynamic(sizeof(Vec4F) * 256u, nullptr);
+    mLineVertexBuffer.allocate_dynamic(sizeof(Vec4F) * 256u);
 }
 
 //============================================================================//
@@ -45,11 +42,11 @@ void DebugRenderer::refresh_options()
 
     //-- Load GLSL Shader Sources ----------------------------//
 
-    processor.load_vertex(mBlobShader, "debug/Blob_vs");
-    processor.load_fragment(mBlobShader, "debug/Blob_fs");
+    processor.load_vertex(mBlobShader, "shaders/debug/Blob_vs.glsl", {});
+    processor.load_fragment(mBlobShader, "shaders/debug/Blob_fs.glsl", {});
 
-    processor.load_vertex(mLinesShader, "debug/Lines_vs");
-    processor.load_fragment(mLinesShader, "debug/Lines_fs");
+    processor.load_vertex(mLinesShader, "shaders/debug/Lines_vs.glsl", {});
+    processor.load_fragment(mLinesShader, "shaders/debug/Lines_fs.glsl", {});
 
     //-- Link Shader Program Stages --------------------------//
 
@@ -67,22 +64,22 @@ void DebugRenderer::render_hit_blobs(const std::vector<HitBlob*>& blobs)
 
     //--------------------------------------------------------//
 
-    context.bind_FrameBuffer(renderer.FB_Resolve);
+    context.bind_framebuffer(renderer.FB_Resolve);
 
-    context.set_state(Context::Blend_Mode::Alpha);
-    context.set_state(Context::Cull_Face::Back);
-    context.set_state(Context::Depth_Test::Disable);
+    context.set_state(sq::BlendMode::Alpha);
+    context.set_state(sq::CullFace::Back);
+    context.set_state(sq::DepthTest::Disable);
 
-    context.bind_Program(mBlobShader);
+    context.bind_program(mBlobShader);
 
-    context.bind_VertexArray(mSphereMesh.get_vao());
+    mSphereMesh.apply_to_context(context);
 
     mBlobShader.update(2, 0.25f);
 
     //--------------------------------------------------------//
 
     std::vector<Vec4F> lineData;
-    lineData.reserve(blobs.size() * 2u);
+    lineData.reserve(blobs.size() * 3u);
 
     //--------------------------------------------------------//
 
@@ -93,7 +90,7 @@ void DebugRenderer::render_hit_blobs(const std::vector<HitBlob*>& blobs)
         mBlobShader.update(0, projViewMat * matrix);
         mBlobShader.update(1, blob->get_debug_colour());
 
-        mSphereMesh.draw_complete();
+        mSphereMesh.draw_complete(context);
 
         // for relative facing, we just show an arrow in the most likely direction
         // can give weird results when origin is close to zero
@@ -133,17 +130,17 @@ void DebugRenderer::render_hit_blobs(const std::vector<HitBlob*>& blobs)
 
     //--------------------------------------------------------//
 
-    context.set_state(Context::Blend_Mode::Disable);
+    context.set_state(sq::BlendMode::Disable);
 
-    gl::LineWidth(4.f);
+    context.set_line_width(4.f);
 
-    context.bind_Program(mLinesShader);
-    context.bind_VertexArray(mLineVertexArray);
+    context.bind_program(mLinesShader);
+    context.bind_vertexarray(mLineVertexArray);
 
     mLinesShader.update(0, Vec3F(1.f, 1.f, 1.f));
     mLineVertexBuffer.update(0u, uint(sizeof(Vec4F) * lineData.size()), lineData.data());
 
-    gl::DrawArrays(gl::LINES, 0, int(lineData.size()));
+    context.draw_arrays(sq::DrawPrimitive::Lines, 0u, uint(lineData.size()));
 }
 
 //============================================================================//
@@ -156,15 +153,15 @@ void DebugRenderer::render_hurt_blobs(const std::vector<HurtBlob*>& blobs)
 
     //--------------------------------------------------------//
 
-    context.bind_FrameBuffer(renderer.FB_Resolve);
+    context.bind_framebuffer(renderer.FB_Resolve);
 
-    context.set_state(Context::Blend_Mode::Alpha);
-    context.set_state(Context::Cull_Face::Back);
-    context.set_state(Context::Depth_Test::Disable);
+    context.set_state(sq::BlendMode::Alpha);
+    context.set_state(sq::CullFace::Back);
+    context.set_state(sq::DepthTest::Disable);
 
-    context.bind_Program(mBlobShader);
+    context.bind_program(mBlobShader);
 
-    context.bind_VertexArray(mCapsuleMesh.get_vao());
+    mCapsuleMesh.apply_to_context(context);
 
     mBlobShader.update(2, 0.25f);
 
@@ -184,10 +181,10 @@ void DebugRenderer::render_hurt_blobs(const std::vector<HurtBlob*>& blobs)
         mBlobShader.update(1, blob->get_debug_colour());
 
         mBlobShader.update(0, projViewMat * matrixA);
-        mCapsuleMesh.draw_partial(0u);
+        mCapsuleMesh.draw_submesh(context, 0u);
 
         mBlobShader.update(0, projViewMat * matrixB);
-        mCapsuleMesh.draw_partial(1u);
+        mCapsuleMesh.draw_submesh(context, 1u);
 
         if (length > 0.00001f)
         {
@@ -195,7 +192,7 @@ void DebugRenderer::render_hurt_blobs(const std::vector<HurtBlob*>& blobs)
             const Mat4F matrixM = maths::transform(originM, rotation, Vec3F(c.radius, length, c.radius));
 
             mBlobShader.update(0, projViewMat * matrixM);
-            mCapsuleMesh.draw_partial(2u);
+            mCapsuleMesh.draw_submesh(context, 2u);
         }
     }
 }
@@ -210,15 +207,15 @@ void DebugRenderer::render_diamond(const Fighter& fighter)
 
     //--------------------------------------------------------//
 
-    context.bind_FrameBuffer(renderer.FB_Resolve);
+    context.bind_framebuffer(renderer.FB_Resolve);
 
-    context.set_state(Context::Blend_Mode::Alpha);
-    context.set_state(Context::Cull_Face::Back);
-    context.set_state(Context::Depth_Test::Disable);
+    context.set_state(sq::BlendMode::Alpha);
+    context.set_state(sq::CullFace::Back);
+    context.set_state(sq::DepthTest::Disable);
 
-    context.bind_Program(mBlobShader);
+    context.bind_program(mBlobShader);
 
-    context.bind_VertexArray(mDiamondMesh.get_vao());
+    mDiamondMesh.apply_to_context(context);
 
     mBlobShader.update(2, 0.25f);
 
@@ -234,10 +231,10 @@ void DebugRenderer::render_diamond(const Fighter& fighter)
     mBlobShader.update(1, Vec3F(1.f, 1.f, 1.f));
 
     mBlobShader.update(0, projViewMat * bottomMat);
-    mDiamondMesh.draw_partial(0u);
+    mDiamondMesh.draw_submesh(context, 0u);
 
     mBlobShader.update(0, projViewMat * topMat);
-    mDiamondMesh.draw_partial(1u);
+    mDiamondMesh.draw_submesh(context, 1u);
 }
 
 //============================================================================//
@@ -250,11 +247,11 @@ void DebugRenderer::render_skeleton(const Fighter& fighter)
 
     //--------------------------------------------------------//
 
-    context.bind_FrameBuffer(renderer.FB_Resolve);
+    context.bind_framebuffer(renderer.FB_Resolve);
 
     //--------------------------------------------------------//
 
-    const std::vector<Mat4F> mats = fighter.debug_get_skeleton_mats();
+    const std::vector<Mat4F> mats = fighter.get_armature().compute_skeleton_matrices(fighter.current.pose);
 
     std::vector<Vec4F> linesRed;
     std::vector<Vec4F> linesGreen;
@@ -289,29 +286,29 @@ void DebugRenderer::render_skeleton(const Fighter& fighter)
 
     //--------------------------------------------------------//
 
-    context.set_state(Context::Blend_Mode::Disable);
-    context.set_state(Context::Depth_Test::Disable);
+    context.set_state(sq::BlendMode::Disable);
+    context.set_state(sq::DepthTest::Disable);
 
-    gl::LineWidth(2.f);
+    context.set_line_width(2.f);
 
-    context.bind_Program(mLinesShader);
-    context.bind_VertexArray(mLineVertexArray);
+    context.bind_program(mLinesShader);
+    context.bind_vertexarray(mLineVertexArray);
 
     mLinesShader.update(0, Vec3F(1.f, 0.f, 0.f));
     mLineVertexBuffer.update(0u, uint(sizeof(Vec4F) * linesRed.size()), linesRed.data());
-    gl::DrawArrays(gl::LINES, 0, int(linesRed.size()));
+    context.draw_arrays(sq::DrawPrimitive::Lines, 0u, uint(linesRed.size()));
 
     mLinesShader.update(0, Vec3F(0.f, 1.f, 0.f));
     mLineVertexBuffer.update(0u, uint(sizeof(Vec4F) * linesGreen.size()), linesGreen.data());
-    gl::DrawArrays(gl::LINES, 0, int(linesGreen.size()));
+    context.draw_arrays(sq::DrawPrimitive::Lines, 0u, uint(linesGreen.size()));
 
     mLinesShader.update(0, Vec3F(0.f, 0.f, 1.f));
     mLineVertexBuffer.update(0u, uint(sizeof(Vec4F) * linesBlue.size()), linesBlue.data());
-    gl::DrawArrays(gl::LINES, 0, int(linesBlue.size()));
+    context.draw_arrays(sq::DrawPrimitive::Lines, 0u, uint(linesBlue.size()));
 
-    gl::LineWidth(1.f);
+    context.set_line_width(1.f);
 
     mLinesShader.update(0, Vec3F(1.f, 1.f, 1.f));
     mLineVertexBuffer.update(0u, uint(sizeof(Vec4F) * linesWhite.size()), linesWhite.data());
-    gl::DrawArrays(gl::LINES, 0, int(linesWhite.size()));
+    context.draw_arrays(sq::DrawPrimitive::Lines, 0u, uint(linesWhite.size()));
 }

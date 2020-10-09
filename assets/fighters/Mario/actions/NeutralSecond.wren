@@ -7,10 +7,10 @@ class Script is ScriptBase {
 
     wait_until(1)
     action.play_sound("SwingMedium")
-    action.enable_hitblob_group(0)
+    action.enable_hitblobs("")
 
     wait_until(3)
-    action.disable_hitblob_group(0)
+    action.disable_hitblobs()
 
     wait_until(5)
     action.set_flag_AllowNext()
@@ -18,10 +18,10 @@ class Script is ScriptBase {
     wait_until(9)
     action.set_flag_AutoJab()
 
-    wait_until(18)
+    wait_until(17) // 18
     action.allow_interrupt()
 
-    wait_until(23)
+    wait_until(23) // no combo
   }
 
   cancel() {

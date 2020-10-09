@@ -45,7 +45,7 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
-    sq::TextureArray2D mTexture;
+    sq::TextureArray mTexture;
 
     sq::FixedBuffer mVertexBuffer;
     sq::VertexArray mVertexArray;

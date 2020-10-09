@@ -9,3 +9,5 @@ struct LightBlock
 
     // TOTAL: 112
 };
+
+layout(std140, binding=1) uniform LIGHT { LightBlock LB; };

@@ -4,7 +4,7 @@
 
 #include "render/UniformBlocks.hpp" // IWYU pragma: export
 
-#include <sqee/gl/UniformBuffer.hpp> // IWYU pragma: export
+#include <sqee/gl/FixedBuffer.hpp> // IWYU pragma: export
 
 namespace sts {
 
@@ -23,7 +23,7 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    const sq::UniformBuffer& get_ubo() const { return mUbo; }
+    const sq::FixedBuffer& get_ubo() const { return mUbo; }
 
     const Mat4F& get_view_matrix() const { return mBlock.viewMat; }
     const Mat4F& get_proj_matrix() const { return mBlock.projMat; }
@@ -36,7 +36,7 @@ public: //====================================================//
 protected: //=================================================//
 
     CameraBlock mBlock;
-    sq::UniformBuffer mUbo;
+    sq::FixedBuffer mUbo;
 
     Mat4F mComboMatrix;
 

@@ -4,10 +4,7 @@ foreign class Action {
 
   foreign set_wait_until(frame)
   foreign allow_interrupt()
-  foreign enable_hitblob_group(group)
-  foreign disable_hitblob_group(group)
-  foreign enable_hitblob(key)
-  foreign disable_hitblob(key)
+  foreign enable_hitblobs(prefix)
   foreign disable_hitblobs()
   foreign emit_particles(key)
   foreign play_sound(key)
@@ -19,7 +16,8 @@ foreign class Action {
 //========================================================//
 
 foreign class Fighter {
-  
+
+  foreign reset_collisions()
   foreign set_intangible(value)
   foreign enable_hurtblob(key)
   foreign disable_hurtblob(key)

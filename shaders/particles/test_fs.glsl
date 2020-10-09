@@ -5,8 +5,6 @@
 #include runtime/Options
 #include headers/blocks/Camera
 
-layout(std140, binding=0) uniform CAMERA { CameraBlock CB; };
-
 //============================================================================//
 
 in GeometryBlock {

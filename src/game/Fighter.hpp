@@ -1,6 +1,6 @@
 #pragma once
 
-#include "setup.hpp" // IWYU pragma: export
+#include "setup.hpp"
 
 #include "game/ActionEnums.hpp"
 #include "game/FighterEnums.hpp"
@@ -20,31 +20,25 @@ struct Ledge;
 
 struct LocalDiamond
 {
-    LocalDiamond() = default;
-
-    LocalDiamond(float _halfWidth, float _offsetTop, float _offsetCross)
+    void compute_normals()
     {
-        halfWidth = _halfWidth;
-        offsetTop = _offsetTop;
-        offsetCross = _offsetCross;
-
-        normLeftDown = sq::maths::normalize(Vec2F(-_offsetCross, -_halfWidth));
-        normLeftUp = sq::maths::normalize(Vec2F(-_offsetCross, +_halfWidth));
-        normRightDown = sq::maths::normalize(Vec2F(+_offsetCross, -_halfWidth));
-        normRightUp = sq::maths::normalize(Vec2F(+_offsetCross, +_halfWidth));
+        normLeftDown = sq::maths::normalize(Vec2F(-offsetCross, -halfWidth));
+        normLeftUp = sq::maths::normalize(Vec2F(-offsetCross, +halfWidth));
+        normRightDown = sq::maths::normalize(Vec2F(+offsetCross, -halfWidth));
+        normRightUp = sq::maths::normalize(Vec2F(+offsetCross, +halfWidth));
     }
-
-    float halfWidth, offsetTop, offsetCross;
-    Vec2F normLeftDown, normLeftUp, normRightDown, normRightUp;
 
     Vec2F min() const { return { -halfWidth, 0.f }; }
     Vec2F max() const { return { +halfWidth, offsetTop }; }
     Vec2F cross() const { return { 0.f, offsetCross }; }
+
+    float halfWidth, offsetCross, offsetTop;
+    Vec2F normLeftDown, normLeftUp, normRightDown, normRightUp;
 };
 
 //============================================================================//
 
-class Fighter : sq::NonCopyable
+class Fighter final : sq::NonCopyable
 {
 public: //====================================================//
 
@@ -54,15 +48,22 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    /// Structure containing an animation and related metadata.
+    /// One animation with related metadata.
     struct Animation
     {
         sq::Armature::Animation anim;
         AnimMode mode;
         String key;
+
+        bool is_looping() const
+        {
+            return mode == AnimMode::Looping || mode == AnimMode::WalkCycle || mode == AnimMode::DashCycle;
+        }
     };
 
-    /// Structure containing the basic animations used by a fighter.
+    //--------------------------------------------------------//
+
+    /// Structure for the basic animations used by a fighter.
     struct Animations
     {
         Animation DashingLoop;
@@ -167,8 +168,10 @@ public: //====================================================//
         //Animation LaunchFinish;
     };
 
-    /// Structure containing stats that generally don't change during a game.
-    struct Stats
+    //--------------------------------------------------------//
+
+    /// Structure for stats that generally don't change during a game.
+    struct Attributes
     {
         float walk_speed        = 0.1f;
         float dash_speed        = 0.15f;
@@ -196,7 +199,9 @@ public: //====================================================//
         float anim_dash_stride = 3.f;
     };
 
-    /// Structure containing the public state and status of a fighter.
+    //--------------------------------------------------------//
+
+    /// Structure for the public state and status of a fighter.
     struct Status
     {
         State state = State::Neutral;
@@ -212,31 +217,35 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    virtual ~Fighter();
-
-    virtual void tick() = 0;
-
-    //--------------------------------------------------------//
-
-    const uint8_t index;
-
-    const FighterEnum type;
-
-    FightWorld& world;
-
-    Stats stats;
-
-    Status status;
-
-    //--------------------------------------------------------//
-
+    /// Structure for data to interpolate between ticks.
     struct InterpolationData
     {
         Vec3F translation;
         QuatF rotation;
         sq::Armature::Pose pose;
-    }
-    previous, current;
+    };
+
+    //--------------------------------------------------------//
+
+    Fighter(FightWorld& world, FighterEnum type, uint8_t index);
+
+    ~Fighter();
+
+    void tick();
+
+    //--------------------------------------------------------//
+
+    FightWorld& world;
+
+    const FighterEnum type;
+
+    const uint8_t index;
+
+    Attributes attributes;
+
+    Status status;
+
+    InterpolationData previous, current;
 
     //--------------------------------------------------------//
 
@@ -286,16 +295,12 @@ public: //====================================================//
     /// Compute matrix for the specified bone, or model matrix if -1.
     Mat4F get_bone_matrix(int8_t bone) const;
 
-    /// Compute interpolated model matrix.
-    Mat4F interpolate_model_matrix(float blend) const;
-
-    /// Compute interpolated armature pose matrices.
-    void interpolate_bone_matrices(float blend, Mat34F* out, size_t len) const;
-
     /// Should hurt/flinch models be used if available.
     bool should_render_flinch_models() const;
 
     //-- wren methods and properties -------------------------//
+
+    void wren_reset_collisions();
 
     void wren_set_intangible(bool value);
 
@@ -307,23 +312,11 @@ public: //====================================================//
 
     void wren_set_autocancel(bool value);
 
-protected: //=================================================//
-
-    // todo: I'd like not even have c++ classes for specific fighters,
-    // it'd be great to be able to do all the customisation in lua.
-    // Until then some stuff is protected instead of private.
-
-    Fighter(uint8_t index, FightWorld& world, FighterEnum type);
-
-    void base_tick_fighter();
-
-    uint mStateProgress = 0u;
-
 private: //===================================================//
 
     //-- init methods, called by constructor -----------------//
 
-    void initialise_stats(const String& path);
+    void initialise_attributes(const String& path);
 
     void initialise_armature(const String& path);
 
@@ -383,11 +376,13 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
+    // todo: comments for this stuff would be nice
+
     Action* mActiveAction = nullptr;
 
     ActionType mForceSwitchAction = ActionType::None;
 
-    //uint mStateProgress = 0u;
+    uint mStateProgress = 0u;
 
     uint mLandingTime = 0u;
 
@@ -426,22 +421,15 @@ private: //===================================================//
     uint mFadeProgress = 0u;
     uint mFadeFrames = 0u;
 
-    // these are only used for debug
-    const Animation* mPreviousAnimation = nullptr;
-    uint mPreviousAnimTimeDiscrete = 0u;
-    float mPreviousAnimTimeContinuous = 0.f;
-
-    //--------------------------------------------------------//
-
     std::vector<Mat34F> mBoneMatrices;
 
     Mat4F mModelMatrix;
 
-public: //== debug and editor stuff ==========================//
+    //-- debug and editor stuff ------------------------------//
 
-    void debug_reload_actions();
-
-    std::vector<Mat4F> debug_get_skeleton_mats() const;
+    const Animation* mPreviousAnimation = nullptr;
+    uint mPreviousAnimTimeDiscrete = 0u;
+    float mPreviousAnimTimeContinuous = 0.f;
 
     friend DebugGui;
     friend EditorScene;

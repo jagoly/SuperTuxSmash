@@ -2,14 +2,13 @@
 
 #include "setup.hpp"
 
-#include "caches/MeshCache.hpp"
-#include "caches/ProgramCache.hpp"
-#include "caches/TexArrayCache.hpp"
-#include "caches/TextureCache.hpp"
+#include "main/Resources.hpp"
 
 #include <sqee/app/PreProcessor.hpp>
+#include <sqee/gl/FixedBuffer.hpp>
 #include <sqee/gl/FrameBuffer.hpp>
-#include <sqee/gl/UniformBuffer.hpp>
+#include <sqee/gl/Program.hpp>
+#include <sqee/gl/Textures.hpp>
 
 //============================================================================//
 
@@ -62,23 +61,15 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    sq::FrameBuffer FB_MsDepth;
     sq::FrameBuffer FB_MsMain;
     sq::FrameBuffer FB_Resolve;
 
-    sq::TextureMulti TEX_MsDepth { sq::Texture::Format::DEP24S8 };
-    sq::TextureMulti TEX_MsColour { sq::Texture::Format::RGB16_FP };
-    sq::Texture2D TEX_Depth { sq::Texture::Format::DEP24S8 };
-    sq::Texture2D TEX_Colour { sq::Texture::Format::RGB16_FP };
-
-    sq::Program PROG_Depth_StaticSolid;
-    sq::Program PROG_Depth_StaticPunch;
-
-    sq::Program PROG_Depth_FighterSolid;
-    sq::Program PROG_Depth_FighterPunch;
+    sq::TextureMulti TEX_MsDepth;
+    sq::TextureMulti TEX_MsColour;
+    sq::Texture2D TEX_Depth;
+    sq::Texture2D TEX_Colour;
 
     sq::Program PROG_Particles;
-
     sq::Program PROG_Lighting_Skybox;
     sq::Program PROG_Composite;
 
@@ -90,9 +81,11 @@ public: //====================================================//
     sq::PreProcessor processor;
 
     MeshCache meshes;
-    ProgramCache programs;
-    TexArrayCache texarrays;
     TextureCache textures;
+    TexArrayCache texarrays;
+
+    ProgramCache programs;
+    MaterialCache materials;
 
     //--------------------------------------------------------//
 
@@ -102,7 +95,7 @@ public: //====================================================//
 
 private: //===================================================//
 
-    sq::UniformBuffer mLightUbo;
+    sq::FixedBuffer mLightUbo;
 
     std::unique_ptr<Camera> mCamera;
 

@@ -1,0 +1,394 @@
+[
+  {
+    "name": "TransN",
+    "parent": null,
+    "offset": [ 0.0, 0.0, 0.0 ],
+    "rotation": [ 0.0, -0.70711, -0.70711, 0.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "XRotN",
+    "parent": "TransN",
+    "offset": [ 0.0, 0.0, 0.6234 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "YRotN",
+    "parent": "XRotN",
+    "offset": [ 0.0, 0.0, 0.0 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "HipN",
+    "parent": "YRotN",
+    "offset": [ 0.0, 0.0, -0.07423 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "ThrowN",
+    "parent": "YRotN",
+    "offset": [ 0.0, 0.0, -0.6234 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "LLegJ",
+    "parent": "HipN",
+    "offset": [ 0.12307, 0.00313, 0.0005 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "RLegJ",
+    "parent": "HipN",
+    "offset": [ -0.12307, 0.00313, 0.0005 ],
+    "rotation": [ -1.0, 0.0, 0.0, 0.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "WaistN",
+    "parent": "HipN",
+    "offset": [ 0.0, 0.00295, 0.10781 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "WaistNb",
+    "parent": "HipN",
+    "offset": [ 0.0, 0.00295, 0.10781 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "BustN",
+    "parent": "WaistN",
+    "offset": [ 0.0, 0.0, 0.12763 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "LKneeJ",
+    "parent": "LLegJ",
+    "offset": [ 0.00155, -0.00406, -0.20992 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "RKneeJ",
+    "parent": "RLegJ",
+    "offset": [ -0.00155, 0.00406, 0.20992 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "LFootE",
+    "parent": "LKneeJ",
+    "offset": [ 0.00195, -0.00508, -0.15497 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "LFootJ",
+    "parent": "LKneeJ",
+    "offset": [ 0.00231, -0.00603, -0.184 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "LShoulderN",
+    "parent": "BustN",
+    "offset": [ 0.09435, -0.02319, 0.08792 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "NeckN",
+    "parent": "BustN",
+    "offset": [ 0.0, -0.02727, 0.12737 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "RFootE",
+    "parent": "RKneeJ",
+    "offset": [ -0.0019, 0.0051, 0.155 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "RFootJ",
+    "parent": "RKneeJ",
+    "offset": [ -0.00231, 0.00603, 0.184 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "RShoulderN",
+    "parent": "BustN",
+    "offset": [ -0.09435, -0.02319, 0.08792 ],
+    "rotation": [ -1.0, 0.0, 0.0, 0.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "HeadN",
+    "parent": "NeckN",
+    "offset": [ 0.0, 0.01955, 0.11236 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "LShoulderJ",
+    "parent": "LShoulderN",
+    "offset": [ 0.0935, -0.0012, -0.00094 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "LToeN",
+    "parent": "LFootJ",
+    "offset": [ 0.00103, 0.1367, -0.07412 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "RShoulderJ",
+    "parent": "RShoulderN",
+    "offset": [ -0.0935, 0.0012, 0.00094 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "RToeN",
+    "parent": "RFootJ",
+    "offset": [ -0.00103, -0.1367, 0.07412 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "HatN",
+    "parent": "HeadN",
+    "offset": [ 0.0, 0.04184, 0.29363 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "LArmJ",
+    "parent": "LShoulderJ",
+    "offset": [ 0.17528, 0.0, 3e-05 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "LHigeN",
+    "parent": "HeadN",
+    "offset": [ -0.00194, 0.21175, 0.03537 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "MouthN",
+    "parent": "HeadN",
+    "offset": [ -0.00217, 0.01545, 0.03772 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "NoseN",
+    "parent": "HeadN",
+    "offset": [ -0.00433, 0.20253, 0.07298 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "RArmJ",
+    "parent": "RShoulderJ",
+    "offset": [ -0.17528, 0.0, -3e-05 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "RHigeN",
+    "parent": "HeadN",
+    "offset": [ -0.00375, 0.21133, 0.03157 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "LHandN",
+    "parent": "LArmJ",
+    "offset": [ 0.17235, 0.00301, -5e-05 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "LHandNb",
+    "parent": "LArmJ",
+    "offset": [ 0.18335, 0.00309, 0.00121 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "RHandN",
+    "parent": "RArmJ",
+    "offset": [ -0.17235, -0.00301, 5e-05 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "RHandNb",
+    "parent": "RArmJ",
+    "offset": [ -0.18335, -0.00309, -0.00121 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "L1stNa",
+    "parent": "LHandN",
+    "offset": [ 0.14794, 0.05434, 0.03756 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "L2ndNa",
+    "parent": "LHandN",
+    "offset": [ 0.15393, 0.01196, 0.04553 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "L3rdNa",
+    "parent": "LHandN",
+    "offset": [ 0.14728, -0.03124, 0.04113 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "L4thNa",
+    "parent": "LHandN",
+    "offset": [ 0.1413, -0.07001, 0.02956 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "LThumbNa",
+    "parent": "LHandN",
+    "offset": [ 0.09391, 0.09958, -0.02147 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "R1stNa",
+    "parent": "RHandN",
+    "offset": [ -0.14794, -0.05434, -0.03756 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "R2ndNa",
+    "parent": "RHandN",
+    "offset": [ -0.15393, -0.01196, -0.04553 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "R3rdNa",
+    "parent": "RHandN",
+    "offset": [ -0.14728, 0.03124, -0.04113 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "R4thNa",
+    "parent": "RHandN",
+    "offset": [ -0.1413, 0.07001, -0.02956 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "RHaveN",
+    "parent": "RHandN",
+    "offset": [ -0.14826, -0.00249, 0.01591 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "RThumbNa",
+    "parent": "RHandN",
+    "offset": [ -0.09391, -0.09958, 0.02147 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "L1stNb",
+    "parent": "L1stNa",
+    "offset": [ 0.05825, 0.00074, -0.00249 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "L2ndNb",
+    "parent": "L2ndNa",
+    "offset": [ 0.05524, 0.00034, -0.00625 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "L3rdNb",
+    "parent": "L3rdNa",
+    "offset": [ 0.0566, 0.00033, -0.00383 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "L4thNb",
+    "parent": "L4thNa",
+    "offset": [ 0.0516, 0.00078, -0.00392 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "LThumbNb",
+    "parent": "LThumbNa",
+    "offset": [ 0.05627, 0.00086, -0.00025 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "R1stNb",
+    "parent": "R1stNa",
+    "offset": [ -0.05825, -0.00074, 0.00249 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "R2ndNb",
+    "parent": "R2ndNa",
+    "offset": [ -0.05524, -0.00034, 0.00625 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "R3rdNb",
+    "parent": "R3rdNa",
+    "offset": [ -0.0566, -0.00033, 0.00383 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "R4thNb",
+    "parent": "R4thNa",
+    "offset": [ -0.0516, -0.00078, 0.00392 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "RThumbNb",
+    "parent": "RThumbNa",
+    "offset": [ -0.05626, -0.00086, 0.00025 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  }
+]

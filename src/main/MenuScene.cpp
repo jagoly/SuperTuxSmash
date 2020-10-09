@@ -45,8 +45,7 @@ void MenuScene::render(double /*elapsed*/)
 
     context.set_ViewPort(options.window_size);
 
-    context.clear_Colour({0.f, 0.f, 0.f, 1.f});
-    context.clear_Depth_Stencil();
+    context.clear_depth_stencil_colour(1.0, 0x00, 0xFF, {0.f, 0.f, 0.f, 1.f});
 }
 
 //============================================================================//

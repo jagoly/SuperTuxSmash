@@ -4,16 +4,13 @@
 
 #include <sqee/gl/Context.hpp>
 
-#include <sqee/redist/gl_loader.hpp>
-
-using sq::Context;
 using namespace sts;
 
 //============================================================================//
 
 ParticleRenderer::ParticleRenderer(Renderer& renderer) : renderer(renderer)
 {
-    mVertexBuffer.allocate_dynamic(sizeof(ParticleVertex) * 8192u, nullptr);
+    mVertexBuffer.allocate_dynamic(sizeof(ParticleVertex) * 8192u);
     mVertexArray.set_vertex_buffer(mVertexBuffer, sizeof(ParticleVertex));
 
     mVertexArray.add_float_attribute(0u, 3u, gl::FLOAT, false, 0u);
@@ -68,27 +65,27 @@ void ParticleRenderer::render_particles()
 
     auto& context = renderer.context;
 
-    context.bind_FrameBuffer(renderer.FB_Resolve);
+    context.bind_framebuffer(renderer.FB_Resolve);
 
-    context.bind_VertexArray(mVertexArray);
-    context.bind_Program(renderer.PROG_Particles);
+    context.bind_vertexarray(mVertexArray);
+    context.bind_program(renderer.PROG_Particles);
 
     //gl::Enable(gl::PROGRAM_POINT_SIZE);
 
-    context.set_state(Context::Blend_Mode::Alpha);
-    context.set_state(Context::Cull_Face::Disable);
-    context.set_state(Context::Depth_Test::Disable);
+    context.set_state(sq::BlendMode::Alpha);
+    context.set_state(sq::CullFace::Disable);
+    context.set_state(sq::DepthTest::Disable);
     //context.set_state(Context::Depth_Compare::LessEqual);
 
-    context.bind_Texture(mTexture, 0u);
+    context.bind_texture(mTexture, 0u);
 
-    context.bind_Texture(renderer.TEX_Depth, 1u);
+    context.bind_texture(renderer.TEX_Depth, 1u);
 
     for (const ParticleSetInfo& info : mParticleSetInfo)
     {
         if (info.vertexCount == 0u) continue;
 
-        //context.bind_Texture(info.texture.get(), 0u);
-        gl::DrawArrays(gl::POINTS, info.startIndex, info.vertexCount);
+        //context.bind_texture(info.texture.get(), 0u);
+        context.draw_arrays(sq::DrawPrimitive::Points, info.startIndex, info.vertexCount);
     }
 }

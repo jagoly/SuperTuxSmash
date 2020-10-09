@@ -1,0 +1,45 @@
+{
+  "general": {
+    "inner_boundary_min": [ -14.0, -6.0 ],
+    "inner_boundary_max": [ 14.0, 14.0 ],
+    "outer_boundary_min": [ -18.0, -10.0 ],
+    "outer_boundary_max": [ 18.0, 18.0 ]
+  },
+  "blocks": {
+    "Main": {
+      "minimum": [ -8.0, -1.0 ],
+      "maximum": [ 8.0, 0.0 ]
+    },
+    "Top": {
+      "minimum": [ -0.5, 6.5 ],
+      "maximum": [ 0.5, 7.5 ]
+    }
+  },
+  "ledges": {
+    "Left": {
+      "position": [ -8.0, 0.0 ],
+      "direction": -1
+    },
+    "Right": {
+      "position": [ 8.0, 0.0 ],
+      "direction": 1
+    }
+  },
+  "platforms": {
+    "Left": {
+      "originY": 2.5,
+      "minX": -5.3,
+      "maxX": -1.7
+    },
+    "Right": {
+      "originY": 2.5,
+      "minX": 1.7,
+      "maxX": 5.3
+    },
+    "Middle": {
+      "originY": 5.0,
+      "minX": -1.8,
+      "maxX": 1.8
+    }
+  }
+}
