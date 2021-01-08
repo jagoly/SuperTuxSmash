@@ -39,6 +39,7 @@ class Fighter;
 class ParticleSystem;
 class RenderObject;
 class Renderer;
+class ResourceCaches;
 class SmashApp;
 class Stage;
 
@@ -47,7 +48,6 @@ struct GameSetup;
 struct HitBlob;
 struct HurtBlob;
 struct Options;
-struct ResourceCaches;
 struct SoundEffect;
 struct VisualEffect;
 

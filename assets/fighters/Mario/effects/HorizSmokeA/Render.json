@@ -47,28 +47,28 @@
       "pass": "Transparent"
     },
     {
-      "condition": "",
+      "condition": null,
       "material": "shock123",
       "mesh": "",
       "submesh": 1,
       "pass": "Transparent"
     },
     {
-      "condition": "",
+      "condition": null,
       "material": "shock4",
       "mesh": "",
       "submesh": 2,
       "pass": "Transparent"
     },
     {
-      "condition": "",
+      "condition": null,
       "material": "shock123",
       "mesh": "",
       "submesh": 3,
       "pass": "Transparent"
     },
     {
-      "condition": "",
+      "condition": null,
       "material": "storm",
       "mesh": "",
       "submesh": 4,

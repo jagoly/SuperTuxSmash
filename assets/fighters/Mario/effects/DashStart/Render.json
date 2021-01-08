@@ -39,14 +39,14 @@
       "pass": "Transparent"
     },
     {
-      "condition": "",
+      "condition": null,
       "material": "dash",
       "mesh": "",
       "submesh": 1,
       "pass": "Transparent"
     },
     {
-      "condition": "",
+      "condition": null,
       "material": "storm",
       "mesh": "",
       "submesh": 2,

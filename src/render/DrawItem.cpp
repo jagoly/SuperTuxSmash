@@ -49,7 +49,7 @@ std::vector<DrawItemDef> DrawItemDef::load_from_json(const String& path, Resourc
         if (auto& condition = jobj.at("condition"); !condition.is_null())
         {
             StringView sv = condition.get_ref<const String&>();
-            def.invertCondition = (sv.front() == '!');
+            def.invertCondition = (!sv.empty() && sv.front() == '!');
             if (def.invertCondition) sv.remove_prefix(1u);
             def.condition = sv;
         }
