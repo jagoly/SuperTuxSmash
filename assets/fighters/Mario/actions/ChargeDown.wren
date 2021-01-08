@@ -4,6 +4,7 @@ class Script is ScriptBase {
   construct new(a, f) { super(a, f) }
 
   execute() {
+
     wait_until(2)
     action.set_flag_AllowNext()
 

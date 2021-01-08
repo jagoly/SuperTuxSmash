@@ -1,23 +1,32 @@
 {
   "blobs": {},
+  "effects": {
+    "LandLight": {
+      "anchored": true,
+      "origin": [ 0.0, 0.0, 0.0 ],
+      "path": "fighters/Mario/effects/LandLight",
+      "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+      "scale": [ 0.9, 0.9, 0.9 ]
+    }
+  },
   "emitters": {
     "Ring": {
       "ballOffset": [ 0.0, 0.0 ],
       "ballSpeed": [ 0.0, 0.0 ],
-      "baseOpacity": 0.8,
-      "baseRadius": [ 0.3, 0.4 ],
+      "baseOpacity": 0.3,
+      "baseRadius": [ 0.5, 0.6 ],
       "bone": null,
       "colour": [
-        [ 1.0, 1.0, 1.0 ]
+        [ 1.0, 0.95686275, 0.87058824 ]
       ],
-      "count": 40,
-      "discIncline": [ 0.02, 0.04 ],
-      "discOffset": [ 0.05, 0.2 ],
-      "discSpeed": [ 0.06, 0.07 ],
+      "count": 12,
+      "discIncline": [ 0.03, 0.05 ],
+      "discOffset": [ 0.3, 0.5 ],
+      "discSpeed": [ 0.13, 0.15 ],
       "endOpacity": 0.0,
-      "endScale": 1.5,
-      "lifetime": [ 20, 24 ],
-      "origin": [ 0.0, -0.1, 0.0 ],
+      "endScale": 1.3,
+      "lifetime": [ 12, 16 ],
+      "origin": [ 0.0, 0.0, 0.0 ],
       "sprite": "Smoke",
       "velocity": [ 0.0, 0.0, 0.0 ]
     }

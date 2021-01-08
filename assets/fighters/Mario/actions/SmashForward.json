@@ -6,7 +6,6 @@
       "facing": "Forward",
       "flavour": "Tangy",
       "freezeFactor": 1.0,
-      "group": 0,
       "index": 0,
       "knockAngle": 0.0,
       "knockBase": 25.0,
@@ -23,7 +22,6 @@
       "facing": "Forward",
       "flavour": "Tangy",
       "freezeFactor": 1.0,
-      "group": 0,
       "index": 1,
       "knockAngle": 45.0,
       "knockBase": 25.0,
@@ -40,7 +38,6 @@
       "facing": "Forward",
       "flavour": "Sweet",
       "freezeFactor": 1.0,
-      "group": 0,
       "index": 2,
       "knockAngle": 0.0,
       "knockBase": 25.0,
@@ -50,6 +47,15 @@
       "sound": "BurnStrong",
       "useFixedKnockback": false,
       "useSakuraiAngle": true
+    }
+  },
+  "effects": {
+    "HorizSmokeA": {
+      "anchored": true,
+      "origin": [ 0.0, 0.0, 0.0 ],
+      "path": "fighters/Mario/effects/HorizSmokeA",
+      "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+      "scale": [ 1.0, 1.0, 1.0 ]
     }
   },
   "emitters": {

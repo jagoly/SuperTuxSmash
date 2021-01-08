@@ -1,12 +1,6 @@
 #pragma once
 
-#include <sqee/core/Types.hpp>
-
-//#include <sqee/gl/Textures.hpp>
-//#include <sqee/gl/Program.hpp>
-//#include <sqee/objects/Material.hpp>
-//#include <sqee/objects/Mesh.hpp>
-//#include <sqee/objects/Sound.hpp>
+#include "setup.hpp"
 
 #include <sqee/misc/ResourceCache.hpp>
 #include <sqee/misc/ResourceHandle.hpp>
@@ -19,6 +13,9 @@ class Program;
 class Material;
 class Mesh;
 class Sound;
+
+class AudioContext;
+class PreProcessor;
 
 } // namespace sq
 
@@ -39,5 +36,33 @@ using ProgramHandle = sq::Handle<JsonValue, sq::Program>;
 using MaterialHandle = sq::Handle<JsonValue, sq::Material>;
 using MeshHandle = sq::Handle<String, sq::Mesh>;
 using SoundHandle = sq::Handle<String, sq::Sound>;
+
+struct EffectAsset;
+using EffectCache = sq::ResourceCache<String, EffectAsset>;
+using EffectHandle = sq::Handle<String, EffectAsset>;
+
+class ResourceCaches final : sq::NonCopyable
+{
+public: //================================================//
+
+    ResourceCaches(sq::AudioContext& audio, sq::PreProcessor& processor);
+
+    ~ResourceCaches();
+
+    MeshCache meshes;
+    TextureCache textures;
+    TexArrayCache texarrays;
+
+    ProgramCache programs;
+    MaterialCache materials;
+
+    SoundCache sounds;
+    EffectCache effects;
+
+private: //===============================================//
+
+    sq::AudioContext& mAudioContext;
+    sq::PreProcessor& mPreProcessor;
+};
 
 } // namespace sts

@@ -56,8 +56,8 @@ private: //===================================================//
 
     struct BaseContext
     {
-        std::unique_ptr<FightWorld> world;
         std::unique_ptr<Renderer> renderer;
+        std::unique_ptr<FightWorld> world;
 
         Fighter* fighter;
         RenderObject* renderFighter;
@@ -98,12 +98,11 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
-    void impl_setup_docks();
-
     void impl_show_widget_toolbar();
     void impl_show_widget_navigator();
 
     void impl_show_widget_hitblobs();
+    void impl_show_widget_effects();
     void impl_show_widget_emitters();
     void impl_show_widget_sounds();
     void impl_show_widget_script();
@@ -111,6 +110,10 @@ private: //===================================================//
     void impl_show_widget_timeline();
 
     void impl_show_widget_fighter();
+
+    //--------------------------------------------------------//
+
+    static uint get_default_timeline_length(const ActionContext& ctx);
 
     //--------------------------------------------------------//
 
@@ -163,6 +166,7 @@ private: //===================================================//
 
     bool mDoResetDockNavigator = false;
     bool mDoResetDockHitblobs = false;
+    bool mDoResetDockEffects = false;
     bool mDoResetDockEmitters = false;
     bool mDoResetDockSounds = false;
     bool mDoResetDockScript = false;

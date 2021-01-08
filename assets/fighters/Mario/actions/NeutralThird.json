@@ -6,7 +6,6 @@
       "facing": "Forward",
       "flavour": "Tangy",
       "freezeFactor": 1.0,
-      "group": 0,
       "index": 0,
       "knockAngle": 0.0,
       "knockBase": 30.0,
@@ -23,7 +22,6 @@
       "facing": "Forward",
       "flavour": "Tangy",
       "freezeFactor": 1.0,
-      "group": 0,
       "index": 1,
       "knockAngle": 0.0,
       "knockBase": 30.0,
@@ -40,7 +38,6 @@
       "facing": "Forward",
       "flavour": "Tangy",
       "freezeFactor": 1.0,
-      "group": 0,
       "index": 1,
       "knockAngle": 0.0,
       "knockBase": 30.0,
@@ -52,6 +49,7 @@
       "useSakuraiAngle": true
     }
   },
+  "effects": {},
   "emitters": {},
   "sounds": {
     "KickMedium": {

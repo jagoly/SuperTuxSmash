@@ -6,7 +6,6 @@
       "facing": "Reverse",
       "flavour": "Tangy",
       "freezeFactor": 1.0,
-      "group": 0,
       "index": 0,
       "knockAngle": 0.0,
       "knockBase": 80.0,
@@ -23,7 +22,6 @@
       "facing": "Reverse",
       "flavour": "Tangy",
       "freezeFactor": 1.0,
-      "group": 0,
       "index": 1,
       "knockAngle": 0.0,
       "knockBase": 80.0,
@@ -40,7 +38,6 @@
       "facing": "Reverse",
       "flavour": "Tangy",
       "freezeFactor": 1.0,
-      "group": 0,
       "index": 2,
       "knockAngle": 0.0,
       "knockBase": 80.0,
@@ -57,7 +54,6 @@
       "facing": "Forward",
       "flavour": "Tangy",
       "freezeFactor": 1.0,
-      "group": 1,
       "index": 0,
       "knockAngle": 45.0,
       "knockBase": 80.0,
@@ -74,7 +70,6 @@
       "facing": "Forward",
       "flavour": "Tangy",
       "freezeFactor": 1.0,
-      "group": 1,
       "index": 1,
       "knockAngle": 0.0,
       "knockBase": 80.0,
@@ -91,7 +86,6 @@
       "facing": "Forward",
       "flavour": "Tangy",
       "freezeFactor": 1.0,
-      "group": 1,
       "index": 2,
       "knockAngle": 0.0,
       "knockBase": 80.0,
@@ -103,6 +97,7 @@
       "useSakuraiAngle": true
     }
   },
+  "effects": {},
   "emitters": {},
   "sounds": {
     "KickMedium": {

@@ -38,7 +38,7 @@ DebugRenderer::DebugRenderer(Renderer& renderer) : renderer(renderer)
 
 void DebugRenderer::refresh_options()
 {
-    const auto& processor = renderer.processor;
+    sq::PreProcessor& processor = renderer.processor;
 
     //-- Load GLSL Shader Sources ----------------------------//
 

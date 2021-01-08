@@ -6,7 +6,6 @@
       "facing": "Forward",
       "flavour": "Tangy",
       "freezeFactor": 1.0,
-      "group": 0,
       "index": 0,
       "knockAngle": 60.0,
       "knockBase": 100.0,
@@ -23,7 +22,6 @@
       "facing": "Forward",
       "flavour": "Sour",
       "freezeFactor": 1.0,
-      "group": 1,
       "index": 0,
       "knockAngle": 110.0,
       "knockBase": 100.0,
@@ -35,6 +33,7 @@
       "useSakuraiAngle": false
     }
   },
+  "effects": {},
   "emitters": {},
   "sounds": {
     "KickMedium": {

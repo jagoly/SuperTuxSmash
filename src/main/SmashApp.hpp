@@ -8,6 +8,7 @@
 #include <sqee/app/InputDevices.hpp> // IWYU pragma: export
 #include <sqee/app/DebugOverlay.hpp> // IWYU pragma: export
 #include <sqee/app/AudioContext.hpp> // IWYU pragma: export
+#include <sqee/app/PreProcessor.hpp> // IWYU pragma: export
 #include <sqee/app/Scene.hpp> // IWYU pragma: export
 
 namespace sts {
@@ -36,8 +37,10 @@ public: //====================================================//
     sq::InputDevices& get_input_devices() { return *mInputDevices; }
     sq::DebugOverlay& get_debug_overlay() { return *mDebugOverlay; }
     sq::AudioContext& get_audio_context() { return *mAudioContext; }
+    sq::PreProcessor& get_pre_processor() { return *mPreProcessor; }
 
     Options& get_options() { return *mOptions; }
+    ResourceCaches& get_resource_caches() { return *mResourceCaches; }
 
 private: //===================================================//
 
@@ -57,8 +60,10 @@ private: //===================================================//
     std::unique_ptr<sq::InputDevices> mInputDevices;
     std::unique_ptr<sq::DebugOverlay> mDebugOverlay;
     std::unique_ptr<sq::AudioContext> mAudioContext;
+    std::unique_ptr<sq::PreProcessor> mPreProcessor;
 
     std::unique_ptr<Options> mOptions;
+    std::unique_ptr<ResourceCaches> mResourceCaches;
 
     std::unique_ptr<sq::Scene> mActiveScene;
 };

@@ -1,0 +1,78 @@
+{
+  "assets": {
+    "meshes": {
+      "": "fighters/Mario/effects/HorizSmokeA/Mesh"
+    },
+    "textures": {
+      "eff_cmn_shockC": "fighters/Mario/textures/effects/eff_cmn_shockC",
+      "eff_cmn_smokeB": "fighters/Mario/textures/effects/eff_cmn_smokeB",
+      "eff_cmn_stormsomke": "fighters/Mario/textures/effects/eff_cmn_stormsomke"
+    },
+    "programs": {
+      "": {
+        "path": "super/BasicEffect",
+        "options": {}
+      }
+    },
+    "materials": {
+      "shock123": {
+        "cullface": "disable",
+        "program": "",
+        "uniforms": {
+          "tx_Colour": "eff_cmn_smokeB"
+        }
+      },
+      "shock4": {
+        "cullface": "disable",
+        "program": "",
+        "uniforms": {
+          "tx_Colour": "eff_cmn_shockC"
+        }
+      },
+      "storm": {
+        "cullface": "disable",
+        "program": "",
+        "uniforms": {
+          "tx_Colour": "eff_cmn_stormsomke"
+        }
+      }
+    }
+  },
+  "items": [
+    {
+      "condition": null,
+      "material": "shock123",
+      "mesh": "",
+      "submesh": 0,
+      "pass": "Transparent"
+    },
+    {
+      "condition": "",
+      "material": "shock123",
+      "mesh": "",
+      "submesh": 1,
+      "pass": "Transparent"
+    },
+    {
+      "condition": "",
+      "material": "shock4",
+      "mesh": "",
+      "submesh": 2,
+      "pass": "Transparent"
+    },
+    {
+      "condition": "",
+      "material": "shock123",
+      "mesh": "",
+      "submesh": 3,
+      "pass": "Transparent"
+    },
+    {
+      "condition": "",
+      "material": "storm",
+      "mesh": "",
+      "submesh": 4,
+      "pass": "Transparent"
+    }
+  ]
+}

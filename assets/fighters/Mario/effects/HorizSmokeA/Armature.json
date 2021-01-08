@@ -1,0 +1,44 @@
+[
+  {
+    "name": "TopN",
+    "parent": null,
+    "offset": [ 0.0, 0.0, 0.0 ],
+    "rotation": [ 0.0, -0.70711, -0.70711, 0.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "shock_smokeA",
+    "parent": "TopN",
+    "offset": [ 0.0, 0.0, 0.0 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "shock_smokeB",
+    "parent": "TopN",
+    "offset": [ 0.0, 0.0, 0.0 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "shock_smokeC",
+    "parent": "TopN",
+    "offset": [ 0.0, 0.0, 0.0 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "shock_smokeD",
+    "parent": "TopN",
+    "offset": [ 0.0, 0.0, 0.0 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  },
+  {
+    "name": "stormsmoke",
+    "parent": "TopN",
+    "offset": [ 0.0, 0.0, 0.0 ],
+    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+    "scale": [ 1.0, 1.0, 1.0 ]
+  }
+]

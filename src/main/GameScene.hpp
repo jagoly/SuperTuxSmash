@@ -33,9 +33,9 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
-    std::unique_ptr<FightWorld> mFightWorld;
-
     std::unique_ptr<Renderer> mRenderer;
+
+    std::unique_ptr<FightWorld> mFightWorld;
 
     std::array<std::unique_ptr<Controller>, 4> mControllers;
 

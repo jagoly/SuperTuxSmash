@@ -5,8 +5,8 @@
 #include "render/Camera.hpp"
 #include "render/DebugRender.hpp"
 #include "render/ParticleRender.hpp"
-#include "render/RenderObject.hpp"
 
+#include <sqee/app/PreProcessor.hpp>
 #include <sqee/debug/Assert.hpp>
 #include <sqee/gl/Context.hpp>
 #include <sqee/misc/Files.hpp>
@@ -18,58 +18,13 @@ using namespace sts;
 
 //============================================================================//
 
-Renderer::Renderer(const Options& options) : context(sq::Context::get()), options(options)
+Renderer::Renderer(const Options& options, sq::PreProcessor& processor, ResourceCaches& caches)
+    : context(sq::Context::get()), options(options), processor(processor), caches(caches)
 {
-    meshes.assign_factory([](const String& key)
-    {
-        auto result = std::make_unique<sq::Mesh>();
-        result->load_from_file(sq::build_string("assets/", key, ".sqm"), true);
-        return result;
-    });
-
-    textures.assign_factory([](const String& key)
-    {
-        auto result = std::make_unique<sq::Texture2D>();
-        result->load_automatic(sq::build_string("assets/", key));
-        return result;
-    });
-
-    texarrays.assign_factory([](const String& key)
-    {
-        auto result = std::make_unique<sq::TextureArray>();
-        result->load_automatic(sq::build_string("assets/", key));
-        return result;
-    });
-
-    programs.assign_factory([this](const JsonValue& key)
-    {
-        auto result = std::make_unique<sq::Program>();
-        processor.load_super_shader(*result, sq::build_string("shaders/", key.at("path"), ".glsl"), key.at("options"));
-        return result;
-    });
-
-    materials.assign_factory([this](const JsonValue& key)
-    {
-        auto result = std::make_unique<sq::Material>();
-        result->load_from_json(key, programs, textures);
-        return result;
-    });
-
-    //-- Import GLSL Headers ---------------------------------//
-
-    processor.import_header("headers/blocks/Camera");
-    processor.import_header("headers/blocks/Light");
-    processor.import_header("headers/blocks/Skelly");
-    processor.import_header("headers/blocks/Static");
-
-    //-- Create Uniform Buffers ------------------------------//
-
-    mLightUbo.allocate_dynamic(112u);
-
-    //--------------------------------------------------------//
-
     mDebugRenderer = std::make_unique<DebugRenderer>(*this);
     mParticleRenderer = std::make_unique<ParticleRenderer>(*this);
+
+    mLightUbo.allocate_dynamic(112u);
 }
 
 Renderer::~Renderer() = default;
@@ -153,19 +108,41 @@ void Renderer::set_camera(std::unique_ptr<Camera> camera)
     mCamera = std::move(camera);
 }
 
-void Renderer::add_object(std::unique_ptr<RenderObject> object)
+//============================================================================//
+
+int64_t Renderer::create_draw_items(const std::vector<DrawItemDef>& defs, const sq::FixedBuffer* ubo,
+                                    std::map<TinyString, const bool*> conditions)
 {
-    mRenderObjects.push_back(std::move(object));
+    const int64_t groupId = ++mCurrentGroupId;
+
+    for (const DrawItemDef& def : defs)
+    {
+        DrawItem& item = mDrawItems.emplace_back();
+
+        if (def.condition.empty() == false)
+            item.condition = conditions.at(def.condition);
+        else item.condition = nullptr;
+
+        item.material = def.material;
+        item.mesh = def.mesh;
+
+        item.pass = def.pass;
+        item.invertCondition = def.invertCondition;
+        item.subMesh = def.subMesh;
+
+        item.ubo = ubo;
+        item.groupId = groupId;
+    }
+
+    // todo: sort draw items here
+
+    return groupId;
 }
 
-std::unique_ptr<RenderObject> Renderer::remove_object(RenderObject* ptr)
+void Renderer::delete_draw_items(int64_t groupId)
 {
-    const auto predicate = [ptr](auto& item) { return item.get() == ptr; };
-    const auto iter = algo::find_if(mRenderObjects, predicate);
-    SQASSERT(iter != mRenderObjects.end(), "invalid ptr for remove");
-    auto result = std::move(*iter);
-    mRenderObjects.erase(iter);
-    return result;
+    const auto predicate = [groupId](DrawItem& item) { return item.groupId == groupId; };
+    algo::erase_if(mDrawItems, predicate);
 }
 
 //============================================================================//
@@ -203,11 +180,6 @@ void Renderer::render_objects(float blend)
 
     mLightUbo.update(0u, sq::Structure(ambiColour, 0, skyColour, 0, skyDirection, 0, skyMatrix));
 
-    //-- Integrate Object Changes ----------------------------//
-
-    for (const auto& object : mRenderObjects)
-        object->integrate(blend);
-
     //-- Setup Shared Rendering State ------------------------//
 
     context.set_ViewPort(options.window_size);
@@ -233,19 +205,56 @@ void Renderer::render_objects(float blend)
     context.bind_vertexarray_dummy();
     context.draw_arrays(sq::DrawPrimitive::TriangleStrip, 0u, 4u);
 
+    //--------------------------------------------------------//
+
+    const auto render_items_for_draw_pass = [&](DrawPass pass)
+    {
+        const sq::Material* prevMtrl = nullptr;
+        const sq::FixedBuffer* prevUbo = nullptr;
+        const sq::Mesh* prevMesh = nullptr;
+
+        for (const DrawItem& item : mDrawItems)
+        {
+            // skip item if wrong pass or condition not satisfied
+            if (item.pass != pass || (item.condition && *item.condition == item.invertCondition))
+                continue;
+
+            if (prevMtrl != &item.material.get())
+                item.material->apply_to_context(context),
+                    prevMtrl = &item.material.get();
+
+            if (prevUbo != item.ubo)
+                context.bind_buffer(*item.ubo, sq::BufTarget::Uniform, 2u),
+                    prevUbo = item.ubo;
+
+            if (prevMesh != &item.mesh.get())
+                item.mesh->apply_to_context(context);
+                    prevMesh = &item.mesh.get();
+
+            if (item.subMesh < 0) item.mesh->draw_complete(context);
+            else item.mesh->draw_submesh(context, uint(item.subMesh));
+        }
+    };
+
     //-- Render Opaque Pass ----------------------------------//
 
     context.bind_framebuffer(FB_MsMain);
 
-    for (const auto& object : mRenderObjects)
-        object->render_opaque();
+    context.set_state(sq::DepthTest::Replace);
+    context.set_depth_compare(sq::CompareFunc::LessEqual);
+
+    render_items_for_draw_pass(DrawPass::Opaque);
 
     //-- Render Transparent Pass -----------------------------//
 
     context.bind_framebuffer(FB_MsMain);
 
-    for (const auto& object : mRenderObjects)
-        object->render_transparent();
+    context.set_state(sq::DepthTest::Keep);
+    context.set_state(sq::BlendMode::Alpha);
+    context.set_state(sq::CullFace::Disable);
+    context.set_depth_compare(sq::CompareFunc::LessEqual);
+
+    render_items_for_draw_pass(DrawPass::Transparent);
 }
 
 //============================================================================//

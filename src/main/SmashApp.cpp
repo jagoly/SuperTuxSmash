@@ -1,6 +1,7 @@
 #include "main/SmashApp.hpp"
 
 #include "main/Options.hpp"
+#include "main/Resources.hpp"
 
 #include "editor/EditorScene.hpp"
 #include "main/GameScene.hpp"
@@ -31,8 +32,11 @@ void SmashApp::initialise(std::vector<String> /*args*/)
     mInputDevices = std::make_unique<sq::InputDevices>(*mWindow);
     mDebugOverlay = std::make_unique<sq::DebugOverlay>();
     mAudioContext = std::make_unique<sq::AudioContext>();
+    mPreProcessor = std::make_unique<sq::PreProcessor>();
 
     mOptions = std::make_unique<Options>();
+
+    mResourceCaches = std::make_unique<ResourceCaches>(*mAudioContext, *mPreProcessor);
 
     sq::GuiSystem::construct(*mWindow, *mInputDevices);
     sq::GuiSystem::get().set_style_widgets_supertux();

@@ -13,8 +13,6 @@
 #include "render/DebugRender.hpp"
 #include "render/Renderer.hpp"
 #include "render/StandardCamera.hpp"
-#include "render/RenderFighter.hpp"
-#include "render/RenderStage.hpp"
 
 #include <sqee/app/GuiWidgets.hpp>
 #include <sqee/debug/Text.hpp>
@@ -31,7 +29,15 @@ GameScene::GameScene(SmashApp& smashApp, GameSetup setup)
 
     //--------------------------------------------------------//
 
-    auto& options = mSmashApp.get_options();
+    sq::Window& window = mSmashApp.get_window();
+    sq::InputDevices& inputDevices = mSmashApp.get_input_devices();
+    sq::AudioContext& audioContext = mSmashApp.get_audio_context();
+    sq::PreProcessor& preProcessor = mSmashApp.get_pre_processor();
+
+    Options& options = mSmashApp.get_options();
+    ResourceCaches& resourceCaches = mSmashApp.get_resource_caches();
+
+    //--------------------------------------------------------//
 
     options.render_hit_blobs = false;
     options.render_hurt_blobs = false;
@@ -40,7 +46,7 @@ GameScene::GameScene(SmashApp& smashApp, GameSetup setup)
 
     options.editor_mode = false;
 
-    auto& window = mSmashApp.get_window();
+    //--------------------------------------------------------//
 
     window.set_key_repeat(false);
 
@@ -57,12 +63,10 @@ GameScene::GameScene(SmashApp& smashApp, GameSetup setup)
 
     //--------------------------------------------------------//
 
-    mFightWorld = std::make_unique<FightWorld>(options, mSmashApp.get_audio_context());
-    mRenderer = std::make_unique<Renderer>(options);
+    mRenderer = std::make_unique<Renderer>(options, preProcessor, resourceCaches);
+    mFightWorld = std::make_unique<FightWorld>(options, audioContext, resourceCaches, *mRenderer);
 
     mRenderer->set_camera(std::make_unique<StandardCamera>(*mRenderer));
-
-    auto& inputDevices = mSmashApp.get_input_devices();
 
     for (uint8_t index = 0u; index < MAX_FIGHTERS; ++index)
         mControllers[index] = std::make_unique<Controller>(inputDevices, "config/player{}.json"_format(index+1u));
@@ -70,10 +74,8 @@ GameScene::GameScene(SmashApp& smashApp, GameSetup setup)
     //--------------------------------------------------------//
 
     auto stage = std::make_unique<Stage>(*mFightWorld, setup.stage);
-    auto renderStage = std::make_unique<RenderStage>(*mRenderer, *stage);;
 
     mFightWorld->set_stage(std::move(stage));
-    mRenderer->add_object(std::move(renderStage));
 
     //--------------------------------------------------------//
 
@@ -82,12 +84,10 @@ GameScene::GameScene(SmashApp& smashApp, GameSetup setup)
         if (setup.players[index].enabled == false) continue;
 
         auto fighter = std::make_unique<Fighter>(*mFightWorld, setup.players[index].fighter, index);
-        auto renderFighter = std::make_unique<RenderFighter>(*mRenderer, *fighter);
 
         fighter->set_controller(mControllers[index].get());
 
         mFightWorld->add_fighter(std::move(fighter));
-        mRenderer->add_object(std::move(renderFighter));
     }
 
     mFightWorld->finish_setup();
@@ -147,6 +147,8 @@ void GameScene::update()
 void GameScene::render(double /*elapsed*/)
 {
     const float blend = float(mAccumulation / mTickTime);
+
+    mFightWorld->integrate(blend);
 
     mRenderer->render_objects(blend);
 
@@ -251,7 +253,7 @@ void GameScene::impl_show_general_window()
             ImPlus::RadioButton("0.125×", mTickTime, 1.0 / 6.0);
             ImPlus::RadioButton("0.25×", mTickTime, 1.0 / 12.0);
             ImPlus::RadioButton("0.5×", mTickTime, 1.0 / 24.0);
-            ImPlus::RadioButton("1×", mTickTime, 1.0 / 48.0);
+            ImPlus::RadioButton("1× (48fps)", mTickTime, 1.0 / 48.0);
             ImPlus::RadioButton("2×", mTickTime, 1.0 / 96.0);
         });
         ImPlus::HoverTooltip("change game speed");

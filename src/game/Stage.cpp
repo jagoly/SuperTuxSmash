@@ -1,6 +1,11 @@
 #include "game/Stage.hpp"
 
+#include "game/FightWorld.hpp"
 #include "game/Fighter.hpp"
+
+#include "render/Renderer.hpp"
+#include "render/UniformBlocks.hpp"
+#include "render/Camera.hpp"
 
 #include <sqee/maths/Culling.hpp>
 #include <sqee/misc/Json.hpp>
@@ -12,8 +17,10 @@ using namespace sts;
 Stage::Stage(FightWorld& world, StageEnum type)
     : world(world), type(type)
 {
-    const String path = sq::build_string("assets/stages/", sq::enum_to_string(type), "/Stage.json");
-    const JsonValue json = sq::parse_json_from_file(path);
+    mStaticUbo.allocate_dynamic(sizeof(StaticBlock));
+
+    const String path = sq::build_string("assets/stages/", sq::enum_to_string(type));
+    const JsonValue json = sq::parse_json_from_file(path + "/Stage.json");
 
     const JsonValue& general = json.at("general");
     mInnerBoundary.min = general.at("inner_boundary_min");
@@ -42,6 +49,9 @@ Stage::Stage(FightWorld& world, StageEnum type)
         platform.minX = jplatform.at("minX");
         platform.maxX = jplatform.at("maxX");
     }
+
+    world.renderer.create_draw_items(DrawItemDef::load_from_json(path + "/Render.json", world.caches),
+                                     &mStaticUbo, {});
 }
 
 Stage::~Stage() = default;
@@ -50,6 +60,18 @@ Stage::~Stage() = default;
 
 void Stage::tick()
 {
+}
+
+//============================================================================//
+
+void Stage::integrate(float /*blend*/)
+{
+    StaticBlock block;
+
+    block.matrix = world.renderer.get_camera().get_combo_matrix();
+    block.normMat = Mat34F(maths::normal_matrix(world.renderer.get_camera().get_view_matrix()));
+
+    mStaticUbo.update(0u, block);
 }
 
 //============================================================================//

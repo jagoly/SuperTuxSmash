@@ -4,7 +4,8 @@
 
 #include "main/Resources.hpp"
 
-#include <sqee/app/PreProcessor.hpp>
+#include "render/DrawItem.hpp"
+
 #include <sqee/gl/FixedBuffer.hpp>
 #include <sqee/gl/FrameBuffer.hpp>
 #include <sqee/gl/Program.hpp>
@@ -25,9 +26,21 @@ class Renderer final : sq::NonCopyable
 {
 public: //====================================================//
 
-    Renderer(const Options& options);
+    Renderer(const Options& options, sq::PreProcessor& processor, ResourceCaches& caches);
 
     ~Renderer();
+
+    //--------------------------------------------------------//
+
+    sq::Context& context;
+
+    const Options& options;
+
+    sq::PreProcessor& processor;
+
+    ResourceCaches& caches;
+
+    //--------------------------------------------------------//
 
     void refresh_options();
 
@@ -41,9 +54,12 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    void add_object(std::unique_ptr<RenderObject> object);
+    /// Create some DrawItems from a vector of definitions.
+    int64_t create_draw_items(const std::vector<DrawItemDef>& defs, const sq::FixedBuffer* ubo,
+                              std::map<TinyString, const bool*> conditions);
 
-    std::unique_ptr<RenderObject> remove_object(RenderObject* ptr);
+    /// Delete all DrawItems with the given group id.
+    void delete_draw_items(int64_t groupId);
 
     //--------------------------------------------------------//
 
@@ -73,36 +89,18 @@ public: //====================================================//
     sq::Program PROG_Lighting_Skybox;
     sq::Program PROG_Composite;
 
-    //--------------------------------------------------------//
-
-    // todo: These should be shared between all renderers, to reduce memory usage and loading time for the editor.
-    //       We could share the fbos/textures/shaders above as well, unless we want a split viewports feature.
-
-    sq::PreProcessor processor;
-
-    MeshCache meshes;
-    TextureCache textures;
-    TexArrayCache texarrays;
-
-    ProgramCache programs;
-    MaterialCache materials;
-
-    //--------------------------------------------------------//
-
-    sq::Context& context;
-
-    const Options& options;
-
 private: //===================================================//
-
-    sq::FixedBuffer mLightUbo;
 
     std::unique_ptr<Camera> mCamera;
 
-    std::vector<std::unique_ptr<RenderObject>> mRenderObjects;
-
     std::unique_ptr<DebugRenderer> mDebugRenderer;
     std::unique_ptr<ParticleRenderer> mParticleRenderer;
+
+    sq::FixedBuffer mLightUbo;
+
+    std::vector<DrawItem> mDrawItems;
+
+    int64_t mCurrentGroupId = -1;
 };
 
 //============================================================================//

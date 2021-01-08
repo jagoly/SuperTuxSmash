@@ -52,17 +52,19 @@
       }
     }
   },
-  "pass_opaque": [
+  "items": [
     {
       "condition": null,
       "material": "Main",
       "mesh": "",
+      "pass": "Opaque",
       "submesh": 0
     },
     {
       "condition": null,
       "material": "Hair",
       "mesh": "",
+      "pass": "Opaque",
       "submesh": 1
     }
   ]

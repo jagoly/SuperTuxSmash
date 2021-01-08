@@ -5,6 +5,9 @@ class Script is ScriptBase {
 
   execute() {
 
+    wait_until(5)
+    action.play_effect("HorizSmokeA")
+
     wait_until(9)
     action.play_sound("SwingExtra")
     action.play_sound("SwingFire")

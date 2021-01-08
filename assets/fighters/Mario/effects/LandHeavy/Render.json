@@ -1,0 +1,49 @@
+{
+  "assets": {
+    "meshes": {
+      "": "fighters/Mario/effects/LandHeavy/Mesh"
+    },
+    "textures": {
+      "eff_cmn_smokeA": "fighters/Mario/textures/effects/eff_cmn_smokeA",
+      "eff_cmn_smokeB": "fighters/Mario/textures/effects/eff_cmn_smokeB"
+    },
+    "programs": {
+      "": {
+        "path": "super/BasicEffect",
+        "options": {}
+      }
+    },
+    "materials": {
+      "smokeB": {
+        "cullface": "disable",
+        "program": "",
+        "uniforms": {
+          "tx_Colour": "eff_cmn_smokeB"
+        }
+      },
+      "down_shock": {
+        "cullface": "disable",
+        "program": "",
+        "uniforms": {
+          "tx_Colour": "eff_cmn_smokeA"
+        }
+      }
+    }
+  },
+  "items": [
+    {
+      "condition": null,
+      "material": "smokeB",
+      "mesh": "",
+      "pass": "Transparent",
+      "submesh": 0
+    },
+    {
+      "condition": null,
+      "material": "down_shock",
+      "mesh": "",
+      "pass": "Transparent",
+      "submesh": 1
+    }
+  ]
+}

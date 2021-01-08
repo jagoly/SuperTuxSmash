@@ -63,6 +63,8 @@ public: //====================================================//
 
     void wren_disable_hitblobs();
 
+    void wren_play_effect(TinyString key);
+
     void wren_emit_particles(TinyString key);
 
     void wren_play_sound(TinyString key);
@@ -93,6 +95,8 @@ private: //===================================================//
     //--------------------------------------------------------//
 
     std::pmr::map<TinyString, HitBlob> mBlobs;
+
+    std::pmr::map<TinyString, VisualEffect> mEffects;
 
     std::pmr::map<TinyString, Emitter> mEmitters;
 

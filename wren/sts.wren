@@ -7,6 +7,7 @@ foreign class Action {
   foreign enable_hitblobs(prefix)
   foreign disable_hitblobs()
   foreign emit_particles(key)
+  foreign play_effect(key)
   foreign play_sound(key)
   foreign cancel_sound(key)
   foreign set_flag_AllowNext()

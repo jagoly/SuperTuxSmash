@@ -4,6 +4,7 @@
 
 #include "game/Action.hpp"
 #include "game/Controller.hpp"
+#include "game/EffectSystem.hpp"
 #include "game/Fighter.hpp"
 #include "game/HitBlob.hpp"
 #include "game/HurtBlob.hpp"
@@ -13,23 +14,16 @@
 #include <sqee/debug/Assert.hpp>
 #include <sqee/maths/Culling.hpp>
 #include <sqee/misc/Files.hpp>
-#include <sqee/objects/Sound.hpp>
 
 using namespace sts;
 
+// todo: move collision stuff to a separate CollisionSystem class
+
 //============================================================================//
 
-FightWorld::FightWorld(const Options& options, sq::AudioContext& audio)
-    : options(options), audio(audio)
+FightWorld::FightWorld(const Options& options, sq::AudioContext& audio, ResourceCaches& caches, Renderer& renderer)
+    : options(options), audio(audio), caches(caches), renderer(renderer)
 {
-    sounds.assign_factory([this](String key)
-    {
-        auto path = sq::compute_resource_path(key, {"assets/"}, {".wav", ".flac"});
-        auto result = std::make_unique<sq::Sound>(this->audio);
-        result->load_from_file(path);
-        return result;
-    });
-
     if (options.editor_mode == false)
     {
         // four fighters currently uses less than 64KB, so 1MB is heaps... hehehe heap
@@ -43,11 +37,9 @@ FightWorld::FightWorld(const Options& options, sq::AudioContext& audio)
     vm.add_foreign_method<&Action::wren_set_wait_until>("set_wait_until(_)");
     vm.add_foreign_method<&Action::wren_allow_interrupt>("allow_interrupt()");
     vm.add_foreign_method<&Action::wren_enable_hitblobs>("enable_hitblobs(_)");
-    //vm.add_foreign_method<&Action::wren_disable_hitblob_group>("disable_hitblob_group(_)");
-    //vm.add_foreign_method<&Action::wren_enable_hitblob>("enable_hitblob(_)");
-    //vm.add_foreign_method<&Action::wren_disable_hitblob>("disable_hitblob(_)");
     vm.add_foreign_method<&Action::wren_disable_hitblobs>("disable_hitblobs()");
     vm.add_foreign_method<&Action::wren_emit_particles>("emit_particles(_)");
+    vm.add_foreign_method<&Action::wren_play_effect>("play_effect(_)");
     vm.add_foreign_method<&Action::wren_play_sound>("play_sound(_)");
     vm.add_foreign_method<&Action::wren_cancel_sound>("cancel_sound(_)");
     vm.add_foreign_method<&Action::wren_set_flag_AllowNext>("set_flag_AllowNext()");
@@ -65,6 +57,8 @@ FightWorld::FightWorld(const Options& options, sq::AudioContext& audio)
     handles.script_cancel = wrenMakeCallHandle(vm, "cancel()");
     handles.fiber_call = wrenMakeCallHandle(vm, "call()");
     handles.fiber_isDone = wrenMakeCallHandle(vm, "isDone");
+
+    mEffectSystem = std::make_unique<EffectSystem>(renderer);
 
     mParticleSystem = std::make_unique<ParticleSystem>();
 }
@@ -116,20 +110,31 @@ void FightWorld::tick()
     mStage->tick();
 
     for (auto& fighter : mFighters)
-    {
         if (fighter != nullptr)
             fighter->tick();
-    }
+
+    mEffectSystem->tick();
 
     impl_update_collisions();
 
     for (auto& fighter : mFighters)
-    {
         if (fighter != nullptr)
             mStage->check_boundary(*fighter);
-    }
 
     mParticleSystem->update_and_clean();
+}
+
+//============================================================================//
+
+void FightWorld::integrate(float blend)
+{
+    mStage->integrate(blend);
+
+    for (auto& fighter : mFighters)
+        if (fighter != nullptr)
+            fighter->integrate(blend);
+
+    mEffectSystem->integrate(blend);
 }
 
 //============================================================================//
@@ -170,7 +175,6 @@ void FightWorld::impl_update_collisions()
 
             // check if the hit fighter already hit the hurt fighter
             if (mIgnoreCollisions[hit->action->fighter.index][hurt->fighter->index]) continue;
-            //if (mHitBlobGroups[hit->action->fighter.index][hit->group][hurt->fighter->index]) continue;
 
             // add the collision to the appropriate vector
             mCollisions[hurt->fighter->index].push_back({*hit, *hurt});
@@ -201,7 +205,6 @@ void FightWorld::impl_update_collisions()
     {
         if (champ == nullptr) continue;
         mIgnoreCollisions[champ->hit.action->fighter.index][champ->hurt.fighter->index] = true;
-        //mHitBlobGroups[champ->hit.action->fighter.index][champ->hit.group][champ->hurt.fighter->index] = true;
         champ->hurt.fighter->apply_hit_generic(champ->hit, champ->hurt);
     }
 
@@ -299,15 +302,8 @@ void FightWorld::editor_clear_hurtblobs()
 
 void FightWorld::reset_collisions(uint8_t fighter/*, uint8_t group*/)
 {
-    //mHitBlobGroups[fighter][group].fill(false);
     mIgnoreCollisions[fighter].fill(false);
 }
-
-//void FightWorld::reset_all_collisions(uint8_t fighter)
-//{
-//    for (auto& group : mHitBlobGroups[fighter])
-//        group.fill(false);
-//}
 
 //============================================================================//
 

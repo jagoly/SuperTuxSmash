@@ -5,6 +5,7 @@
 #include "main/SmashApp.hpp"
 
 #include "game/Action.hpp"
+#include "game/EffectSystem.hpp"
 #include "game/Emitter.hpp"
 #include "game/FightWorld.hpp"
 #include "game/Fighter.hpp"
@@ -13,12 +14,10 @@
 #include "game/ParticleSystem.hpp"
 #include "game/SoundEffect.hpp"
 #include "game/Stage.hpp"
+#include "game/VisualEffect.hpp"
 
 #include "render/DebugRender.hpp"
-#include "render/RenderObject.hpp"
 #include "render/Renderer.hpp"
-#include "render/RenderFighter.hpp"
-#include "render/RenderStage.hpp"
 
 #include "editor/EditorCamera.hpp"
 
@@ -34,7 +33,7 @@ using namespace sts;
 
 //============================================================================//
 
-constexpr const float WIDTH_EDITORS   = 520.f;
+constexpr const float WIDTH_EDITORS   = 540.f;
 constexpr const float HEIGHT_TIMELINE = 80.f;
 constexpr const float WIDTH_NAVIGATOR = 240.f;
 
@@ -90,10 +89,10 @@ void EditorScene::handle_event(sq::Event event)
 
         if (event.data.keyboard.ctrl && event.data.keyboard.key == sq::Keyboard_Key::S)
         {
-            if (mActiveActionContext != nullptr)
+            if (mActiveActionContext && mActiveActionContext->modified)
                 save_changes(*mActiveActionContext);
 
-            if (mActiveHurtblobsContext != nullptr)
+            if (mActiveHurtblobsContext && mActiveHurtblobsContext->modified)
                 save_changes(*mActiveHurtblobsContext);
         }
     }
@@ -181,6 +180,8 @@ void EditorScene::render(double /*elapsed*/)
 
     const float blend = mPreviewMode == PreviewMode::Pause ? mBlendValue : float(mAccumulation / mTickTime);
 
+    ctx.world->integrate(blend);
+
     ctx.renderer->render_objects(blend);
 
     ctx.renderer->resolve_multisample();
@@ -228,6 +229,7 @@ void EditorScene::impl_show_widget_toolbar()
     {
         mDoResetDockNavigator = true;
         mDoResetDockHitblobs = true;
+        mDoResetDockEffects = true;
         mDoResetDockEmitters = true;
         mDoResetDockSounds = true;
         mDoResetDockScript = true;
@@ -299,7 +301,11 @@ void EditorScene::impl_show_widget_toolbar()
             Fighter& fighter = *mActiveActionContext->fighter;
 
             if (ImPlus::MenuItem("Reload Animations", nullptr, false, true))
+            {
                 fighter.initialise_armature(sq::build_string("assets/fighters/", sq::enum_to_string(fighter.type)));
+                mActiveActionContext->timelineLength = get_default_timeline_length(*mActiveActionContext);
+                scrub_to_frame_current(*mActiveActionContext);
+            }
             ImPlus::HoverTooltip("Reload animations for the active action");
         });
 
@@ -545,6 +551,7 @@ void EditorScene::show_imgui_widgets()
     impl_show_widget_hitblobs();
     impl_show_widget_emitters();
     impl_show_widget_sounds();
+    impl_show_widget_effects();
     impl_show_widget_script();
     impl_show_widget_hurtblobs();
     impl_show_widget_timeline();
@@ -553,27 +560,105 @@ void EditorScene::show_imgui_widgets()
 
 //============================================================================//
 
+uint EditorScene::get_default_timeline_length(const ActionContext& ctx)
+{
+    const Fighter::Animations& anims = ctx.fighter->mAnimations;
+
+    uint result = 1u; // extra time before looping
+
+    SWITCH (ctx.key.action) {
+
+    CASE (NeutralFirst)  result += anims.NeutralFirst.anim.frameCount;
+    CASE (NeutralSecond) result += anims.NeutralSecond.anim.frameCount;
+    CASE (NeutralThird)  result += anims.NeutralThird.anim.frameCount;
+
+    CASE (DashAttack) result += anims.DashAttack.anim.frameCount;
+
+    CASE (TiltDown)    result += anims.TiltDown.anim.frameCount;
+    CASE (TiltForward) result += anims.TiltForward.anim.frameCount;
+    CASE (TiltUp)      result += anims.TiltUp.anim.frameCount;
+
+    CASE (EvadeBack)    result += anims.EvadeBack.anim.frameCount;
+    CASE (EvadeForward) result += anims.EvadeForward.anim.frameCount;
+    CASE (Dodge)        result += anims.Dodge.anim.frameCount;
+
+    CASE (ProneAttack)  result += anims.ProneAttack.anim.frameCount;
+    CASE (ProneBack)    result += anims.ProneBack.anim.frameCount;
+    CASE (ProneForward) result += anims.ProneForward.anim.frameCount;;
+    CASE (ProneStand)   result += anims.ProneStand.anim.frameCount;;
+
+    CASE (LedgeClimb) result += anims.LedgeClimb.anim.frameCount;
+
+    CASE (ChargeDown)    result += anims.SmashDownStart.anim.frameCount + anims.SmashDownCharge.anim.frameCount;
+    CASE (ChargeForward) result += anims.SmashForwardStart.anim.frameCount + anims.SmashForwardCharge.anim.frameCount;
+    CASE (ChargeUp)      result += anims.SmashUpStart.anim.frameCount + anims.SmashUpCharge.anim.frameCount;
+
+    CASE (SmashDown)    result += anims.SmashDownAttack.anim.frameCount;
+    CASE (SmashForward) result += anims.SmashForwardAttack.anim.frameCount;
+    CASE (SmashUp)      result += anims.SmashUpAttack.anim.frameCount;
+
+    CASE (AirBack)    result += anims.AirBack.anim.frameCount;
+    CASE (AirDown)    result += anims.AirDown.anim.frameCount;
+    CASE (AirForward) result += anims.AirForward.anim.frameCount;
+    CASE (AirNeutral) result += anims.AirNeutral.anim.frameCount;
+    CASE (AirUp)      result += anims.AirUp.anim.frameCount;
+    CASE (AirDodge)   result += anims.AirDodge.anim.frameCount;
+
+    CASE (LandLight)  result += anims.LandLight.anim.frameCount;
+    CASE (LandHeavy)  result += anims.LandHeavy.anim.frameCount;
+    CASE (LandTumble) result += anims.LandTumble.anim.frameCount;
+
+    CASE (LandAirBack)    result += anims.LandAirBack.anim.frameCount;
+    CASE (LandAirDown)    result += anims.LandAirDown.anim.frameCount;
+    CASE (LandAirForward) result += anims.LandAirForward.anim.frameCount;
+    CASE (LandAirNeutral) result += anims.LandAirNeutral.anim.frameCount;
+    CASE (LandAirUp)      result += anims.LandAirUp.anim.frameCount;
+
+    CASE (SpecialDown)    result += 32u;
+    CASE (SpecialForward) result += 32u;
+    CASE (SpecialNeutral) result += 32u;
+    CASE (SpecialUp)      result += 32u;
+
+    CASE (ShieldOn)  result += anims.ShieldOn.anim.frameCount;
+    CASE (ShieldOff) result += anims.ShieldOff.anim.frameCount;
+
+    CASE (HopBack, JumpBack)       result += anims.JumpBack.anim.frameCount;
+    CASE (HopForward, JumpForward) result += anims.JumpForward.anim.frameCount;
+    CASE (AirHopBack)              result += anims.AirHopBack.anim.frameCount;
+    CASE (AirHopForward)           result += anims.AirHopForward.anim.frameCount;
+
+    CASE (DashStart) result += anims.DashStart.anim.frameCount;
+    CASE (DashBrake) result += anims.Brake.anim.frameCount;
+
+    CASE (None) SQASSERT(false, "can't edit nothing");
+
+    } SWITCH_END;
+
+    return result;
+}
+
+//============================================================================//
+
 void EditorScene::create_base_context(FighterEnum fighterKey, BaseContext& ctx)
 {
-    ctx.world = std::make_unique<FightWorld>(mSmashApp.get_options(), mSmashApp.get_audio_context());
-    ctx.renderer = std::make_unique<Renderer>(mSmashApp.get_options());
+    sq::PreProcessor& preProcessor = mSmashApp.get_pre_processor();
+    sq::AudioContext& audioContext = mSmashApp.get_audio_context();
+
+    Options& options = mSmashApp.get_options();
+    ResourceCaches& resourceCaches = mSmashApp.get_resource_caches();
+
+    ctx.renderer = std::make_unique<Renderer>(options, preProcessor, resourceCaches);
+    ctx.world = std::make_unique<FightWorld>(options, audioContext, resourceCaches, *ctx.renderer);
 
     ctx.renderer->set_camera(std::make_unique<EditorCamera>(*ctx.renderer));
 
     auto stage = std::make_unique<Stage>(*ctx.world, StageEnum::TestZone);
-    auto renderStage = std::make_unique<RenderStage>(*ctx.renderer, *stage);;
-
     auto fighter = std::make_unique<Fighter>(*ctx.world, fighterKey, 0u);
-    auto renderFighter = std::make_unique<RenderFighter>(*ctx.renderer, *fighter);
 
     ctx.fighter = fighter.get();
-    ctx.renderFighter = renderFighter.get();
 
     ctx.world->set_stage(std::move(stage));
-    ctx.renderer->add_object(std::move(renderStage));
-
     ctx.world->add_fighter(std::move(fighter));
-    ctx.renderer->add_object(std::move(renderFighter));
 }
 
 //----------------------------------------------------------------------------//
@@ -594,77 +679,7 @@ EditorScene::ActionContext& EditorScene::get_action_context(ActionKey key)
     ctx.savedData = ctx.fighter->get_action(key.action)->clone();
     ctx.undoStack.push_back(ctx.fighter->get_action(key.action)->clone());
 
-    const Fighter::Animations& anims = ctx.fighter->mAnimations;
-
-    SWITCH (key.action) {
-
-    CASE (NeutralFirst)  ctx.timelineLength = anims.NeutralFirst.anim.frameCount;
-    CASE (NeutralSecond) ctx.timelineLength = anims.NeutralSecond.anim.frameCount;
-    CASE (NeutralThird)  ctx.timelineLength = anims.NeutralThird.anim.frameCount;
-
-    CASE (DashAttack) ctx.timelineLength = anims.DashAttack.anim.frameCount;
-
-    CASE (TiltDown)    ctx.timelineLength = anims.TiltDown.anim.frameCount;
-    CASE (TiltForward) ctx.timelineLength = anims.TiltForward.anim.frameCount;
-    CASE (TiltUp)      ctx.timelineLength = anims.TiltUp.anim.frameCount;
-
-    CASE (EvadeBack)    ctx.timelineLength = anims.EvadeBack.anim.frameCount;
-    CASE (EvadeForward) ctx.timelineLength = anims.EvadeForward.anim.frameCount;
-    CASE (Dodge)        ctx.timelineLength = anims.Dodge.anim.frameCount;
-
-    CASE (ProneAttack)  ctx.timelineLength = anims.ProneAttack.anim.frameCount;
-    CASE (ProneBack)    ctx.timelineLength = anims.ProneBack.anim.frameCount;
-    CASE (ProneForward) ctx.timelineLength = anims.ProneForward.anim.frameCount;;
-    CASE (ProneStand)   ctx.timelineLength = anims.ProneStand.anim.frameCount;;
-
-    CASE (LedgeClimb) ctx.timelineLength = anims.LedgeClimb.anim.frameCount;
-
-    CASE (ChargeDown)    ctx.timelineLength = anims.SmashDownStart.anim.frameCount + anims.SmashDownCharge.anim.frameCount;
-    CASE (ChargeForward) ctx.timelineLength = anims.SmashForwardStart.anim.frameCount + anims.SmashForwardCharge.anim.frameCount;
-    CASE (ChargeUp)      ctx.timelineLength = anims.SmashUpStart.anim.frameCount + anims.SmashUpCharge.anim.frameCount;
-
-    CASE (SmashDown)    ctx.timelineLength = anims.SmashDownAttack.anim.frameCount;
-    CASE (SmashForward) ctx.timelineLength = anims.SmashForwardAttack.anim.frameCount;
-    CASE (SmashUp)      ctx.timelineLength = anims.SmashUpAttack.anim.frameCount;
-
-    CASE (AirBack)    ctx.timelineLength = anims.AirBack.anim.frameCount;
-    CASE (AirDown)    ctx.timelineLength = anims.AirDown.anim.frameCount;
-    CASE (AirForward) ctx.timelineLength = anims.AirForward.anim.frameCount;
-    CASE (AirNeutral) ctx.timelineLength = anims.AirNeutral.anim.frameCount;
-    CASE (AirUp)      ctx.timelineLength = anims.AirUp.anim.frameCount;
-    CASE (AirDodge)   ctx.timelineLength = anims.AirDodge.anim.frameCount;
-
-    CASE (LandLight)  ctx.timelineLength = anims.LandLight.anim.frameCount;
-    CASE (LandHeavy)  ctx.timelineLength = anims.LandHeavy.anim.frameCount;
-    CASE (LandTumble) ctx.timelineLength = anims.LandTumble.anim.frameCount;
-
-    CASE (LandAirBack)    ctx.timelineLength = anims.LandAirBack.anim.frameCount;
-    CASE (LandAirDown)    ctx.timelineLength = anims.LandAirDown.anim.frameCount;
-    CASE (LandAirForward) ctx.timelineLength = anims.LandAirForward.anim.frameCount;
-    CASE (LandAirNeutral) ctx.timelineLength = anims.LandAirNeutral.anim.frameCount;
-    CASE (LandAirUp)      ctx.timelineLength = anims.LandAirUp.anim.frameCount;
-
-    CASE (SpecialDown)    ctx.timelineLength = 32u;
-    CASE (SpecialForward) ctx.timelineLength = 32u;
-    CASE (SpecialNeutral) ctx.timelineLength = 32u;
-    CASE (SpecialUp)      ctx.timelineLength = 32u;
-
-    CASE (ShieldOn)  ctx.timelineLength = anims.ShieldOn.anim.frameCount;
-    CASE (ShieldOff) ctx.timelineLength = anims.ShieldOff.anim.frameCount;
-
-    CASE (HopBack, JumpBack)       ctx.timelineLength = anims.JumpBack.anim.frameCount;
-    CASE (HopForward, JumpForward) ctx.timelineLength = anims.JumpForward.anim.frameCount;
-    CASE (AirHopBack)              ctx.timelineLength = anims.AirHopBack.anim.frameCount;
-    CASE (AirHopForward)           ctx.timelineLength = anims.AirHopForward.anim.frameCount;
-
-    CASE (DashStart) ctx.timelineLength = anims.DashStart.anim.frameCount;
-    CASE (DashBrake) ctx.timelineLength = anims.Brake.anim.frameCount;
-
-    CASE (None) SQASSERT(false, "can't edit nothing");
-
-    } SWITCH_END;
-
-    ctx.timelineLength += 1u;
+    ctx.timelineLength = get_default_timeline_length(ctx);
 
     return ctx;
 }
@@ -748,6 +763,7 @@ void EditorScene::do_undo_redo(ActionContext& ctx, bool redo)
 
         Action& action = *ctx.fighter->get_action(ctx.key.action);
         action.apply_changes(*ctx.undoStack[ctx.undoIndex]);
+        action.load_wren_from_string();
 
         scrub_to_frame_current(ctx);
 
@@ -785,11 +801,15 @@ void EditorScene::save_changes(ActionContext& ctx)
     JsonValue json;
 
     auto& blobs = json["blobs"] = JsonValue::object();
+    auto& effects = json["effects"] = JsonValue::object();
     auto& emitters = json["emitters"] = JsonValue::object();
     auto& sounds = json["sounds"] = JsonValue::object();
 
     for (const auto& [key, blob] : action.mBlobs)
         blob.to_json(blobs[key.c_str()]);
+
+    for (const auto& [key, effect] : action.mEffects)
+        effect.to_json(effects[key.c_str()]);
 
     for (const auto& [key, emitter] : action.mEmitters)
         emitter.to_json(emitters[key.c_str()]);
@@ -825,6 +845,8 @@ void EditorScene::scrub_to_frame(ActionContext& ctx, int frame)
     ctx.world->get_particle_system().reset_random_seed(mRandomSeed);
     ctx.world->get_particle_system().clear();
 
+    ctx.world->get_effect_system().clear();
+
     Fighter& fighter = *ctx.fighter;
 
     if (fighter.mActiveAction != nullptr)
@@ -839,26 +861,28 @@ void EditorScene::scrub_to_frame(ActionContext& ctx, int frame)
     fighter.mForceSwitchAction = ActionType::None;
     fighter.mTranslate = Vec2F();
 
-    if (ctx.key.action == ActionType::AirBack || ctx.key.action == ActionType::AirDown || ctx.key.action == ActionType::AirForward ||
-        ctx.key.action == ActionType::AirNeutral || ctx.key.action == ActionType::AirUp || ctx.key.action == ActionType::AirDodge)
+    // some actions have different starting state
+    SWITCH (ctx.key.action) {
+
+    CASE (AirBack, AirDown, AirForward, AirNeutral, AirUp, AirDodge)
     {
         fighter.attributes.gravity = 0.f;
         fighter.status.position = Vec2F(0.f, 1.f);
-
         fighter.state_transition(FighterState::JumpFall, 0u, &fighter.mAnimations.FallingLoop, 0u, nullptr);
     }
-    else if (ctx.key.action == ActionType::DashStart)
+
+    CASE (DashStart, DashBrake)
     {
         fighter.status.velocity.x = fighter.attributes.dash_speed + fighter.attributes.traction;
         fighter.state_transition(FighterState::Neutral, 0u, &fighter.mAnimations.NeutralLoop, 0u, nullptr);
     }
-    else if (ctx.key.action == ActionType::DashBrake)
+
+    CASE_DEFAULT
     {
-        fighter.status.velocity.x = fighter.attributes.dash_speed + fighter.attributes.traction;
-        fighter.state_transition(FighterState::Neutral, 0u, &fighter.mAnimations.DashingLoop, 0u, nullptr);
-    }
-    else
         fighter.state_transition(FighterState::Neutral, 0u, &fighter.mAnimations.NeutralLoop, 0u, nullptr);
+    }
+
+    } SWITCH_END;
 
     // tick once to apply neutral/falling animation
     ctx.world->tick();

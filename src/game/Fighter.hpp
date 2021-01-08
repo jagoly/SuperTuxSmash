@@ -2,11 +2,13 @@
 
 #include "setup.hpp"
 
-#include "game/ActionEnums.hpp"
-#include "game/FighterEnums.hpp"
 #include "main/MainEnums.hpp"
 
+#include "game/ActionEnums.hpp"
+#include "game/FighterEnums.hpp"
+
 #include <sqee/app/WrenPlus.hpp>
+#include <sqee/gl/FixedBuffer.hpp>
 #include <sqee/objects/Armature.hpp>
 
 namespace sts {
@@ -210,6 +212,7 @@ public: //====================================================//
         Vec2F velocity = { 0.f, 0.f };
         bool intangible = false;
         bool autocancel = false;
+        bool flinch = false;
         float damage = 0.f;
         float shield = SHIELD_MAX_HP;
         Ledge* ledge = nullptr;
@@ -232,6 +235,8 @@ public: //====================================================//
     ~Fighter();
 
     void tick();
+
+    void integrate(float blend);
 
     //--------------------------------------------------------//
 
@@ -281,6 +286,9 @@ public: //====================================================//
     /// Get current model matrix.
     const Mat4F& get_model_matrix() const { return mModelMatrix; }
 
+    /// Get model matrix for the frame being rendered.
+    const Mat4F& get_interpolated_model_matrix() const { return mInterpModelMatrix; }
+
     /// Get current armature pose matrices (local, transposed).
     const std::vector<Mat34F>& get_bone_matrices() const { return mBoneMatrices; }
 
@@ -294,9 +302,6 @@ public: //====================================================//
 
     /// Compute matrix for the specified bone, or model matrix if -1.
     Mat4F get_bone_matrix(int8_t bone) const;
-
-    /// Should hurt/flinch models be used if available.
-    bool should_render_flinch_models() const;
 
     //-- wren methods and properties -------------------------//
 
@@ -366,6 +371,8 @@ private: //===================================================//
 
     sq::Armature mArmature;
 
+    sq::FixedBuffer mSkellyUbo;
+
     Animations mAnimations;
 
     std::array<std::unique_ptr<Action>, sq::enum_count_v<ActionType>> mActions;
@@ -424,6 +431,8 @@ private: //===================================================//
     std::vector<Mat34F> mBoneMatrices;
 
     Mat4F mModelMatrix;
+
+    Mat4F mInterpModelMatrix;
 
     //-- debug and editor stuff ------------------------------//
 

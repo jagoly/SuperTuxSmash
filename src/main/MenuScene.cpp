@@ -83,7 +83,7 @@ void MenuScene::show_imgui_widgets()
 
         mSmashApp.start_game(any ? mSetup : GameSetup::get_defaults());
     }
-    ImPlus::HoverTooltip("warning: Sara and Tux are usually broken, if you want a mostly working fighter use Mario (Quick Start)");
+    ImPlus::HoverTooltip("WARNING: Sara and Tux are usually broken, if you want a mostly working fighter use Mario (Quick Start)");
 
     ImGui::SameLine();
 

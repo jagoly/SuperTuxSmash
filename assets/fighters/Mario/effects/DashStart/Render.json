@@ -1,0 +1,56 @@
+{
+  "assets": {
+    "meshes": {
+      "": "fighters/Mario/effects/DashStart/Mesh"
+    },
+    "textures": {
+      "eff_cmn_smokeB": "fighters/Mario/textures/effects/eff_cmn_smokeB",
+      "eff_cmn_stormsomke": "fighters/Mario/textures/effects/eff_cmn_stormsomke"
+    },
+    "programs": {
+      "": {
+        "path": "super/BasicEffect",
+        "options": {}
+      }
+    },
+    "materials": {
+      "dash": {
+        "cullface": "disable",
+        "program": "",
+        "uniforms": {
+          "tx_Colour": "eff_cmn_smokeB"
+        }
+      },
+      "storm": {
+        "cullface": "disable",
+        "program": "",
+        "uniforms": {
+          "tx_Colour": "eff_cmn_stormsomke"
+        }
+      }
+    }
+  },
+  "items": [
+    {
+      "condition": null,
+      "material": "dash",
+      "mesh": "",
+      "submesh": 0,
+      "pass": "Transparent"
+    },
+    {
+      "condition": "",
+      "material": "dash",
+      "mesh": "",
+      "submesh": 1,
+      "pass": "Transparent"
+    },
+    {
+      "condition": "",
+      "material": "storm",
+      "mesh": "",
+      "submesh": 2,
+      "pass": "Transparent"
+    }
+  ]
+}

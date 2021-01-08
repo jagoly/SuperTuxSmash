@@ -6,7 +6,6 @@
       "facing": "Relative",
       "flavour": "Tangy",
       "freezeFactor": 1.0,
-      "group": 0,
       "index": 0,
       "knockAngle": 0.0,
       "knockBase": 20.0,
@@ -23,7 +22,6 @@
       "facing": "Relative",
       "flavour": "Tangy",
       "freezeFactor": 1.0,
-      "group": 0,
       "index": 1,
       "knockAngle": 0.0,
       "knockBase": 20.0,
@@ -40,7 +38,6 @@
       "facing": "Relative",
       "flavour": "Sour",
       "freezeFactor": 1.0,
-      "group": 1,
       "index": 0,
       "knockAngle": 0.0,
       "knockBase": 13.0,
@@ -57,7 +54,6 @@
       "facing": "Relative",
       "flavour": "Sour",
       "freezeFactor": 1.0,
-      "group": 1,
       "index": 1,
       "knockAngle": 0.0,
       "knockBase": 13.0,
@@ -69,6 +65,7 @@
       "useSakuraiAngle": true
     }
   },
+  "effects": {},
   "emitters": {},
   "sounds": {
     "KickWeak": {

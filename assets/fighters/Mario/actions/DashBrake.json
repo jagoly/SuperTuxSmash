@@ -1,5 +1,6 @@
 {
   "blobs": {},
+  "effects": {},
   "emitters": {
     "BrakeSmoke": {
       "ballOffset": [ 0.1, 0.1 ],

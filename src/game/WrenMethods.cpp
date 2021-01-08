@@ -1,14 +1,16 @@
 #include "game/Action.hpp"
 #include "game/Fighter.hpp"
 
+#include "main/Options.hpp"
+
+#include "game/EffectSystem.hpp"
 #include "game/Emitter.hpp"
 #include "game/FightWorld.hpp"
 #include "game/HitBlob.hpp"
 #include "game/HurtBlob.hpp"
 #include "game/ParticleSystem.hpp"
 #include "game/SoundEffect.hpp"
-
-#include "main/Options.hpp"
+#include "game/VisualEffect.hpp"
 
 #include <sqee/app/AudioContext.hpp>
 #include <sqee/debug/Assert.hpp>
@@ -60,7 +62,7 @@ void Action::wren_allow_interrupt()
 
 void Action::wren_enable_hitblobs(TinyString prefix)
 {
-    log_call(*this, "enable_hitblobs({})", prefix);
+    log_call(*this, "enable_hitblobs('{}')", prefix);
 
     bool found = false;
     for (auto& [key, blob] : mBlobs)
@@ -76,6 +78,22 @@ void Action::wren_disable_hitblobs()
     log_call(*this, "disable_hitblobs()");
 
     world.disable_hitblobs(*this);
+}
+
+void Action::wren_play_effect(TinyString key)
+{
+    log_call(*this, "play_effect('{}')", key);
+
+    const auto iter = mEffects.find(key);
+    if (iter == mEffects.end())
+        throw wren::Exception("invalid effect '{}'", key);
+
+    VisualEffect& effect = iter->second;
+
+    if (effect.handle == nullptr)
+        throw wren::Exception("could not load effect '{}'", effect.get_key());
+
+    world.get_effect_system().play_effect(effect);
 }
 
 void Action::wren_emit_particles(TinyString key)
@@ -178,7 +196,7 @@ void Fighter::wren_enable_hurtblob(TinyString key)
 
 void Fighter::wren_disable_hurtblob(TinyString key)
 {
-    log_call(*this, "enable_hurtblob({})", key);
+    log_call(*this, "disable_hurtblob({})", key);
 
     const auto iter = mHurtBlobs.find(key);
     if (iter == mHurtBlobs.end())

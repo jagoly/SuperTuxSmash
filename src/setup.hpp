@@ -33,6 +33,7 @@ using sq::StackVector;
 class Action;
 class Camera;
 class Controller;
+class EffectSystem;
 class FightWorld;
 class Fighter;
 class ParticleSystem;
@@ -46,7 +47,9 @@ struct GameSetup;
 struct HitBlob;
 struct HurtBlob;
 struct Options;
+struct ResourceCaches;
 struct SoundEffect;
+struct VisualEffect;
 
 class EditorScene;
 struct DebugGui;
@@ -56,11 +59,11 @@ struct DebugGui;
 /// Maximum number of players and fighters in one game.
 constexpr const size_t MAX_FIGHTERS = 4u;
 
-/// Maximum number of hits in one action.
-constexpr const size_t MAX_HITBLOB_GROUPS = 8u;
-
 /// Number of frames that input commands are buffered for.
 constexpr const size_t CMD_BUFFER_SIZE = 8u;
+
+/// Maximum number of bones in a visual effect.
+constexpr const size_t MAX_EFFECT_BONES = 8u;
 
 /// Length of window to release jump and perform a short hop.
 constexpr const uint8_t JUMP_DELAY = 6u;

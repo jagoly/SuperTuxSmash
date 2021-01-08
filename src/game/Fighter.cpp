@@ -7,6 +7,10 @@
 #include "game/HitBlob.hpp"
 #include "game/HurtBlob.hpp"
 
+#include "render/Renderer.hpp"
+#include "render/UniformBlocks.hpp"
+#include "render/Camera.hpp"
+
 #include <sqee/debug/Assert.hpp>
 #include <sqee/debug/Logging.hpp>
 #include <sqee/maths/Functions.hpp>
@@ -27,8 +31,15 @@ Fighter::Fighter(FightWorld& world, FighterEnum type, uint8_t index)
     initialise_armature(path);
     initialise_hurtblobs(path);
 
+    world.renderer.create_draw_items(DrawItemDef::load_from_json(path + "/Render.json", world.caches),
+                                     &mSkellyUbo, { {"flinch", &status.flinch} });
+
     for (int8_t i = 0; i < sq::enum_count_v<ActionType>; ++i)
+    {
         mActions[i] = std::make_unique<Action>(*this, ActionType(i));
+        mActions[i]->load_json_from_file();
+        mActions[i]->load_wren_from_file();
+    }
 }
 
 Fighter::~Fighter() = default;
@@ -78,11 +89,16 @@ void Fighter::initialise_attributes(const String& path)
 
 void Fighter::initialise_armature(const String& path)
 {
-    mArmature.load_from_file(path + "/Armature.json");
+    // if this method gets re-called in the editor, only reload animations
+    if (mArmature.get_bone_count() == 0u)
+    {
+        mArmature.load_from_file(path + "/Armature.json");
 
-    current.pose = previous.pose = mArmature.get_rest_pose();
+        mSkellyUbo.allocate_dynamic(64u + 48u + 48u * mArmature.get_bone_count());
+        mBoneMatrices.resize(mArmature.get_bone_count());
 
-    mBoneMatrices.resize(mArmature.get_bone_count());
+        current.pose = previous.pose = mArmature.get_rest_pose();
+    }
 
     const auto load_anim = [&](const char* name, AnimMode mode) -> Animation
     {
@@ -303,7 +319,6 @@ void Fighter::apply_hit_generic(const HitBlob& hit, const HurtBlob& hurt)
     SQASSERT(&hit.action->fighter != this, "invalid hitblob");
     SQASSERT(hurt.fighter == this, "invalid hurtblob");
 
-    // todo: individual regions/hurtblobs can become intangible
     if (status.intangible == true) return;
 
     // if we were in the middle of an action, cancel it
@@ -320,8 +335,9 @@ void Fighter::apply_hit_generic(const HitBlob& hit, const HurtBlob& hurt)
     const bool shielding = status.state == State::Shield || (status.state == State::Freeze && mFrozenState == State::Shield) ||
                            status.state == State::ShieldStun || (status.state == State::Freeze && mFrozenState == State::ShieldStun);
 
-    const float facing = hit.facing == BlobFacing::Relative ? hit.action->fighter.status.position.x < status.position.x ? +1.f : -1.f :
-                         hit.facing == BlobFacing::Forward ? float(hit.action->fighter.status.facing) : -float(hit.action->fighter.status.facing);
+    const float facing = hit.facing == BlobFacing::Relative ? hit.action->fighter.status.position.x < status.position.x ? +1.f : -1.f
+                         : hit.facing == BlobFacing::Forward ? float(hit.action->fighter.status.facing)
+                         : -float(hit.action->fighter.status.facing); // BlobFacing::Reverse
 
     const uint freezeTime = uint((hit.damage * 0.4f + 4.f) * hit.freezeFactor);
 
@@ -383,8 +399,7 @@ void Fighter::apply_hit_generic(const HitBlob& hit, const HurtBlob& hurt)
         mHitStunTime = hitStunTime;
 
         status.velocity = maths::normalize(knockDir) * launchSpeed;
-        // todo: should be based on knockback dir (see back air for why this wrong)
-        status.facing = -hit.action->fighter.status.facing;
+        status.facing = -int8_t(facing);
 
         const auto& anims = mAnimations;
 
@@ -483,23 +498,30 @@ Mat4F Fighter::get_bone_matrix(int8_t bone) const
     return mModelMatrix * maths::transpose(Mat4F(mBoneMatrices[bone]));
 }
 
-bool Fighter::should_render_flinch_models() const
-{
-    // in smash proper, this is done with a flag that gets set by various actions
-    // this is much more limited, but works well enough for now
-
-    const bool stun = status.state == State::Stun || status.state == State::AirStun || status.state == State::TumbleStun;
-    const bool freezeStun = mFrozenState == State::Stun || mFrozenState == State::AirStun || mFrozenState == State::TumbleStun;
-    const bool tumbleState = status.state == State::TumbleFall || status.state == State::Prone;
-    const bool tumbleAction = status.state == State::Action && mActiveAction->type == ActionType::LandTumble;
-
-    return stun || (status.state == State::Freeze && freezeStun) || tumbleState || tumbleAction;
-}
-
 //============================================================================//
 
 Action* Fighter::get_action(ActionType type)
 {
     if (type == ActionType::None) return nullptr;
     return mActions[int8_t(type)].get();
+}
+
+//============================================================================//
+
+void Fighter::integrate(float blend)
+{
+    const Vec3F translation = maths::mix(previous.translation, current.translation, blend);
+    const QuatF rotation = maths::slerp(previous.rotation, current.rotation, blend);
+    mInterpModelMatrix = maths::transform(translation, rotation);
+
+    const sq::Armature::Pose pose = mArmature.blend_poses(previous.pose, current.pose, blend);
+
+    SkellyBlock block;
+
+    block.matrix = world.renderer.get_camera().get_combo_matrix() * mInterpModelMatrix;
+    block.normMat = Mat34F(maths::normal_matrix(world.renderer.get_camera().get_view_matrix() * mInterpModelMatrix));
+
+    mArmature.compute_ubo_data(pose, block.bones, 80u);
+
+    mSkellyUbo.update(0u, 64u + 48u + 48u * mArmature.get_bone_count(), &block);
 }

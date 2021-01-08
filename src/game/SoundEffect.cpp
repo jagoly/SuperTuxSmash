@@ -22,8 +22,6 @@ void SoundEffect::from_json(const JsonValue& json)
 
 void SoundEffect::to_json(JsonValue& json) const
 {
-    SQASSERT(cache != nullptr, "");
-
     json["path"] = path;
     json["volume"] = volume;
 }

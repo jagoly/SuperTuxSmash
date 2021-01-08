@@ -15,7 +15,7 @@ class FightWorld final : sq::NonCopyable
 {
 public: //====================================================//
 
-    FightWorld(const Options& options, sq::AudioContext& audio);
+    FightWorld(const Options& options, sq::AudioContext& audio, ResourceCaches& caches, Renderer& renderer);
 
     ~FightWorld();
 
@@ -25,7 +25,11 @@ public: //====================================================//
 
     sq::AudioContext& audio;
 
-    sq::ResourceCache<String, sq::Sound> sounds;
+    ResourceCaches& caches;
+
+    Renderer& renderer;
+
+    //--------------------------------------------------------//
 
     wren::WrenPlusVM vm;
 
@@ -40,6 +44,8 @@ public: //====================================================//
     //--------------------------------------------------------//
 
     void tick();
+
+    void integrate(float blend);
 
     //--------------------------------------------------------//
 
@@ -82,11 +88,8 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    /// Reset a fighter's collision group.
-    void reset_collisions(uint8_t fighter/*, uint8_t group*/);
-
-//    /// Reset all of a fighter's collision groups.
-//    void reset_all_collisions(uint8_t fighter);
+    /// Reset a fighter's collisions.
+    void reset_collisions(uint8_t fighter);
 
     //--------------------------------------------------------//
 
@@ -121,6 +124,9 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
+    /// Access this world's EffectSystem.
+    EffectSystem& get_effect_system() { return *mEffectSystem; }
+
     /// Access this world's ParticleSystem.
     ParticleSystem& get_particle_system() { return *mParticleSystem; }
 
@@ -138,7 +144,7 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
-    //std::map<SmallString, VisualEffect>
+    std::unique_ptr<EffectSystem> mEffectSystem;
 
     std::unique_ptr<ParticleSystem> mParticleSystem;
 
@@ -154,8 +160,6 @@ private: //===================================================//
 
     struct Collision { HitBlob& hit; HurtBlob& hurt; };
 
-    // turns out you can do value-aggregate initialisation with nested std arrays
-    //std::array<std::array<std::array<bool, MAX_FIGHTERS>, MAX_HITBLOB_GROUPS>, MAX_FIGHTERS> mHitBlobGroups {};
     std::array<std::array<bool, MAX_FIGHTERS>, MAX_FIGHTERS> mIgnoreCollisions {};
 
     std::array<std::vector<Collision>, MAX_FIGHTERS> mCollisions;

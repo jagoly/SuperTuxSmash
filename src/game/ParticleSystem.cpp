@@ -32,7 +32,6 @@ void ParticleSystem::generate(const Emitter& emitter)
     maths::RandomRange<uint16_t> randColour { 0u, uint16_t(emitter.colour.size() - 1u) };
 
     maths::RandomRange<Vec3F> randNormal { Vec3F(-1.f), Vec3F(1.f) };
-    maths::RandomRange<float> randAngle { 0.f, 1.f };
 
     const Mat4F boneMatrix = emitter.fighter ? emitter.fighter->get_bone_matrix(emitter.bone) : Mat4F();
 
@@ -64,12 +63,15 @@ void ParticleSystem::generate(const Emitter& emitter)
         p.velocity += Mat3F(boneMatrix) * emitter.velocity;
 
         // apply ball shape modifiers
+        // todo: we want this to be evenly distributed, not random
         const Vec3F ballDirection = maths::normalize(randNormal(mGenerator));
         p.currentPos += ballDirection * emitter.ballOffset(mGenerator);
         p.velocity += ballDirection * emitter.ballSpeed(mGenerator);
 
         // apply disc shape modifiers
-        const Vec3F discDirection = maths::rotate_y(maths::rotate_x(Vec3F(0, 0, -1), emitter.discIncline(mGenerator)), randAngle(mGenerator));
+        const float discIncline = emitter.discIncline(mGenerator);
+        const float discAngle = float(i) / float(emitter.count);
+        const Vec3F discDirection = maths::rotate_y(maths::rotate_x(Vec3F(0, 0, -1), discIncline), discAngle);
         p.currentPos += Mat3F(boneMatrix) * discDirection * emitter.discOffset(mGenerator);
         p.velocity += Mat3F(boneMatrix) * discDirection * emitter.discSpeed(mGenerator);
 

@@ -2,8 +2,8 @@
 #include "editor/Editor_Helpers.hpp"
 
 #include "game/Action.hpp"
-#include "game/Fighter.hpp"
 #include "game/FightWorld.hpp"
+#include "game/Fighter.hpp"
 #include "game/SoundEffect.hpp"
 
 #include <sqee/app/GuiWidgets.hpp>
@@ -36,7 +36,7 @@ void EditorScene::impl_show_widget_sounds()
 
     const auto funcInit = [&](SoundEffect& sound)
     {
-        sound.cache = &ctx.world->sounds;
+        sound.cache = &ctx.world->caches.sounds;
         sound.path = fmt::format("fighters/{}/sounds/{}", fighter.type, sound.get_key());
         if (sq::check_file_exists(sq::build_string("assets/", sound.path.c_str(), ".wav")))
             sound.handle = sound.cache->acquire(sound.path.c_str());

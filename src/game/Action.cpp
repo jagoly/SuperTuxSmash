@@ -7,6 +7,7 @@
 #include "game/Fighter.hpp"
 #include "game/HitBlob.hpp"
 #include "game/SoundEffect.hpp"
+#include "game/VisualEffect.hpp"
 
 #include <sqee/debug/Logging.hpp>
 #include <sqee/misc/Files.hpp>
@@ -38,8 +39,6 @@ class Script is ScriptBase {
 Action::Action(Fighter& fighter, ActionType type)
     : fighter(fighter), world(fighter.world), type(type)
 {
-    load_json_from_file();
-    load_wren_from_file();
 }
 
 Action::~Action()
@@ -172,6 +171,19 @@ void Action::load_json_from_file()
     }
     CATCH (const std::exception& e) { errors += '\n'; errors += e.what(); }
 
+    TRY_FOR (auto iter : root.at("effects").items())
+    {
+        VisualEffect& effect = mEffects[iter.key()];
+        effect.cache = &world.caches.effects;
+        effect.fighter = &fighter;
+
+        try { effect.from_json(iter.value()); }
+        catch (const std::exception& e) {
+            errors += "\neffect '{}': {}"_format(iter.key(), e.what());
+        }
+    }
+    CATCH (const std::exception& e) { errors += '\n'; errors += e.what(); }
+
     TRY_FOR (auto iter : root.at("emitters").items())
     {
         Emitter& emitter = mEmitters[iter.key()];
@@ -185,7 +197,7 @@ void Action::load_json_from_file()
     TRY_FOR (auto iter : root.at("sounds").items())
     {
         SoundEffect& sound = mSounds[iter.key()];
-        sound.cache = &world.sounds;
+        sound.cache = &world.caches.sounds;
 
         try { sound.from_json(iter.value()); }
         catch (const std::exception& e) { errors += "\nsound '{}': {}"_format(iter.key(), e.what()); }
@@ -263,6 +275,7 @@ void Action::load_wren_from_string()
 bool Action::has_changes(const Action& reference) const
 {
     if (mBlobs != reference.mBlobs) return true;
+    if (mEffects != reference.mEffects) return true;
     if (mEmitters != reference.mEmitters) return true;
     if (mSounds != reference.mSounds) return true;
     if (mWrenSource != reference.mWrenSource) return true;
@@ -275,6 +288,10 @@ void Action::apply_changes(const Action& source)
     for (const auto& [key, blob] : source.mBlobs)
         mBlobs.try_emplace(key, blob);
 
+    mEffects.clear();
+    for (const auto& [key, blob] : source.mEffects)
+        mEffects.try_emplace(key, blob);
+
     mEmitters.clear();
     for (const auto& [key, emitter] : source.mEmitters)
         mEmitters.try_emplace(key, emitter);
@@ -284,7 +301,6 @@ void Action::apply_changes(const Action& source)
         mSounds.try_emplace(key, sound);
 
     mWrenSource = source.mWrenSource;
-    load_wren_from_string();
 }
 
 std::unique_ptr<Action> Action::clone() const

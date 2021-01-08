@@ -25,11 +25,12 @@
       }
     }
   },
-  "pass_opaque": [
+  "items": [
     {
       "condition": null,
       "material": "",
       "mesh": "",
+      "pass": "Opaque",
       "submesh": null
     }
   ]

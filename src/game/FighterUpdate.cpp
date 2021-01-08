@@ -1277,4 +1277,14 @@ void Fighter::tick()
     mArmature.compute_ubo_data(current.pose, mBoneMatrices.data(), uint(mBoneMatrices.size()));
 
     mModelMatrix = maths::transform(current.translation, current.rotation);
+
+    // in smash proper, this is done with a flag that gets set by various actions
+    // this is much more limited, but works well enough for now
+
+    const bool stun = status.state == State::Stun || status.state == State::AirStun || status.state == State::TumbleStun;
+    const bool freezeStun = mFrozenState == State::Stun || mFrozenState == State::AirStun || mFrozenState == State::TumbleStun;
+    const bool tumbleState = status.state == State::TumbleFall || status.state == State::Prone;
+    const bool tumbleAction = status.state == State::Action && mActiveAction->type == ActionType::LandTumble;
+
+    status.flinch = stun || (status.state == State::Freeze && freezeStun) || tumbleState || tumbleAction;
 }

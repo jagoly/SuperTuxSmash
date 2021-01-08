@@ -85,60 +85,69 @@
       }
     }
   },
-  "pass_opaque": [
+  "items": [
     {
       "condition": null,
       "material": "BodyA",
       "mesh": "Body",
-      "submesh": 0
+      "submesh": 0,
+      "pass": "Opaque"
     },
     {
       "condition": null,
       "material": "BodyB",
       "mesh": "Body",
-      "submesh": 1
+      "submesh": 1,
+      "pass": "Opaque"
     },
     {
       "condition": null,
       "material": "Buttons",
       "mesh": "Body",
-      "submesh": 2
+      "submesh": 2,
+      "pass": "Opaque"
     },
     {
       "condition": null,
       "material": "BodyA",
       "mesh": "HairHat",
-      "submesh": null
+      "submesh": null,
+      "pass": "Opaque"
     },
     {
       "condition": "!flinch",
       "material": "BodyA",
       "mesh": "Head",
-      "submesh": null
+      "submesh": null,
+      "pass": "Opaque"
     },
     {
       "condition": "!flinch",
       "material": "EyesWhite",
       "mesh": "EyesWhite",
-      "submesh": null
+      "submesh": null,
+      "pass": "Opaque"
     },
     {
       "condition": "!flinch",
       "material": "EyesIris",
       "mesh": "EyesIris",
-      "submesh": null
+      "submesh": null,
+      "pass": "Opaque"
     },
     {
       "condition": "flinch",
       "material": "BodyA",
       "mesh": "HeadHurt",
-      "submesh": 0
+      "submesh": 0,
+      "pass": "Opaque"
     },
     {
       "condition": "flinch",
       "material": "EyesHurt",
       "mesh": "HeadHurt",
-      "submesh": 1
+      "submesh": 1,
+      "pass": "Opaque"
     }
   ]
 }
