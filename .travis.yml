@@ -12,6 +12,11 @@ addons:
 
 before_script:
   - cd /home/travis/build/jagoly
+
+  - wget -O vulkan-sdk.tar.gz https://sdk.lunarg.com/sdk/download/1.2.170.0/linux/vulkansdk-linux-x86_64-1.2.170.0.tar.gz
+  - tar -xzf vulkan-sdk.tar.gz
+  - source 1.2.170.0/setup-env.sh
+
   - git clone --depth 1 --branch vulkan https://github.com/jagoly/sqee.git
   - mkdir sqee/build && cd sqee/build
   - cmake ..
