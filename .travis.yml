@@ -18,7 +18,9 @@ before_script:
   - source 1.2.170.0/setup-env.sh
 
   - git clone --depth 1 --branch vulkan https://github.com/jagoly/sqee.git
-  - mkdir sqee/build && cd sqee/build
+  - cd sqee
+  - git submodule update --init --recursive
+  - mkdir build && cd build
   - cmake ..
   - cmake --build . --target sqee
 
