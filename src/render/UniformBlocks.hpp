@@ -6,41 +6,52 @@ namespace sts {
 
 //============================================================================//
 
-struct alignas(16) CameraBlock
+struct CameraBlock
 {
-    Mat4F viewMat;    // 64
-    Mat4F projMat;    // 64
-    Mat4F invViewMat; // 64
-    Mat4F invProjMat; // 64
-    Vec3F position;   // 16
-    Vec3F direction;  // 16
+    alignas(16) Mat4F viewMat;
+    alignas(16) Mat4F projMat;
+    alignas(16) Mat4F invViewMat;
+    alignas(16) Mat4F invProjMat;
+    alignas(16) Mat4F projViewMat;
+    alignas(16) Vec3F position;
+    alignas(16) Vec3F direction;
 };
 
 //============================================================================//
 
-struct alignas(16) StaticBlock
+struct LightBlock
 {
-    Mat4F  matrix;    // 64
-    Mat34F normMat;   // 48
+    alignas(16) Vec3F ambiColour;
+    alignas(16) Vec3F skyColour;
+    alignas(16) Vec3F skyDirection;
+    alignas(16) Mat4F skyMatrix;
 };
 
 //============================================================================//
 
-struct alignas(16) SkellyBlock
+struct StaticBlock
 {
-    Mat4F  matrix;    // 64
-    Mat34F normMat;   // 48
-    Mat34F bones[80]; // 3840
+    alignas(16) Mat4F  matrix;
+    alignas(16) Mat34F normMat;
 };
 
 //============================================================================//
 
-struct alignas(16) EffectBlock
+struct SkellyBlock
 {
-    Mat4F  matrix;    // 64
-    Mat34F normMat;   // 48
-    Vec4F  params[8]; // 128
-    Mat34F bones[8];  // 384
+    alignas(16) Mat4F  matrix;
+    alignas(16) Mat34F normMat;
+    alignas(16) Mat34F bones[80];
+};
+
+//============================================================================//
+
+struct EffectBlock
+{
+    alignas(16) Mat4F  matrix;
+    alignas(16) Mat34F normMat;
+    alignas(16) Vec4F  params[8];
+    alignas(16) Mat34F bones[8];
 };
 
 //============================================================================//

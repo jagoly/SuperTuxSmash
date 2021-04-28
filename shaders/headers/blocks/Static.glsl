@@ -1,11 +1,8 @@
 // GLSL Uniform Block
 
-struct StaticBlock
+layout(std140, set=3, binding=0) uniform StaticBlock
 {
-    mat4 matrix;      // 64
-    mat3 normMat;     // 48
-
-    // TOTAL: 112
-};
-
-layout(std140, binding=2) uniform STATIC { StaticBlock SB; };
+    mat4 matrix;
+    mat3 normMat;
+}
+SB;

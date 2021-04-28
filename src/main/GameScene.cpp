@@ -29,10 +29,9 @@ GameScene::GameScene(SmashApp& smashApp, GameSetup setup)
 
     //--------------------------------------------------------//
 
-    sq::Window& window = mSmashApp.get_window();
-    sq::InputDevices& inputDevices = mSmashApp.get_input_devices();
+    sq::VulkWindow& window = mSmashApp.get_window();
+    sq::VulkInputDevices& inputDevices = mSmashApp.get_input_devices();
     sq::AudioContext& audioContext = mSmashApp.get_audio_context();
-    sq::PreProcessor& preProcessor = mSmashApp.get_pre_processor();
 
     Options& options = mSmashApp.get_options();
     ResourceCaches& resourceCaches = mSmashApp.get_resource_caches();
@@ -59,11 +58,11 @@ GameScene::GameScene(SmashApp& smashApp, GameSetup setup)
         if (setup.players[index].enabled)
             title += " vs. {}"_format(setup.players[index].fighter);
 
-    window.set_window_title(std::move(title));
+    window.set_title(std::move(title));
 
     //--------------------------------------------------------//
 
-    mRenderer = std::make_unique<Renderer>(options, preProcessor, resourceCaches);
+    mRenderer = std::make_unique<Renderer>(window, options, resourceCaches);
     mFightWorld = std::make_unique<FightWorld>(options, audioContext, resourceCaches, *mRenderer);
 
     mRenderer->set_camera(std::make_unique<StandardCamera>(*mRenderer));
@@ -144,13 +143,21 @@ void GameScene::update()
 
 //============================================================================//
 
+void GameScene::integrate(double /*elapsed*/, float blend)
+{
+    mFightWorld->integrate(blend);
+    mRenderer->integrate(blend);
+}
+
+//============================================================================//
+
 void GameScene::render(double /*elapsed*/)
 {
     const float blend = float(mAccumulation / mTickTime);
 
     mFightWorld->integrate(blend);
 
-    mRenderer->render_objects(blend);
+    //mRenderer->render_objects(blend);
 
     mRenderer->resolve_multisample();
 
@@ -295,4 +302,25 @@ void GameScene::show_imgui_widgets()
 {
     impl_show_general_window();
     impl_show_fighters_window();
+}
+
+//============================================================================//
+
+void GameScene::populate_command_buffer(vk::CommandBuffer cmdbuf, vk::Framebuffer framebuf)
+{
+    const Vec2U windowSize = mSmashApp.get_window().get_size();
+
+    mRenderer->populate_command_buffer(cmdbuf);
+
+    cmdbuf.beginRenderPass (
+        vk::RenderPassBeginInfo {
+            mSmashApp.get_window().get_render_pass(), framebuf, vk::Rect2D({0, 0}, {windowSize.x, windowSize.y})
+        }, vk::SubpassContents::eInline
+    );
+
+    mRenderer->populate_final_pass(cmdbuf);
+
+    mSmashApp.get_gui_system().render_gui(cmdbuf);
+
+    cmdbuf.endRenderPass();
 }

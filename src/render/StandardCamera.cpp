@@ -9,6 +9,7 @@
 #include "render/Renderer.hpp"
 
 #include <sqee/maths/Functions.hpp>
+#include <sqee/vk/VulkWindow.hpp>
 
 using namespace sts;
 
@@ -70,7 +71,7 @@ void StandardCamera::update_from_world(const FightWorld& world)
 
 void StandardCamera::intergrate(float blend)
 {
-    const float aspect = float(renderer.options.window_size.x) / float(renderer.options.window_size.y);
+    const float aspect = float(renderer.window.get_size().x) / float(renderer.window.get_size().y);
 
     mBlock.direction = Vec3F(0.f, 0.f, +1.f);
 
@@ -92,7 +93,5 @@ void StandardCamera::intergrate(float blend)
     mBlock.invViewMat = maths::inverse(mBlock.viewMat);
     mBlock.invProjMat = maths::inverse(mBlock.projMat);
 
-    mUbo.update(0u, mBlock);
-
-    mComboMatrix = mBlock.projMat * mBlock.viewMat;
+    mBlock.projViewMat = mBlock.projMat * mBlock.viewMat;
 }

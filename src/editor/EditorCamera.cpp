@@ -54,14 +54,8 @@ void EditorCamera::intergrate(float /*blend*/)
 
     mBlock.viewMat = maths::translate(maths::transform(Vec3F(0.f, 0.f, mZoom), rotation), Vec3F(-mCentre, 0.f));
 
-    //--------------------------------------------------------//
-
     mBlock.invViewMat = maths::inverse(mBlock.viewMat);
     mBlock.invProjMat = maths::inverse(mBlock.projMat);
 
-    mUbo.update(0u, mBlock);
-
-    //--------------------------------------------------------//
-
-    mComboMatrix = mBlock.projMat * mBlock.viewMat;
+    mBlock.projViewMat = mBlock.projMat * mBlock.viewMat;
 }

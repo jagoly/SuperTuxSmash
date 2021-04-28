@@ -6,7 +6,7 @@ using namespace sts;
 
 //============================================================================//
 
-Controller::Controller(const sq::InputDevices& devices, const String& configPath)
+Controller::Controller(const sq::VulkInputDevices& devices, const String& configPath)
     : devices(devices)
 {
     const JsonValue root = sq::parse_json_from_file(configPath);
@@ -77,25 +77,25 @@ InputFrame Controller::get_input()
 
     //--------------------------------------------------------//
 
-    if (config.gamepad_port >= 0)
-    {
-        const int port = config.gamepad_port;
+//    if (config.gamepad_port >= 0)
+//    {
+//        const int port = config.gamepad_port;
 
-        if (config.stick_move != Stick::Unknown)
-            mInput.float_axis = devices.get_stick_pos(port, config.stick_move);
+//        if (config.stick_move != Stick::Unknown)
+//            mInput.float_axis = devices.get_stick_pos(port, config.stick_move);
 
-        if (config.button_attack != Button::Unknown)
-            if (devices.is_pressed(port, config.button_attack))
-                mInput.hold_attack = true;
+//        if (config.button_attack != Button::Unknown)
+//            if (devices.is_pressed(port, config.button_attack))
+//                mInput.hold_attack = true;
 
-        if (config.button_jump != Button::Unknown)
-            if (devices.is_pressed(port, config.button_jump))
-                mInput.hold_jump = true;
+//        if (config.button_jump != Button::Unknown)
+//            if (devices.is_pressed(port, config.button_jump))
+//                mInput.hold_jump = true;
 
-        if (config.button_shield != Button::Unknown)
-            if (devices.is_pressed(port, config.button_shield))
-                mInput.hold_shield = true;
-    }
+//        if (config.button_shield != Button::Unknown)
+//            if (devices.is_pressed(port, config.button_shield))
+//                mInput.hold_shield = true;
+//    }
 
     //--------------------------------------------------------//
 

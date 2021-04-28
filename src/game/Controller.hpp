@@ -3,7 +3,7 @@
 #include "setup.hpp"
 
 #include <sqee/app/Event.hpp>
-#include <sqee/app/InputDevices.hpp>
+#include <sqee/vk/VulkInputDevices.hpp>
 
 namespace sts {
 
@@ -34,7 +34,7 @@ class Controller final : sq::NonCopyable
 {
 public: //====================================================//
 
-    Controller(const sq::InputDevices& devices, const String& configPath);
+    Controller(const sq::VulkInputDevices& devices, const String& configPath);
 
     //--------------------------------------------------------//
 
@@ -46,7 +46,7 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    const sq::InputDevices& devices;
+    const sq::VulkInputDevices& devices;
 
 private: //===================================================//
 

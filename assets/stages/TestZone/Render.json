@@ -6,21 +6,25 @@
     "textures": {
       "TestZone_diff": "stages/TestZone/textures/TestZone_diff"
     },
-    "programs": {
+    "pipelines": {
       "": {
-        "path": "super/BasicModel",
-        "options": {
-          "DIFFUSE_TEXTURE": "1"
-        }
+        "attributes": [ "TexCoords", "Normals" ],
+        "pass": "Opaque",
+        "vertexShader": "super/BasicModel/Vert",
+        "fragmentShader": "super/BasicModel/FragDiffuse",
+        "cullFace": "Back",
+        "depthTest": "Replace",
+        "colourBlend": "Disable"
       }
     },
     "materials": {
       "": {
-        "cullface": "back",
-        "program": "",
-        "uniforms": {
-          "tx_Diffuse": "TestZone_diff",
-          "uf_Specular": [ 0.5, 0.5, 0.5 ]
+        "pipeline": "",
+        "textures": {
+          "tx_Diffuse": "TestZone_diff"
+        },
+        "params": {
+          "specular": [ 0.5, 0.5, 0.5 ]
         }
       }
     }

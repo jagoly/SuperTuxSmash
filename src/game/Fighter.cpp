@@ -16,6 +16,7 @@
 #include <sqee/maths/Functions.hpp>
 #include <sqee/misc/Files.hpp>
 #include <sqee/misc/Json.hpp>
+#include <sqee/vk/Helpers.hpp>
 
 using namespace sts;
 
@@ -31,8 +32,21 @@ Fighter::Fighter(FightWorld& world, FighterEnum type, uint8_t index)
     initialise_armature(path);
     initialise_hurtblobs(path);
 
+    // uniform buffer and descriptor set
+    {
+        const auto& ctx = sq::VulkanContext::get();
+
+        mSkellyUbo.initialise(64u + 48u + 48u * mArmature.get_bone_count(), vk::BufferUsageFlagBits::eUniformBuffer);
+        mDescriptorSet = sq::vk_allocate_descriptor_set_swapper(ctx, world.renderer.setLayouts.object);
+
+        sq::vk_update_descriptor_set_swapper (
+            ctx, mDescriptorSet, 0u, 0u, vk::DescriptorType::eUniformBuffer,
+            mSkellyUbo.get_descriptor_info_front(), mSkellyUbo.get_descriptor_info_back()
+        );
+    }
+
     world.renderer.create_draw_items(DrawItemDef::load_from_json(path + "/Render.json", world.caches),
-                                     &mSkellyUbo, { {"flinch", &status.flinch} });
+                                     mDescriptorSet, { {"flinch", &status.flinch} });
 
     for (int8_t i = 0; i < sq::enum_count_v<ActionType>; ++i)
     {
@@ -93,10 +107,7 @@ void Fighter::initialise_armature(const String& path)
     if (mArmature.get_bone_count() == 0u)
     {
         mArmature.load_from_file(path + "/Armature.json");
-
-        mSkellyUbo.allocate_dynamic(64u + 48u + 48u * mArmature.get_bone_count());
         mBoneMatrices.resize(mArmature.get_bone_count());
-
         current.pose = previous.pose = mArmature.get_rest_pose();
     }
 
@@ -510,18 +521,20 @@ Action* Fighter::get_action(ActionType type)
 
 void Fighter::integrate(float blend)
 {
+    mSkellyUbo.swap();
+    mDescriptorSet.swap();
+
     const Vec3F translation = maths::mix(previous.translation, current.translation, blend);
     const QuatF rotation = maths::slerp(previous.rotation, current.rotation, blend);
     mInterpModelMatrix = maths::transform(translation, rotation);
 
     const sq::Armature::Pose pose = mArmature.blend_poses(previous.pose, current.pose, blend);
 
-    SkellyBlock block;
+    auto& camera = world.renderer.get_camera().get_block();
+    auto& block = *reinterpret_cast<SkellyBlock*>(mSkellyUbo.map());
 
-    block.matrix = world.renderer.get_camera().get_combo_matrix() * mInterpModelMatrix;
-    block.normMat = Mat34F(maths::normal_matrix(world.renderer.get_camera().get_view_matrix() * mInterpModelMatrix));
+    block.matrix = camera.projViewMat * mInterpModelMatrix;
+    block.normMat = Mat34F(maths::normal_matrix(camera.viewMat * mInterpModelMatrix));
 
     mArmature.compute_ubo_data(pose, block.bones, 80u);
-
-    mSkellyUbo.update(0u, 64u + 48u + 48u * mArmature.get_bone_count(), &block);
 }

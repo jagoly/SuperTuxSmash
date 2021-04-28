@@ -53,7 +53,7 @@ EditorScene::EditorScene(SmashApp& smashApp)
 
     auto& window = mSmashApp.get_window();
 
-    window.set_window_title("SuperTuxSmash - Action Editor");
+    window.set_title("SuperTuxSmash - Action Editor");
     window.set_key_repeat(true);
 }
 
@@ -165,7 +165,8 @@ void EditorScene::render(double /*elapsed*/)
     if (ImGui::GetIO().WantCaptureMouse == false)
     {
         const Vec2I position = mSmashApp.get_input_devices().get_cursor_location(true);
-        const Vec2I windowSize = Vec2I(mSmashApp.get_window().get_window_size());
+        //const Vec2I windowSize = Vec2I(mSmashApp.get_window().get_window_size());
+        const Vec2I windowSize = {}; // todo
 
         if (position.x >= 0 && position.y >= 0 && position.x < windowSize.x && position.y < windowSize.y)
         {
@@ -182,7 +183,7 @@ void EditorScene::render(double /*elapsed*/)
 
     ctx.world->integrate(blend);
 
-    ctx.renderer->render_objects(blend);
+    ctx.renderer->integrate(blend);
 
     ctx.renderer->resolve_multisample();
 
@@ -393,7 +394,7 @@ void EditorScene::impl_show_widget_navigator()
     {
         if (mActiveContext == &ctx)
         {
-            mSmashApp.get_window().set_window_title("SuperTuxSmash - Action Editor");
+            mSmashApp.get_window().set_title("SuperTuxSmash - Action Editor");
             mActiveContext = mActiveActionContext = nullptr;
         }
         mActionContexts.erase(ctx.key);
@@ -403,7 +404,7 @@ void EditorScene::impl_show_widget_navigator()
     {
         if (mActiveContext == &ctx)
         {
-            mSmashApp.get_window().set_window_title("SuperTuxSmash - Action Editor");
+            mSmashApp.get_window().set_title("SuperTuxSmash - Action Editor");
             mActiveContext = mActiveHurtblobsContext = nullptr;
         }
         mHurtblobsContexts.erase(ctx.key);
@@ -443,7 +444,7 @@ void EditorScene::impl_show_widget_navigator()
                     if (loaded) ImPlus::PushFont(ImPlus::FONT_BOLD);
                     if (ImPlus::Selectable(label, active || highlight) && !active)
                     {
-                        mSmashApp.get_window().set_window_title("SuperTuxSmash - Action Editor - {}/{}"_format(fighterName, actionName));
+                        mSmashApp.get_window().set_title("SuperTuxSmash - Action Editor - {}/{}"_format(fighterName, actionName));
 
                         mActiveHurtblobsContext = nullptr;
                         mActiveContext = mActiveActionContext = &get_action_context(key);
@@ -484,7 +485,7 @@ void EditorScene::impl_show_widget_navigator()
                 if (loaded) ImPlus::PushFont(ImPlus::FONT_BOLD);
                 if (ImPlus::Selectable(label, active || highlight) && !active)
                 {
-                    mSmashApp.get_window().set_window_title("SuperTuxSmash - Action Editor - {} HurtBlobs"_format(key));
+                    mSmashApp.get_window().set_title("SuperTuxSmash - Action Editor - {} HurtBlobs"_format(key));
 
                     mActiveActionContext = nullptr;
                     mActiveContext = mActiveHurtblobsContext = &get_hurtblobs_context(key);
@@ -641,13 +642,13 @@ uint EditorScene::get_default_timeline_length(const ActionContext& ctx)
 
 void EditorScene::create_base_context(FighterEnum fighterKey, BaseContext& ctx)
 {
-    sq::PreProcessor& preProcessor = mSmashApp.get_pre_processor();
+    //sq::PreProcessor& preProcessor = mSmashApp.get_pre_processor();
     sq::AudioContext& audioContext = mSmashApp.get_audio_context();
 
     Options& options = mSmashApp.get_options();
     ResourceCaches& resourceCaches = mSmashApp.get_resource_caches();
 
-    ctx.renderer = std::make_unique<Renderer>(options, preProcessor, resourceCaches);
+    //ctx.renderer = std::make_unique<Renderer>(options, preProcessor, resourceCaches);
     ctx.world = std::make_unique<FightWorld>(options, audioContext, resourceCaches, *ctx.renderer);
 
     ctx.renderer->set_camera(std::make_unique<EditorCamera>(*ctx.renderer));

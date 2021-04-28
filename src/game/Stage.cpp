@@ -9,6 +9,7 @@
 
 #include <sqee/maths/Culling.hpp>
 #include <sqee/misc/Json.hpp>
+#include <sqee/vk/Helpers.hpp>
 
 using namespace sts;
 
@@ -17,8 +18,6 @@ using namespace sts;
 Stage::Stage(FightWorld& world, StageEnum type)
     : world(world), type(type)
 {
-    mStaticUbo.allocate_dynamic(sizeof(StaticBlock));
-
     const String path = sq::build_string("assets/stages/", sq::enum_to_string(type));
     const JsonValue json = sq::parse_json_from_file(path + "/Stage.json");
 
@@ -50,8 +49,21 @@ Stage::Stage(FightWorld& world, StageEnum type)
         platform.maxX = jplatform.at("maxX");
     }
 
+    // uniform buffer and descriptor set
+    {
+        const auto& ctx = sq::VulkanContext::get();
+
+        mStaticUbo.initialise(sizeof(StaticBlock), vk::BufferUsageFlagBits::eUniformBuffer);
+        mDescriptorSet = sq::vk_allocate_descriptor_set_swapper(ctx, world.renderer.setLayouts.object);
+
+        sq::vk_update_descriptor_set_swapper (
+            ctx, mDescriptorSet, 0u, 0u, vk::DescriptorType::eUniformBuffer,
+            mStaticUbo.get_descriptor_info_front(), mStaticUbo.get_descriptor_info_back()
+        );
+    }
+
     world.renderer.create_draw_items(DrawItemDef::load_from_json(path + "/Render.json", world.caches),
-                                     &mStaticUbo, {});
+                                     mDescriptorSet, {});
 }
 
 Stage::~Stage() = default;
@@ -66,12 +78,14 @@ void Stage::tick()
 
 void Stage::integrate(float /*blend*/)
 {
-    StaticBlock block;
+    mStaticUbo.swap();
+    mDescriptorSet.swap();
 
-    block.matrix = world.renderer.get_camera().get_combo_matrix();
-    block.normMat = Mat34F(maths::normal_matrix(world.renderer.get_camera().get_view_matrix()));
+    auto& camera = world.renderer.get_camera().get_block();
+    auto& block = *reinterpret_cast<StaticBlock*>(mStaticUbo.map());
 
-    mStaticUbo.update(0u, block);
+    block.matrix = camera.projViewMat;
+    block.normMat = Mat34F(maths::normal_matrix(camera.viewMat));
 }
 
 //============================================================================//

@@ -56,36 +56,36 @@ void ParticleRenderer::integrate_set(float blend, const ParticleSystem& system)
 
 void ParticleRenderer::render_particles()
 {
-    mVertexBuffer.update(0u, sizeof(ParticleVertex) * uint(mVertices.size()), mVertices.data());
+//    mVertexBuffer.update(0u, sizeof(ParticleVertex) * uint(mVertices.size()), mVertices.data());
 
-    const auto compare = [](ParticleSetInfo& a, ParticleSetInfo& b) { return a.averageDepth > b.averageDepth; };
-    std::sort(mParticleSetInfo.begin(), mParticleSetInfo.end(), compare);
+//    const auto compare = [](ParticleSetInfo& a, ParticleSetInfo& b) { return a.averageDepth > b.averageDepth; };
+//    std::sort(mParticleSetInfo.begin(), mParticleSetInfo.end(), compare);
 
-    //--------------------------------------------------------//
+//    //--------------------------------------------------------//
 
-    auto& context = renderer.context;
+//    auto& context = renderer.context;
 
-    context.bind_framebuffer(renderer.FB_Resolve);
+//    context.bind_framebuffer(renderer.FB_Resolve);
 
-    context.bind_vertexarray(mVertexArray);
-    context.bind_program(renderer.PROG_Particles);
+//    context.bind_vertexarray(mVertexArray);
+//    context.bind_program(renderer.PROG_Particles);
 
-    //gl::Enable(gl::PROGRAM_POINT_SIZE);
+//    //gl::Enable(gl::PROGRAM_POINT_SIZE);
 
-    context.set_state(sq::BlendMode::Alpha);
-    context.set_state(sq::CullFace::Disable);
-    context.set_state(sq::DepthTest::Disable);
-    //context.set_state(Context::Depth_Compare::LessEqual);
+//    context.set_state(sq::BlendMode::Alpha);
+//    context.set_state(sq::CullFace::Disable);
+//    context.set_state(sq::DepthTest::Disable);
+//    //context.set_state(Context::Depth_Compare::LessEqual);
 
-    context.bind_texture(mTexture, 0u);
+//    context.bind_texture(mTexture, 0u);
 
-    context.bind_texture(renderer.TEX_Depth, 1u);
+//    context.bind_texture(renderer.TEX_Depth, 1u);
 
-    for (const ParticleSetInfo& info : mParticleSetInfo)
-    {
-        if (info.vertexCount == 0u) continue;
+//    for (const ParticleSetInfo& info : mParticleSetInfo)
+//    {
+//        if (info.vertexCount == 0u) continue;
 
-        //context.bind_texture(info.texture.get(), 0u);
-        context.draw_arrays(sq::DrawPrimitive::Points, info.startIndex, info.vertexCount);
-    }
+//        //context.bind_texture(info.texture.get(), 0u);
+//        context.draw_arrays(sq::DrawPrimitive::Points, info.startIndex, info.vertexCount);
+//    }
 }

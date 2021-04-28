@@ -1,15 +1,13 @@
 // GLSL Uniform Block
 
-struct CameraBlock
+layout(std140, set=0, binding=0) uniform CameraBlock
 {
-    mat4 viewMat;    // 64
-    mat4 projMat;    // 64
-    mat4 invViewMat; // 64
-    mat4 invProjMat; // 64
-    vec3 position;   // 16
-    vec3 direction;  // 16
-
-    // TOTAL: 288
-};
-
-layout(std140, binding=0) uniform CAMERA { CameraBlock CB; };
+    mat4 viewMat;
+    mat4 projMat;
+    mat4 invViewMat;
+    mat4 invProjMat;
+    mat4 projViewMat;
+    vec3 position;
+    vec3 direction;
+}
+CB;

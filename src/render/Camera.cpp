@@ -4,9 +4,6 @@ using namespace sts;
 
 //============================================================================//
 
-Camera::Camera(const Renderer& renderer) : renderer(renderer)
-{
-    //-- Create Uniform Buffers ------------------------------//
+Camera::Camera(const Renderer& renderer) : renderer(renderer) {}
 
-    mUbo.allocate_dynamic(sizeof(CameraBlock));
-}
+Camera::~Camera() = default;

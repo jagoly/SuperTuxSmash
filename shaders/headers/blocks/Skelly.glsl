@@ -1,12 +1,9 @@
 // GLSL Uniform Block
 
-struct SkellyBlock
+layout(std140, set=3, binding=0) uniform SkellyBlock
 {
-    mat4 matrix;      // 64
-    mat3 normMat;     // 48
-    mat3x4 bones[80]; // 3840
-
-    // TOTAL: 3952
-};
-
-layout(std140, binding=2) uniform SKELLY { SkellyBlock SB; };
+    mat4 matrix;
+    mat3 normMat;
+    mat3x4 bones[80];
+}
+SB;

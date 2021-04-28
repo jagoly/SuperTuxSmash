@@ -3,12 +3,11 @@
 #include "game/VisualEffect.hpp"
 
 #include <sqee/app/AudioContext.hpp>
-#include <sqee/app/PreProcessor.hpp>
 
-#include <sqee/objects/Mesh.hpp>
-#include <sqee/gl/Textures.hpp>
-#include <sqee/gl/Program.hpp>
-#include <sqee/objects/Material.hpp>
+#include <sqee/vk/VulkMesh.hpp>
+#include <sqee/vk/VulkTexture.hpp>
+#include <sqee/vk/Pipeline.hpp>
+#include <sqee/vk/VulkMaterial.hpp>
 #include <sqee/objects/Sound.hpp>
 
 #include <sqee/misc/Json.hpp>
@@ -18,46 +17,43 @@ using namespace sts;
 
 //============================================================================//
 
-ResourceCaches::ResourceCaches(sq::AudioContext& audio, sq::PreProcessor& processor)
-    : mAudioContext(audio), mPreProcessor(processor)
+ResourceCaches::ResourceCaches(sq::AudioContext& audio)
+    : mAudioContext(audio)
 {
     //-- Assign Factory Functions ----------------------------//
 
     meshes.assign_factory([](const String& key)
     {
-        auto result = std::make_unique<sq::Mesh>();
+        auto result = std::make_unique<sq::VulkMesh>();
         result->load_from_file(sq::build_string("assets/", key, ".sqm"), true);
         return result;
     });
 
     textures.assign_factory([](const String& key)
     {
-        auto result = std::make_unique<sq::Texture2D>();
-        result->load_automatic(sq::build_string("assets/", key));
+        auto result = std::make_unique<sq::VulkTexture>();
+        result->load_from_file_2D(sq::build_string("assets/", key));
         return result;
     });
 
-    texarrays.assign_factory([](const String& key)
-    {
-        auto result = std::make_unique<sq::TextureArray>();
-        result->load_automatic(sq::build_string("assets/", key));
-        return result;
-    });
+//    texarrays.assign_factory([](const String& key)
+//    {
+//        auto result = std::make_unique<sq::TextureArray>();
+//        result->load_automatic(sq::build_string("assets/", key));
+//        return result;
+//    });
 
-    programs.assign_factory([this](const JsonValue& key)
+    pipelines.assign_factory([this](const JsonValue& key)
     {
-        const String& path = key.at("path");
-        sq::PreProcessor::OptionMap options = key.at("options");
-
-        auto result = std::make_unique<sq::Program>();
-        mPreProcessor.load_super_shader(*result, sq::build_string("shaders/", path, ".glsl"), options);
+        auto result = std::make_unique<sq::Pipeline>();
+        result->load_from_json(key, passConfigMap);
         return result;
     });
 
     materials.assign_factory([this](const JsonValue& key)
     {
-        auto result = std::make_unique<sq::Material>();
-        result->load_from_json(key, programs, textures);
+        auto result = std::make_unique<sq::VulkMaterial>();
+        result->load_from_json(key, pipelines, textures);
         return result;
     });
 
@@ -79,3 +75,10 @@ ResourceCaches::ResourceCaches(sq::AudioContext& audio, sq::PreProcessor& proces
 }
 
 ResourceCaches::~ResourceCaches() = default;
+
+//============================================================================//
+
+void ResourceCaches::refresh_options()
+{
+    pipelines.reload_resources();
+}

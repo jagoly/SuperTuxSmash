@@ -16,71 +16,86 @@
       "EyeIris_diff": "fighters/Mario/textures/EyeIris_diff",
       "EyeIris_mask": "fighters/Mario/textures/EyeIris_mask"
     },
-    "programs": {
+    "pipelines": {
       "Basic": {
-        "path": "super/BasicModel",
-        "options": {
-          "APPLY_SKELETON": "1",
-          "DIFFUSE_TEXTURE": "1"
-        }
+        "attributes": [ "TexCoords", "Normals", "Tangents", "Bones" ],
+        "pass": "Opaque",
+        "vertexShader": "super/BasicModel/VertSkellyTangents",
+        "fragmentShader": "super/BasicModel/FragTangentsDiffuse",
+        "cullFace": "Back",
+        "depthTest": "Replace",
+        "colourBlend": "Disable"
       },
       "Mask": {
-        "path": "super/BasicModel",
-        "options": {
-          "APPLY_SKELETON": "1",
-          "DIFFUSE_TEXTURE": "1",
-          "MASK_TEXTURE": "1"
-        }
+        "attributes": [ "TexCoords", "Normals", "Tangents", "Bones" ],
+        "pass": "Opaque",
+        "vertexShader": "super/BasicModel/VertSkellyTangents",
+        "fragmentShader": "super/BasicModel/FragTangentsDiffuseMask",
+        "cullFace": "Back",
+        "depthTest": "Replace",
+        "colourBlend": "Disable"
       }
     },
     "materials": {
       "BodyA": {
         "cullface": "back",
-        "program": "Basic",
-        "uniforms": {
-          "tx_Diffuse": "BodyA_diff",
-          "uf_Specular": [ 0.0, 0.0, 0.0 ]
+        "pipeline": "Basic",
+        "textures": {
+          "tx_Diffuse": "BodyA_diff"
+        },
+        "params": {
+          "specular": [ 0.0, 0.0, 0.0 ]
         }
       },
       "BodyB": {
         "cullface": "back",
-        "program": "Basic",
-        "uniforms": {
-          "tx_Diffuse": "BodyB_diff",
-          "uf_Specular": [ 0.0, 0.0, 0.0 ]
+        "pipeline": "Basic",
+        "textures": {
+          "tx_Diffuse": "BodyB_diff"
+        },
+        "params": {
+          "specular": [ 0.0, 0.0, 0.0 ]
         }
       },
       "Buttons": {
         "cullface": "back",
-        "program": "Basic",
-        "uniforms": {
-          "tx_Diffuse": "BodyB_diff",
-          "uf_Specular": [ 0.5, 0.5, 0.4 ]
+        "pipeline": "Basic",
+        "textures": {
+          "tx_Diffuse": "BodyB_diff"
+        },
+        "params": {
+          "specular": [ 0.5, 0.5, 0.4 ]
         }
       },
       "EyesHurt": {
         "cullface": "back",
-        "program": "Basic",
-        "uniforms": {
-          "tx_Diffuse": "EyeHurt_diff",
-          "uf_Specular": [ 0.0, 0.0, 0.0 ]
+        "pipeline": "Basic",
+        "textures": {
+          "tx_Diffuse": "EyeHurt_diff"
+        },
+        "params": {
+          "specular": [ 0.0, 0.0, 0.0 ]
         }
       },
       "EyesIris": {
         "cullface": "back",
-        "program": "Mask",
-        "uniforms": {
+        "pipeline": "Mask",
+        "textures": {
           "tx_Diffuse": "EyeIris_diff",
-          "tx_Mask": "EyeIris_mask",
-          "uf_Specular": [ 0.3, 0.3, 0.3 ]
+          "tx_Mask": "EyeIris_mask"
+        },
+        "params": {
+          "specular": [ 0.3, 0.3, 0.3 ]
         }
       },
       "EyesWhite": {
         "cullface": "back",
-        "program": "Basic",
-        "uniforms": {
-          "tx_Diffuse": "EyeWhite_diff",
-          "uf_Specular": [ 0.2, 0.2, 0.2 ]
+        "pipeline": "Basic",
+        "textures": {
+          "tx_Diffuse": "EyeWhite_diff"
+        },
+        "params": {
+          "specular": [ 0.2, 0.2, 0.2 ]
         }
       }
     }

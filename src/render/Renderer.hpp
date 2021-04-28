@@ -6,14 +6,12 @@
 
 #include "render/DrawItem.hpp"
 
-#include <sqee/gl/FixedBuffer.hpp>
-#include <sqee/gl/FrameBuffer.hpp>
-#include <sqee/gl/Program.hpp>
-#include <sqee/gl/Textures.hpp>
+#include <sqee/vk/SwapBuffer.hpp>
+#include <sqee/vk/VulkTexture.hpp>
 
 //============================================================================//
 
-namespace sq { class Context; }
+namespace sq { class Context; class VulkWindow; }
 
 namespace sts {
 
@@ -26,18 +24,14 @@ class Renderer final : sq::NonCopyable
 {
 public: //====================================================//
 
-    Renderer(const Options& options, sq::PreProcessor& processor, ResourceCaches& caches);
+    Renderer(const sq::VulkWindow& window, const Options& options, ResourceCaches& caches);
 
     ~Renderer();
 
     //--------------------------------------------------------//
 
-    sq::Context& context;
-
+    const sq::VulkWindow& window;
     const Options& options;
-
-    sq::PreProcessor& processor;
-
     ResourceCaches& caches;
 
     //--------------------------------------------------------//
@@ -55,7 +49,8 @@ public: //====================================================//
     //--------------------------------------------------------//
 
     /// Create some DrawItems from a vector of definitions.
-    int64_t create_draw_items(const std::vector<DrawItemDef>& defs, const sq::FixedBuffer* ubo,
+    int64_t create_draw_items(const std::vector<DrawItemDef>& defs,
+                              const sq::Swapper<vk::DescriptorSet>& descriptorSet,
                               std::map<TinyString, const bool*> conditions);
 
     /// Delete all DrawItems with the given group id.
@@ -63,7 +58,11 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    void render_objects(float blend);
+    void integrate(float blend);
+
+    void populate_command_buffer(vk::CommandBuffer cmdbuf);
+
+    void populate_final_pass(vk::CommandBuffer cmdbuf);
 
     void render_particles(const ParticleSystem& system, float blend);
 
@@ -77,26 +76,84 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    sq::FrameBuffer FB_MsMain;
-    sq::FrameBuffer FB_Resolve;
+    struct {
+        vk::DescriptorSetLayout camera;
+        vk::DescriptorSetLayout skybox;
+        vk::DescriptorSetLayout light;
+        vk::DescriptorSetLayout object;
+        vk::DescriptorSetLayout composite;
+    } setLayouts;
 
-    sq::TextureMulti TEX_MsDepth;
-    sq::TextureMulti TEX_MsColour;
-    sq::Texture2D TEX_Depth;
-    sq::Texture2D TEX_Colour;
+    struct {
+        vk::PipelineLayout skybox;
+        vk::PipelineLayout standard;
+        vk::PipelineLayout composite;
+    } pipelineLayouts;
 
-    sq::Program PROG_Particles;
-    sq::Program PROG_Lighting_Skybox;
-    sq::Program PROG_Composite;
+    struct {
+        sq::Swapper<vk::DescriptorSet> camera;
+        sq::Swapper<vk::DescriptorSet> skybox;
+        sq::Swapper<vk::DescriptorSet> light;
+        vk::DescriptorSet composite;
+    } sets;
+
+    struct {
+        vk::Pipeline skybox;
+        vk::Pipeline composite;
+    } pipelines;
+
+    struct {
+        vk::Image msColour;
+        sq::VulkanMemory msColourMem;
+        vk::ImageView msColourView;
+        vk::Image msDepth;
+        sq::VulkanMemory msDepthMem;
+        vk::ImageView msDepthView;
+        vk::Image resolveColour;
+        sq::VulkanMemory resolveColourMem;
+        vk::ImageView resolveColourView;
+        vk::Image resolveDepth;
+        sq::VulkanMemory resolveDepthMem;
+        vk::ImageView resolveDepthView;
+    } images;
+
+    struct {
+        vk::Sampler resolveColour;
+        vk::Sampler resolveDepth;
+    } samplers;
 
 private: //===================================================//
+
+    void impl_initialise_layouts();
+
+    void impl_create_render_targets();
+
+    void impl_destroy_render_targets();
+
+    void impl_create_pipelines();
+
+    void impl_destroy_pipelines();
+
+    //--------------------------------------------------------//
+
+    vk::RenderPass mMsRenderPass;
+    vk::Framebuffer mMsFramebuffer;
+
+    vk::RenderPass mFxRenderPass;
+    vk::Framebuffer mFxFramebuffer;
+
+    // todo: should be part of the stage
+    sq::VulkTexture mSkyboxTexture;
+
+    //--------------------------------------------------------//
 
     std::unique_ptr<Camera> mCamera;
 
     std::unique_ptr<DebugRenderer> mDebugRenderer;
     std::unique_ptr<ParticleRenderer> mParticleRenderer;
 
-    sq::FixedBuffer mLightUbo;
+    sq::SwapBuffer mCameraUbo;
+    sq::SwapBuffer mLightUbo;
 
     std::vector<DrawItem> mDrawItems;
 

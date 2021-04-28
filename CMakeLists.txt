@@ -5,7 +5,40 @@ project(SuperTuxSmash CXX)
 
 set(SQEE_BUILD_ROOT CACHE PATH "The build directory for the SQEE Library")
 
-option(SQEE_STATIC_LIB "Link to SQEE statically" False)
+if (NOT SQEE_BUILD_ROOT)
+    message(FATAL_ERROR "SQEE_BUILD_ROOT not specified")
+endif ()
+
+################################################################################
+
+set(SHADER_OUTPUT_DIR "${CMAKE_BINARY_DIR}/shaders")
+
+function (target_add_shaders TARGET)
+    foreach (SHADER ${ARGN})
+
+        string( REGEX REPLACE
+                "${PROJECT_SOURCE_DIR}/shaders/(.*)\.(vert|geom|frag)"
+                "${SHADER_OUTPUT_DIR}/\\1\.\\2\.spv"
+                OUTPATH ${SHADER} )
+
+        if (${SHADER} STREQUAL ${OUTPATH})
+            message(FATAL_ERROR "bad shader path '${SHADER}'")
+        endif ()
+
+        get_filename_component(OUTDIR ${OUTPATH} DIRECTORY)
+        file(MAKE_DIRECTORY ${OUTDIR})
+
+        add_custom_command( OUTPUT ${OUTPATH}
+                            COMMAND glslc ${SHADER} -o ${OUTPATH}
+                            DEPENDS ${SHADER}
+                            IMPLICIT_DEPENDS CXX ${SHADER}
+                            VERBATIM )
+
+        set_source_files_properties(${OUTPATH} PROPERTIES GENERATED True)
+        target_sources(${TARGET} PRIVATE ${OUTPATH})
+
+    endforeach ()
+endfunction ()
 
 ################################################################################
 
@@ -13,6 +46,15 @@ file(GLOB_RECURSE HEADERS "${PROJECT_SOURCE_DIR}/src/*.hpp")
 file(GLOB_RECURSE SOURCES "${PROJECT_SOURCE_DIR}/src/*.cpp")
 
 add_executable(sts-game ${HEADERS} ${SOURCES})
+
+file(GLOB_RECURSE VERT_SHADERS "${PROJECT_SOURCE_DIR}/shaders/*.vert")
+file(GLOB_RECURSE FRAG_SHADERS "${PROJECT_SOURCE_DIR}/shaders/*.frag")
+file(GLOB_RECURSE GLSL_HEADERS "${PROJECT_SOURCE_DIR}/shaders/*.glsl")
+
+target_add_shaders(sts-game ${VERT_SHADERS} ${FRAG_SHADERS})
+
+target_sources(sts-game PRIVATE ${VERT_SHADERS} ${FRAG_SHADERS} ${GLSL_HEADERS})
+source_group("GLSL" FILES ${VERT_SHADERS} ${FRAG_SHADERS} ${GLSL_HEADERS})
 
 target_include_directories(sts-game PRIVATE "${PROJECT_SOURCE_DIR}/src")
 
@@ -22,6 +64,8 @@ set_property(TARGET sts-game PROPERTY CXX_STANDARD_REQUIRED True)
 # force use of the static msvc runtime so we don't need a bunch of extra dlls
 set_property(TARGET sts-game PROPERTY MSVC_RUNTIME_LIBRARY MultiThreaded$<$<CONFIG:Debug>:Debug>)
 
+################################################################################
+
 #set_property(TARGET sts-game PROPERTY CXX_INCLUDE_WHAT_YOU_USE
 #    "iwyu;-Xiwyu;any;-Xiwyu;iwyu;-Xiwyu;--mapping_file=/storage/Projects/SQEE/sqee/extras/iwyu-mapping.imp")
 
@@ -29,42 +73,9 @@ set_property(TARGET sts-game PROPERTY MSVC_RUNTIME_LIBRARY MultiThreaded$<$<CONF
 
 ################################################################################
 
-if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    set(SQEE_LINUX True)
-elseif (CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    set(SQEE_WINDOWS True)
-endif ()
+set(CMAKE_PREFIX_PATH APPEND ${SQEE_BUILD_ROOT})
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    set(SQEE_GNU True)
-elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    set(SQEE_CLANG True)
-elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    set(SQEE_MSVC True)
-endif ()
-
-################################################################################
-
-# todo: proper cmake support for sqee would be good, sadly I have no idea how to use cmake
-
-if (SQEE_STATIC_LIB)
-
-    find_package(Threads REQUIRED)
-
-    if (SQEE_WINDOWS)
-        set(SFML_STATIC_LIBRARIES True)
-        find_package(SFML 2.5 COMPONENTS window system REQUIRED)
-    endif ()
-
-endif ()
-
-if (SQEE_BUILD_ROOT)
-    include("${SQEE_BUILD_ROOT}/sqee-exports.cmake")
-elseif (EXISTS "../sqee/sqee-exports.cmake")
-    include("../sqee/sqee-exports.cmake")
-else ()
-    message(FATAL_ERROR "Could not find SQEE, try specifying SQEE_BUILD_ROOT")
-endif ()
+find_package(sqee REQUIRED)
 
 ################################################################################
 
@@ -83,9 +94,6 @@ if (NOT CMAKE_BINARY_DIR STREQUAL PROJECT_SOURCE_DIR)
 
     add_custom_command(TARGET sts-game POST_BUILD COMMAND ${CMAKE_COMMAND} -E create_symlink
         "${PROJECT_SOURCE_DIR}/assets" "${CMAKE_BINARY_DIR}/assets")
-
-    add_custom_command(TARGET sts-game POST_BUILD COMMAND ${CMAKE_COMMAND} -E create_symlink
-        "${PROJECT_SOURCE_DIR}/shaders" "${CMAKE_BINARY_DIR}/shaders")
 
     add_custom_command(TARGET sts-game POST_BUILD COMMAND ${CMAKE_COMMAND} -E create_symlink
         "${PROJECT_SOURCE_DIR}/wren" "${CMAKE_BINARY_DIR}/wren")

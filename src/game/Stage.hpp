@@ -4,7 +4,7 @@
 
 #include "main/MainEnums.hpp"
 
-#include <sqee/gl/FixedBuffer.hpp>
+#include <sqee/vk/SwapBuffer.hpp>
 
 //============================================================================//
 
@@ -101,7 +101,8 @@ protected: //=================================================//
 
     //--------------------------------------------------------//
 
-    sq::FixedBuffer mStaticUbo;
+    sq::SwapBuffer mStaticUbo;
+    sq::Swapper<vk::DescriptorSet> mDescriptorSet;
 };
 
 //============================================================================//

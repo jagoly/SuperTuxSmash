@@ -8,8 +8,8 @@
 #include "game/FighterEnums.hpp"
 
 #include <sqee/app/WrenPlus.hpp>
-#include <sqee/gl/FixedBuffer.hpp>
 #include <sqee/objects/Armature.hpp>
+#include <sqee/vk/SwapBuffer.hpp>
 
 namespace sts {
 
@@ -371,7 +371,8 @@ private: //===================================================//
 
     sq::Armature mArmature;
 
-    sq::FixedBuffer mSkellyUbo;
+    sq::SwapBuffer mSkellyUbo;
+    sq::Swapper<vk::DescriptorSet> mDescriptorSet;
 
     Animations mAnimations;
 

@@ -2,67 +2,77 @@
 
 #include "setup.hpp"
 
+#include <sqee/vk/PassConfig.hpp>
+
 #include <sqee/misc/ResourceCache.hpp>
 #include <sqee/misc/ResourceHandle.hpp>
 
+//============================================================================//
+
 namespace sq {
 
-class Texture2D;
-class TextureArray;
-class Program;
-class Material;
-class Mesh;
+class VulkMesh;
+class VulkTexture;
+//class TextureArray;
+class Pipeline;
+class VulkMaterial;
 class Sound;
 
 class AudioContext;
-class PreProcessor;
 
 } // namespace sq
+
+//============================================================================//
 
 namespace sts {
 
 using namespace sq::coretypes;
 
-using TextureCache = sq::ResourceCache<String, sq::Texture2D>;
-using TexArrayCache = sq::ResourceCache<String, sq::TextureArray>;
-using ProgramCache = sq::ResourceCache<JsonValue, sq::Program>;
-using MaterialCache = sq::ResourceCache<JsonValue, sq::Material>;
-using MeshCache = sq::ResourceCache<String, sq::Mesh>;
+using MeshCache = sq::ResourceCache<String, sq::VulkMesh>;
+using TextureCache = sq::ResourceCache<String, sq::VulkTexture>;
+//using TexArrayCache = sq::ResourceCache<String, sq::TextureArray>;
+using PipelineCache = sq::ResourceCache<JsonValue, sq::Pipeline>;
+using MaterialCache = sq::ResourceCache<JsonValue, sq::VulkMaterial>;
 using SoundCache = sq::ResourceCache<String, sq::Sound>;
 
-using TextureHandle = sq::Handle<String, sq::Texture2D>;
-using TexArrayHandle = sq::Handle<String, sq::TextureArray>;
-using ProgramHandle = sq::Handle<JsonValue, sq::Program>;
-using MaterialHandle = sq::Handle<JsonValue, sq::Material>;
-using MeshHandle = sq::Handle<String, sq::Mesh>;
+using MeshHandle = sq::Handle<String, sq::VulkMesh>;
+using TextureHandle = sq::Handle<String, sq::VulkTexture>;
+//using TexArrayHandle = sq::Handle<String, sq::TextureArray>;
+using PipelineHandle = sq::Handle<JsonValue, sq::Pipeline>;
+using MaterialHandle = sq::Handle<JsonValue, sq::VulkMaterial>;
 using SoundHandle = sq::Handle<String, sq::Sound>;
 
 struct EffectAsset;
 using EffectCache = sq::ResourceCache<String, EffectAsset>;
 using EffectHandle = sq::Handle<String, EffectAsset>;
 
+//============================================================================//
+
 class ResourceCaches final : sq::NonCopyable
 {
 public: //================================================//
 
-    ResourceCaches(sq::AudioContext& audio, sq::PreProcessor& processor);
+    ResourceCaches(sq::AudioContext& audio);
 
     ~ResourceCaches();
 
     MeshCache meshes;
     TextureCache textures;
-    TexArrayCache texarrays;
-
-    ProgramCache programs;
+    //TexArrayCache texarrays;
+    PipelineCache pipelines;
     MaterialCache materials;
-
     SoundCache sounds;
     EffectCache effects;
+
+    sq::PassConfigMap passConfigMap;
+
+    void refresh_options();
 
 private: //===============================================//
 
     sq::AudioContext& mAudioContext;
-    sq::PreProcessor& mPreProcessor;
 };
+
+//============================================================================//
 
 } // namespace sts

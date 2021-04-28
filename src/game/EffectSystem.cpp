@@ -44,7 +44,7 @@ void EffectSystem::play_effect(const VisualEffect& effect)
         if (asset.paramTracks[i] != nullptr)
             asset.armature.compute_extra_discrete(instance.current.params[i], *asset.paramTracks[i], 0u);
 
-    instance.renderGroupId = renderer.create_draw_items(asset.drawItemDefs, instance.ubo.get(), {});
+    //instance.renderGroupId = renderer.create_draw_items(asset.drawItemDefs, instance.ubo.get(), {});
 }
 
 //============================================================================//
@@ -113,8 +113,8 @@ void EffectSystem::integrate(float blend)
 
         EffectBlock block;
 
-        block.matrix = renderer.get_camera().get_combo_matrix() * modelMatrix;
-        block.normMat = Mat34F(maths::normal_matrix(renderer.get_camera().get_view_matrix() * modelMatrix));
+        block.matrix = renderer.get_camera().get_block().projViewMat * modelMatrix;
+        block.normMat = Mat34F(maths::normal_matrix(renderer.get_camera().get_block().viewMat * modelMatrix));
 
         asset.armature.compute_ubo_data(pose, block.bones, 8u);
 

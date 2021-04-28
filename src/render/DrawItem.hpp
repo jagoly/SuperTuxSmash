@@ -1,10 +1,11 @@
 #pragma once
 
-#include "setup.hpp" // IWYU pragma: export
+#include "setup.hpp"
 
 #include "main/Resources.hpp"
 
-namespace sq { class FixedBuffer; }
+#include <sqee/vk/Swapper.hpp>
+#include <sqee/vk/Vulkan.hpp>
 
 namespace sts {
 
@@ -27,8 +28,8 @@ struct DrawItemDef final
     MeshHandle mesh;
 
     DrawPass pass;
-    bool invertCondition;
-    int8_t subMesh;
+    bool invertCondition = false;
+    int8_t subMesh = -1;
 };
 
 //============================================================================//
@@ -36,7 +37,7 @@ struct DrawItemDef final
 /// Represents a single draw call, objects may have multiple of these.
 struct DrawItem final
 {
-    const bool* condition;
+    const bool* condition = nullptr;
 
     MaterialHandle material;
     MeshHandle mesh;
@@ -45,7 +46,7 @@ struct DrawItem final
     bool invertCondition;
     int8_t subMesh;
 
-    const sq::FixedBuffer* ubo;
+    const sq::Swapper<vk::DescriptorSet>* descriptorSet;
     int64_t groupId;
 };
 

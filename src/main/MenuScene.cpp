@@ -38,6 +38,13 @@ void MenuScene::update()
 
 //============================================================================//
 
+void MenuScene::integrate(double elapsed, float blend)
+{
+
+}
+
+//============================================================================//
+
 void MenuScene::render(double /*elapsed*/)
 {
     auto& options = mSmashApp.get_options();
@@ -99,4 +106,21 @@ void MenuScene::show_imgui_widgets()
         mSmashApp.start_game(GameSetup::get_quickstart());
     }
     ImPlus::HoverTooltip("currently this starts a game in TestZone with four Marios");
+}
+
+//============================================================================//
+
+void MenuScene::populate_command_buffer(vk::CommandBuffer cmdbuf, vk::Framebuffer framebuf)
+{
+    const Vec2U windowSize = mSmashApp.get_window().get_size();
+
+    cmdbuf.beginRenderPass (
+        vk::RenderPassBeginInfo {
+            mSmashApp.get_window().get_render_pass(), framebuf, vk::Rect2D({0, 0}, {windowSize.x, windowSize.y})
+        }, vk::SubpassContents::eInline
+    );
+
+    mSmashApp.get_gui_system().render_gui(cmdbuf);
+
+    cmdbuf.endRenderPass();
 }

@@ -1,8 +1,8 @@
 #include "render/DrawItem.hpp"
 
 #include <sqee/misc/Json.hpp>
-#include <sqee/objects/Material.hpp>
-#include <sqee/objects/Mesh.hpp>
+#include <sqee/vk/VulkMaterial.hpp>
+#include <sqee/vk/VulkMesh.hpp>
 
 using namespace sts;
 
@@ -22,17 +22,16 @@ std::vector<DrawItemDef> DrawItemDef::load_from_json(const String& path, Resourc
     JsonValue& jsonMaterials = jsonAssets.at("materials");
 
     const JsonValue& jsonTextures = jsonAssets.at("textures");
-    const JsonValue& jsonPrograms = jsonAssets.at("programs");
+    const JsonValue& jsonPipelines = jsonAssets.at("pipelines");
     const JsonValue& jsonMeshes = jsonAssets.at("meshes");
 
     for (JsonValue& material : jsonMaterials)
     {
-        JsonValue& program = material.at("program");
-        program = jsonPrograms.at(program.get_ref<const String&>());
+        JsonValue& pipeline = material.at("pipeline");
+        pipeline = jsonPipelines.at(pipeline.get_ref<const String&>());
 
-        for (JsonValue& uniform : material.at("uniforms"))
-            if (uniform.is_string() == true)
-                uniform = jsonTextures.at(uniform.get_ref<const String&>());
+        for (JsonValue& texture : material.at("textures"))
+            texture = jsonTextures.at(texture.get_ref<const String&>());
     }
 
     //-- populate the result vector --------------------------//

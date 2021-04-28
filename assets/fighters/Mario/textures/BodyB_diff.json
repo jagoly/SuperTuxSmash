@@ -1,7 +1,9 @@
 {
-  "format": "RGB8_UN",
-  "wrap": "RR",
-  "swizzle": "RGB1",
+  "format": "4x8_Srgb",
+  "wrapX": "Repeat",
+  "wrapY": "Repeat",
+  "swizzle": "RGBA",
   "filter": true,
-  "mipmaps": true
+  "mipmaps": true,
+  "anisotropy": true
 }
