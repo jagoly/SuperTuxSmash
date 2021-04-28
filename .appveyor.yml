@@ -46,7 +46,7 @@ after_build:
   - xcopy /E shaders c:\out\shaders\
   - xcopy /E wren c:\out\wren\
   - xcopy /E config c:\out\config\
-  - copy Debug\sts-game.exe c:\out
+  - copy Debug\* c:\out
 
   - cd c:\
   - rename out sts-windows-debug
