@@ -67,7 +67,11 @@ void SmashApp::update(double elapsed)
                 handle_event(event);
         mGuiSystem->finish_handle_events(true);
     }
-    else mGuiSystem->finish_handle_events(false);
+    else
+    {
+        void(mWindow->fetch_events());
+        mGuiSystem->finish_handle_events(false);
+    }
 
     //-- update scene and imgui ------------------------------//
 
