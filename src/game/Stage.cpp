@@ -78,11 +78,10 @@ void Stage::tick()
 
 void Stage::integrate(float /*blend*/)
 {
-    mStaticUbo.swap();
-    mDescriptorSet.swap();
-
     auto& camera = world.renderer.get_camera().get_block();
-    auto& block = *reinterpret_cast<StaticBlock*>(mStaticUbo.map());
+
+    mDescriptorSet.swap();
+    auto& block = *reinterpret_cast<StaticBlock*>(mStaticUbo.swap_map());
 
     block.matrix = camera.projViewMat;
     block.normMat = Mat34F(maths::normal_matrix(camera.viewMat));

@@ -237,11 +237,15 @@ void SmashApp::refresh_options()
 {
     //mOptions->window_size = mWindow->get_window_size();
 
-    mWindow->destroy_swapchain_and_friends();
-    mWindow->create_swapchain_and_friends();
+    const auto& ctx = sq::VulkanContext::get();
 
-    if (mActiveScene != nullptr)
-        mActiveScene->refresh_options();
+    mWindow->destroy_swapchain_and_friends();
+    mActiveScene->refresh_options_destroy();
+
+    ctx.allocator.free_empty_blocks();
+
+    mWindow->create_swapchain_and_friends();
+    mActiveScene->refresh_options_create();
 
     mResourceCaches->refresh_options();
 }

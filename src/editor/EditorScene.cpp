@@ -109,10 +109,16 @@ void EditorScene::handle_event(sq::Event event)
 
 //============================================================================//
 
-void EditorScene::refresh_options()
+void EditorScene::refresh_options_destroy()
 {
     if (mActiveContext != nullptr)
-        mActiveContext->renderer->refresh_options();
+        mActiveContext->renderer->refresh_options_destroy();
+}
+
+void EditorScene::refresh_options_create()
+{
+    if (mActiveContext != nullptr)
+        mActiveContext->renderer->refresh_options_create();
 }
 
 //============================================================================//
@@ -448,7 +454,8 @@ void EditorScene::impl_show_widget_navigator()
 
                         mActiveHurtblobsContext = nullptr;
                         mActiveContext = mActiveActionContext = &get_action_context(key);
-                        mActiveContext->renderer->refresh_options();
+                        mActiveContext->renderer->refresh_options_destroy();
+                        mActiveContext->renderer->refresh_options_create();
                     }
                     if (loaded) ImGui::PopFont();
 
@@ -489,7 +496,8 @@ void EditorScene::impl_show_widget_navigator()
 
                     mActiveActionContext = nullptr;
                     mActiveContext = mActiveHurtblobsContext = &get_hurtblobs_context(key);
-                    mActiveContext->renderer->refresh_options();
+                    mActiveContext->renderer->refresh_options_destroy();
+                    mActiveContext->renderer->refresh_options_create();
                 }
                 if (loaded) ImGui::PopFont();
 

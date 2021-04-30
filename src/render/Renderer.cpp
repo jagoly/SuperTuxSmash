@@ -63,6 +63,8 @@ Renderer::~Renderer()
 {
     const auto& ctx = sq::VulkanContext::get();
 
+    ctx.device.waitIdle();
+
     ctx.device.destroy(setLayouts.camera);
     ctx.device.destroy(setLayouts.skybox);
     ctx.device.destroy(setLayouts.light);
@@ -321,7 +323,8 @@ void Renderer::impl_create_render_targets()
     }
 
     caches.passConfigMap = {
-        { "Opaque", { mMsRenderPass, msaaMode, window.get_size() } }
+        { "Opaque", { mMsRenderPass, msaaMode, window.get_size(), setLayouts.camera, setLayouts.light } },
+        { "Transparent", { mMsRenderPass, msaaMode, window.get_size(), setLayouts.camera, setLayouts.light } }
     };
 }
 
@@ -442,13 +445,17 @@ void Renderer::impl_destroy_pipelines()
 
 //============================================================================//
 
-void Renderer::refresh_options()
+void Renderer::refresh_options_destroy()
 {
     impl_destroy_render_targets();
-    impl_create_render_targets();
-
     impl_destroy_pipelines();
+}
+
+void Renderer::refresh_options_create()
+{
+    impl_create_render_targets();
     impl_create_pipelines();
+}
 
     //-- Prepare Shader Options Header -----------------------//
 
@@ -516,7 +523,6 @@ void Renderer::refresh_options()
 
     mDebugRenderer->refresh_options();
     mParticleRenderer->refresh_options();*/
-}
 
 //============================================================================//
 
@@ -568,20 +574,16 @@ void Renderer::integrate(float blend)
 {
     //-- Update the Camera -----------------------------------//
 
-    mCameraUbo.swap();
-    sets.camera.swap();
-
     mCamera->intergrate(blend);
 
-    auto& cameraBlock = *reinterpret_cast<CameraBlock*>(mCameraUbo.map());
+    sets.camera.swap();
+    auto& cameraBlock = *reinterpret_cast<CameraBlock*>(mCameraUbo.swap_map());
     cameraBlock = mCamera->get_block();
 
     //-- Update the Lighting ---------------------------------//
 
-    mLightUbo.swap();
     sets.light.swap();
-
-    auto& lightBlock = *reinterpret_cast<LightBlock*>(mLightUbo.map());
+    auto& lightBlock = *reinterpret_cast<LightBlock*>(mLightUbo.swap_map());
     lightBlock.ambiColour = { 0.5f, 0.5f, 0.5f };
     lightBlock.skyColour = { 0.7f, 0.7f, 0.7f };
     lightBlock.skyDirection = maths::normalize(Vec3F(0.f, -1.f, 0.5f));
@@ -653,6 +655,7 @@ void Renderer::populate_command_buffer(vk::CommandBuffer cmdbuf)
     cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayouts.standard, 1u, sets.light.front, {});
 
     render_items_for_draw_pass(DrawPass::Opaque);
+    render_items_for_draw_pass(DrawPass::Transparent);
 
     //--------------------------------------------------------//
 

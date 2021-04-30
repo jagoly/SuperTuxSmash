@@ -20,7 +20,11 @@ MenuScene::~MenuScene() = default;
 
 //============================================================================//
 
-void MenuScene::refresh_options()
+void MenuScene::refresh_options_destroy()
+{
+}
+
+void MenuScene::refresh_options_create()
 {
 }
 

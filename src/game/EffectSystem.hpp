@@ -2,7 +2,7 @@
 
 #include "setup.hpp"
 
-#include <sqee/gl/FixedBuffer.hpp>
+#include <sqee/vk/SwapBuffer.hpp>
 #include <sqee/objects/Armature.hpp>
 
 namespace sts {
@@ -36,7 +36,8 @@ private: //===================================================//
     struct ActiveEffect
     {
         const VisualEffect* effect;
-        std::unique_ptr<sq::FixedBuffer> ubo;
+        sq::SwapBuffer ubo;
+        sq::Swapper<vk::DescriptorSet> descriptorSet;
         uint frame;        
         int64_t renderGroupId;
         Mat4F worldMatrix;

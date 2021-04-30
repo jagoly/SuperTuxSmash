@@ -96,9 +96,14 @@ GameScene::~GameScene() = default;
 
 //============================================================================//
 
-void GameScene::refresh_options()
+void GameScene::refresh_options_destroy()
 {
-    mRenderer->refresh_options();
+    mRenderer->refresh_options_destroy();
+}
+
+void GameScene::refresh_options_create()
+{
+    mRenderer->refresh_options_create();
 }
 
 //============================================================================//

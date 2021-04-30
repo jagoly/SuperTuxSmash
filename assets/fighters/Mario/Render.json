@@ -24,7 +24,7 @@
         "fragmentShader": "super/BasicModel/FragTangentsDiffuse",
         "cullFace": "Back",
         "depthTest": "Replace",
-        "colourBlend": "Disable"
+        "blendMode": "Disable"
       },
       "Mask": {
         "attributes": [ "TexCoords", "Normals", "Tangents", "Bones" ],
@@ -33,12 +33,11 @@
         "fragmentShader": "super/BasicModel/FragTangentsDiffuseMask",
         "cullFace": "Back",
         "depthTest": "Replace",
-        "colourBlend": "Disable"
+        "blendMode": "Disable"
       }
     },
     "materials": {
       "BodyA": {
-        "cullface": "back",
         "pipeline": "Basic",
         "textures": {
           "tx_Diffuse": "BodyA_diff"
@@ -48,7 +47,6 @@
         }
       },
       "BodyB": {
-        "cullface": "back",
         "pipeline": "Basic",
         "textures": {
           "tx_Diffuse": "BodyB_diff"
@@ -68,7 +66,6 @@
         }
       },
       "EyesHurt": {
-        "cullface": "back",
         "pipeline": "Basic",
         "textures": {
           "tx_Diffuse": "EyeHurt_diff"
@@ -78,7 +75,6 @@
         }
       },
       "EyesIris": {
-        "cullface": "back",
         "pipeline": "Mask",
         "textures": {
           "tx_Diffuse": "EyeIris_diff",
@@ -89,7 +85,6 @@
         }
       },
       "EyesWhite": {
-        "cullface": "back",
         "pipeline": "Basic",
         "textures": {
           "tx_Diffuse": "EyeWhite_diff"

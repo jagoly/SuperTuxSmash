@@ -521,9 +521,6 @@ Action* Fighter::get_action(ActionType type)
 
 void Fighter::integrate(float blend)
 {
-    mSkellyUbo.swap();
-    mDescriptorSet.swap();
-
     const Vec3F translation = maths::mix(previous.translation, current.translation, blend);
     const QuatF rotation = maths::slerp(previous.rotation, current.rotation, blend);
     mInterpModelMatrix = maths::transform(translation, rotation);
@@ -531,7 +528,9 @@ void Fighter::integrate(float blend)
     const sq::Armature::Pose pose = mArmature.blend_poses(previous.pose, current.pose, blend);
 
     auto& camera = world.renderer.get_camera().get_block();
-    auto& block = *reinterpret_cast<SkellyBlock*>(mSkellyUbo.map());
+
+    mDescriptorSet.swap();
+    auto& block = *reinterpret_cast<SkellyBlock*>(mSkellyUbo.swap_map());
 
     block.matrix = camera.projViewMat * mInterpModelMatrix;
     block.normMat = Mat34F(maths::normal_matrix(camera.viewMat * mInterpModelMatrix));

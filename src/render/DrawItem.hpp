@@ -46,6 +46,8 @@ struct DrawItem final
     bool invertCondition;
     int8_t subMesh;
 
+    // todo: change to vk::DescriptorSet and allow updating using groupId
+    // this way there is no worry about reallocated vectors
     const sq::Swapper<vk::DescriptorSet>* descriptorSet;
     int64_t groupId;
 };

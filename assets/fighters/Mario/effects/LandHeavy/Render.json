@@ -7,26 +7,31 @@
       "eff_cmn_smokeA": "fighters/Mario/textures/effects/eff_cmn_smokeA",
       "eff_cmn_smokeB": "fighters/Mario/textures/effects/eff_cmn_smokeB"
     },
-    "programs": {
+    "pipelines": {
       "": {
-        "path": "super/BasicEffect",
-        "options": {}
+        "attributes": [ "TexCoords", "Bones" ],
+        "pass": "Transparent",
+        "vertexShader": "super/BasicEffect/Vert",
+        "fragmentShader": "super/BasicEffect/Frag",
+        "cullFace": "Disable",
+        "depthTest": "Keep",
+        "blendMode": "Alpha"
       }
     },
     "materials": {
       "smokeB": {
-        "cullface": "disable",
-        "program": "",
-        "uniforms": {
+        "pipeline": "",
+        "textures": {
           "tx_Colour": "eff_cmn_smokeB"
-        }
+        },
+        "params": {}
       },
       "down_shock": {
-        "cullface": "disable",
-        "program": "",
-        "uniforms": {
+        "pipeline": "",
+        "textures": {
           "tx_Colour": "eff_cmn_smokeA"
-        }
+        },
+        "params": {}
       }
     }
   },

@@ -21,7 +21,9 @@ public: //====================================================//
 
     void handle_event(sq::Event event) override;
 
-    void refresh_options() override;
+    void refresh_options_destroy() override;
+
+    void refresh_options_create() override;
 
     void show_imgui_widgets() override;
 
