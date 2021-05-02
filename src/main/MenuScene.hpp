@@ -37,8 +37,6 @@ private: //===================================================//
 
     void integrate(double elapsed, float blend) override;
 
-    void render(double elapsed) override;
-
     //--------------------------------------------------------//
 
     SmashApp& mSmashApp;

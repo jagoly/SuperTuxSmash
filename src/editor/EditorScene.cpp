@@ -24,10 +24,10 @@
 #include <sqee/app/Event.hpp>
 #include <sqee/app/GuiWidgets.hpp>
 #include <sqee/debug/Assert.hpp>
-#include <sqee/gl/Context.hpp>
 #include <sqee/misc/Files.hpp>
 #include <sqee/misc/Json.hpp>
 #include <sqee/objects/Armature.hpp>
+#include <sqee/vk/VulkanContext.hpp>
 
 using namespace sts;
 
@@ -57,7 +57,10 @@ EditorScene::EditorScene(SmashApp& smashApp)
     window.set_key_repeat(true);
 }
 
-EditorScene::~EditorScene() = default;
+EditorScene::~EditorScene()
+{
+    sq::VulkanContext::get().device.waitIdle();
+}
 
 //============================================================================//
 
@@ -126,13 +129,6 @@ void EditorScene::refresh_options_create()
 void EditorScene::update()
 {
     if (mActiveActionContext != nullptr)
-
-    if (mActiveHurtblobsContext != nullptr)
-    {
-        apply_working_changes(*mActiveHurtblobsContext);
-    }
-
-    if (mActiveActionContext != nullptr)
     {
         apply_working_changes(*mActiveActionContext);
 
@@ -145,34 +141,31 @@ void EditorScene::update()
         if (mPreviewMode != PreviewMode::Pause)
             tick_action_context(*mActiveActionContext);
     }
+
+    if (mActiveHurtblobsContext != nullptr)
+    {
+        apply_working_changes(*mActiveHurtblobsContext);
+    }
 }
 
 //============================================================================//
 
-void EditorScene::render(double /*elapsed*/)
+void EditorScene::integrate(double /*elapsed*/, float blend)
 {
-    // need to clear the window if we don't have an active context
     if (mActiveContext == nullptr)
-    {
-        auto& options = mSmashApp.get_options();
-        auto& context = sq::Context::get();
+        return;
 
-        context.set_ViewPort(options.window_size);
-
-        context.clear_depth_stencil_colour(1.0, 0x00, 0xFF, {0.f, 0.f, 0.f, 1.f});
-
-        return; // EARLY RETURN
-    }
-
-    //--------------------------------------------------------//
+    if (mPreviewMode == PreviewMode::Pause)
+        blend = mBlendValue;
 
     BaseContext& ctx = *mActiveContext;
+
+    //--------------------------------------------------------//
 
     if (ImGui::GetIO().WantCaptureMouse == false)
     {
         const Vec2I position = mSmashApp.get_input_devices().get_cursor_location(true);
-        //const Vec2I windowSize = Vec2I(mSmashApp.get_window().get_window_size());
-        const Vec2I windowSize = {}; // todo
+        const Vec2I windowSize = Vec2I(mSmashApp.get_window().get_size());
 
         if (position.x >= 0 && position.y >= 0 && position.x < windowSize.x && position.y < windowSize.y)
         {
@@ -185,15 +178,10 @@ void EditorScene::render(double /*elapsed*/)
         }
     }
 
-    const float blend = mPreviewMode == PreviewMode::Pause ? mBlendValue : float(mAccumulation / mTickTime);
+    //--------------------------------------------------------//
 
     ctx.world->integrate(blend);
-
     ctx.renderer->integrate(blend);
-
-    ctx.renderer->resolve_multisample();
-
-    ctx.renderer->render_particles(ctx.world->get_particle_system(), blend);
 
     auto& options = mSmashApp.get_options();
     auto& debugRenderer = ctx.renderer->get_debug_renderer();
@@ -211,8 +199,6 @@ void EditorScene::render(double /*elapsed*/)
     if (options.render_skeletons == true)
         for (const auto fighter : ctx.world->get_fighters())
             debugRenderer.render_skeleton(*fighter);
-
-    ctx.renderer->finish_rendering();
 }
 
 //============================================================================//
@@ -400,6 +386,7 @@ void EditorScene::impl_show_widget_navigator()
     {
         if (mActiveContext == &ctx)
         {
+            sq::VulkanContext::get().device.waitIdle();
             mSmashApp.get_window().set_title("SuperTuxSmash - Action Editor");
             mActiveContext = mActiveActionContext = nullptr;
         }
@@ -650,13 +637,13 @@ uint EditorScene::get_default_timeline_length(const ActionContext& ctx)
 
 void EditorScene::create_base_context(FighterEnum fighterKey, BaseContext& ctx)
 {
-    //sq::PreProcessor& preProcessor = mSmashApp.get_pre_processor();
+    sq::VulkWindow& window = mSmashApp.get_window();
     sq::AudioContext& audioContext = mSmashApp.get_audio_context();
 
     Options& options = mSmashApp.get_options();
     ResourceCaches& resourceCaches = mSmashApp.get_resource_caches();
 
-    //ctx.renderer = std::make_unique<Renderer>(options, preProcessor, resourceCaches);
+    ctx.renderer = std::make_unique<Renderer>(window, options, resourceCaches);
     ctx.world = std::make_unique<FightWorld>(options, audioContext, resourceCaches, *ctx.renderer);
 
     ctx.renderer->set_camera(std::make_unique<EditorCamera>(*ctx.renderer));
@@ -932,4 +919,27 @@ void EditorScene::scrub_to_frame_previous(ActionContext& ctx)
 {
     if (ctx.currentFrame == -1) scrub_to_frame(ctx, ctx.timelineLength - 1);
     else scrub_to_frame(ctx, ctx.currentFrame - 1);
+}
+
+//============================================================================//
+
+void EditorScene::populate_command_buffer(vk::CommandBuffer cmdbuf, vk::Framebuffer framebuf)
+{
+    const Vec2U windowSize = mSmashApp.get_window().get_size();
+
+    if (mActiveContext != nullptr)
+        mActiveContext->renderer->populate_command_buffer(cmdbuf);
+
+    cmdbuf.beginRenderPass (
+        vk::RenderPassBeginInfo {
+            mSmashApp.get_window().get_render_pass(), framebuf, vk::Rect2D({0, 0}, {windowSize.x, windowSize.y})
+        }, vk::SubpassContents::eInline
+    );
+
+    if (mActiveContext != nullptr)
+        mActiveContext->renderer->populate_final_pass(cmdbuf);
+
+    mSmashApp.get_gui_system().render_gui(cmdbuf);
+
+    cmdbuf.endRenderPass();
 }

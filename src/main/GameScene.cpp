@@ -16,6 +16,7 @@
 
 #include <sqee/app/GuiWidgets.hpp>
 #include <sqee/debug/Text.hpp>
+#include <sqee/vk/VulkanContext.hpp>
 
 using namespace sts;
 
@@ -92,7 +93,10 @@ GameScene::GameScene(SmashApp& smashApp, GameSetup setup)
     mFightWorld->finish_setup();
 }
 
-GameScene::~GameScene() = default;
+GameScene::~GameScene()
+{
+    sq::VulkanContext::get().device.waitIdle();
+}
 
 //============================================================================//
 
@@ -152,21 +156,6 @@ void GameScene::integrate(double /*elapsed*/, float blend)
 {
     mFightWorld->integrate(blend);
     mRenderer->integrate(blend);
-}
-
-//============================================================================//
-
-void GameScene::render(double /*elapsed*/)
-{
-    const float blend = float(mAccumulation / mTickTime);
-
-    mFightWorld->integrate(blend);
-
-    //mRenderer->render_objects(blend);
-
-    mRenderer->resolve_multisample();
-
-    mRenderer->render_particles(mFightWorld->get_particle_system(), blend);
 
     auto& options = mSmashApp.get_options();
     auto& debugRenderer = mRenderer->get_debug_renderer();
@@ -184,12 +173,13 @@ void GameScene::render(double /*elapsed*/)
     if (options.render_skeletons == true)
         for (const auto fighter : mFightWorld->get_fighters())
             debugRenderer.render_skeleton(*fighter);
+}
 
-    mRenderer->finish_rendering();
+//============================================================================//
 
-    //--------------------------------------------------------//
-
-    // yes, this is gross, but sqee's debug text rendering is very limited
+void GameScene::render(double /*elapsed*/)
+{
+    /*mRenderer->render_particles(mFightWorld->get_particle_system(), blend);
 
     String damageString; damageString.reserve(47u);
 
@@ -206,7 +196,7 @@ void GameScene::render(double /*elapsed*/)
         if (damage >= 55) damageColour = { 1.f, 0.9f, 0.3f, 1.f };
         if (damage >= 90) damageColour = { 1.f, 0.3f, 0.3f, 1.f };
         sq::render_text_basic(damageString, {+1, +1}, {+1, -1}, {28.f, 40.f}, damageColour, true);
-    }
+    }*/
 }
 
 //============================================================================//

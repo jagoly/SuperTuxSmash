@@ -42,21 +42,9 @@ void MenuScene::update()
 
 //============================================================================//
 
-void MenuScene::integrate(double elapsed, float blend)
+void MenuScene::integrate(double /*elapsed*/, float /*blend*/)
 {
 
-}
-
-//============================================================================//
-
-void MenuScene::render(double /*elapsed*/)
-{
-    auto& options = mSmashApp.get_options();
-    auto& context = sq::Context::get();
-
-    context.set_ViewPort(options.window_size);
-
-    context.clear_depth_stencil_colour(1.0, 0x00, 0xFF, {0.f, 0.f, 0.f, 1.f});
 }
 
 //============================================================================//

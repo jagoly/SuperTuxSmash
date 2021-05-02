@@ -70,11 +70,11 @@ vec3 get_diffuse_value(vec3 colour, vec3 lightDir, vec3 normal)
     float factor = dot(-lightDir, normal);
     
     #if OPTION_FAKE_SUBSURF_SCATTER
-      const float wrap = 0.5f;
-      factor = (factor + wrap) / (1.f + wrap);
+      const float wrap = 0.5;
+      factor = (factor + wrap) / (1.0 + wrap);
     #endif
 
-    return colour * max(factor, 0.f);
+    return colour * max(factor, 0.0);
 }
 
 vec3 get_specular_value(vec3 colour, float gloss, vec3 lightDir, vec3 normal)
@@ -82,8 +82,8 @@ vec3 get_specular_value(vec3 colour, float gloss, vec3 lightDir, vec3 normal)
     vec3 reflection = reflect(lightDir, normal);
     vec3 dirFromCam = normalize(-io_ViewPos);
 
-    float factor = max(dot(dirFromCam, reflection), 0.f);
-    factor = pow(factor, gloss * 100.f);
+    float factor = max(dot(dirFromCam, reflection), 0.0);
+    factor = pow(factor, gloss * 100.0);
 
     return colour * factor;
 }
@@ -93,7 +93,7 @@ vec3 get_specular_value(vec3 colour, float gloss, vec3 lightDir, vec3 normal)
 void main()
 {
     #if OPTION_TEXTURE_MASK
-      if (texture(tx_Mask, io_TexCoord).a < 0.5f) discard;
+      if (texture(tx_Mask, io_TexCoord).a < 0.5) discard;
     #endif
 
     #if OPTION_TEXTURE_DIFFUSE
@@ -122,7 +122,7 @@ void main()
 
     frag_Colour = diffuse * LB.ambiColour;
     frag_Colour += get_diffuse_value(diffuse, lightDir, normal) * LB.skyColour;
-    frag_Colour += get_specular_value(specular, 0.5f, lightDir, normal) * LB.skyColour;
+    frag_Colour += get_specular_value(specular, 0.5, lightDir, normal) * LB.skyColour;
     
-    //frag_Colour = io_Normal * 0.5f + 0.5f;
+    //frag_Colour = io_Normal * 0.5 + 0.5;
 }

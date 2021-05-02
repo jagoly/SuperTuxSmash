@@ -235,8 +235,6 @@ void SmashApp::handle_event(sq::Event event)
 
 void SmashApp::refresh_options()
 {
-    //mOptions->window_size = mWindow->get_window_size();
-
     const auto& ctx = sq::VulkanContext::get();
 
     mWindow->destroy_swapchain_and_friends();
@@ -260,7 +258,7 @@ void SmashApp::start_game(GameSetup setup)
 
 void SmashApp::start_action_editor()
 {
-    //mActiveScene = std::make_unique<EditorScene>(*this);
+    mActiveScene = std::make_unique<EditorScene>(*this);
     refresh_options();
 }
 

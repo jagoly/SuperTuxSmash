@@ -33,6 +33,8 @@ public: //====================================================//
 
     void show_imgui_widgets() override;
 
+    void populate_command_buffer(vk::CommandBuffer cmdbuf, vk::Framebuffer framebuf) override;
+
     //--------------------------------------------------------//
 
     // only public so we can use SQEE_ENUM_HELPER
@@ -42,7 +44,7 @@ private: //===================================================//
 
     void update() override;
 
-    void render(double elapsed) override;
+    void integrate(double elapsed, float blend) override;
 
     SmashApp& mSmashApp;
 

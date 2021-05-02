@@ -80,13 +80,33 @@ void StandardCamera::intergrate(float blend)
     const Vec2F minView = maths::mix(mPreviousView.min, mCurrentView.min, blend);
     const Vec2F maxView = maths::mix(mPreviousView.max, mCurrentView.max, blend);
 
-    const float cameraDistanceX = (maxView.x - minView.x) * 0.5f / std::tan(0.5f) / aspect;
-    const float cameraDistanceY = (maxView.y - minView.y) * 0.5f / std::tan(0.5f);
+    const float cameraDistanceX = (maxView.x - minView.x) * 0.5f;
+    const float cameraDistanceY = (maxView.y - minView.y) * 0.5f;
 
-    const float cameraDistance = maths::max(cameraDistanceX, cameraDistanceY);
-    const Vec3F cameraTarget = Vec3F((minView + maxView) * 0.5f, 0.f);
+    const float cameraDistance = maths::max(cameraDistanceX / aspect, cameraDistanceY) / std::tan(0.5f);
+    Vec3F cameraTarget = Vec3F((minView + maxView) * 0.5f, 0.f);
+
+    const Vec2F minBounds = maths::mix(mPreviousBounds.min, mCurrentBounds.min, blend);
+    const Vec2F maxBounds = maths::mix(mPreviousBounds.max, mCurrentBounds.max, blend);
+
+    const auto clamp_to_bounds = [](float value, float min, float max, float distance)
+    {
+        min += distance; max -= distance;
+        if (min > max) return (max + min) * 0.5f;
+        return maths::clamp(value, min, max);
+    };
+
+    if (aspect > 1.f)
+        cameraTarget.x = clamp_to_bounds(cameraTarget.x, minBounds.x, maxBounds.x, cameraDistanceY * aspect);
+    else
+        cameraTarget.y = clamp_to_bounds(cameraTarget.y, minBounds.y, maxBounds.y, cameraDistanceX / aspect);
 
     mBlock.position = cameraTarget - mBlock.direction * cameraDistance;
+
+    const float factorX = cameraTarget.x / (cameraTarget.x > 0.f ? maxBounds.x : -minBounds.x);
+    const float factorY = cameraTarget.y / (cameraTarget.y > 0.f ? maxBounds.y : -minBounds.y);
+    mBlock.position.x += factorX * cameraDistance * 0.125f;
+    mBlock.position.y += factorY * cameraDistance * 0.125f;
 
     mBlock.viewMat = maths::look_at_LH(mBlock.position, cameraTarget, Vec3F(0.f, 1.f, 0.f));
 

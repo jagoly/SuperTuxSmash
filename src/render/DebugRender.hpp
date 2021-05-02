@@ -2,10 +2,8 @@
 
 #include "setup.hpp"
 
-#include <sqee/gl/FixedBuffer.hpp>
-#include <sqee/gl/Program.hpp>
-#include <sqee/gl/VertexArray.hpp>
-#include <sqee/objects/Mesh.hpp>
+#include <sqee/vk/VulkMesh.hpp>
+#include <sqee/vk/SwapBuffer.hpp>
 
 namespace sts {
 
@@ -17,7 +15,11 @@ public: //====================================================//
 
     DebugRenderer(Renderer& renderer);
 
-    void refresh_options();
+    ~DebugRenderer();
+
+    void refresh_options_destroy();
+
+    void refresh_options_create();
 
     //--------------------------------------------------------//
 
@@ -29,21 +31,53 @@ public: //====================================================//
 
     void render_skeleton(const Fighter& fighter);
 
+    void populate_command_buffer(vk::CommandBuffer cmdbuf);
+
 private: //===================================================//
 
-    sq::Program mBlobShader;
-    sq::Program mLinesShader;
-
-    sq::Mesh mSphereMesh;
-    sq::Mesh mCapsuleMesh;
-    sq::Mesh mDiamondMesh;
-
-    sq::VertexArray mLineVertexArray;
-    sq::FixedBuffer mLineVertexBuffer;
+    Renderer& renderer;
 
     //--------------------------------------------------------//
 
-    Renderer& renderer;
+    vk::PipelineLayout mBlobPipelineLayout;
+    vk::PipelineLayout mLinesPipelineLayout;
+
+    vk::Pipeline mBlobPipeline;
+    vk::Pipeline mLinesPipeline;
+
+    sq::VulkMesh mSphereMesh;
+    sq::VulkMesh mCapsuleMesh;
+    sq::VulkMesh mDiamondMesh;
+
+    //--------------------------------------------------------//
+
+    struct DrawBlob
+    {
+        Mat4F matrix;
+        Vec4F colour;
+        const sq::VulkMesh* mesh;
+        int subMesh;
+        int sortValue;
+        bool operator<(const DrawBlob& other) { return sortValue < other.sortValue; }
+    };
+
+    struct Line
+    {
+        Vec4F pointA;
+        Vec4F colourA;
+        Vec4F pointB;
+        Vec4F colourB;
+    };
+
+    std::vector<DrawBlob> mDrawBlobs;
+
+    uint mThickLineCount = 0u;
+    uint mThinLineCount = 0u;
+
+    sq::SwapBuffer mThickLinesVertexBuffer;
+    sq::SwapBuffer mThinLinesVertexBuffer;
 };
+
+//============================================================================//
 
 } // namespace sts

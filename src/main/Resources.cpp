@@ -80,5 +80,14 @@ ResourceCaches::~ResourceCaches() = default;
 
 void ResourceCaches::refresh_options()
 {
+    effects.free_unreachable();
+    materials.free_unreachable();
+    pipelines.free_unreachable();
+
+    meshes.free_unreachable();
+    textures.free_unreachable();
+    //texarrays.free_unreachable();
+    sounds.free_unreachable();
+
     pipelines.reload_resources();
 }

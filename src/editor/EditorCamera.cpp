@@ -4,6 +4,7 @@
 #include "render/Renderer.hpp"
 
 #include <sqee/maths/Functions.hpp>
+#include <sqee/vk/VulkWindow.hpp>
 
 using namespace sts;
 
@@ -40,7 +41,7 @@ void EditorCamera::update_from_mouse(bool left, bool right, Vec2F position)
 
 void EditorCamera::intergrate(float /*blend*/)
 {
-    const float aspect = float(renderer.options.window_size.x) / float(renderer.options.window_size.y);
+    const float aspect = float(renderer.window.get_size().x) / float(renderer.window.get_size().y);
 
     mBlock.projMat = maths::perspective_LH(1.f, aspect, 0.2f, 200.f);
 

@@ -83,8 +83,8 @@ void EffectSystem::tick()
 
     const auto predicate = [&ctx](ActiveEffect& instance)
     {
-        // wait two extra frames to ensure resources are no longer in use
-        if (instance.frame == instance.effect->handle->animation.frameCount + 2u)
+        // wait a few extra frames to ensure resources are no longer in use
+        if (instance.frame == instance.effect->handle->animation.frameCount + 4u)
         {
             ctx.device.free(ctx.descriptorPool, {instance.descriptorSet.front, instance.descriptorSet.back});
             return true;

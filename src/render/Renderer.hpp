@@ -68,10 +68,6 @@ public: //====================================================//
 
     void render_particles(const ParticleSystem& system, float blend);
 
-    void resolve_multisample();
-
-    void finish_rendering();
-
     //--------------------------------------------------------//
 
     DebugRenderer& get_debug_renderer() { return *mDebugRenderer; }
@@ -124,6 +120,13 @@ public: //====================================================//
         vk::Sampler resolveDepth;
     } samplers;
 
+    struct {
+        vk::RenderPass msRenderPass;
+        vk::Framebuffer msFramebuffer;
+        //vk::RenderPass fxRenderPass;
+        //vk::Framebuffer fxFramebuffer;
+    } targets;
+
 private: //===================================================//
 
     void impl_initialise_layouts();
@@ -137,12 +140,6 @@ private: //===================================================//
     void impl_destroy_pipelines();
 
     //--------------------------------------------------------//
-
-    vk::RenderPass mMsRenderPass;
-    vk::Framebuffer mMsFramebuffer;
-
-    vk::RenderPass mFxRenderPass;
-    vk::Framebuffer mFxFramebuffer;
 
     // todo: should be part of the stage
     sq::VulkTexture mSkyboxTexture;

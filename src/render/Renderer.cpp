@@ -22,7 +22,7 @@ using namespace sts;
 Renderer::Renderer(const sq::VulkWindow& window, const Options& options, ResourceCaches& caches)
     : window(window), options(options), caches(caches)
 {
-//    mDebugRenderer = std::make_unique<DebugRenderer>(*this);
+    mDebugRenderer = std::make_unique<DebugRenderer>(*this);
 //    mParticleRenderer = std::make_unique<ParticleRenderer>(*this);
 
     impl_initialise_layouts();
@@ -62,8 +62,6 @@ Renderer::Renderer(const sq::VulkWindow& window, const Options& options, Resourc
 Renderer::~Renderer()
 {
     const auto& ctx = sq::VulkanContext::get();
-
-    ctx.device.waitIdle();
 
     ctx.device.destroy(setLayouts.camera);
     ctx.device.destroy(setLayouts.skybox);
@@ -249,7 +247,7 @@ void Renderer::impl_create_render_targets()
                 vk::DependencyFlagBits::eByRegion
             };
 
-            mMsRenderPass = ctx.device.createRenderPass (
+            targets.msRenderPass = ctx.device.createRenderPass (
                 vk::RenderPassCreateInfo { {}, attachments, subpasses, dependencies }
             );
         }
@@ -288,7 +286,7 @@ void Renderer::impl_create_render_targets()
                 vk::DependencyFlagBits::eByRegion
             };
 
-            mMsRenderPass = ctx.device.createRenderPass (
+            targets.msRenderPass = ctx.device.createRenderPass (
                 vk::RenderPassCreateInfo { {}, attachments, subpasses, dependencies }
             );
         }
@@ -302,9 +300,9 @@ void Renderer::impl_create_render_targets()
                 images.msColourView, images.msDepthView, images.resolveColourView//, images.resolveDepthView
             };
 
-            mMsFramebuffer = ctx.device.createFramebuffer (
+            targets.msFramebuffer = ctx.device.createFramebuffer (
                 vk::FramebufferCreateInfo {
-                    {}, mMsRenderPass, attachments, window.get_size().x, window.get_size().y, 1u
+                    {}, targets.msRenderPass, attachments, window.get_size().x, window.get_size().y, 1u
                 }
             );
         }
@@ -314,17 +312,17 @@ void Renderer::impl_create_render_targets()
                 images.resolveColourView, images.resolveDepthView
             };
 
-            mMsFramebuffer = ctx.device.createFramebuffer (
+            targets.msFramebuffer = ctx.device.createFramebuffer (
                 vk::FramebufferCreateInfo {
-                    {}, mMsRenderPass, attachments, window.get_size().x, window.get_size().y, 1u
+                    {}, targets.msRenderPass, attachments, window.get_size().x, window.get_size().y, 1u
                 }
             );
         }
     }
 
     caches.passConfigMap = {
-        { "Opaque", { mMsRenderPass, msaaMode, window.get_size(), setLayouts.camera, setLayouts.light } },
-        { "Transparent", { mMsRenderPass, msaaMode, window.get_size(), setLayouts.camera, setLayouts.light } }
+        { "Opaque", { targets.msRenderPass, msaaMode, window.get_size(), setLayouts.camera, setLayouts.light } },
+        { "Transparent", { targets.msRenderPass, msaaMode, window.get_size(), setLayouts.camera, setLayouts.light } }
     };
 }
 
@@ -352,8 +350,8 @@ void Renderer::impl_destroy_render_targets()
     ctx.device.destroy(images.resolveDepth);
     images.resolveDepthMem.free();
 
-    ctx.device.destroy(mMsFramebuffer);
-    ctx.device.destroy(mMsRenderPass);
+    ctx.device.destroy(targets.msFramebuffer);
+    ctx.device.destroy(targets.msRenderPass);
 }
 
 //============================================================================//
@@ -371,7 +369,7 @@ void Renderer::impl_create_pipelines()
         );
 
         pipelines.skybox = sq::vk_create_graphics_pipeline (
-            ctx, pipelineLayouts.skybox, mMsRenderPass, 0u, shaderModules.stages, {},
+            ctx, pipelineLayouts.skybox, targets.msRenderPass, 0u, shaderModules.stages, {},
             vk::PipelineInputAssemblyStateCreateInfo {
                 {}, vk::PrimitiveTopology::eTriangleList, false
             },
@@ -449,12 +447,16 @@ void Renderer::refresh_options_destroy()
 {
     impl_destroy_render_targets();
     impl_destroy_pipelines();
+
+    mDebugRenderer->refresh_options_destroy();
 }
 
 void Renderer::refresh_options_create()
 {
     impl_create_render_targets();
     impl_create_pipelines();
+
+    mDebugRenderer->refresh_options_create();
 }
 
     //-- Prepare Shader Options Header -----------------------//
@@ -602,7 +604,7 @@ void Renderer::populate_command_buffer(vk::CommandBuffer cmdbuf)
 
     cmdbuf.beginRenderPass (
         vk::RenderPassBeginInfo {
-            mMsRenderPass, mMsFramebuffer,
+            targets.msRenderPass, targets.msFramebuffer,
             vk::Rect2D({0, 0}, {window.get_size().x, window.get_size().y}),
             clearValues
         }, vk::SubpassContents::eInline
@@ -646,8 +648,7 @@ void Renderer::populate_command_buffer(vk::CommandBuffer cmdbuf)
                 item.mesh->bind_buffers(cmdbuf);
                     prevMesh = &item.mesh.get();
 
-            if (item.subMesh < 0) item.mesh->draw_complete(cmdbuf);
-            else item.mesh->draw_submesh(cmdbuf, uint(item.subMesh));
+            item.mesh->draw(cmdbuf, item.subMesh);
         }
     };
 
@@ -744,6 +745,8 @@ void Renderer::populate_final_pass(vk::CommandBuffer cmdbuf)
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipelines.composite);
 
     cmdbuf.draw(3u, 1u, 0u, 0u);
+
+    mDebugRenderer->populate_command_buffer(cmdbuf);
 }
 
 //============================================================================//
@@ -755,32 +758,4 @@ void Renderer::render_particles(const ParticleSystem& system, float blend)
     mParticleRenderer->integrate_set(blend, system);
 
     mParticleRenderer->render_particles();
-}
-
-//============================================================================//
-
-void Renderer::resolve_multisample()
-{
-    //-- Resolve the Multi Sample Texture --------------------//
-
-    //FB_MsMain.blit(FB_Resolve, options.window_size, sq::BlitMask::DepthColour);
-}
-
-//============================================================================//
-
-void Renderer::finish_rendering()
-{
-    //-- Composite to the Default Framebuffer ----------------//
-
-//    context.bind_framebuffer_default();
-
-//    context.set_state(sq::BlendMode::Disable);
-//    context.set_state(sq::CullFace::Disable);
-//    context.set_state(sq::DepthTest::Disable);
-
-//    context.bind_texture(TEX_Colour, 0u);
-//    context.bind_program(PROG_Composite);
-
-//    context.bind_vertexarray_dummy();
-//    context.draw_arrays(sq::DrawPrimitive::TriangleStrip, 0u, 4u);
 }

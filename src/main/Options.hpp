@@ -12,7 +12,7 @@ struct Options final : sq::NonCopyable
 
     //--------------------------------------------------------//
 
-    Vec2U window_size = {0u, 0u};   ///< The size of the viewport
+    //Vec2U window_size = {0u, 0u};   ///< The size of the viewport
 
     bool bloom_enable = true;       ///< Enable HDR Bloom effect
 
@@ -38,7 +38,7 @@ struct Options final : sq::NonCopyable
 
     bool log_animation = false;     ///< Enable logging of animation stuff
     bool log_input = false;         ///< Enable logging of input stuff
-    bool log_script = false;        ///< Enable logging of script stuff
+    bool log_script = true;        ///< Enable logging of script stuff
 
     bool editor_mode = false;       ///< CANNOT BE TOGGLED, SHOULD NOT BE HERE
 
