@@ -114,28 +114,32 @@ void GameScene::refresh_options_create()
 
 void GameScene::handle_event(sq::Event event)
 {
-    for (auto& controller : mControllers)
-    {
-        if (mGamePaused == false)
-        {
-            if (controller != nullptr)
-                controller->handle_event(event);
-        }
-    }
-
     if (event.type == sq::Event::Type::Keyboard_Press)
     {
         if (event.data.keyboard.key == sq::Keyboard_Key::F1)
         {
             mGamePaused = !mGamePaused;
             mSmashApp.get_audio_context().set_groups_paused(sq::SoundGroup::Sfx, mGamePaused);
+            return;
         }
 
-        if (mGamePaused == true)
+        if (event.data.keyboard.key == sq::Keyboard_Key::F2)
         {
-            // todo: what should sound do here?
-            if (event.data.keyboard.key == sq::Keyboard_Key::F2)
+            if (mGamePaused == true)
+            {
+                // todo: tell audio context to play one tick's worth of sound
                 mFightWorld->tick();
+            }
+            return;
+        }
+    }
+
+    for (auto& controller : mControllers)
+    {
+        if (controller != nullptr)
+        {
+            if (mGamePaused == false)
+                controller->handle_event(event);
         }
     }
 }

@@ -6,7 +6,7 @@
 
 #include <sqee/vk/VulkWindow.hpp> // IWYU pragma: export
 #include <sqee/vk/VulkInputDevices.hpp>  // IWYU pragma: export
-//#include <sqee/app/DebugOverlay.hpp> // IWYU pragma: export
+#include <sqee/app/DebugOverlay.hpp> // IWYU pragma: export
 #include <sqee/app/AudioContext.hpp> // IWYU pragma: export
 #include <sqee/vk/VulkGuiSystem.hpp> // IWYU pragma: export
 #include <sqee/app/Scene.hpp> // IWYU pragma: export
@@ -35,7 +35,7 @@ public: //====================================================//
 
     sq::VulkWindow& get_window() { return *mWindow; }
     sq::VulkInputDevices& get_input_devices() { return *mInputDevices; }
-    //sq::DebugOverlay& get_debug_overlay() { return *mDebugOverlay; }
+    sq::DebugOverlay& get_debug_overlay() { return *mDebugOverlay; }
     sq::AudioContext& get_audio_context() { return *mAudioContext; }
     sq::VulkGuiSystem& get_gui_system() { return *mGuiSystem; }
 
@@ -60,7 +60,7 @@ private: //===================================================//
 
     std::unique_ptr<sq::VulkWindow> mWindow;
     std::unique_ptr<sq::VulkInputDevices> mInputDevices;
-    //std::unique_ptr<sq::DebugOverlay> mDebugOverlay;
+    std::unique_ptr<sq::DebugOverlay> mDebugOverlay;
     std::unique_ptr<sq::AudioContext> mAudioContext;
     std::unique_ptr<sq::VulkGuiSystem> mGuiSystem;
 

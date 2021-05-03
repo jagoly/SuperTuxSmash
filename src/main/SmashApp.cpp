@@ -13,6 +13,8 @@
 #include <sqee/misc/Json.hpp>
 #include <sqee/vk/VulkanContext.hpp>
 
+#include <sqee/app/GuiWidgets.hpp>
+
 using namespace sts;
 
 //============================================================================//
@@ -39,7 +41,7 @@ void SmashApp::initialise(std::vector<String> /*args*/)
     mWindow->set_key_repeat(false);
 
     mInputDevices = std::make_unique<sq::VulkInputDevices>(*mWindow);
-    //mDebugOverlay = std::make_unique<sq::DebugOverlay>();
+    mDebugOverlay = std::make_unique<sq::DebugOverlay>();
     mAudioContext = std::make_unique<sq::AudioContext>();
 
     mGuiSystem = std::make_unique<sq::VulkGuiSystem>(*mWindow, *mInputDevices);
@@ -76,9 +78,10 @@ void SmashApp::update(double elapsed)
     //-- update scene and imgui ------------------------------//
 
     mActiveScene->update_and_integrate(elapsed);
-    //mDebugOverlay->update_and_render(elapsed);
+    mDebugOverlay->update_and_integrate(elapsed);
 
     mActiveScene->show_imgui_widgets();
+    mDebugOverlay->show_imgui_widgets();
 
     if (mOptions->imgui_demo)
         mGuiSystem->show_imgui_demo();
@@ -133,7 +136,7 @@ void SmashApp::handle_event(sq::Event event)
     {
         if (data.keyboard.key == Key::Menu)
         {
-            //mDebugOverlay->toggle_active();
+            mDebugOverlay->toggle_active();
             return;
         }
 
@@ -150,36 +153,38 @@ void SmashApp::handle_event(sq::Event event)
     {
         if (data.keyboard.key == Key::V)
         {
-            //constexpr const auto STRINGS = std::array { "OFF", "ON" };
+            constexpr const auto STRINGS = std::array { "OFF", "ON" };
             const bool newValue = !mWindow->get_vsync_enabled();
-            //mDebugOverlay->notify(sq::build_string("vsync set to ", STRINGS[newValue]));
+            mDebugOverlay->notify(sq::build_string("vsync set to ", STRINGS[newValue]));
             mWindow->set_vsync_enabled(newValue);
             refresh_options();
         }
 
         if (data.keyboard.key == Key::B)
         {
-            //constexpr const auto STRINGS = std::array { "OFF", "ON" };
+            constexpr const auto STRINGS = std::array { "OFF", "ON" };
             mOptions->bloom_enable = !mOptions->bloom_enable;
-            //mDebugOverlay->notify(sq::build_string("bloom set to ", STRINGS[mOptions->bloom_enable]));
+            mDebugOverlay->notify(sq::build_string("bloom set to ", STRINGS[mOptions->bloom_enable]));
             refresh_options();
         }
 
         if (data.keyboard.key == Key::O)
         {
-            //constexpr const auto STRINGS = std::array { "OFF", "LOW", "HIGH" };
+            constexpr const auto STRINGS = std::array { "OFF", "LOW", "HIGH" };
             if (++mOptions->ssao_quality == 3) mOptions->ssao_quality = 0;
-            //mDebugOverlay->notify(sq::build_string("ssao set to ", STRINGS[mOptions->ssao_quality]));
+            mDebugOverlay->notify(sq::build_string("ssao set to ", STRINGS[mOptions->ssao_quality]));
             refresh_options();
         }
 
         if (data.keyboard.key == Key::A)
         {
-            //constexpr const auto STRINGS = std::array { "OFF", "4x", "16x" };
-            //if (++mOptions->msaa_quality == 3) mOptions->msaa_quality = 0;
             mOptions->msaa_quality = mOptions->msaa_quality * 2;
-            if (mOptions->msaa_quality == 16) mOptions->msaa_quality = 1;
-            //mDebugOverlay->notify(sq::build_string("msaa set to ", STRINGS[mOptions->msaa_quality]));
+            if (mOptions->msaa_quality == 16)
+            {
+                mDebugOverlay->notify("msaa set to OFF");
+                mOptions->msaa_quality = 1;
+            }
+            else mDebugOverlay->notify("msaa set to {}x"_format(mOptions->msaa_quality));
             refresh_options();
         }
 
@@ -190,38 +195,38 @@ void SmashApp::handle_event(sq::Event event)
             else if (mOptions->debug_texture == "bloom") mOptions->debug_texture = "ssao";
             else if (mOptions->debug_texture == "ssao")  mOptions->debug_texture = "";
 
-            //mDebugOverlay->notify("debug texture set to '{}'"_format(mOptions->debug_texture));
+            mDebugOverlay->notify("debug texture set to '{}'"_format(mOptions->debug_texture));
             refresh_options();
         }
 
         if (data.keyboard.key == Key::I)
         {
-            //constexpr const auto STRINGS = std::array { "OFF", "ON" };
+            constexpr const auto STRINGS = std::array { "OFF", "ON" };
             mOptions->imgui_demo = !mOptions->imgui_demo;
-            //mDebugOverlay->notify(sq::build_string("imgui demo set to ", STRINGS[mOptions->imgui_demo]));
+            mDebugOverlay->notify(sq::build_string("imgui demo set to ", STRINGS[mOptions->imgui_demo]));
         }
 
         if (data.keyboard.key == Key::R)
         {
-            //constexpr const auto STRINGS = std::array { "OFF", "ON" };
+            constexpr const auto STRINGS = std::array { "OFF", "ON" };
             mOptions->render_hit_blobs = mOptions->render_hurt_blobs = !mOptions->render_skeletons;
             mOptions->render_diamonds = mOptions->render_skeletons = !mOptions->render_skeletons;
-            //mDebugOverlay->notify(sq::build_string("debug render set to ", STRINGS[mOptions->render_skeletons]));
+            mDebugOverlay->notify(sq::build_string("debug render set to ", STRINGS[mOptions->render_skeletons]));
         }
 
         if (data.keyboard.key == Key::Num_1)
         {
-            //constexpr const auto STRINGS = std::array { "false", "true" };
+            constexpr const auto STRINGS = std::array { "false", "true" };
             mOptions->debug_toggle_1 = !mOptions->debug_toggle_1;
-            //mDebugOverlay->notify(sq::build_string("debugToggle1 set to ", STRINGS[mOptions->debug_toggle_1]));
+            mDebugOverlay->notify(sq::build_string("debugToggle1 set to ", STRINGS[mOptions->debug_toggle_1]));
             refresh_options();
         }
 
         if (data.keyboard.key == Key::Num_2)
         {
-            //constexpr const auto STRINGS = std::array { "false", "true" };
+            constexpr const auto STRINGS = std::array { "false", "true" };
             mOptions->debug_toggle_2 = !mOptions->debug_toggle_2;
-            //mDebugOverlay->notify(sq::build_string("debugToggle2 set to ", STRINGS[mOptions->debug_toggle_2]));
+            mDebugOverlay->notify(sq::build_string("debugToggle2 set to ", STRINGS[mOptions->debug_toggle_2]));
             refresh_options();
         }
     }

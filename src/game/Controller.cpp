@@ -35,7 +35,7 @@ void Controller::handle_event(sq::Event event)
     // note that if a button is pressed, it will be marked as held for a minimum
     // of one frame, even if it is released before get_input() is called
 
-    if (event.type == sq::Event::Type::Gamepad_Press)
+    if (event.type == sq::Event::Type::Gamepad_Press && event.data.gamepad.button != sq::Gamepad_Button::Unknown)
     {
         if (int(event.data.gamepad.port) == config.gamepad_port)
         {
@@ -47,7 +47,7 @@ void Controller::handle_event(sq::Event event)
         }
     }
 
-    if (event.type == sq::Event::Type::Keyboard_Press)
+    if (event.type == sq::Event::Type::Keyboard_Press && event.data.keyboard.key != sq::Keyboard_Key::Unknown)
     {
         const auto key = event.data.keyboard.key;
 

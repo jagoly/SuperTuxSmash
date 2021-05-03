@@ -67,8 +67,13 @@ void EffectSystem::cancel_effect(const VisualEffect& /*effect*/)
 
 void EffectSystem::clear()
 {
+    const auto& ctx = sq::VulkanContext::get();
+
     for (ActiveEffect& instance : mActiveEffects)
+    {
         renderer.delete_draw_items(instance.renderGroupId);
+        ctx.device.free(ctx.descriptorPool, {instance.descriptorSet.front, instance.descriptorSet.back});
+    }
 
     mActiveEffects.clear();
 }
