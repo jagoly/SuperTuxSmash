@@ -4,6 +4,6 @@
   "wrapY": "Clamp",
   "swizzle": "RGBA",
   "filter": true,
-  "mipmaps": true,
-  "anisotropy": true
+  "anisotropy": true,
+  "mipmaps": true
 }

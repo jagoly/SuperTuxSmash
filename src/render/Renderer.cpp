@@ -152,26 +152,26 @@ void Renderer::impl_create_render_targets()
         if (msaaMode > vk::SampleCountFlagBits::e1)
         {
             std::tie(images.msColour, images.msColourMem, images.msColourView) = sq::vk_create_image_2D (
-                ctx, vk::Format::eB8G8R8A8Srgb, window.get_size(), msaaMode,
+                ctx, vk::Format::eB8G8R8A8Srgb, window.get_size(), 1u, msaaMode,
                 false, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransientAttachment,
                 false, {}, vk::ImageAspectFlagBits::eColor
             );
 
             std::tie(images.msDepth, images.msDepthMem, images.msDepthView) = sq::vk_create_image_2D (
-                ctx, vk::Format::eD32Sfloat, window.get_size(), msaaMode,
+                ctx, vk::Format::eD32Sfloat, window.get_size(), 1u, msaaMode,
                 false, vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eTransientAttachment,
                 false, {}, vk::ImageAspectFlagBits::eDepth
             );
         }
 
         std::tie(images.resolveColour, images.resolveColourMem, images.resolveColourView) = sq::vk_create_image_2D (
-            ctx, vk::Format::eB8G8R8A8Srgb, window.get_size(), vk::SampleCountFlagBits::e1,
+            ctx, vk::Format::eB8G8R8A8Srgb, window.get_size(), 1u, vk::SampleCountFlagBits::e1,
             false, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
             false, {}, vk::ImageAspectFlagBits::eColor
         );
 
         std::tie(images.resolveDepth, images.resolveDepthMem, images.resolveDepthView) = sq::vk_create_image_2D (
-            ctx, vk::Format::eD32Sfloat, window.get_size(), vk::SampleCountFlagBits::e1,
+            ctx, vk::Format::eD32Sfloat, window.get_size(), 1u, vk::SampleCountFlagBits::e1,
             false, vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled,
             false, {}, vk::ImageAspectFlagBits::eDepth
         );

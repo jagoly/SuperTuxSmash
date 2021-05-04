@@ -1,9 +1,9 @@
 {
-  "format": "1x8_Srgb",
+  "format": "1x8_Unorm",
   "wrapX": "Clamp",
   "wrapY": "Clamp",
   "swizzle": "111R",
   "filter": true,
-  "mipmaps": true,
-  "anisotropy": true
+  "anisotropy": true,
+  "mipmaps": true
 }
