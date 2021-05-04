@@ -6,13 +6,14 @@ using namespace sts;
 
 //============================================================================//
 
-Controller::Controller(const sq::VulkInputDevices& devices, const String& configPath)
+Controller::Controller(const sq::InputDevices& devices, const String& configPath)
     : devices(devices)
 {
     const JsonValue root = sq::parse_json_from_file(configPath);
 
     config.gamepad_port  = static_cast<int>                (int(root.at("gamepad_port")));
-    config.stick_move    = static_cast<sq::Gamepad_Stick>  (int(root.at("stick_move")));
+    config.axis_move_x   = static_cast<sq::Gamepad_Axis>   (int(root.at("axis_move_x")));
+    config.axis_move_y   = static_cast<sq::Gamepad_Axis>   (int(root.at("axis_move_y")));
     config.button_attack = static_cast<sq::Gamepad_Button> (int(root.at("button_attack")));
     config.button_jump   = static_cast<sq::Gamepad_Button> (int(root.at("button_jump")));
     config.button_shield = static_cast<sq::Gamepad_Button> (int(root.at("button_shield")));
@@ -32,21 +33,8 @@ void Controller::handle_event(sq::Event event)
     // don't handle events while playing recording
     if (mPlaybackIndex >= 0) return;
 
-    // note that if a button is pressed, it will be marked as held for a minimum
-    // of one frame, even if it is released before get_input() is called
-
-    if (event.type == sq::Event::Type::Gamepad_Press && event.data.gamepad.button != sq::Gamepad_Button::Unknown)
-    {
-        if (int(event.data.gamepad.port) == config.gamepad_port)
-        {
-            const auto button = event.data.gamepad.button;
-
-            if (button == config.button_attack) mInput.press_attack = mInput.hold_attack = true;
-            if (button == config.button_jump)   mInput.press_jump   = mInput.hold_jump   = true;
-            if (button == config.button_shield) mInput.press_shield = mInput.hold_shield = true;
-        }
-    }
-
+    // todo: fix keyboard input to handle press/release the same way as gamepad
+    // don't really care for now since it only makes a difference in slo-mo
     if (event.type == sq::Event::Type::Keyboard_Press && event.data.keyboard.key != sq::Keyboard_Key::Unknown)
     {
         const auto key = event.data.keyboard.key;
@@ -59,14 +47,20 @@ void Controller::handle_event(sq::Event event)
 
 //============================================================================//
 
+void Controller::integrate()
+{
+    // don't handle input while playing recording
+    if (mPlaybackIndex >= 0) return;
+
+    // ask operating system for updated gamepad state
+    if (config.gamepad_port >= 0)
+        mGamepad.integrate(devices.poll_gamepad_state(config.gamepad_port));
+}
+
+//============================================================================//
+
 InputFrame Controller::get_input()
 {
-    using Stick = sq::Gamepad_Stick;
-    using Button = sq::Gamepad_Button;
-    using Key = sq::Keyboard_Key;
-
-    //--------------------------------------------------------//
-
     if (mPlaybackIndex >= 0)
     {
         if (mPlaybackIndex < int(mRecordedInput.size()))
@@ -77,53 +71,71 @@ InputFrame Controller::get_input()
 
     //--------------------------------------------------------//
 
-//    if (config.gamepad_port >= 0)
-//    {
-//        const int port = config.gamepad_port;
+    // Note that if a button was pressed since last tick, hold will be set to true this tick.
+    // This applies even if the button was no longer held on the most recent poll.
+    // Likewise, if a button was released since last tick, then hold will be set to false.
+    // As a result, press can never be true for multiple ticks in a row.
 
-//        if (config.stick_move != Stick::Unknown)
-//            mInput.float_axis = devices.get_stick_pos(port, config.stick_move);
+    if (config.gamepad_port >= 0)
+    {
+        if (config.button_attack != sq::Gamepad_Button::Unknown)
+        {
+            if (mInput.hold_attack == true)
+                mInput.hold_attack = mGamepad.buttons[int8_t(config.button_attack)] && !mGamepad.released[int8_t(config.button_attack)];
+            else
+                mInput.press_attack = mInput.hold_attack = mGamepad.pressed[int8_t(config.button_attack)];
+        }
 
-//        if (config.button_attack != Button::Unknown)
-//            if (devices.is_pressed(port, config.button_attack))
-//                mInput.hold_attack = true;
+        if (config.button_jump != sq::Gamepad_Button::Unknown)
+        {
+            if (mInput.hold_jump == true)
+                mInput.hold_jump = mGamepad.buttons[int8_t(config.button_jump)] && !mGamepad.released[int8_t(config.button_jump)];
+            else
+                mInput.press_jump = mInput.hold_jump = mGamepad.pressed[int8_t(config.button_jump)];
+        }
 
-//        if (config.button_jump != Button::Unknown)
-//            if (devices.is_pressed(port, config.button_jump))
-//                mInput.hold_jump = true;
+        if (config.button_shield != sq::Gamepad_Button::Unknown)
+        {
+            if (mInput.hold_shield == true)
+                mInput.hold_shield = mGamepad.buttons[int8_t(config.button_shield)] && !mGamepad.released[int8_t(config.button_shield)];
+            else
+                mInput.press_shield = mInput.hold_shield = mGamepad.pressed[int8_t(config.button_shield)];
+        }
 
-//        if (config.button_shield != Button::Unknown)
-//            if (devices.is_pressed(port, config.button_shield))
-//                mInput.hold_shield = true;
-//    }
+        if (config.axis_move_x != sq::Gamepad_Axis::Unknown)
+            mInput.float_axis.x = mGamepad.axes[int8_t(config.axis_move_x)];
+
+        if (config.axis_move_y != sq::Gamepad_Axis::Unknown)
+            mInput.float_axis.y = mGamepad.axes[int8_t(config.axis_move_y)];
+    }
 
     //--------------------------------------------------------//
 
-    if (config.key_left != Key::Unknown)
+    if (config.key_left != sq::Keyboard_Key::Unknown)
         if (devices.is_pressed(config.key_left))
             mInput.float_axis.x -= 1.f;
 
-    if (config.key_up != Key::Unknown)
+    if (config.key_up != sq::Keyboard_Key::Unknown)
         if (devices.is_pressed(config.key_up))
             mInput.float_axis.y += 1.f;
 
-    if (config.key_right != Key::Unknown)
+    if (config.key_right != sq::Keyboard_Key::Unknown)
         if (devices.is_pressed(config.key_right))
             mInput.float_axis.x += 1.f;
 
-    if (config.key_down != Key::Unknown)
+    if (config.key_down != sq::Keyboard_Key::Unknown)
         if (devices.is_pressed(config.key_down))
             mInput.float_axis.y -= 1.f;
 
-    if (config.key_attack != Key::Unknown)
+    if (config.key_attack != sq::Keyboard_Key::Unknown)
         if (devices.is_pressed(config.key_attack))
             mInput.hold_attack = true;
 
-    if (config.key_jump != Key::Unknown)
+    if (config.key_jump != sq::Keyboard_Key::Unknown)
         if (devices.is_pressed(config.key_jump))
             mInput.hold_jump = true;
 
-    if (config.key_shield != Key::Unknown)
+    if (config.key_shield != sq::Keyboard_Key::Unknown)
         if (devices.is_pressed(config.key_shield))
             mInput.hold_shield = true;
 
@@ -207,7 +219,12 @@ InputFrame Controller::get_input()
     mPrevAxisMove = mInput.float_axis;
 
     InputFrame result = mInput;
-    mInput = InputFrame();
+
+    // need to keep button hold values for next tick
+    mInput.press_attack = mInput.press_jump = mInput.press_shield = false;
+    mInput.mash_axis = mInput.mod_axis = {};
+
+    mGamepad.finish_tick();
 
     if (mPlaybackIndex == -1)
         mRecordedInput.push_back(result);

@@ -6,11 +6,11 @@
 #include "render/DebugRender.hpp"
 #include "render/ParticleRender.hpp"
 
+#include <sqee/app/Window.hpp>
 #include <sqee/debug/Assert.hpp>
 #include <sqee/misc/Files.hpp>
 #include <sqee/misc/Json.hpp>
 #include <sqee/vk/VulkMaterial.hpp>
-#include <sqee/vk/VulkWindow.hpp>
 #include <sqee/vk/VulkMesh.hpp>
 
 #include <sqee/vk/Helpers.hpp>
@@ -19,7 +19,7 @@ using namespace sts;
 
 //============================================================================//
 
-Renderer::Renderer(const sq::VulkWindow& window, const Options& options, ResourceCaches& caches)
+Renderer::Renderer(const sq::Window& window, const Options& options, ResourceCaches& caches)
     : window(window), options(options), caches(caches)
 {
     mDebugRenderer = std::make_unique<DebugRenderer>(*this);

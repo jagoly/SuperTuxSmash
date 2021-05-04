@@ -1,7 +1,8 @@
 {
 
 "gamepad_port":   0,
-"stick_move":     0,
+"axis_move_x":    0,
+"axis_move_y":    1,
 "button_attack":  0,
 "button_jump":    5,
 "button_shield":  4,

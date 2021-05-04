@@ -637,7 +637,7 @@ uint EditorScene::get_default_timeline_length(const ActionContext& ctx)
 
 void EditorScene::create_base_context(FighterEnum fighterKey, BaseContext& ctx)
 {
-    sq::VulkWindow& window = mSmashApp.get_window();
+    sq::Window& window = mSmashApp.get_window();
     sq::AudioContext& audioContext = mSmashApp.get_audio_context();
 
     Options& options = mSmashApp.get_options();

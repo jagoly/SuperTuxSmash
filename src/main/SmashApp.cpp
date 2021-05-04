@@ -13,8 +13,6 @@
 #include <sqee/misc/Json.hpp>
 #include <sqee/vk/VulkanContext.hpp>
 
-#include <sqee/app/GuiWidgets.hpp>
-
 using namespace sts;
 
 //============================================================================//
@@ -32,7 +30,7 @@ SmashApp::~SmashApp()
 
 void SmashApp::initialise(std::vector<String> /*args*/)
 {
-    mWindow = std::make_unique<sq::VulkWindow> (
+    mWindow = std::make_unique<sq::Window> (
         "SuperTuxSmash - Main Menu", Vec2U(1280u, 720u),
         "SuperTuxSmash", Vec3U(0u, 0u, 1u)
     );
@@ -40,11 +38,11 @@ void SmashApp::initialise(std::vector<String> /*args*/)
     mWindow->set_vsync_enabled(true);
     mWindow->set_key_repeat(false);
 
-    mInputDevices = std::make_unique<sq::VulkInputDevices>(*mWindow);
+    mInputDevices = std::make_unique<sq::InputDevices>(*mWindow);
     mDebugOverlay = std::make_unique<sq::DebugOverlay>();
     mAudioContext = std::make_unique<sq::AudioContext>();
 
-    mGuiSystem = std::make_unique<sq::VulkGuiSystem>(*mWindow, *mInputDevices);
+    mGuiSystem = std::make_unique<sq::GuiSystem>(*mWindow, *mInputDevices);
     mGuiSystem->set_style_widgets_supertux();
     mGuiSystem->set_style_colours_supertux();
 

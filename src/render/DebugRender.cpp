@@ -10,11 +10,11 @@
 #include "render/Camera.hpp"
 #include "render/Renderer.hpp"
 
+#include <sqee/app/Window.hpp>
 #include <sqee/maths/Colours.hpp>
 #include <sqee/maths/Functions.hpp>
 #include <sqee/objects/Armature.hpp>
 #include <sqee/vk/Helpers.hpp>
-#include <sqee/vk/VulkWindow.hpp>
 
 using namespace sts;
 

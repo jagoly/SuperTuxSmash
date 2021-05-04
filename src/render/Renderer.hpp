@@ -11,7 +11,7 @@
 
 //============================================================================//
 
-namespace sq { class Context; class VulkWindow; }
+namespace sq { class Window; }
 
 namespace sts {
 
@@ -24,13 +24,13 @@ class Renderer final : sq::NonCopyable
 {
 public: //====================================================//
 
-    Renderer(const sq::VulkWindow& window, const Options& options, ResourceCaches& caches);
+    Renderer(const sq::Window& window, const Options& options, ResourceCaches& caches);
 
     ~Renderer();
 
     //--------------------------------------------------------//
 
-    const sq::VulkWindow& window;
+    const sq::Window& window;
     const Options& options;
     ResourceCaches& caches;
 

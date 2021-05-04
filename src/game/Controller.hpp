@@ -3,7 +3,8 @@
 #include "setup.hpp"
 
 #include <sqee/app/Event.hpp>
-#include <sqee/vk/VulkInputDevices.hpp>
+#include <sqee/app/Gamepad.hpp>
+#include <sqee/app/InputDevices.hpp>
 
 namespace sts {
 
@@ -20,12 +21,12 @@ struct InputFrame final
     bool hold_jump = false;
     bool hold_shield = false;
 
-    Vec2F float_axis {}; ///< -1, -0.5, -0, +0, +0.5, +1
+    Vec2F float_axis; ///< -1, -0.5, -0, +0, +0.5, +1
 
-    struct { int8_t x=0, y=0; } int_axis;  ///< in the range of -2 to +2
-    struct { int8_t x=0, y=0; } mash_axis; ///< true for one frame if you quickly push all the way
-    struct { int8_t x=0, y=0; } mod_axis;  ///< same as mash_axis but lasts for a few frames
-    struct { int8_t x=0, y=0; } norm_axis; ///< just int_axis but normalised
+    maths::Vector2<int8_t> int_axis;  ///< in the range of -2 to +2
+    maths::Vector2<int8_t> norm_axis; ///< just int_axis but normalised
+    maths::Vector2<int8_t> mash_axis; ///< true for one frame if you quickly push all the way
+    maths::Vector2<int8_t> mod_axis;  ///< same as mash_axis but lasts for a few frames
 };
 
 //============================================================================//
@@ -34,19 +35,22 @@ class Controller final : sq::NonCopyable
 {
 public: //====================================================//
 
-    Controller(const sq::VulkInputDevices& devices, const String& configPath);
+    Controller(const sq::InputDevices& devices, const String& configPath);
 
     //--------------------------------------------------------//
 
     /// Handle a system input event.
     void handle_event(sq::Event event);
 
+    /// Update gamepad state.
+    void integrate();
+
     /// Refresh and access input data.
     InputFrame get_input();
 
     //--------------------------------------------------------//
 
-    const sq::VulkInputDevices& devices;
+    const sq::InputDevices& devices;
 
 private: //===================================================//
 
@@ -54,7 +58,8 @@ private: //===================================================//
 
         int gamepad_port = -1;
 
-        sq::Gamepad_Stick stick_move {-1};
+        sq::Gamepad_Axis axis_move_x {-1};
+        sq::Gamepad_Axis axis_move_y {-1};
 
         sq::Gamepad_Button button_attack {-1};
         sq::Gamepad_Button button_jump {-1};
@@ -72,6 +77,8 @@ private: //===================================================//
     } config;
 
     //--------------------------------------------------------//
+
+    sq::Gamepad mGamepad;
 
     Vec2F mPrevAxisMove;
 

@@ -3,8 +3,8 @@
 #include "main/Options.hpp"
 #include "render/Renderer.hpp"
 
+#include <sqee/app/Window.hpp>
 #include <sqee/maths/Functions.hpp>
-#include <sqee/vk/VulkWindow.hpp>
 
 using namespace sts;
 

@@ -30,8 +30,8 @@ GameScene::GameScene(SmashApp& smashApp, GameSetup setup)
 
     //--------------------------------------------------------//
 
-    sq::VulkWindow& window = mSmashApp.get_window();
-    sq::VulkInputDevices& inputDevices = mSmashApp.get_input_devices();
+    sq::Window& window = mSmashApp.get_window();
+    sq::InputDevices& inputDevices = mSmashApp.get_input_devices();
     sq::AudioContext& audioContext = mSmashApp.get_audio_context();
 
     Options& options = mSmashApp.get_options();
@@ -177,6 +177,15 @@ void GameScene::integrate(double /*elapsed*/, float blend)
     if (options.render_skeletons == true)
         for (const auto fighter : mFightWorld->get_fighters())
             debugRenderer.render_skeleton(*fighter);
+
+    for (auto& controller : mControllers)
+    {
+        if (controller != nullptr)
+        {
+            if (mGamePaused == false)
+                controller->integrate();
+        }
+    }
 }
 
 //============================================================================//
