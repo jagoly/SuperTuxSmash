@@ -96,10 +96,8 @@ void StandardCamera::intergrate(float blend)
         return maths::clamp(value, min, max);
     };
 
-    if (aspect > 1.f)
-        cameraTarget.x = clamp_to_bounds(cameraTarget.x, minBounds.x, maxBounds.x, cameraDistanceY * aspect);
-    else
-        cameraTarget.y = clamp_to_bounds(cameraTarget.y, minBounds.y, maxBounds.y, cameraDistanceX / aspect);
+    cameraTarget.x = clamp_to_bounds(cameraTarget.x, minBounds.x, maxBounds.x, cameraDistanceY * aspect);
+    cameraTarget.y = clamp_to_bounds(cameraTarget.y, minBounds.y, maxBounds.y, cameraDistanceX / aspect);
 
     mBlock.position = cameraTarget - mBlock.direction * cameraDistance;
 

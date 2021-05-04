@@ -30,8 +30,8 @@ DebugRenderer::DebugRenderer(Renderer& renderer) : renderer(renderer)
 
     //-- Set up the vao and vbo ------------------------------//
 
-    mThickLinesVertexBuffer.initialise(sizeof(Vec4F) * 256u * 4u, vk::BufferUsageFlagBits::eVertexBuffer);
-    mThinLinesVertexBuffer.initialise(sizeof(Vec4F) * 512u * 4u, vk::BufferUsageFlagBits::eVertexBuffer);
+    mThickLinesVertexBuffer.initialise(sizeof(Line) * 1024u, vk::BufferUsageFlagBits::eVertexBuffer);
+    mThinLinesVertexBuffer.initialise(sizeof(Line) * 2048u, vk::BufferUsageFlagBits::eVertexBuffer);
 
     const auto& ctx = sq::VulkanContext::get();
 
