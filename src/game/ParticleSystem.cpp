@@ -117,7 +117,7 @@ void ParticleSystem::compute_vertices(float blend, VertexVec& vertices) const
         vertex.colour[2] = UNorm16(p.colour.b);
         //vertex.opacity = UNorm16(std::pow(p.baseOpacity * maths::mix(1.f, p.endOpacity, factor), 0.5f));
         vertex.opacity = UNorm16(p.baseOpacity * maths::mix(1.f, p.endOpacity, factor));
-        vertex.misc = 0.f;
         vertex.index = float(p.sprite);
+        vertex.padding = 0.f;
     }
 }

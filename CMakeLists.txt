@@ -48,13 +48,14 @@ file(GLOB_RECURSE SOURCES "${PROJECT_SOURCE_DIR}/src/*.cpp")
 add_executable(sts-game ${HEADERS} ${SOURCES})
 
 file(GLOB_RECURSE VERT_SHADERS "${PROJECT_SOURCE_DIR}/shaders/*.vert")
+file(GLOB_RECURSE GEOM_SHADERS "${PROJECT_SOURCE_DIR}/shaders/*.geom")
 file(GLOB_RECURSE FRAG_SHADERS "${PROJECT_SOURCE_DIR}/shaders/*.frag")
 file(GLOB_RECURSE GLSL_HEADERS "${PROJECT_SOURCE_DIR}/shaders/*.glsl")
 
-target_add_shaders(sts-game ${VERT_SHADERS} ${FRAG_SHADERS})
+target_add_shaders(sts-game ${VERT_SHADERS} ${GEOM_SHADERS} ${FRAG_SHADERS})
 
-target_sources(sts-game PRIVATE ${VERT_SHADERS} ${FRAG_SHADERS} ${GLSL_HEADERS})
-source_group("GLSL" FILES ${VERT_SHADERS} ${FRAG_SHADERS} ${GLSL_HEADERS})
+target_sources(sts-game PRIVATE ${VERT_SHADERS} ${GEOM_SHADERS} ${FRAG_SHADERS} ${GLSL_HEADERS})
+source_group("GLSL" FILES ${VERT_SHADERS} ${GEOM_SHADERS} ${FRAG_SHADERS} ${GLSL_HEADERS})
 
 target_include_directories(sts-game PRIVATE "${PROJECT_SOURCE_DIR}/src")
 

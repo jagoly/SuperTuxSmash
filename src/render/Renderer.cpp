@@ -22,10 +22,10 @@ using namespace sts;
 Renderer::Renderer(const sq::Window& window, const Options& options, ResourceCaches& caches)
     : window(window), options(options), caches(caches)
 {
-    mDebugRenderer = std::make_unique<DebugRenderer>(*this);
-//    mParticleRenderer = std::make_unique<ParticleRenderer>(*this);
-
     impl_initialise_layouts();
+
+    mDebugRenderer = std::make_unique<DebugRenderer>(*this);
+    mParticleRenderer = std::make_unique<ParticleRenderer>(*this);
 
     mSkyboxTexture.load_from_file_cube("assets/skybox");
 
@@ -94,35 +94,36 @@ void Renderer::impl_initialise_layouts()
     setLayouts.camera = sq::vk_create_descriptor_set_layout (
         ctx, {}, {
             vk::DescriptorSetLayoutBinding {
-                0u, vk::DescriptorType::eUniformBuffer, 1u, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, nullptr
+                0u, vk::DescriptorType::eUniformBuffer, 1u,
+                vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eGeometry | vk::ShaderStageFlagBits::eFragment
             }
         }
     );
     setLayouts.skybox = sq::vk_create_descriptor_set_layout (
         ctx, {}, {
             vk::DescriptorSetLayoutBinding {
-                0u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment, nullptr
+                0u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment
             }
         }
     );
     setLayouts.light = sq::vk_create_descriptor_set_layout (
         ctx, {}, {
             vk::DescriptorSetLayoutBinding {
-                0u, vk::DescriptorType::eUniformBuffer, 1u, vk::ShaderStageFlagBits::eFragment, nullptr
+                0u, vk::DescriptorType::eUniformBuffer, 1u, vk::ShaderStageFlagBits::eFragment
             }
         }
     );
     setLayouts.object = sq::vk_create_descriptor_set_layout (
         ctx, {}, {
             vk::DescriptorSetLayoutBinding {
-                0u, vk::DescriptorType::eUniformBuffer, 1u, vk::ShaderStageFlagBits::eVertex, nullptr
+                0u, vk::DescriptorType::eUniformBuffer, 1u, vk::ShaderStageFlagBits::eVertex
             }
         }
     );
     setLayouts.composite = sq::vk_create_descriptor_set_layout (
         ctx, {}, {
             vk::DescriptorSetLayoutBinding {
-                0u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment, nullptr
+                0u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment
             }
         }
     );
@@ -134,7 +135,7 @@ void Renderer::impl_initialise_layouts()
 
     pipelineLayouts.skybox = sq::vk_create_pipeline_layout(ctx, {}, { setLayouts.camera, setLayouts.skybox }, {});
     pipelineLayouts.standard = sq::vk_create_pipeline_layout(ctx, {}, { setLayouts.camera, setLayouts.light }, {});
-    pipelineLayouts.composite = sq::vk_create_pipeline_layout (ctx, {}, { setLayouts.composite }, {});
+    pipelineLayouts.composite = sq::vk_create_pipeline_layout(ctx, {}, { setLayouts.composite }, {});
 }
 
 //============================================================================//
@@ -159,9 +160,14 @@ void Renderer::impl_create_render_targets()
 
             std::tie(images.msDepth, images.msDepthMem, images.msDepthView) = sq::vk_create_image_2D (
                 ctx, vk::Format::eD32Sfloat, window.get_size(), 1u, msaaMode,
-                false, vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eTransientAttachment,
+                false, vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eTransientAttachment | vk::ImageUsageFlagBits::eInputAttachment,
                 false, {}, vk::ImageAspectFlagBits::eDepth
             );
+
+            ctx.set_debug_object_name(images.msColour, "renderer.images.msColour");
+            ctx.set_debug_object_name(images.msColourView, "renderer.images.msColourView");
+            ctx.set_debug_object_name(images.msDepth, "renderer.images.msDepth");
+            ctx.set_debug_object_name(images.msDepthView, "renderer.images.msDepthView");
         }
 
         std::tie(images.resolveColour, images.resolveColourMem, images.resolveColourView) = sq::vk_create_image_2D (
@@ -172,7 +178,7 @@ void Renderer::impl_create_render_targets()
 
         std::tie(images.resolveDepth, images.resolveDepthMem, images.resolveDepthView) = sq::vk_create_image_2D (
             ctx, vk::Format::eD32Sfloat, window.get_size(), 1u, vk::SampleCountFlagBits::e1,
-            false, vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled,
+            false, vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eInputAttachment,
             false, {}, vk::ImageAspectFlagBits::eDepth
         );
 
@@ -191,6 +197,13 @@ void Renderer::impl_create_render_targets()
                 0.f, false, 0.f, false, {}, 0.f, 0.f, {}, false
             }
         );
+
+        ctx.set_debug_object_name(images.resolveColour, "renderer.images.resolveColour");
+        ctx.set_debug_object_name(images.resolveColourView, "renderer.images.resolveColourView");
+        ctx.set_debug_object_name(images.resolveDepth, "renderer.images.resolveDepth");
+        ctx.set_debug_object_name(images.resolveDepthView, "renderer.images.resolveDepthView");
+        ctx.set_debug_object_name(samplers.resolveColour, "renderer.samplers.resolveColour");
+        ctx.set_debug_object_name(samplers.resolveDepth, "renderer.samplers.resolveDepth");
     }
 
     // create ms render pass
@@ -198,57 +211,70 @@ void Renderer::impl_create_render_targets()
         if (msaaMode > vk::SampleCountFlagBits::e1)
         {
             const auto attachments = std::array {
-                vk::AttachmentDescription {
+                vk::AttachmentDescription2 {
                     {}, vk::Format::eB8G8R8A8Srgb, msaaMode,
-                    vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eStore,
+                    vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eDontCare,
                     vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
                     vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal
                 },
-                vk::AttachmentDescription {
+                vk::AttachmentDescription2 {
                     {}, vk::Format::eD32Sfloat, msaaMode,
                     vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eDontCare,
                     vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
-                    vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthStencilAttachmentOptimal
+                    vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthStencilReadOnlyOptimal
                 },
-                vk::AttachmentDescription {
+                vk::AttachmentDescription2 {
                     {}, vk::Format::eB8G8R8A8Srgb, vk::SampleCountFlagBits::e1,
                     vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eStore,
                     vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
                     vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal
                 },
-                //vk::AttachmentDescription {
-                //    {}, vk::Format::eD32Sfloat, vk::SampleCountFlagBits::e1,
-                //    vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eDontCare,
-                //    vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
-                //    vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal
-                //}
+//                vk::AttachmentDescription2 {
+//                    {}, vk::Format::eD32Sfloat, vk::SampleCountFlagBits::e1,
+//                    vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eStore,
+//                    vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
+//                    vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthStencilReadOnlyOptimal
+//                }
             };
 
-            const auto colorAttachments = std::array {
-                vk::AttachmentReference { 0u, vk::ImageLayout::eColorAttachmentOptimal }
+            const auto colourAttachment        = vk::AttachmentReference2 { 0u, vk::ImageLayout::eColorAttachmentOptimal };
+            const auto depthAttachment         = vk::AttachmentReference2 { 1u, vk::ImageLayout::eDepthStencilAttachmentOptimal };
+            const auto colourResolveAttachment = vk::AttachmentReference2 { 2u, vk::ImageLayout::eColorAttachmentOptimal };
+            //const auto depthResolveAttachment  = vk::AttachmentReference2 { 3u, vk::ImageLayout::eDepthStencilAttachmentOptimal };
+            const auto depthReadAttachment     = vk::AttachmentReference2 { 1u, vk::ImageLayout::eDepthStencilReadOnlyOptimal, vk::ImageAspectFlagBits::eDepth };
+
+            //const auto depthResolveAttachment = vk::AttachmentReference2 { 3u, vk::ImageLayout::eDepthStencilAttachmentOptimal, {} };
+
+//            const auto subpassDepthResolve = vk::SubpassDescriptionDepthStencilResolve {
+//                vk::ResolveModeFlagBits::eMin, vk::ResolveModeFlagBits::eNone, &depthResolveAttachment
+//            };
+
+            const auto subpasses = std::array {
+                vk::SubpassDescription2 {
+                    {}, vk::PipelineBindPoint::eGraphics, 0u, {}, colourAttachment, {}, &depthAttachment, {}
+                },//.setPNext(&subpassDepthResolve),
+                vk::SubpassDescription2 {
+                    {}, vk::PipelineBindPoint::eGraphics, 0u, depthReadAttachment, colourAttachment, colourResolveAttachment, &depthReadAttachment, {}
+                },
             };
 
-            const auto depthAttachment =
-                vk::AttachmentReference { 1u, vk::ImageLayout::eDepthStencilAttachmentOptimal };
-
-            const auto resolveAttachments = std::array {
-                vk::AttachmentReference { 2u, vk::ImageLayout::eColorAttachmentOptimal },
-                //vk::AttachmentReference { 3u, vk::ImageLayout::eDepthAttachmentOptimal }
+            const auto dependencies = std::array {
+                vk::SubpassDependency2 {
+                    0u, 1u,
+                    vk::PipelineStageFlagBits::eLateFragmentTests, vk::PipelineStageFlagBits::eEarlyFragmentTests,
+                    vk::AccessFlagBits::eDepthStencilAttachmentWrite, vk::AccessFlagBits::eDepthStencilAttachmentRead,
+                    vk::DependencyFlagBits::eByRegion
+                },
+                vk::SubpassDependency2 {
+                    1u, VK_SUBPASS_EXTERNAL,
+                    vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eFragmentShader,
+                    vk::AccessFlagBits::eColorAttachmentWrite, vk::AccessFlagBits::eShaderRead,
+                    vk::DependencyFlagBits::eByRegion
+                }
             };
 
-            const auto subpasses = vk::SubpassDescription {
-                {}, vk::PipelineBindPoint::eGraphics, {}, colorAttachments, resolveAttachments, &depthAttachment, {}
-            };
-
-            const auto dependencies = vk::SubpassDependency {
-                0u, VK_SUBPASS_EXTERNAL,
-                vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eFragmentShader,
-                vk::AccessFlagBits::eColorAttachmentWrite, vk::AccessFlagBits::eShaderRead,
-                vk::DependencyFlagBits::eByRegion
-            };
-
-            targets.msRenderPass = ctx.device.createRenderPass (
-                vk::RenderPassCreateInfo { {}, attachments, subpasses, dependencies }
+            targets.msRenderPass = ctx.device.createRenderPass2 (
+                vk::RenderPassCreateInfo2 { {}, attachments, subpasses, dependencies }
             );
         }
         else // no multisample
@@ -256,34 +282,44 @@ void Renderer::impl_create_render_targets()
             const auto attachments = std::array {
                 vk::AttachmentDescription {
                     {}, vk::Format::eB8G8R8A8Srgb, vk::SampleCountFlagBits::e1,
-                    vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eStore,
+                    vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore,
                     vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
                     vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal
                 },
                 vk::AttachmentDescription {
                     {}, vk::Format::eD32Sfloat, vk::SampleCountFlagBits::e1,
-                    vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eDontCare,
+                    vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore,
                     vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
-                    vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal
+                    vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthStencilReadOnlyOptimal
                 }
             };
 
-            const auto colorAttachments = std::array {
-                vk::AttachmentReference { 0u, vk::ImageLayout::eColorAttachmentOptimal }
+            const auto colourAttachment    = vk::AttachmentReference { 0u, vk::ImageLayout::eColorAttachmentOptimal };
+            const auto depthAttachment     = vk::AttachmentReference { 1u, vk::ImageLayout::eDepthStencilAttachmentOptimal };
+            const auto depthReadAttachment = vk::AttachmentReference { 1u, vk::ImageLayout::eDepthStencilReadOnlyOptimal };
+
+            const auto subpasses = std::array {
+                vk::SubpassDescription {
+                    {}, vk::PipelineBindPoint::eGraphics, {}, colourAttachment, {}, &depthAttachment, {}
+                },
+                vk::SubpassDescription {
+                    {}, vk::PipelineBindPoint::eGraphics, depthReadAttachment, colourAttachment, {}, &depthReadAttachment, {}
+                }
             };
 
-            const auto depthAttachment =
-                vk::AttachmentReference { 1u, vk::ImageLayout::eDepthStencilAttachmentOptimal };
-
-            const auto subpasses = vk::SubpassDescription {
-                {}, vk::PipelineBindPoint::eGraphics, nullptr, colorAttachments, nullptr, &depthAttachment, {}
-            };
-
-            const auto dependencies = vk::SubpassDependency {
-                0u, VK_SUBPASS_EXTERNAL,
-                vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eFragmentShader,
-                vk::AccessFlagBits::eColorAttachmentWrite, vk::AccessFlagBits::eShaderRead,
-                vk::DependencyFlagBits::eByRegion
+            const auto dependencies = std::array {
+                vk::SubpassDependency {
+                    0u, 1u,
+                    vk::PipelineStageFlagBits::eLateFragmentTests, vk::PipelineStageFlagBits::eEarlyFragmentTests,
+                    vk::AccessFlagBits::eDepthStencilAttachmentWrite, vk::AccessFlagBits::eDepthStencilAttachmentRead,
+                    vk::DependencyFlagBits::eByRegion
+                },
+                vk::SubpassDependency {
+                    1u, VK_SUBPASS_EXTERNAL,
+                    vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eFragmentShader,
+                    vk::AccessFlagBits::eColorAttachmentWrite, vk::AccessFlagBits::eShaderRead,
+                    vk::DependencyFlagBits::eByRegion
+                }
             };
 
             targets.msRenderPass = ctx.device.createRenderPass (
@@ -320,9 +356,77 @@ void Renderer::impl_create_render_targets()
         }
     }
 
+//    // create fx render pass
+//    {
+//        const auto attachments = std::array {
+//            vk::AttachmentDescription {
+//                {}, vk::Format::eB8G8R8A8Srgb, vk::SampleCountFlagBits::e1,
+//                vk::AttachmentLoadOp::eLoad, vk::AttachmentStoreOp::eStore,
+//                vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
+//                vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eShaderReadOnlyOptimal
+//            },
+//            vk::AttachmentDescription {
+//                {}, vk::Format::eD32Sfloat, vk::SampleCountFlagBits::e1,
+//                vk::AttachmentLoadOp::eLoad, vk::AttachmentStoreOp::eDontCare,
+//                vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
+//                vk::ImageLayout::eDepthStencilReadOnlyOptimal, vk::ImageLayout::eDepthStencilReadOnlyOptimal
+//            }
+//        };
+
+//        const auto colorAttachments = std::array {
+//            vk::AttachmentReference { 0u, vk::ImageLayout::eColorAttachmentOptimal }
+//        };
+
+//        const auto depthAttachment =
+//            vk::AttachmentReference { 1u, vk::ImageLayout::eDepthStencilReadOnlyOptimal };
+
+//        const auto subpasses = std::array {
+//            vk::SubpassDescription {
+//                {}, vk::PipelineBindPoint::eGraphics, depthAttachment, colorAttachments, {}, &depthAttachment, {}
+//            }
+//        };
+
+//        const auto dependencies = std::array {
+//            vk::SubpassDependency {
+//                VK_SUBPASS_EXTERNAL, 0u,
+//                vk::PipelineStageFlagBits::eBottomOfPipe, vk::PipelineStageFlagBits::eTopOfPipe,
+//                vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite, vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite,
+//                vk::DependencyFlagBits::eByRegion
+//            },
+//            vk::SubpassDependency {
+//                0u, VK_SUBPASS_EXTERNAL,
+//                vk::PipelineStageFlagBits::eBottomOfPipe, vk::PipelineStageFlagBits::eTopOfPipe,
+//                vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite, vk::AccessFlagBits::eMemoryRead | vk::AccessFlagBits::eMemoryWrite,
+//                vk::DependencyFlagBits::eByRegion
+//            }
+//        };
+
+//        targets.fxRenderPass = ctx.device.createRenderPass (
+//            vk::RenderPassCreateInfo { {}, attachments, subpasses, /*dependencies*/ }
+//        );
+//    }
+
+//    // create fx framebuffer
+//    {
+//        const auto attachments = std::array {
+//            images.resolveColourView, images.resolveDepthView
+//        };
+
+//        targets.fxFramebuffer = ctx.device.createFramebuffer (
+//            vk::FramebufferCreateInfo {
+//                {}, targets.fxRenderPass, attachments, window.get_size().x, window.get_size().y, 1u
+//            }
+//        );
+//    }
+
+    ctx.set_debug_object_name(targets.msRenderPass, "renderer.targets.msRenderPass");
+    ctx.set_debug_object_name(targets.msFramebuffer, "renderer.targets.msFramebuffer");
+    //ctx.set_debug_object_name(targets.fxRenderPass, "renderer.targets.fxRenderPass");
+    //ctx.set_debug_object_name(targets.fxFramebuffer, "renderer.targets.fxFramebuffer");
+
     caches.passConfigMap = {
-        { "Opaque", { targets.msRenderPass, msaaMode, window.get_size(), setLayouts.camera, setLayouts.light } },
-        { "Transparent", { targets.msRenderPass, msaaMode, window.get_size(), setLayouts.camera, setLayouts.light } }
+        { "Opaque", { targets.msRenderPass, 0u, msaaMode, window.get_size(), setLayouts.camera, setLayouts.light } },
+        { "Transparent", { targets.msRenderPass, 0u, msaaMode, window.get_size(), setLayouts.camera, setLayouts.light } }
     };
 }
 
@@ -352,6 +456,8 @@ void Renderer::impl_destroy_render_targets()
 
     ctx.device.destroy(targets.msFramebuffer);
     ctx.device.destroy(targets.msRenderPass);
+    //ctx.device.destroy(targets.fxFramebuffer);
+    //ctx.device.destroy(targets.fxRenderPass);
 }
 
 //============================================================================//
@@ -429,6 +535,9 @@ void Renderer::impl_create_pipelines()
             }
         );
     }
+
+    ctx.set_debug_object_name(pipelines.skybox, "renderer.pipelines.skybox");
+    ctx.set_debug_object_name(pipelines.composite, "renderer.pipelines.composite");
 }
 
 //============================================================================//
@@ -449,6 +558,7 @@ void Renderer::refresh_options_destroy()
     impl_destroy_pipelines();
 
     mDebugRenderer->refresh_options_destroy();
+    mParticleRenderer->refresh_options_destroy();
 }
 
 void Renderer::refresh_options_create()
@@ -457,6 +567,7 @@ void Renderer::refresh_options_create()
     impl_create_pipelines();
 
     mDebugRenderer->refresh_options_create();
+    mParticleRenderer->refresh_options_create();
 }
 
     //-- Prepare Shader Options Header -----------------------//
@@ -599,7 +710,8 @@ void Renderer::populate_command_buffer(vk::CommandBuffer cmdbuf)
     //-- Begin the main render pass --------------------------//
 
     const auto clearValues = std::array {
-        vk::ClearValue(vk::ClearColorValue()), vk::ClearValue(vk::ClearDepthStencilValue(1.f))
+        vk::ClearValue(vk::ClearColorValue().setFloat32({})),
+        vk::ClearValue(vk::ClearDepthStencilValue(1.f))
     };
 
     cmdbuf.beginRenderPass (
@@ -660,7 +772,38 @@ void Renderer::populate_command_buffer(vk::CommandBuffer cmdbuf)
 
     //--------------------------------------------------------//
 
+    cmdbuf.nextSubpass(vk::SubpassContents::eInline);
+
+    mParticleRenderer->populate_command_buffer(cmdbuf);
+
     cmdbuf.endRenderPass();
+
+//    sq::vk_transition_image_memory_layout (
+//        cmdbuf, images.resolveDepth,
+//        vk::PipelineStageFlagBits::eBottomOfPipe, vk::PipelineStageFlagBits::eTopOfPipe,
+//        vk::AccessFlagBits::eMemoryWrite, vk::AccessFlagBits::eMemoryRead,
+//        vk::ImageLayout::eDepthStencilReadOnlyOptimal, vk::ImageLayout::eDepthStencilReadOnlyOptimal,
+//        vk::ImageAspectFlagBits::eDepth, 0u, 1u, 0u, 1u
+//    );
+
+//    cmdbuf.pipelineBarrier (
+//        vk::PipelineStageFlagBits::eBottomOfPipe, vk::PipelineStageFlagBits::eTopOfPipe,
+//        {}, {}, {}, {}
+//    );
+
+    //--------------------------------------------------------//
+
+//    cmdbuf.beginRenderPass (
+//        vk::RenderPassBeginInfo {
+//            targets.fxRenderPass, targets.fxFramebuffer,
+//            vk::Rect2D({0, 0}, {window.get_size().x, window.get_size().y}),
+//            nullptr
+//        }, vk::SubpassContents::eInline
+//    );
+
+//    mParticleRenderer->populate_command_buffer(cmdbuf);
+
+//    cmdbuf.endRenderPass();
 
     /*context.set_ViewPort(options.window_size);
 
@@ -757,5 +900,5 @@ void Renderer::render_particles(const ParticleSystem& system, float blend)
 
     mParticleRenderer->integrate_set(blend, system);
 
-    mParticleRenderer->render_particles();
+    //mParticleRenderer->render_particles();
 }

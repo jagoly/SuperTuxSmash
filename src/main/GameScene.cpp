@@ -158,8 +158,10 @@ void GameScene::update()
 
 void GameScene::integrate(double /*elapsed*/, float blend)
 {
-    mFightWorld->integrate(blend);
     mRenderer->integrate(blend);
+    mFightWorld->integrate(blend);
+
+    mRenderer->render_particles(mFightWorld->get_particle_system(), blend);
 
     auto& options = mSmashApp.get_options();
     auto& debugRenderer = mRenderer->get_debug_renderer();

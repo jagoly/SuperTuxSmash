@@ -123,8 +123,8 @@ public: //====================================================//
     struct {
         vk::RenderPass msRenderPass;
         vk::Framebuffer msFramebuffer;
-        //vk::RenderPass fxRenderPass;
-        //vk::Framebuffer fxFramebuffer;
+//        vk::RenderPass fxRenderPass;
+//        vk::Framebuffer fxFramebuffer;
     } targets;
 
 private: //===================================================//

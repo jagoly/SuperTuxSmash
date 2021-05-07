@@ -4,9 +4,9 @@
 
 #include "game/ParticleSystem.hpp"
 
-#include <sqee/gl/FixedBuffer.hpp>
-#include <sqee/gl/Textures.hpp>
-#include <sqee/gl/VertexArray.hpp>
+#include <sqee/vk/SwapBuffer.hpp>
+#include <sqee/vk/VulkTexture.hpp>
+#include <sqee/vk/Pipeline.hpp>
 
 namespace sts {
 
@@ -18,7 +18,11 @@ public: //====================================================//
 
     ParticleRenderer(Renderer& renderer);
 
-    void refresh_options();
+    ~ParticleRenderer();
+
+    void refresh_options_destroy();
+
+    void refresh_options_create();
 
     //--------------------------------------------------------//
 
@@ -26,9 +30,25 @@ public: //====================================================//
 
     void integrate_set(float blend, const ParticleSystem& system);
 
-    void render_particles();
+    void populate_command_buffer(vk::CommandBuffer cmdbuf);
 
 private: //===================================================//
+
+    Renderer& renderer;
+
+    //--------------------------------------------------------//
+
+    vk::DescriptorSetLayout mDescriptorSetLayout;
+    vk::PipelineLayout mPipelineLayout;
+
+    vk::DescriptorSet mDescriptorSet;
+    vk::Pipeline mPipeline;
+
+    sq::SwapBuffer mVertexBuffer;
+
+    sq::VulkTexture mTexture;
+
+    //--------------------------------------------------------//
 
     struct ParticleSetInfo
     {
@@ -42,17 +62,6 @@ private: //===================================================//
     std::vector<ParticleSetInfo> mParticleSetInfoKeep;
 
     std::vector<ParticleVertex> mVertices;
-
-    //--------------------------------------------------------//
-
-    sq::TextureArray mTexture;
-
-    sq::FixedBuffer mVertexBuffer;
-    sq::VertexArray mVertexArray;
-
-    //--------------------------------------------------------//
-
-    Renderer& renderer;
 };
 
 } // namespace sts

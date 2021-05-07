@@ -2,7 +2,7 @@
   "format": "4x8_Srgb",
   "swizzle": "RGBA",
   "filter": true,
-  "mipmaps": true,
   "anisotropy": true,
-  "size": 2048
+  "size": 2048,
+  "mipmaps": true
 }

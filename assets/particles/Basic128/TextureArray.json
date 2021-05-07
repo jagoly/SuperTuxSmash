@@ -1,10 +1,11 @@
 {
-  "format": "RG8_UN",
-  "wrap": "CC",
+  "format": "2x8_Unorm",
+  "wrapX": "Clamp",
+  "wrapY": "Clamp",
+  "wrapZ": "Clamp",
   "swizzle": "RRRG",
   "filter": true,
-  "mipmaps": false,
-  "width": 128,
-  "height": 128,
-  "layers": 20
+  "anisotropy": true,
+  "size": [ 128, 128, 20 ],
+  "mipmaps": false
 }

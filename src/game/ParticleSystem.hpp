@@ -30,8 +30,8 @@ struct alignas(16) ParticleVertex final
     float radius;
     uint16_t colour[3];
     uint16_t opacity;
-    float misc;
     float index;
+    float padding;
 };
 
 static_assert(sizeof(ParticleData) == 80u);

@@ -22,41 +22,27 @@ using namespace sts;
 
 DebugRenderer::DebugRenderer(Renderer& renderer) : renderer(renderer)
 {
-    //-- Load Mesh Objects -----------------------------------//
+    const auto& ctx = sq::VulkanContext::get();
 
-    mSphereMesh.load_from_file("assets/debug/Sphere.sqm", true);
-    mCapsuleMesh.load_from_file("assets/debug/Capsule.sqm", true);
-    mDiamondMesh.load_from_file("assets/debug/Diamond.sqm", true);
+    mBlobPipelineLayout = sq::vk_create_pipeline_layout (
+        ctx, {}, {}, {
+            vk::PushConstantRange { vk::ShaderStageFlagBits::eVertex, 0u, 64u },
+            vk::PushConstantRange { vk::ShaderStageFlagBits::eFragment, 64u, 16u },
+        }
+    );
 
-    //-- Set up the vao and vbo ------------------------------//
+    mLinesPipelineLayout = sq::vk_create_pipeline_layout (
+        ctx, {}, {}, {
+            vk::PushConstantRange { vk::ShaderStageFlagBits::eFragment, 0u, 16u },
+        }
+    );
 
     mThickLinesVertexBuffer.initialise(sizeof(Line) * 1024u, vk::BufferUsageFlagBits::eVertexBuffer);
     mThinLinesVertexBuffer.initialise(sizeof(Line) * 2048u, vk::BufferUsageFlagBits::eVertexBuffer);
 
-    const auto& ctx = sq::VulkanContext::get();
-
-    // create blob pipeline layout
-    {
-        const auto pushConstantRanges = std::array {
-            vk::PushConstantRange { vk::ShaderStageFlagBits::eVertex, 0u, 64u },
-            vk::PushConstantRange { vk::ShaderStageFlagBits::eFragment, 64u, 16u },
-        };
-
-        mBlobPipelineLayout = ctx.device.createPipelineLayout (
-            vk::PipelineLayoutCreateInfo { {}, {}, pushConstantRanges }
-        );
-    }
-
-    // create lines pipeline layout
-    {
-        const auto pushConstantRanges = std::array {
-            vk::PushConstantRange { vk::ShaderStageFlagBits::eFragment, 0u, 16u },
-        };
-
-        mLinesPipelineLayout = ctx.device.createPipelineLayout (
-            vk::PipelineLayoutCreateInfo { {}, {}, pushConstantRanges }
-        );
-    }
+    mSphereMesh.load_from_file("assets/debug/Sphere.sqm", true);
+    mCapsuleMesh.load_from_file("assets/debug/Capsule.sqm", true);
+    mDiamondMesh.load_from_file("assets/debug/Diamond.sqm", true);
 }
 
 //============================================================================//
@@ -112,10 +98,8 @@ void DebugRenderer::refresh_options_create()
             vk::Viewport { 0.f, float(windowSize.y), float(windowSize.x), -float(windowSize.y), 0.f, 1.f },
             vk::Rect2D { {0, 0}, {windowSize.x, windowSize.y} },
             vk::PipelineColorBlendAttachmentState {
-                true,
-                vk::BlendFactor::eSrcAlpha, vk::BlendFactor::eOneMinusSrcAlpha, vk::BlendOp::eAdd,
-                vk::BlendFactor::eOneMinusSrcAlpha, vk::BlendFactor::eZero, vk::BlendOp::eAdd,
-                vk::ColorComponentFlags(0b1111)
+                true, vk::BlendFactor::eSrcAlpha, vk::BlendFactor::eOneMinusSrcAlpha, vk::BlendOp::eAdd,
+                vk::BlendFactor::eOne, vk::BlendFactor::eZero, vk::BlendOp::eAdd, vk::ColorComponentFlags(0b1111)
             },
             nullptr
         );

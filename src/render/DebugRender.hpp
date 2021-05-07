@@ -45,6 +45,9 @@ private: //===================================================//
     vk::Pipeline mBlobPipeline;
     vk::Pipeline mLinesPipeline;
 
+    sq::SwapBuffer mThickLinesVertexBuffer;
+    sq::SwapBuffer mThinLinesVertexBuffer;
+
     sq::VulkMesh mSphereMesh;
     sq::VulkMesh mCapsuleMesh;
     sq::VulkMesh mDiamondMesh;
@@ -73,9 +76,6 @@ private: //===================================================//
 
     uint mThickLineCount = 0u;
     uint mThinLineCount = 0u;
-
-    sq::SwapBuffer mThickLinesVertexBuffer;
-    sq::SwapBuffer mThinLinesVertexBuffer;
 };
 
 //============================================================================//

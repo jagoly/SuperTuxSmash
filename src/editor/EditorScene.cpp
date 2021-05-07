@@ -183,6 +183,8 @@ void EditorScene::integrate(double /*elapsed*/, float blend)
     ctx.world->integrate(blend);
     ctx.renderer->integrate(blend);
 
+    ctx.renderer->render_particles(ctx.world->get_particle_system(), blend);
+
     auto& options = mSmashApp.get_options();
     auto& debugRenderer = ctx.renderer->get_debug_renderer();
 
