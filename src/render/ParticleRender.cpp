@@ -1,10 +1,10 @@
 #include "render/ParticleRender.hpp"
 
 #include "main/Options.hpp"
+#include "game/ParticleSystem.hpp"
 #include "render/Renderer.hpp"
 
 #include <sqee/app/Window.hpp>
-#include <sqee/vk/VulkanContext.hpp>
 #include <sqee/vk/Helpers.hpp>
 
 using namespace sts;
@@ -13,8 +13,6 @@ using namespace sts;
 
 ParticleRenderer::ParticleRenderer(Renderer& renderer) : renderer(renderer)
 {
-    mVertexBuffer.initialise(sizeof(ParticleVertex) * 8192u, vk::BufferUsageFlagBits::eVertexBuffer);
-
     const auto& ctx = sq::VulkanContext::get();
 
     mDescriptorSetLayout = sq::vk_create_descriptor_set_layout (
@@ -28,10 +26,14 @@ ParticleRenderer::ParticleRenderer(Renderer& renderer) : renderer(renderer)
         ctx, {}, { renderer.setLayouts.camera, mDescriptorSetLayout }, {}
     );
 
+    mVertexBuffer.initialise(sizeof(ParticleVertex) * MAX_PARTICLES, vk::BufferUsageFlagBits::eVertexBuffer);
+
     mTexture.load_from_file_array("assets/particles/Basic128");
 
     mDescriptorSet = sq::vk_allocate_descriptor_set(ctx, mDescriptorSetLayout);
-    sq::vk_update_descriptor_set(ctx, mDescriptorSet, 0u, 0u, vk::DescriptorType::eCombinedImageSampler, mTexture.get_descriptor_info());
+    sq::vk_update_descriptor_set (
+        ctx, mDescriptorSet, 0u, 0u, vk::DescriptorType::eCombinedImageSampler, mTexture.get_descriptor_info()
+    );
 }
 
 //============================================================================//
@@ -55,11 +57,14 @@ void ParticleRenderer::refresh_options_destroy()
     ctx.device.destroy(mPipeline);
 }
 
+//============================================================================//
+
 void ParticleRenderer::refresh_options_create()
 {
     const auto& ctx = sq::VulkanContext::get();
-    const Vec2U windowSize = renderer.window.get_size();
+
     const auto msaaMode = vk::SampleCountFlagBits(renderer.options.msaa_quality);
+    const auto windowSize = renderer.window.get_size();
 
     // create pipeline
     {
@@ -82,7 +87,7 @@ void ParticleRenderer::refresh_options_create()
         };
 
         mPipeline = sq::vk_create_graphics_pipeline (
-            ctx, mPipelineLayout, renderer.targets.msRenderPass, 1u, shaderModules.stages,
+            ctx, mPipelineLayout, renderer.targets.mainRenderPass, 1u, shaderModules.stages,
             vk::PipelineVertexInputStateCreateInfo {
                 {}, vertexBindingDescriptions, vertexAttributeDescriptions
             },
@@ -111,8 +116,7 @@ void ParticleRenderer::refresh_options_create()
         sq::vk_update_descriptor_set (
             ctx, mDescriptorSet, 1u, 0u, vk::DescriptorType::eInputAttachment,
             vk::DescriptorImageInfo {
-                {}, int(msaaMode) > 1 ? renderer.images.msDepthView : renderer.images.resolveDepthView,
-                vk::ImageLayout::eDepthStencilReadOnlyOptimal,
+                {}, renderer.images.depthView, vk::ImageLayout::eDepthStencilReadOnlyOptimal,
             }
         );
     }
@@ -120,68 +124,40 @@ void ParticleRenderer::refresh_options_create()
 
 //============================================================================//
 
-void ParticleRenderer::swap_sets()
+void ParticleRenderer::integrate(float blend, const ParticleSystem& system)
 {
-    mParticleSetInfoKeep.clear();
-    std::swap(mParticleSetInfo, mParticleSetInfoKeep);
+    SQASSERT(system.get_particles().size() <= MAX_PARTICLES, "too many particles for vertex buffer");
 
-    mVertices.clear();
-}
+    const auto UNorm16 = [](float value) { return uint16_t(value * 65535.0f); };
+    ParticleVertex* const vertices = reinterpret_cast<ParticleVertex*>(mVertexBuffer.swap_map());
+    mVertexCount = 0u;
 
-void ParticleRenderer::integrate_set(float blend, const ParticleSystem& system)
-{
-    auto& info = mParticleSetInfo.emplace_back();
+    for (const ParticleData& p : system.get_particles())
+    {
+        ParticleVertex& vertex = vertices[mVertexCount++];
 
-    //info.texture = renderer.resources.texarrays.acquire(system.texturePath);
-    info.startIndex = uint16_t(mVertices.size());
-    info.vertexCount = uint16_t(system.get_vertex_count());
+        // particles get simulated on the tick they are spawned, so progress will start at 1
+        const float factor = (float(p.progress - 1u) + blend) / float(p.lifetime);
 
-    mVertices.reserve(mVertices.size() + system.get_vertex_count());
-    system.compute_vertices(blend, mVertices);
+        vertex.position = maths::mix(p.previousPos, p.currentPos, blend);
+        vertex.radius = p.baseRadius * maths::mix(1.f, p.endScale, factor);
+        vertex.colour[0] = UNorm16(p.colour.r);
+        vertex.colour[1] = UNorm16(p.colour.g);
+        vertex.colour[2] = UNorm16(p.colour.b);
+        //vertex.opacity = UNorm16(std::pow(p.baseOpacity * maths::mix(1.f, p.endOpacity, factor), 0.5f));
+        vertex.opacity = UNorm16(p.baseOpacity * maths::mix(1.f, p.endOpacity, factor));
+        vertex.index = float(p.sprite);
+        vertex.padding = 0.f;
+    }
 }
 
 //============================================================================//
 
 void ParticleRenderer::populate_command_buffer(vk::CommandBuffer cmdbuf)
 {
-    std::memcpy(mVertexBuffer.swap_map(), mVertices.data(), mVertices.size() * sizeof(ParticleVertex));
-
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, mPipeline);
-
     cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, mPipelineLayout, 1u, mDescriptorSet, {});
     cmdbuf.bindVertexBuffers(0u, mVertexBuffer.front(), size_t(0u));
-    cmdbuf.draw(mVertices.size(), 1u, 0u, 0u);
 
-//    mVertexBuffer.update(0u, sizeof(ParticleVertex) * uint(mVertices.size()), mVertices.data());
-
-//    const auto compare = [](ParticleSetInfo& a, ParticleSetInfo& b) { return a.averageDepth > b.averageDepth; };
-//    std::sort(mParticleSetInfo.begin(), mParticleSetInfo.end(), compare);
-
-//    //--------------------------------------------------------//
-
-//    auto& context = renderer.context;
-
-//    context.bind_framebuffer(renderer.FB_Resolve);
-
-//    context.bind_vertexarray(mVertexArray);
-//    context.bind_program(renderer.PROG_Particles);
-
-//    //gl::Enable(gl::PROGRAM_POINT_SIZE);
-
-//    context.set_state(sq::BlendMode::Alpha);
-//    context.set_state(sq::CullFace::Disable);
-//    context.set_state(sq::DepthTest::Disable);
-//    //context.set_state(Context::Depth_Compare::LessEqual);
-
-//    context.bind_texture(mTexture, 0u);
-
-//    context.bind_texture(renderer.TEX_Depth, 1u);
-
-//    for (const ParticleSetInfo& info : mParticleSetInfo)
-//    {
-//        if (info.vertexCount == 0u) continue;
-
-//        //context.bind_texture(info.texture.get(), 0u);
-//        context.draw_arrays(sq::DrawPrimitive::Points, info.startIndex, info.vertexCount);
-//    }
+    cmdbuf.draw(mVertexCount, 1u, 0u, 0u);
 }

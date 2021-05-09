@@ -180,27 +180,11 @@ void EditorScene::integrate(double /*elapsed*/, float blend)
 
     //--------------------------------------------------------//
 
+    ctx.renderer->integrate_camera(blend);
     ctx.world->integrate(blend);
-    ctx.renderer->integrate(blend);
 
-    ctx.renderer->render_particles(ctx.world->get_particle_system(), blend);
-
-    auto& options = mSmashApp.get_options();
-    auto& debugRenderer = ctx.renderer->get_debug_renderer();
-
-    if (options.render_hit_blobs == true)
-        debugRenderer.render_hit_blobs(ctx.world->get_hit_blobs());
-
-    if (options.render_hurt_blobs == true)
-        debugRenderer.render_hurt_blobs(ctx.world->get_hurt_blobs());
-
-    if (options.render_diamonds == true)
-        for (const auto fighter : ctx.world->get_fighters())
-            debugRenderer.render_diamond(*fighter);
-
-    if (options.render_skeletons == true)
-        for (const auto fighter : ctx.world->get_fighters())
-            debugRenderer.render_skeleton(*fighter);
+    ctx.renderer->integrate_particles(blend, ctx.world->get_particle_system());
+    ctx.renderer->integrate_debug(blend, *ctx.world);
 }
 
 //============================================================================//
@@ -838,7 +822,10 @@ void EditorScene::save_changes(HurtblobsContext& ctx)
 
 void EditorScene::scrub_to_frame(ActionContext& ctx, int frame)
 {
-    // first we need to reset everything
+    // wait for all in progress rendering to finish
+    sq::VulkanContext::get().device.waitIdle();
+
+    // now we can reset everything
 
     ctx.world->get_particle_system().reset_random_seed(mRandomSeed);
     ctx.world->get_particle_system().clear();

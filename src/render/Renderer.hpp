@@ -60,17 +60,15 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    void integrate(float blend);
+    void integrate_camera(float blend);
+
+    void integrate_particles(float blend, const ParticleSystem& system);
+
+    void integrate_debug(float blend, const FightWorld& world);
 
     void populate_command_buffer(vk::CommandBuffer cmdbuf);
 
     void populate_final_pass(vk::CommandBuffer cmdbuf);
-
-    void render_particles(const ParticleSystem& system, float blend);
-
-    //--------------------------------------------------------//
-
-    DebugRenderer& get_debug_renderer() { return *mDebugRenderer; }
 
     //--------------------------------------------------------//
 
@@ -104,27 +102,21 @@ public: //====================================================//
         vk::Image msColour;
         sq::VulkanMemory msColourMem;
         vk::ImageView msColourView;
-        vk::Image msDepth;
-        sq::VulkanMemory msDepthMem;
-        vk::ImageView msDepthView;
         vk::Image resolveColour;
         sq::VulkanMemory resolveColourMem;
         vk::ImageView resolveColourView;
-        vk::Image resolveDepth;
-        sq::VulkanMemory resolveDepthMem;
-        vk::ImageView resolveDepthView;
+        vk::Image depth;
+        sq::VulkanMemory depthMem;
+        vk::ImageView depthView;
     } images;
 
     struct {
         vk::Sampler resolveColour;
-        vk::Sampler resolveDepth;
     } samplers;
 
     struct {
-        vk::RenderPass msRenderPass;
-        vk::Framebuffer msFramebuffer;
-//        vk::RenderPass fxRenderPass;
-//        vk::Framebuffer fxFramebuffer;
+        vk::RenderPass mainRenderPass;
+        vk::Framebuffer mainFramebuffer;
     } targets;
 
 private: //===================================================//

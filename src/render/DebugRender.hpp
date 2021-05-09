@@ -21,21 +21,42 @@ public: //====================================================//
 
     void refresh_options_create();
 
-    //--------------------------------------------------------//
-
-    void render_hit_blobs(const std::vector<HitBlob*>& blobs);
-
-    void render_hurt_blobs(const std::vector<HurtBlob*>& blobs);
-
-    void render_diamond(const Fighter& fighter);
-
-    void render_skeleton(const Fighter& fighter);
+    void integrate(float blend, const FightWorld& world);
 
     void populate_command_buffer(vk::CommandBuffer cmdbuf);
 
 private: //===================================================//
 
     Renderer& renderer;
+
+    //--------------------------------------------------------//
+
+    void impl_integrate_hit_blobs(const std::vector<HitBlob*>& blobs);
+
+    void impl_integrate_hurt_blobs(const std::vector<HurtBlob*>& blobs);
+
+    void impl_integrate_diamond(const Fighter& fighter);
+
+    void impl_integrate_skeleton(const Fighter& fighter);
+
+    //--------------------------------------------------------//
+
+    struct DrawBlob
+    {
+        Mat4F matrix;
+        Vec4F colour;
+        const sq::VulkMesh* mesh;
+        int subMesh;
+        int sortValue;
+    };
+
+    struct Line
+    {
+        Vec4F pointA;
+        Vec4F colourA;
+        Vec4F pointB;
+        Vec4F colourB;
+    };
 
     //--------------------------------------------------------//
 
@@ -51,26 +72,6 @@ private: //===================================================//
     sq::VulkMesh mSphereMesh;
     sq::VulkMesh mCapsuleMesh;
     sq::VulkMesh mDiamondMesh;
-
-    //--------------------------------------------------------//
-
-    struct DrawBlob
-    {
-        Mat4F matrix;
-        Vec4F colour;
-        const sq::VulkMesh* mesh;
-        int subMesh;
-        int sortValue;
-        bool operator<(const DrawBlob& other) { return sortValue < other.sortValue; }
-    };
-
-    struct Line
-    {
-        Vec4F pointA;
-        Vec4F colourA;
-        Vec4F pointB;
-        Vec4F colourB;
-    };
 
     std::vector<DrawBlob> mDrawBlobs;
 

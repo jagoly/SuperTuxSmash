@@ -2,11 +2,8 @@
 
 #include "setup.hpp"
 
-#include "game/ParticleSystem.hpp"
-
 #include <sqee/vk/SwapBuffer.hpp>
 #include <sqee/vk/VulkTexture.hpp>
-#include <sqee/vk/Pipeline.hpp>
 
 namespace sts {
 
@@ -24,17 +21,25 @@ public: //====================================================//
 
     void refresh_options_create();
 
-    //--------------------------------------------------------//
-
-    void swap_sets();
-
-    void integrate_set(float blend, const ParticleSystem& system);
+    void integrate(float blend, const ParticleSystem& system);
 
     void populate_command_buffer(vk::CommandBuffer cmdbuf);
 
 private: //===================================================//
 
     Renderer& renderer;
+
+    //--------------------------------------------------------//
+
+    struct ParticleVertex
+    {
+        Vec3F position;
+        float radius;
+        uint16_t colour[3];
+        uint16_t opacity;
+        float index;
+        float padding;
+    };
 
     //--------------------------------------------------------//
 
@@ -48,20 +53,9 @@ private: //===================================================//
 
     sq::VulkTexture mTexture;
 
-    //--------------------------------------------------------//
-
-    struct ParticleSetInfo
-    {
-        //TexArrayHandle texture;
-        uint16_t startIndex;
-        uint16_t vertexCount;
-        float averageDepth;
-    };
-
-    std::vector<ParticleSetInfo> mParticleSetInfo;
-    std::vector<ParticleSetInfo> mParticleSetInfoKeep;
-
-    std::vector<ParticleVertex> mVertices;
+    uint mVertexCount = 0u;
 };
+
+//============================================================================//
 
 } // namespace sts

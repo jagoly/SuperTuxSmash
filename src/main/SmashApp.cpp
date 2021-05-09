@@ -75,6 +75,8 @@ void SmashApp::update(double elapsed)
 
     //-- update scene and imgui ------------------------------//
 
+    mWindow->begin_frame();
+
     mActiveScene->update_and_integrate(elapsed);
     mDebugOverlay->update_and_integrate(elapsed);
 
@@ -88,7 +90,7 @@ void SmashApp::update(double elapsed)
 
     //-- populate and submit command buffer ------------------//
 
-    auto [cmdbuf, framebuf] = mWindow->begin_frame();
+    auto [cmdbuf, framebuf] = mWindow->acquire_image();
     if (cmdbuf)
     {
         populate_command_buffer(cmdbuf, framebuf);

@@ -3,6 +3,7 @@
 #include "main/Options.hpp"
 
 #include "game/Action.hpp"
+#include "game/FightWorld.hpp"
 #include "game/Fighter.hpp"
 #include "game/HitBlob.hpp"
 #include "game/HurtBlob.hpp"
@@ -37,8 +38,8 @@ DebugRenderer::DebugRenderer(Renderer& renderer) : renderer(renderer)
         }
     );
 
-    mThickLinesVertexBuffer.initialise(sizeof(Line) * 1024u, vk::BufferUsageFlagBits::eVertexBuffer);
-    mThinLinesVertexBuffer.initialise(sizeof(Line) * 2048u, vk::BufferUsageFlagBits::eVertexBuffer);
+    mThickLinesVertexBuffer.initialise(sizeof(Line) * MAX_THICK_LINES, vk::BufferUsageFlagBits::eVertexBuffer);
+    mThinLinesVertexBuffer.initialise(sizeof(Line) * MAX_THIN_LINES, vk::BufferUsageFlagBits::eVertexBuffer);
 
     mSphereMesh.load_from_file("assets/debug/Sphere.sqm", true);
     mCapsuleMesh.load_from_file("assets/debug/Capsule.sqm", true);
@@ -66,6 +67,8 @@ void DebugRenderer::refresh_options_destroy()
     ctx.device.destroy(mBlobPipeline);
     ctx.device.destroy(mLinesPipeline);
 }
+
+//============================================================================//
 
 void DebugRenderer::refresh_options_create()
 {
@@ -151,11 +154,30 @@ void DebugRenderer::refresh_options_create()
 
 //============================================================================//
 
-void DebugRenderer::render_hit_blobs(const std::vector<HitBlob*>& blobs)
+void DebugRenderer::integrate(float /*blend*/, const FightWorld& world)
+{
+    if (renderer.options.render_hit_blobs == true)
+        impl_integrate_hit_blobs(world.get_hit_blobs());
+
+    if (renderer.options.render_hurt_blobs == true)
+        impl_integrate_hurt_blobs(world.get_hurt_blobs());
+
+    if (renderer.options.render_diamonds == true)
+        for (const auto fighter : world.get_fighters())
+            impl_integrate_diamond(*fighter);
+
+    if (renderer.options.render_skeletons == true)
+        for (const auto fighter : world.get_fighters())
+            impl_integrate_skeleton(*fighter);
+}
+
+//============================================================================//
+
+void DebugRenderer::impl_integrate_hit_blobs(const std::vector<HitBlob*>& blobs)
 {
     const Mat4F projViewMat = renderer.get_camera().get_block().projViewMat;
 
-    Line* thick = reinterpret_cast<Line*>(mThickLinesVertexBuffer.map_only());
+    Line* const thick = reinterpret_cast<Line*>(mThickLinesVertexBuffer.map_only());
 
     for (const HitBlob* blob : blobs)
     {
@@ -209,7 +231,7 @@ void DebugRenderer::render_hit_blobs(const std::vector<HitBlob*>& blobs)
 
 //============================================================================//
 
-void DebugRenderer::render_hurt_blobs(const std::vector<HurtBlob*>& blobs)
+void DebugRenderer::impl_integrate_hurt_blobs(const std::vector<HurtBlob*>& blobs)
 {
     const Mat4F projViewMat = renderer.get_camera().get_block().projViewMat;
 
@@ -254,7 +276,7 @@ void DebugRenderer::render_hurt_blobs(const std::vector<HurtBlob*>& blobs)
 
 //============================================================================//
 
-void DebugRenderer::render_diamond(const Fighter& fighter)
+void DebugRenderer::impl_integrate_diamond(const Fighter& fighter)
 {
     const Mat4F projViewMat = renderer.get_camera().get_block().projViewMat;
 
@@ -279,14 +301,14 @@ void DebugRenderer::render_diamond(const Fighter& fighter)
 
 //============================================================================//
 
-void DebugRenderer::render_skeleton(const Fighter& fighter)
+void DebugRenderer::impl_integrate_skeleton(const Fighter& fighter)
 {
     const Mat4F projViewModelMat = renderer.get_camera().get_block().projViewMat * fighter.get_model_matrix();
 
     const std::vector<Mat4F> mats = fighter.get_armature().compute_skeleton_matrices(fighter.current.pose);
 
-    Line* thick = reinterpret_cast<Line*>(mThickLinesVertexBuffer.map_only());
-    Line* thin = reinterpret_cast<Line*>(mThinLinesVertexBuffer.map_only());
+    Line* const thick = reinterpret_cast<Line*>(mThickLinesVertexBuffer.map_only());
+    Line* const thin = reinterpret_cast<Line*>(mThinLinesVertexBuffer.map_only());
 
     for (uint i = 0u; i < mats.size(); ++i)
     {
@@ -308,7 +330,8 @@ void DebugRenderer::render_skeleton(const Fighter& fighter)
 void DebugRenderer::populate_command_buffer(vk::CommandBuffer cmdbuf)
 {
     // diamond < middle < lower < upper < sour < tangy < sweet
-    std::sort(mDrawBlobs.begin(), mDrawBlobs.end());
+    const auto compare = [](const DrawBlob& a, const DrawBlob& b) { return a.sortValue < b.sortValue; };
+    std::sort(mDrawBlobs.begin(), mDrawBlobs.end(), compare);
 
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, mBlobPipeline);
 
@@ -342,9 +365,9 @@ void DebugRenderer::populate_command_buffer(vk::CommandBuffer cmdbuf)
 
     mDrawBlobs.clear();
 
-    mThickLineCount = 0u;
-    mThinLineCount = 0u;
-
     mThickLinesVertexBuffer.swap_only();
     mThinLinesVertexBuffer.swap_only();
+
+    mThickLineCount = 0u;
+    mThinLineCount = 0u;
 }

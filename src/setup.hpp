@@ -112,4 +112,15 @@ constexpr const float SHIELD_PUSH_HIT_FACTOR = 0.004f;
 
 //============================================================================//
 
+/// Maximum number of particles that can be on screen at once.
+constexpr const size_t MAX_PARTICLES = 8192u;
+
+/// Maximum number of thick lines that can be on screen at once.
+constexpr const size_t MAX_THICK_LINES = 1024u;
+
+/// Maximum number of thin lines that can be on screen at once.
+constexpr const size_t MAX_THIN_LINES = 2048u;
+
+//============================================================================//
+
 } // namespace sts

@@ -10,12 +10,10 @@
 #include "game/Fighter.hpp"
 #include "game/Stage.hpp"
 
-#include "render/DebugRender.hpp"
 #include "render/Renderer.hpp"
 #include "render/StandardCamera.hpp"
 
 #include <sqee/app/GuiWidgets.hpp>
-#include <sqee/debug/Text.hpp>
 #include <sqee/vk/VulkanContext.hpp>
 
 using namespace sts;
@@ -158,27 +156,11 @@ void GameScene::update()
 
 void GameScene::integrate(double /*elapsed*/, float blend)
 {
-    mRenderer->integrate(blend);
+    mRenderer->integrate_camera(blend);
     mFightWorld->integrate(blend);
 
-    mRenderer->render_particles(mFightWorld->get_particle_system(), blend);
-
-    auto& options = mSmashApp.get_options();
-    auto& debugRenderer = mRenderer->get_debug_renderer();
-
-    if (options.render_hit_blobs == true)
-        debugRenderer.render_hit_blobs(mFightWorld->get_hit_blobs());
-
-    if (options.render_hurt_blobs == true)
-        debugRenderer.render_hurt_blobs(mFightWorld->get_hurt_blobs());
-
-    if (options.render_diamonds == true)
-        for (const auto fighter : mFightWorld->get_fighters())
-            debugRenderer.render_diamond(*fighter);
-
-    if (options.render_skeletons == true)
-        for (const auto fighter : mFightWorld->get_fighters())
-            debugRenderer.render_skeleton(*fighter);
+    mRenderer->integrate_particles(blend, mFightWorld->get_particle_system());
+    mRenderer->integrate_debug(blend, *mFightWorld);
 
     for (auto& controller : mControllers)
     {

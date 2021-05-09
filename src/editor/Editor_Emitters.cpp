@@ -57,7 +57,7 @@ void EditorScene::impl_show_widget_emitters()
             const ImPlus::ScopeID idScope = index;
             if (ImGui::Button(" X ")) indexToDelete = index;
             ImGui::SameLine();
-            ImGui::ColorEdit3(" RGB", emitter.colour[index].data);
+            ImGui::ColorEdit3("RGB (Linear)", emitter.colour[index].data, ImGuiColorEditFlags_Float);
         }
         if (indexToDelete >= 0)
             emitter.colour.erase(emitter.colour.begin() + indexToDelete);

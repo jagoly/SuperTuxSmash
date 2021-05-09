@@ -74,9 +74,6 @@ void ParticleSystem::generate(const Emitter& emitter)
         const Vec3F discDirection = maths::rotate_y(maths::rotate_x(Vec3F(0, 0, -1), discIncline), discAngle);
         p.currentPos += Mat3F(boneMatrix) * discDirection * emitter.discOffset(mGenerator);
         p.velocity += Mat3F(boneMatrix) * discDirection * emitter.discSpeed(mGenerator);
-
-        // do this once currentPos is ready
-        p.previousPos = p.currentPos;
     }
 }
 
@@ -84,40 +81,17 @@ void ParticleSystem::generate(const Emitter& emitter)
 
 void ParticleSystem::update_and_clean()
 {
+    const auto predicate = [](const ParticleData& p) { return p.progress == p.lifetime; };
+    algo::erase_if(mParticles, predicate);
+
     for (ParticleData& p : mParticles)
     {
+        p.progress += 1u;
         p.previousPos = p.currentPos;
         p.currentPos += p.velocity;
         p.velocity -= p.velocity * p.friction;
     }
 
-    const auto predicate = [](ParticleData& p) { return ++p.progress == p.lifetime; };
-    algo::erase_if(mParticles, predicate);
-
     const auto compare = [](const ParticleData& a, const ParticleData& b) { return a.currentPos.z > b.currentPos.z; };
     std::sort(mParticles.begin(), mParticles.end(), compare);
-}
-
-//============================================================================//
-
-void ParticleSystem::compute_vertices(float blend, VertexVec& vertices) const
-{
-    const auto UNorm16 = [](float value) { return uint16_t(value * 65535.0f); };
-
-    for (const ParticleData& p : mParticles)
-    {
-        ParticleVertex& vertex = vertices.emplace_back();
-
-        const float factor = (float(p.progress) + blend) / float(p.lifetime);
-
-        vertex.position = maths::mix(p.previousPos, p.currentPos, blend);
-        vertex.radius = p.baseRadius * maths::mix(1.f, p.endScale, factor);
-        vertex.colour[0] = UNorm16(p.colour.r);
-        vertex.colour[1] = UNorm16(p.colour.g);
-        vertex.colour[2] = UNorm16(p.colour.b);
-        //vertex.opacity = UNorm16(std::pow(p.baseOpacity * maths::mix(1.f, p.endOpacity, factor), 0.5f));
-        vertex.opacity = UNorm16(p.baseOpacity * maths::mix(1.f, p.endOpacity, factor));
-        vertex.index = float(p.sprite);
-        vertex.padding = 0.f;
-    }
 }
