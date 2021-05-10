@@ -23,7 +23,6 @@ using namespace sq::coretypes;
 
 namespace algo = sq::algo;
 namespace maths = sq::maths;
-namespace gl = sq::gl;
 
 using sq::StackString;
 using sq::StackVector;

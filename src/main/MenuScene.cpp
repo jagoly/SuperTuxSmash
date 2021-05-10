@@ -4,7 +4,6 @@
 #include "main/SmashApp.hpp"
 
 #include <sqee/app/GuiWidgets.hpp>
-#include <sqee/gl/Context.hpp>
 
 using namespace sts;
 

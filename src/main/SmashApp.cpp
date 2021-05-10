@@ -251,6 +251,10 @@ void SmashApp::refresh_options()
     mActiveScene->refresh_options_create();
 
     mResourceCaches->refresh_options();
+
+//    sq::log_debug("vulkan memory usage | host = {:.1f}MiB | device = {:.1f}MiB",
+//                  float(ctx.allocator.get_memory_usage(true)) / 1048576.f,
+//                  float(ctx.allocator.get_memory_usage(false)) / 1048576.f);
 }
 
 //============================================================================//

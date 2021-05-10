@@ -1,8 +1,8 @@
 #include "render/DrawItem.hpp"
 
 #include <sqee/misc/Json.hpp>
-#include <sqee/vk/VulkMaterial.hpp>
-#include <sqee/vk/VulkMesh.hpp>
+#include <sqee/objects/Material.hpp>
+#include <sqee/objects/Mesh.hpp>
 
 using namespace sts;
 

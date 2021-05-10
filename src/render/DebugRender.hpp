@@ -2,7 +2,7 @@
 
 #include "setup.hpp"
 
-#include <sqee/vk/VulkMesh.hpp>
+#include <sqee/objects/Mesh.hpp>
 #include <sqee/vk/SwapBuffer.hpp>
 
 namespace sts {
@@ -45,7 +45,7 @@ private: //===================================================//
     {
         Mat4F matrix;
         Vec4F colour;
-        const sq::VulkMesh* mesh;
+        const sq::Mesh* mesh;
         int subMesh;
         int sortValue;
     };
@@ -69,9 +69,9 @@ private: //===================================================//
     sq::SwapBuffer mThickLinesVertexBuffer;
     sq::SwapBuffer mThinLinesVertexBuffer;
 
-    sq::VulkMesh mSphereMesh;
-    sq::VulkMesh mCapsuleMesh;
-    sq::VulkMesh mDiamondMesh;
+    sq::Mesh mSphereMesh;
+    sq::Mesh mCapsuleMesh;
+    sq::Mesh mDiamondMesh;
 
     std::vector<DrawBlob> mDrawBlobs;
 

@@ -81,7 +81,7 @@ void DebugRenderer::refresh_options_create()
             ctx, "shaders/debug/Blob.vert.spv", {}, "shaders/debug/Blob.frag.spv"
         );
 
-        const auto vertexConfig = sq::VulkMesh::VertexConfig({});
+        const auto vertexConfig = sq::Mesh::VertexConfig({});
 
         mBlobPipeline = sq::vk_create_graphics_pipeline (
             ctx, mBlobPipelineLayout, renderer.window.get_render_pass(), 0u, shaderModules.stages, vertexConfig.state,
@@ -335,13 +335,15 @@ void DebugRenderer::populate_command_buffer(vk::CommandBuffer cmdbuf)
 
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, mBlobPipeline);
 
-    const sq::VulkMesh* boundMesh = nullptr;
+    const sq::Mesh* boundMesh = nullptr;
 
     for (const DrawBlob& blob : mDrawBlobs)
     {
         if (boundMesh != blob.mesh)
+        {
             blob.mesh->bind_buffers(cmdbuf);
-                boundMesh = blob.mesh;
+            boundMesh = blob.mesh;
+        }
 
         cmdbuf.pushConstants<Mat4F>(mBlobPipelineLayout, vk::ShaderStageFlagBits::eVertex, 0u, blob.matrix);
         cmdbuf.pushConstants<Vec4F>(mBlobPipelineLayout, vk::ShaderStageFlagBits::eFragment, 64u, blob.colour);

@@ -10,9 +10,8 @@
 #include <sqee/debug/Assert.hpp>
 #include <sqee/misc/Files.hpp>
 #include <sqee/misc/Json.hpp>
-#include <sqee/vk/VulkMaterial.hpp>
-#include <sqee/vk/VulkMesh.hpp>
-
+#include <sqee/objects/Material.hpp>
+#include <sqee/objects/Mesh.hpp>
 #include <sqee/vk/Helpers.hpp>
 
 using namespace sts;

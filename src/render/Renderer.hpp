@@ -6,8 +6,8 @@
 
 #include "render/DrawItem.hpp"
 
+#include <sqee/objects/Texture.hpp>
 #include <sqee/vk/SwapBuffer.hpp>
-#include <sqee/vk/VulkTexture.hpp>
 
 //============================================================================//
 
@@ -134,7 +134,7 @@ private: //===================================================//
     //--------------------------------------------------------//
 
     // todo: should be part of the stage
-    sq::VulkTexture mSkyboxTexture;
+    sq::Texture mSkyboxTexture;
 
     //--------------------------------------------------------//
 
