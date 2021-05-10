@@ -5,9 +5,6 @@ language: cpp
 addons:
   apt:
     packages:
-      - libsfml-system2.5
-      - libsfml-window2.5
-      - libsfml-dev
       - libglfw3-dev
 
 before_script:
@@ -17,7 +14,7 @@ before_script:
   - tar -xzf vulkan-sdk.tar.gz
   - source 1.2.170.0/setup-env.sh
 
-  - git clone --depth 1 --branch vulkan https://github.com/jagoly/sqee.git
+  - git clone --depth 1 --branch master https://github.com/jagoly/sqee.git
   - cd sqee
   - git submodule update --init --recursive
   - mkdir build && cd build

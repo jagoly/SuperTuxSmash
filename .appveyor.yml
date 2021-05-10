@@ -16,7 +16,7 @@ before_build:
   - cmake --build . --config Debug --target install
 
   - cd c:\projects
-  - git clone --depth 1 --branch vulkan https://github.com/jagoly/sqee.git
+  - git clone --depth 1 --branch master https://github.com/jagoly/sqee.git
   - cd c:\projects\sqee
   - git submodule update --init --recursive
   - cmake . -DCMAKE_PREFIX_PATH=c:/projects/glfw -DSQEE_STATIC_LIB=True -G "Visual Studio 16 2019" -A x64
