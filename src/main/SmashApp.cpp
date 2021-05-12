@@ -139,12 +139,6 @@ void SmashApp::handle_event(sq::Event event)
             mDebugOverlay->toggle_active();
             return;
         }
-
-        if (data.keyboard.key == Key::Escape)
-        {
-            return_to_main_menu();
-            return;
-        }
     }
 
     //--------------------------------------------------------//

@@ -65,6 +65,9 @@ private: //===================================================//
 
         Fighter* fighter;
         RenderObject* renderFighter;
+
+        bool modified = false;
+        size_t undoIndex = 0u;
     };
 
     struct ActionContext : public BaseContext
@@ -72,10 +75,7 @@ private: //===================================================//
         ActionKey key;
 
         std::unique_ptr<Action> savedData;
-        bool modified = false;
-
         std::vector<std::unique_ptr<Action>> undoStack;
-        size_t undoIndex = 0u;
 
         int timelineLength = 0;
         int currentFrame = -1;
@@ -86,10 +86,7 @@ private: //===================================================//
         FighterEnum key;
 
         std::unique_ptr<std::pmr::map<TinyString, HurtBlob>> savedData;
-        bool modified = false;
-
         std::vector<std::unique_ptr<std::pmr::map<TinyString, HurtBlob>>> undoStack;
-        size_t undoIndex = 0u;
     };
 
     std::map<ActionKey, ActionContext> mActionContexts;
@@ -150,6 +147,7 @@ private: //===================================================//
 
     ActionContext* mConfirmCloseActionCtx = nullptr;
     HurtblobsContext* mConfirmCloseHurtblobsCtx = nullptr;
+    uint mConfirmQuitNumUnsaved = 0u;
 
     PreviewMode mPreviewMode = PreviewMode::Pause;
 

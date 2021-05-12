@@ -66,7 +66,7 @@ EditorScene::~EditorScene()
 
 void EditorScene::handle_event(sq::Event event)
 {
-    if (event.type == sq::Event::Type::Keyboard_Press)
+    if (event.type == sq::Event::Type::Keyboard_Press || event.type == sq::Event::Type::Keyboard_Repeat)
     {
         if (event.data.keyboard.key == sq::Keyboard_Key::Space)
         {
@@ -88,6 +88,17 @@ void EditorScene::handle_event(sq::Event event)
 
             if (mActiveHurtblobsContext != nullptr)
                 do_undo_redo(*mActiveHurtblobsContext, event.data.keyboard.shift);
+        }
+    }
+
+    if (event.type == sq::Event::Type::Keyboard_Press)
+    {
+        if (event.data.keyboard.key == sq::Keyboard_Key::Escape)
+        {
+            const auto predicate = [](const auto& item) { return item.second.modified; };
+            mConfirmQuitNumUnsaved = algo::count_if(mActionContexts, predicate) + algo::count_if(mHurtblobsContexts, predicate);
+            if (mConfirmQuitNumUnsaved == 0u)
+                mSmashApp.return_to_main_menu();
         }
 
         if (event.data.keyboard.ctrl && event.data.keyboard.key == sq::Keyboard_Key::S)
@@ -419,7 +430,6 @@ void EditorScene::impl_show_widget_navigator()
 
                     const String label = sq::build_string(fighterName, '/', actionName, modified ? " *" : "");
                     const bool highlight = ImPlus::IsPopupOpen(label);
-
                     if (loaded) ImPlus::PushFont(ImPlus::FONT_BOLD);
                     if (ImPlus::Selectable(label, active || highlight) && !active)
                     {
@@ -488,21 +498,36 @@ void EditorScene::impl_show_widget_navigator()
         });
     });
 
-
     //--------------------------------------------------------//
 
     if (mConfirmCloseActionCtx != nullptr)
     {
         const auto result = ImPlus::DialogConfirmation("Discard Changes", "Action has been modified, really discard changes?");
         if (result == ImPlus::DialogResult::Confirm) do_close_action(*mConfirmCloseActionCtx);
-        if (result != ImPlus::DialogResult::None) mConfirmCloseActionCtx = nullptr;
+        if (result == ImPlus::DialogResult::Cancel) mConfirmCloseActionCtx = nullptr;
     }
 
     if (mConfirmCloseHurtblobsCtx != nullptr)
     {
         const auto result = ImPlus::DialogConfirmation("Discard Changes", "HurtBlobs have been modified, really discard changes?");
         if (result == ImPlus::DialogResult::Confirm) do_close_hurtblobs(*mConfirmCloseHurtblobsCtx);
-        if (result != ImPlus::DialogResult::None) mConfirmCloseHurtblobsCtx = nullptr;
+        if (result == ImPlus::DialogResult::Cancel) mConfirmCloseHurtblobsCtx = nullptr;
+    }
+
+    //--------------------------------------------------------//
+
+    if (mConfirmQuitNumUnsaved != 0u)
+    {
+        const auto result = ImPlus::DialogConfirmation("Confirm Quit", mConfirmQuitNumUnsaved > 1u ?
+                                                       "{} objects have not been saved, really quit?"_format(mConfirmQuitNumUnsaved) :
+                                                       "1 object has not been saved, really quit?");
+        if (result == ImPlus::DialogResult::Confirm)
+        {
+            mActionContexts.clear();
+            mHurtblobsContexts.clear();
+            mSmashApp.return_to_main_menu();
+        }
+        if (result == ImPlus::DialogResult::Cancel) mConfirmQuitNumUnsaved = 0u;
     }
 }
 
@@ -876,8 +901,10 @@ void EditorScene::scrub_to_frame(ActionContext& ctx, int frame)
     fighter.mForceSwitchAction = ctx.key.action;
 
     // finally, scrub to the desired frame
+    mSmashApp.get_audio_context().set_groups_ignored(sq::SoundGroup::Sfx, true);
     for (ctx.currentFrame = -1; ctx.currentFrame < frame;)
         tick_action_context(ctx);
+    mSmashApp.get_audio_context().set_groups_ignored(sq::SoundGroup::Sfx, false);
 
     if (fighter.mActiveAction != nullptr && ctx.currentFrame >= 0)
     {

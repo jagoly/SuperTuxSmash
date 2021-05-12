@@ -124,7 +124,8 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
         if (diamondChange) fighter.mLocalDiamond.compute_normals();
     }
 
-    if (ImGui::CollapsingHeader("Input Commands"))
+    // don't show this section at all in the editor
+    if (fighter.mController != nullptr && ImGui::CollapsingHeader("Input Commands"))
     {
         if (ImPlus::RadioButton("Record", fighter.mController->mPlaybackIndex == -1))
             fighter.mController->mPlaybackIndex = -1;

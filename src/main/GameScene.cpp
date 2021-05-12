@@ -130,6 +130,13 @@ void GameScene::handle_event(sq::Event event)
             }
             return;
         }
+
+        // todo: this should open a pause menu
+        if (event.data.keyboard.key == sq::Keyboard_Key::Escape)
+        {
+            mSmashApp.return_to_main_menu();
+            return;
+        }
     }
 
     for (auto& controller : mControllers)
