@@ -17,7 +17,7 @@ void Emitter::from_json(const JsonValue& json)
     if (auto& jb = json.at("bone"); jb.is_null() == false)
     {
         bone = fighter->get_armature().get_bone_index(jb);
-        if (bone == -1) throw std::invalid_argument("invalid bone '{}'"_format(jb));
+        if (bone == -1) SQEE_THROW("invalid bone '{}'", jb);
     }
     else bone = -1;
 
@@ -29,7 +29,7 @@ void Emitter::from_json(const JsonValue& json)
     json.at("sprite").get_to(sprite);
 
     json.at("colour").get_to(colour);
-    if (colour.empty()) throw std::invalid_argument("no colours defined");
+    if (colour.empty()) SQEE_THROW("no colours defined");
 
     json.at("baseOpacity").get_to(baseOpacity);
     json.at("endOpacity").get_to(endOpacity);

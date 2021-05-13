@@ -38,8 +38,7 @@ void EditorScene::impl_show_widget_sounds()
     {
         sound.cache = &ctx.world->caches.sounds;
         sound.path = fmt::format("fighters/{}/sounds/{}", fighter.type, sound.get_key());
-        if (sq::check_file_exists(sq::build_string("assets/", sound.path.c_str(), ".wav")))
-            sound.handle = sound.cache->acquire(sound.path.c_str());
+        sound.handle = sound.cache->try_acquire(sound.path.c_str(), true);
         sound.volume = 100.f; // very loud, in case you forget to set it
     };
 
@@ -48,14 +47,10 @@ void EditorScene::impl_show_widget_sounds()
         const ImPlus::ScopeItemWidth widthScope = -100.f;
 
         if (ImPlus::InputString(" Resource", sound.path))
-        {
-            sound.handle = nullptr;
-            if (sq::check_file_exists(sq::build_string("assets/", sound.path, ".wav")))
-                sound.handle = sound.cache->acquire(sound.path.c_str());
-        }
+            sound.handle = sound.cache->try_acquire(sound.path.c_str(), true);
 
         ImPlus::Text(sq::build_string("  assets/", sound.path, ".wav"));
-        if (sound.handle == nullptr) ImPlus::Text("FILE NOT FOUND");
+        if (sound.handle == nullptr) ImPlus::Text("COULD NOT LOAD RESOURCE");
 
         ImPlus::SliderValue(" Volume", sound.volume, 0.2f, 1.f, "%.2f ×");
     };

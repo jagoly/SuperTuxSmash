@@ -25,14 +25,14 @@ ResourceCaches::ResourceCaches(sq::AudioContext& audio)
     meshes.assign_factory([](const String& key)
     {
         auto result = std::make_unique<sq::Mesh>();
-        result->load_from_file(sq::build_string("assets/", key, ".sqm"), true);
+        result->load_from_file("assets/" + key, true);
         return result;
     });
 
     textures.assign_factory([](const String& key)
     {
         auto result = std::make_unique<sq::Texture>();
-        result->load_from_file_2D(sq::build_string("assets/", key));
+        result->load_from_file_2D("assets/" + key);
         return result;
     });
 
@@ -52,17 +52,15 @@ ResourceCaches::ResourceCaches(sq::AudioContext& audio)
 
     sounds.assign_factory([this](const String& key)
     {
-        auto path = sq::compute_resource_path(key, {"assets/"}, {".wav", ".flac"});
-
         auto result = std::make_unique<sq::Sound>(mAudioContext);
-        result->load_from_file(path);
+        result->load_from_file("assets/" + key);
         return result;
     });
 
     effects.assign_factory([this](const String& key)
     {
         auto result = std::make_unique<EffectAsset>();
-        result->load_from_directory(sq::build_string("assets/", key), *this);
+        result->load_from_directory("assets/" + key, *this);
         return result;
     });
 }

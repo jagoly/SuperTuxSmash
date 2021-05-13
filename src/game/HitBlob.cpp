@@ -22,7 +22,7 @@ void HitBlob::from_json(const JsonValue& json)
     if (auto& jb = json.at("bone"); jb.is_null() == false)
     {
         bone = action->fighter.get_armature().get_bone_index(jb);
-        if (bone == -1) throw std::invalid_argument("invalid bone '{}'"_format(jb));
+        if (bone == -1) SQEE_THROW("invalid bone '{}'", jb);
     }
     else bone = -1;
 

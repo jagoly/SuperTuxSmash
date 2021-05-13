@@ -111,15 +111,17 @@ void Fighter::initialise_armature(const String& path)
         current.pose = previous.pose = mArmature.get_rest_pose();
     }
 
+    // todo: create a "AnimLibrary" asset type to share between fighters
     const auto load_anim = [&](const char* name, AnimMode mode) -> Animation
     {
-        const String filePath = sq::build_string(path, "/anims/", name, ".sqa");
-        if (sq::check_file_exists(filePath) == false)
-        {
-            sq::log_warning("missing animation '{}'", filePath);
+        const String filePath = sq::build_string(path, "/anims/", name);
+        try {
+            return { mArmature.load_animation_from_file(filePath), mode, name };
+        }
+        catch (const std::exception&) {
+            sq::log_warning("missing animation '{}.sqa'", filePath);
             return { mArmature.make_null_animation(1u), mode, name };
         }
-        return { mArmature.make_animation(filePath), mode, name };
     };
 
     Animations& anims = mAnimations;

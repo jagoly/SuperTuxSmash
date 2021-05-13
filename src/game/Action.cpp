@@ -147,31 +147,30 @@ void Action::load_json_from_file()
     mBlobs.clear();
     mEmitters.clear();
 
-    // todo: make sqee better so we don't have use check_file_exists
-
     const String path = build_path(".json");
 
-    if (sq::check_file_exists(path) == false)
+    const auto root = sq::try_parse_json_from_file(path);
+    if (root.has_value() == false)
     {
         sq::log_warning("missing json   '{}'", path);
         return;
     }
 
-    const JsonValue root = sq::parse_json_from_file(path);
-
     String errors;
 
-    TRY_FOR (auto iter : root.at("blobs").items())
+    TRY_FOR (auto iter : root->at("blobs").items())
     {
         HitBlob& blob = mBlobs[iter.key()];
         blob.action = this;
 
         try { blob.from_json(iter.value()); }
-        catch (const std::exception& e) { errors += "\nblob '{}': {}"_format(iter.key(), e.what()); }
+        catch (const std::exception& e) {
+            errors += "\nblob '{}': {}"_format(iter.key(), e.what());
+        }
     }
     CATCH (const std::exception& e) { errors += '\n'; errors += e.what(); }
 
-    TRY_FOR (auto iter : root.at("effects").items())
+    TRY_FOR (auto iter : root->at("effects").items())
     {
         VisualEffect& effect = mEffects[iter.key()];
         effect.cache = &world.caches.effects;
@@ -184,23 +183,27 @@ void Action::load_json_from_file()
     }
     CATCH (const std::exception& e) { errors += '\n'; errors += e.what(); }
 
-    TRY_FOR (auto iter : root.at("emitters").items())
+    TRY_FOR (auto iter : root->at("emitters").items())
     {
         Emitter& emitter = mEmitters[iter.key()];
         emitter.fighter = &fighter;
 
         try { emitter.from_json(iter.value()); }
-        catch (const std::exception& e) { errors += "\nemitter '{}': {}"_format(iter.key(), e.what()); }
+        catch (const std::exception& e) {
+            errors += "\nemitter '{}': {}"_format(iter.key(), e.what());
+        }
     }
     CATCH (const std::exception& e) { errors += '\n'; errors += e.what(); }
 
-    TRY_FOR (auto iter : root.at("sounds").items())
+    TRY_FOR (auto iter : root->at("sounds").items())
     {
         SoundEffect& sound = mSounds[iter.key()];
         sound.cache = &world.caches.sounds;
 
         try { sound.from_json(iter.value()); }
-        catch (const std::exception& e) { errors += "\nsound '{}': {}"_format(iter.key(), e.what()); }
+        catch (const std::exception& e) {
+            errors += "\nsound '{}': {}"_format(iter.key(), e.what());
+        }
     }
     CATCH (const std::exception& e) { errors += '\n'; errors += e.what(); }
 
@@ -215,7 +218,7 @@ void Action::load_wren_from_file()
     const String path = build_path(".wren");
 
     // set mWrenSource to either the file contents or the fallback script
-    auto source = sq::try_get_string_from_file(path);
+    auto source = sq::try_read_text_from_file(path);
     if (source.has_value() == false)
     {
         sq::log_warning("missing script '{}'", path);

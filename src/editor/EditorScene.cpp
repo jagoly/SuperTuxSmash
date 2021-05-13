@@ -824,8 +824,8 @@ void EditorScene::save_changes(ActionContext& ctx)
     for (const auto& [key, sound] : action.mSounds)
         sound.to_json(sounds[key.c_str()]);
 
-    sq::save_string_to_file(action.build_path(".json"), json.dump(2));
-    sq::save_string_to_file(action.build_path(".wren"), action.mWrenSource);
+    sq::write_text_to_file(action.build_path(".json"), json.dump(2));
+    sq::write_text_to_file(action.build_path(".wren"), action.mWrenSource);
 
     ctx.savedData = action.clone();
     ctx.modified = false;
@@ -837,7 +837,7 @@ void EditorScene::save_changes(HurtblobsContext& ctx)
     for (const auto& [key, blob] : ctx.fighter->mHurtBlobs)
         blob.to_json(json[key.c_str()]);
 
-    sq::save_string_to_file("assets/fighters/{}/HurtBlobs.json"_format(ctx.fighter->type), json.dump(2));
+    sq::write_text_to_file("assets/fighters/{}/HurtBlobs.json"_format(ctx.fighter->type), json.dump(2));
 
     *ctx.savedData = ctx.fighter->mHurtBlobs;
     ctx.modified = false;

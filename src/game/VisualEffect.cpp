@@ -3,6 +3,7 @@
 #include <sqee/debug/Assert.hpp>
 #include <sqee/maths/Functions.hpp>
 #include <sqee/misc/Json.hpp>
+#include <sqee/misc/Files.hpp>
 
 using namespace sts;
 
@@ -11,7 +12,7 @@ using namespace sts;
 void EffectAsset::load_from_directory(const String& path, ResourceCaches& caches)
 {
     armature.load_from_file(path + "/Armature.json");
-    animation = armature.make_animation(path + "/Animation.sqa");
+    animation = armature.load_animation_from_file(path + "/Animation");
 
     SQASSERT(armature.get_bone_count() <= MAX_EFFECT_BONES, "too many bones for visual effect");
 
