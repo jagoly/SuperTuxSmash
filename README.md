@@ -14,7 +14,7 @@ The game is very far from complete, but you can get automatic builds for 64bit W
 
 ### Contributing
 
-SuperTuxSmash needs your help! More than anything else, right now the project needs modelers and animators. Currently, the only usable character is Mario, who's assets are taken from Brawl. Obviously, we would like to remove these as soon as possible.
+SuperTuxSmash needs your help! More than anything else, right now the project needs modelers and animators. Currently, the only usable character is Mario, whose assets are taken from Brawl. Obviously, we would like to remove these as soon as possible.
 
 Any other contributions are also extremely welcome: code, testing, ideas, moveset design, etc. Open an issue, PR, or send me an email!
 
