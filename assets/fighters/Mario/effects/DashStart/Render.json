@@ -14,8 +14,9 @@
         "vertexShader": "super/BasicEffect/Vert",
         "fragmentShader": "super/BasicEffect/Frag",
         "cullFace": "Disable",
+        "alphaCoverage": "Disable",
         "depthTest": "Keep",
-        "blendMode": "Alpha"
+        "colourBlend": "Alpha"
       }
     },
     "materials": {
@@ -40,22 +41,22 @@
       "condition": null,
       "material": "dash",
       "mesh": "",
-      "submesh": 0,
-      "pass": "Transparent"
+      "pass": "Transparent",
+      "submesh": 0
     },
     {
       "condition": null,
       "material": "dash",
       "mesh": "",
-      "submesh": 1,
-      "pass": "Transparent"
+      "pass": "Transparent",
+      "submesh": 1
     },
     {
       "condition": null,
       "material": "storm",
       "mesh": "",
-      "submesh": 2,
-      "pass": "Transparent"
+      "pass": "Transparent",
+      "submesh": 2
     }
   ]
 }

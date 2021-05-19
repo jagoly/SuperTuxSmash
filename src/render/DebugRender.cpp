@@ -41,9 +41,9 @@ DebugRenderer::DebugRenderer(Renderer& renderer) : renderer(renderer)
     mThickLinesVertexBuffer.initialise(sizeof(Line) * MAX_THICK_LINES, vk::BufferUsageFlagBits::eVertexBuffer);
     mThinLinesVertexBuffer.initialise(sizeof(Line) * MAX_THIN_LINES, vk::BufferUsageFlagBits::eVertexBuffer);
 
-    mSphereMesh.load_from_file("assets/debug/Sphere.sqm", true);
-    mCapsuleMesh.load_from_file("assets/debug/Capsule.sqm", true);
-    mDiamondMesh.load_from_file("assets/debug/Diamond.sqm", true);
+    mSphereMesh.load_from_file("assets/debug/Sphere.sqm");
+    mCapsuleMesh.load_from_file("assets/debug/Capsule.sqm");
+    mDiamondMesh.load_from_file("assets/debug/Diamond.sqm");
 }
 
 //============================================================================//

@@ -1,4 +1,4 @@
-# SQEE Animation Format V2
+# SQEE Animation Format
 
 
 ################################################################################
@@ -15,7 +15,7 @@ SECTION BaseTracks
 
 TRACK TransN offset 0.0 0.0 0.0
 
-TRACK TransN rotation 0.0 -0.70711 -0.70711 0.0
+TRACK TransN rotation 0.0 0.70711 0.70711 0.0
 
 TRACK TransN scale 1.0 1.0 1.0
 
@@ -244,7 +244,7 @@ TRACK RFootJ scale 1.0 1.0 1.0
 TRACK RShoulderN offset -0.09435 -0.02319 0.08792
 
 TRACK RShoulderN rotation
- 0 -0.99795 0.00368 0.06021 0.02152
+ 0 -0.99795 0.00368 0.06021 0.02151
  1 -0.98758 0.01231 0.1507 0.04263
  2 -0.9859 0.01837 0.15341 0.06421
  3 -0.96538 -0.15657 0.17744 0.10974

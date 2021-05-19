@@ -1,29 +1,39 @@
 {
   "blobs": {
-    "BlobA": {
+    "0_BlobA": {
       "bone": null,
       "damage": 3.0,
-      "flavour": "Sour",
-      "group": 0,
-      "knockAngle": 0.125,
-      "knockBase": 1.5,
-      "knockScale": 0.0,
+      "facing": "Forward",
+      "flavour": "Tangy",
+      "freezeFactor": 1.0,
+      "index": 0,
+      "knockAngle": 0.0,
+      "knockBase": 15.0,
+      "knockScale": 100.0,
       "origin": [ 0.0, 0.6, 0.65 ],
-      "priority": "Low",
-      "radius": 0.4
+      "radius": 0.4,
+      "sound": "",
+      "useFixedKnockback": true,
+      "useSakuraiAngle": true
     },
-    "BlobB": {
+    "1_BlobB": {
       "bone": null,
       "damage": 3.0,
-      "flavour": "Sour",
-      "group": 0,
-      "knockAngle": 0.125,
-      "knockBase": 1.5,
-      "knockScale": 0.0,
+      "facing": "Forward",
+      "flavour": "Tangy",
+      "freezeFactor": 1.0,
+      "index": 1,
+      "knockAngle": 0.0,
+      "knockBase": 15.0,
+      "knockScale": 100.0,
       "origin": [ 0.0, 1.0, 0.7 ],
-      "priority": "Low",
-      "radius": 0.45
+      "radius": 0.45,
+      "sound": "",
+      "useFixedKnockback": true,
+      "useSakuraiAngle": true
     }
   },
-  "emitters": {}
+  "effects": {},
+  "emitters": {},
+  "sounds": {}
 }

@@ -13,8 +13,9 @@
         "vertexShader": "super/BasicModel/Vert",
         "fragmentShader": "super/BasicModel/FragDiffuse",
         "cullFace": "Back",
+        "alphaCoverage": "Disable",
         "depthTest": "Replace",
-        "blendMode": "Disable"
+        "colourBlend": "Disable"
       }
     },
     "materials": {

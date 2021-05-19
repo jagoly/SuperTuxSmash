@@ -321,8 +321,8 @@ void Renderer::impl_create_render_targets()
     ctx.set_debug_object_name(targets.mainFramebuffer, "renderer.targets.mainFramebuffer");
 
     caches.passConfigMap = {
-        { "Opaque", { targets.mainRenderPass, 0u, msaaMode, window.get_size(), setLayouts.camera, setLayouts.light } },
-        { "Transparent", { targets.mainRenderPass, 0u, msaaMode, window.get_size(), setLayouts.camera, setLayouts.light } }
+        { "Opaque", { targets.mainRenderPass, 0u, msaaMode, window.get_size(), setLayouts.camera, setLayouts.light, {} } },
+        { "Transparent", { targets.mainRenderPass, 0u, msaaMode, window.get_size(), setLayouts.camera, setLayouts.light, {} } }
     };
 }
 

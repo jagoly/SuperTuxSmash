@@ -18,22 +18,24 @@
     },
     "pipelines": {
       "Basic": {
-        "attributes": [ "TexCoords", "Normals", "Tangents", "Bones" ],
+        "attributes": [ "TexCoords", "Normals", "Bones" ],
         "pass": "Opaque",
-        "vertexShader": "super/BasicModel/VertSkellyTangents",
-        "fragmentShader": "super/BasicModel/FragTangentsDiffuse",
+        "vertexShader": "super/BasicModel/VertSkelly",
+        "fragmentShader": "super/BasicModel/FragDiffuse",
         "cullFace": "Back",
+        "alphaCoverage": "Disable",
         "depthTest": "Replace",
-        "blendMode": "Disable"
+        "colourBlend": "Disable"
       },
       "Mask": {
-        "attributes": [ "TexCoords", "Normals", "Tangents", "Bones" ],
+        "attributes": [ "TexCoords", "Normals", "Bones" ],
         "pass": "Opaque",
-        "vertexShader": "super/BasicModel/VertSkellyTangents",
-        "fragmentShader": "super/BasicModel/FragTangentsDiffuseMask",
+        "vertexShader": "super/BasicModel/VertSkelly",
+        "fragmentShader": "super/BasicModel/FragDiffuseMask",
         "cullFace": "Back",
+        "alphaCoverage": "Enable",
         "depthTest": "Replace",
-        "blendMode": "Disable"
+        "colourBlend": "Disable"
       }
     },
     "materials": {
@@ -100,64 +102,64 @@
       "condition": null,
       "material": "BodyA",
       "mesh": "Body",
-      "submesh": 0,
-      "pass": "Opaque"
+      "pass": "Opaque",
+      "submesh": 0
     },
     {
       "condition": null,
       "material": "BodyB",
       "mesh": "Body",
-      "submesh": 1,
-      "pass": "Opaque"
+      "pass": "Opaque",
+      "submesh": 1
     },
     {
       "condition": null,
       "material": "Buttons",
       "mesh": "Body",
-      "submesh": 2,
-      "pass": "Opaque"
+      "pass": "Opaque",
+      "submesh": 2
     },
     {
       "condition": null,
       "material": "BodyA",
       "mesh": "HairHat",
-      "submesh": null,
-      "pass": "Opaque"
+      "pass": "Opaque",
+      "submesh": null
     },
     {
       "condition": "!flinch",
       "material": "BodyA",
       "mesh": "Head",
-      "submesh": null,
-      "pass": "Opaque"
+      "pass": "Opaque",
+      "submesh": null
     },
     {
       "condition": "!flinch",
       "material": "EyesWhite",
       "mesh": "EyesWhite",
-      "submesh": null,
-      "pass": "Opaque"
+      "pass": "Opaque",
+      "submesh": null
     },
     {
       "condition": "!flinch",
       "material": "EyesIris",
       "mesh": "EyesIris",
-      "submesh": null,
-      "pass": "Opaque"
+      "pass": "Opaque",
+      "submesh": null
     },
     {
       "condition": "flinch",
       "material": "BodyA",
       "mesh": "HeadHurt",
-      "submesh": 0,
-      "pass": "Opaque"
+      "pass": "Opaque",
+      "submesh": 0
     },
     {
       "condition": "flinch",
       "material": "EyesHurt",
       "mesh": "HeadHurt",
-      "submesh": 1,
-      "pass": "Opaque"
+      "pass": "Opaque",
+      "submesh": 1
     }
   ]
 }

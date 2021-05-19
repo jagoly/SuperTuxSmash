@@ -96,7 +96,7 @@ void EditorScene::handle_event(sq::Event event)
         if (event.data.keyboard.key == sq::Keyboard_Key::Escape)
         {
             const auto predicate = [](const auto& item) { return item.second.modified; };
-            mConfirmQuitNumUnsaved = algo::count_if(mActionContexts, predicate) + algo::count_if(mHurtblobsContexts, predicate);
+            mConfirmQuitNumUnsaved = uint(algo::count_if(mActionContexts, predicate) + algo::count_if(mHurtblobsContexts, predicate));
             if (mConfirmQuitNumUnsaved == 0u)
                 mSmashApp.return_to_main_menu();
         }
@@ -394,6 +394,7 @@ void EditorScene::impl_show_widget_navigator()
     {
         if (mActiveContext == &ctx)
         {
+            sq::VulkanContext::get().device.waitIdle();
             mSmashApp.get_window().set_title("SuperTuxSmash - Action Editor");
             mActiveContext = mActiveHurtblobsContext = nullptr;
         }

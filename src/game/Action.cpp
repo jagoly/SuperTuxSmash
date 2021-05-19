@@ -17,25 +17,6 @@ using namespace sts;
 
 //============================================================================//
 
-static const auto FALLBACK_SCRIPT
-= R"wren(import "sts" for ScriptBase
-
-class Script is ScriptBase {
-  construct new(a, f) { super(a, f) }
-
-  execute() {
-    wait_until(32)
-    action.allow_interrupt()
-  }
-
-  cancel() {
-    //fighter.set_intangible(false)
-    //action.disable_hitblobs()
-  }
-})wren";
-
-//============================================================================//
-
 Action::Action(Fighter& fighter, ActionType type)
     : fighter(fighter), world(fighter.world), type(type)
 {
@@ -222,7 +203,7 @@ void Action::load_wren_from_file()
     if (source.has_value() == false)
     {
         sq::log_warning("missing script '{}'", path);
-        mWrenSource = FALLBACK_SCRIPT;
+        mWrenSource = sq::read_text_from_file("wren/fallback/{}.wren"_format(type));
     }
     else mWrenSource = std::move(*source);
 
@@ -251,7 +232,7 @@ void Action::load_wren_from_string()
     {
         impl_set_error_message("failed to load wren script\n{}", *errors);
         wrenUnloadModule(world.vm, module.c_str());
-        world.vm.interpret(module.c_str(), FALLBACK_SCRIPT);
+        world.vm.interpret(module.c_str(), sq::read_text_from_file("wren/fallback/{}.wren"_format(type)).c_str());
     }
 
     // create a new instance of the Script object
@@ -260,7 +241,7 @@ void Action::load_wren_from_string()
     {
         impl_set_error_message("failed to load wren script\n{}", *errors);
         wrenUnloadModule(world.vm, module.c_str());
-        world.vm.interpret(module.c_str(), FALLBACK_SCRIPT);
+        world.vm.interpret(module.c_str(), sq::read_text_from_file("wren/fallback/{}.wren"_format(type)).c_str());
         mScriptInstance = world.vm.call<WrenHandle*>(world.handles.script_new, wren::GetVar{module.c_str(), "Script"}, this, &fighter);
     }
     else mScriptInstance = *safe.value;

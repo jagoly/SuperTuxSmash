@@ -1,7 +1,9 @@
 {
-  "format": "R8_UN",
-  "wrap": "RC",
+  "format": "1x8_Unorm",
+  "wrapX": "Repeat",
+  "wrapY": "Clamp",
   "swizzle": "000R",
   "filter": true,
+  "anisotropy": true,
   "mipmaps": true
 }

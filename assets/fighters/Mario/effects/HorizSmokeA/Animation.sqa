@@ -1,4 +1,4 @@
-# SQEE Animation Format V2
+# SQEE Animation Format
 
 
 ################################################################################
@@ -15,7 +15,7 @@ SECTION BaseTracks
 
 TRACK TopN offset 0.0 0.0 0.0
 
-TRACK TopN rotation 0.0 -0.70711 -0.70711 0.0
+TRACK TopN rotation 0.0 0.70711 0.70711 0.0
 
 TRACK TopN scale 1.0 1.0 1.0
 

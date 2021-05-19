@@ -25,7 +25,7 @@ ResourceCaches::ResourceCaches(sq::AudioContext& audio)
     meshes.assign_factory([](const String& key)
     {
         auto result = std::make_unique<sq::Mesh>();
-        result->load_from_file("assets/" + key, true);
+        result->load_from_file("assets/" + key);
         return result;
     });
 

@@ -1,38 +1,40 @@
 {
   "assets": {
     "meshes": {
-      "": "fighters/Tux/meshes/Mesh"
+      "Tux": "fighters/Tux/meshes/Tux"
     },
     "textures": {
       "Tux_diff": "fighters/Tux/textures/Tux_diff",
       "Tux_spec": "fighters/Tux/textures/Tux_spec"
     },
-    "programs": {
-      "": {
-        "path": "super/BasicModel",
-        "options": {
-          "APPLY_SKELETON": "1",
-          "DIFFUSE_TEXTURE": "1",
-          "SPECULAR_TEXTURE": "1"
-        }
+    "pipelines": {
+      "Tux": {
+        "attributes": [ "TexCoords", "Normals", "Bones" ],
+        "pass": "Opaque",
+        "vertexShader": "super/BasicModel/VertSkelly",
+        "fragmentShader": "super/BasicModel/FragDiffuseSpecular",
+        "cullFace": "Back",
+        "alphaCoverage": "Disable",
+        "depthTest": "Replace",
+        "colourBlend": "Disable"
       }
     },
     "materials": {
-      "": {
-        "cullface": "back",
-        "program": "",
-        "uniforms": {
+      "Tux": {
+        "pipeline": "Tux",
+        "textures": {
           "tx_Diffuse": "Tux_diff",
           "tx_Specular": "Tux_spec"
-        }
+        },
+        "params": {}
       }
     }
   },
   "items": [
     {
       "condition": null,
-      "material": "",
-      "mesh": "",
+      "material": "Tux",
+      "mesh": "Tux",
       "pass": "Opaque",
       "submesh": null
     }
