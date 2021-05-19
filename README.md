@@ -3,16 +3,16 @@
 [![Travis Status](https://travis-ci.org/jagoly/SuperTuxSmash.svg?branch=master)](https://travis-ci.org/jagoly/SuperTuxSmash)
 [![AppVeyor Status](https://ci.appveyor.com/api/projects/status/f9n1afqsqvb31eu1/branch/master?svg=true)](https://ci.appveyor.com/project/jagoly/supertuxsmash)
 
-##### About SuperTuxSmash
+### About SuperTuxSmash
 SuperTuxSmash, or STS, is a WIP open source fighting game, in the style of Super Smash Bros from Nintendo. I hope for it to be to Smash Bros what SuperTuxKart is to Mario Kart. Like STK, it features mascots from a number of open source projects. In addition, I hope to feature characters from a few FOSS games, such as The Battle for Wesnoth, if the creators of it approve.
 
-SuperTuxSmash requires [SQEE](https://github.com/jagoly/sqee). Assets and blender scripts are [here](https://github.com/jagoly/sqee-stuff).
+SuperTuxSmash requires [SQEE](https://github.com/jagoly/sqee).
 
-##### Downloads
+### Downloads
 
 The game is very far from complete, but you can get automatic builds for 64bit Windows from [AppVeyor](https://ci.appveyor.com/project/jagoly/supertuxsmash/build/artifacts). No Linux builds are currently available, but STS is fairly easy to build yourself (check out [.travis.yml](https://github.com/jagoly/SuperTuxSmash/blob/master/.travis.yml)).
 
-##### Contributing
+### Contributing
 
 SuperTuxSmash needs your help! More than anything else, right now the project needs modelers and animators. Currently, the only usable character is Mario, who's assets are taken from Brawl. Obviously, we would like to remove these as soon as possible.
 
