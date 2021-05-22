@@ -955,6 +955,11 @@ void EditorScene::populate_command_buffer(vk::CommandBuffer cmdbuf, vk::Framebuf
 
     if (mActiveContext != nullptr)
         mActiveContext->renderer->populate_final_pass(cmdbuf);
+    else
+        cmdbuf.clearAttachments (
+            vk::ClearAttachment(vk::ImageAspectFlagBits::eColor, 0u, vk::ClearValue(vk::ClearColorValue().setFloat32({}))),
+            vk::ClearRect(vk::Rect2D({0, 0}, {windowSize.x, windowSize.y}), 0u, 1u)
+        );
 
     mSmashApp.get_gui_system().render_gui(cmdbuf);
 
