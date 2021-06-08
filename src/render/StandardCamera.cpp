@@ -75,7 +75,7 @@ void StandardCamera::intergrate(float blend)
 
     mBlock.direction = Vec3F(0.f, 0.f, +1.f);
 
-    mBlock.projMat = maths::perspective_LH(1.f, aspect, 0.2f, 200.f);
+    mBlock.projMat = maths::perspective_LH(1.f, aspect, 0.5f, 100.f);
 
     const Vec2F minView = maths::mix(mPreviousView.min, mCurrentView.min, blend);
     const Vec2F maxView = maths::mix(mPreviousView.max, mCurrentView.max, blend);

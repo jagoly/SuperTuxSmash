@@ -3,7 +3,6 @@
   "wrapX": "Repeat",
   "wrapY": "Repeat",
   "swizzle": "RGBA",
-  "filter": true,
-  "anisotropy": true,
-  "mipmaps": true
+  "filter": "Anisotropic",
+  "mipmaps": "Generate"
 }

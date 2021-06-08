@@ -4,8 +4,7 @@
   "wrapY": "Clamp",
   "wrapZ": "Clamp",
   "swizzle": "RRRG",
-  "filter": true,
-  "anisotropy": true,
-  "size": [ 128, 128, 20 ],
-  "mipmaps": false
+  "filter": "Linear",
+  "mipmaps": "Disable",
+  "size": [ 128, 128, 20 ]
 }

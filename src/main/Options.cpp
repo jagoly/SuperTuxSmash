@@ -13,7 +13,7 @@ void sts::Options::validate() const
     if (ssao_quality  <= 2u)    sq::log_error("ssao_quality too high");
     if (msaa_quality  <= 2u)    sq::log_error("msaa_quality too high");
 
-    const auto validDebugTextures = { "", "depth", "ssao", "bloom" };
+    const auto validDebugTextures = { "", "NoToneMap", "Albedo", "Roughness", "Normal", "Metallic", "Depth", "SSAO" };
     if (algo::find(validDebugTextures, debug_texture) == validDebugTextures.end())
         sq::log_error("debug_texture not recognised");
 }

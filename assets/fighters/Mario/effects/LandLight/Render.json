@@ -16,7 +16,7 @@
         "cullFace": "Disable",
         "alphaCoverage": "Disable",
         "depthTest": "Keep",
-        "colourBlend": "Alpha"
+        "colourBlend": [ "Alpha" ]
       }
     },
     "materials": {
@@ -41,14 +41,12 @@
       "condition": null,
       "material": "smokeB",
       "mesh": "",
-      "pass": "Transparent",
       "submesh": 0
     },
     {
       "condition": null,
       "material": "down_shock",
       "mesh": "",
-      "pass": "Transparent",
       "submesh": 1
     }
   ]

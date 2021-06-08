@@ -184,10 +184,14 @@ void SmashApp::handle_event(sq::Event event)
 
         if (data.keyboard.key == Key::D)
         {
-            if      (mOptions->debug_texture == "")      mOptions->debug_texture = "depth";
-            else if (mOptions->debug_texture == "depth") mOptions->debug_texture = "bloom";
-            else if (mOptions->debug_texture == "bloom") mOptions->debug_texture = "ssao";
-            else if (mOptions->debug_texture == "ssao")  mOptions->debug_texture = "";
+            if      (mOptions->debug_texture == "")          mOptions->debug_texture = data.keyboard.shift ? "SSAO"      : "NoToneMap";
+            else if (mOptions->debug_texture == "NoToneMap") mOptions->debug_texture = data.keyboard.shift ? ""          : "Albedo";
+            else if (mOptions->debug_texture == "Albedo")    mOptions->debug_texture = data.keyboard.shift ? "NoToneMap" : "Roughness";
+            else if (mOptions->debug_texture == "Roughness") mOptions->debug_texture = data.keyboard.shift ? "Albedo"    : "Normal";
+            else if (mOptions->debug_texture == "Normal")    mOptions->debug_texture = data.keyboard.shift ? "Roughness" : "Metallic";
+            else if (mOptions->debug_texture == "Metallic")  mOptions->debug_texture = data.keyboard.shift ? "Normal"    : "Depth";
+            else if (mOptions->debug_texture == "Depth")     mOptions->debug_texture = data.keyboard.shift ? "Metallic"  : "SSAO";
+            else if (mOptions->debug_texture == "SSAO")      mOptions->debug_texture = data.keyboard.shift ? "Depth"     : "";
 
             mDebugOverlay->notify("debug texture set to '{}'"_format(mOptions->debug_texture));
             refresh_options();

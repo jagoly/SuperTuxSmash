@@ -139,51 +139,51 @@ void Action::load_json_from_file()
 
     String errors;
 
-    TRY_FOR (auto iter : root->at("blobs").items())
+    TRY_FOR (const auto& item : root->at("blobs").items())
     {
-        HitBlob& blob = mBlobs[iter.key()];
+        HitBlob& blob = mBlobs[item.key()];
         blob.action = this;
 
-        try { blob.from_json(iter.value()); }
+        try { blob.from_json(item.value()); }
         catch (const std::exception& e) {
-            errors += "\nblob '{}': {}"_format(iter.key(), e.what());
+            errors += "\nblob '{}': {}"_format(item.key(), e.what());
         }
     }
     CATCH (const std::exception& e) { errors += '\n'; errors += e.what(); }
 
-    TRY_FOR (auto iter : root->at("effects").items())
+    TRY_FOR (const auto& item : root->at("effects").items())
     {
-        VisualEffect& effect = mEffects[iter.key()];
+        VisualEffect& effect = mEffects[item.key()];
         effect.cache = &world.caches.effects;
         effect.fighter = &fighter;
 
-        try { effect.from_json(iter.value()); }
+        try { effect.from_json(item.value()); }
         catch (const std::exception& e) {
-            errors += "\neffect '{}': {}"_format(iter.key(), e.what());
+            errors += "\neffect '{}': {}"_format(item.key(), e.what());
         }
     }
     CATCH (const std::exception& e) { errors += '\n'; errors += e.what(); }
 
-    TRY_FOR (auto iter : root->at("emitters").items())
+    TRY_FOR (const auto& item : root->at("emitters").items())
     {
-        Emitter& emitter = mEmitters[iter.key()];
+        Emitter& emitter = mEmitters[item.key()];
         emitter.fighter = &fighter;
 
-        try { emitter.from_json(iter.value()); }
+        try { emitter.from_json(item.value()); }
         catch (const std::exception& e) {
-            errors += "\nemitter '{}': {}"_format(iter.key(), e.what());
+            errors += "\nemitter '{}': {}"_format(item.key(), e.what());
         }
     }
     CATCH (const std::exception& e) { errors += '\n'; errors += e.what(); }
 
-    TRY_FOR (auto iter : root->at("sounds").items())
+    TRY_FOR (const auto& item : root->at("sounds").items())
     {
-        SoundEffect& sound = mSounds[iter.key()];
+        SoundEffect& sound = mSounds[item.key()];
         sound.cache = &world.caches.sounds;
 
-        try { sound.from_json(iter.value()); }
+        try { sound.from_json(item.value()); }
         catch (const std::exception& e) {
-            errors += "\nsound '{}': {}"_format(iter.key(), e.what());
+            errors += "\nsound '{}': {}"_format(item.key(), e.what());
         }
     }
     CATCH (const std::exception& e) { errors += '\n'; errors += e.what(); }

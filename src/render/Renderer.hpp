@@ -74,49 +74,60 @@ public: //====================================================//
 
     struct {
         vk::DescriptorSetLayout camera;
+        vk::DescriptorSetLayout gbuffer;
         vk::DescriptorSetLayout skybox;
-        vk::DescriptorSetLayout light;
+        vk::DescriptorSetLayout lightDefault;
         vk::DescriptorSetLayout object;
         vk::DescriptorSetLayout composite;
     } setLayouts;
 
     struct {
-        vk::PipelineLayout skybox;
         vk::PipelineLayout standard;
+        vk::PipelineLayout skybox;
+        vk::PipelineLayout lightDefault;
         vk::PipelineLayout composite;
     } pipelineLayouts;
 
     struct {
         sq::Swapper<vk::DescriptorSet> camera;
         sq::Swapper<vk::DescriptorSet> skybox;
-        sq::Swapper<vk::DescriptorSet> light;
+        sq::Swapper<vk::DescriptorSet> lightDefault;
         vk::DescriptorSet composite;
     } sets;
 
     struct {
         vk::Pipeline skybox;
+        vk::Pipeline lightDefault;
         vk::Pipeline composite;
     } pipelines;
 
     struct {
-        vk::Image msColour;
-        sq::VulkanMemory msColourMem;
-        vk::ImageView msColourView;
-        vk::Image resolveColour;
-        sq::VulkanMemory resolveColourMem;
-        vk::ImageView resolveColourView;
-        vk::Image depth;
-        sq::VulkanMemory depthMem;
+        vk::Image depthStencil;
+        sq::VulkanMemory depthStencilMem;
+        vk::ImageView depthStencilView;
         vk::ImageView depthView;
+        vk::ImageView stencilView;
+        vk::Image albedoRoughness;
+        sq::VulkanMemory albedoRoughnessMem;
+        vk::ImageView albedoRoughnessView;
+        vk::Image normalMetalic;
+        sq::VulkanMemory normalMetalicMem;
+        vk::ImageView normalMetalicView;
+        vk::Image colour;
+        sq::VulkanMemory colourMem;
+        vk::ImageView colourView;
     } images;
 
     struct {
-        vk::Sampler resolveColour;
+        vk::Sampler nearestRepeat;
+        vk::Sampler linearRepeat;
     } samplers;
 
     struct {
-        vk::RenderPass mainRenderPass;
-        vk::Framebuffer mainFramebuffer;
+        vk::RenderPass gbufferRenderPass;
+        vk::Framebuffer gbufferFramebuffer;
+        vk::RenderPass lightsRenderPass;
+        vk::Framebuffer lightsFramebuffer;
     } targets;
 
 private: //===================================================//
@@ -133,8 +144,12 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
+    sq::Texture mLutTexture;
+
     // todo: should be part of the stage
     sq::Texture mSkyboxTexture;
+    sq::Texture mIrradianceTexture;
+    sq::Texture mRadianceTexture;
 
     //--------------------------------------------------------//
 
@@ -146,7 +161,11 @@ private: //===================================================//
     sq::SwapBuffer mCameraUbo;
     sq::SwapBuffer mLightUbo;
 
-    std::vector<DrawItem> mDrawItems;
+    sq::PassConfig* mPassConfigOpaque = nullptr;
+    sq::PassConfig* mPassConfigTransparent = nullptr;
+
+    std::vector<DrawItem> mDrawItemsOpaque;
+    std::vector<DrawItem> mDrawItemsTransparent;
 
     int64_t mCurrentGroupId = -1;
 };

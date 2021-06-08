@@ -17,7 +17,7 @@
         "cullFace": "Disable",
         "alphaCoverage": "Disable",
         "depthTest": "Keep",
-        "colourBlend": "Alpha"
+        "colourBlend": [ "Alpha" ]
       }
     },
     "materials": {
@@ -49,35 +49,30 @@
       "condition": null,
       "material": "shock123",
       "mesh": "",
-      "pass": "Transparent",
       "submesh": 0
     },
     {
       "condition": null,
       "material": "shock123",
       "mesh": "",
-      "pass": "Transparent",
       "submesh": 1
     },
     {
       "condition": null,
       "material": "shock4",
       "mesh": "",
-      "pass": "Transparent",
       "submesh": 2
     },
     {
       "condition": null,
       "material": "shock123",
       "mesh": "",
-      "pass": "Transparent",
       "submesh": 3
     },
     {
       "condition": null,
       "material": "storm",
       "mesh": "",
-      "pass": "Transparent",
       "submesh": 4
     }
   ]

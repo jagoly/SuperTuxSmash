@@ -1,32 +1,39 @@
 {
   "assets": {
     "meshes": {
-      "": "stages/TestZone/meshes/Mesh"
+      "Stage": "stages/TestZone/meshes/Stage",
+      "Platforms": "stages/TestZone/meshes/Platforms",
+      "Bounds": "stages/TestZone/meshes/Bounds"
     },
     "textures": {
-      "TestZone_diff": "stages/TestZone/textures/TestZone_diff"
+      "TestZone_albedo": "stages/TestZone/textures/TestZone_albedo",
+      "TestZone_roughness": "stages/TestZone/textures/TestZone_roughness",
+      "TestZone_normal": "stages/TestZone/textures/TestZone_normal",
+      "TestZone_metallic": "stages/TestZone/textures/TestZone_metallic",
+      "White": "textures/White"
     },
     "pipelines": {
       "": {
-        "attributes": [ "TexCoords", "Normals" ],
+        "attributes": [ "TexCoords", "Normals", "Tangents" ],
         "pass": "Opaque",
-        "vertexShader": "super/BasicModel/Vert",
-        "fragmentShader": "super/BasicModel/FragDiffuse",
+        "vertexShader": "gbuffer/BasicModel/VertTangents",
+        "fragmentShader": "gbuffer/BasicModel/FragNormal",
         "cullFace": "Back",
         "alphaCoverage": "Disable",
         "depthTest": "Replace",
-        "colourBlend": "Disable"
+        "colourBlend": [ "Disable", "Disable" ]
       }
     },
     "materials": {
       "": {
         "pipeline": "",
         "textures": {
-          "tx_Diffuse": "TestZone_diff"
+          "tx_Albedo": "TestZone_albedo",
+          "tx_Roughness": "TestZone_roughness",
+          "tx_Normal": "TestZone_normal",
+          "tx_Metallic": "White"
         },
-        "params": {
-          "specular": [ 0.5, 0.5, 0.5 ]
-        }
+        "params": {}
       }
     }
   },
@@ -34,8 +41,19 @@
     {
       "condition": null,
       "material": "",
-      "mesh": "",
-      "pass": "Opaque",
+      "mesh": "Stage",
+      "submesh": null
+    },
+    {
+      "condition": null,
+      "material": "",
+      "mesh": "Platforms",
+      "submesh": null
+    },
+    {
+      "condition": null,
+      "material": "",
+      "mesh": "Bounds",
       "submesh": null
     }
   ]

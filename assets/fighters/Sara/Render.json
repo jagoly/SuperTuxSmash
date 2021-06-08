@@ -5,51 +5,55 @@
       "Hair": "fighters/Sara/meshes/Hair"
     },
     "textures": {
-      "Body_diff": "fighters/Sara/textures/Body_diff",
-      "Body_spec": "fighters/Sara/textures/Body_spec",
-      "Hair_diff": "fighters/Sara/textures/Hair_diff",
-      "Hair_spec": "fighters/Sara/textures/Hair_spec",
+      "Body_albedo": "fighters/Sara/textures/Body_albedo",
+      "Body_roughness": "fighters/Sara/textures/Body_roughness",
+      "Body_metallic": "fighters/Sara/textures/Body_metallic",
+      "Hair_albedo": "fighters/Sara/textures/Hair_albedo",
+      "Hair_roughness": "fighters/Sara/textures/Hair_roughness",
+      "Hair_normal": "fighters/Sara/textures/Hair_normal",
       "Hair_mask": "fighters/Sara/textures/Hair_mask",
-      "Hair_norm": "fighters/Sara/textures/Hair_norm"
+      "Black": "textures/Black"
     },
     "pipelines": {
       "Body": {
         "attributes": [ "TexCoords", "Normals", "Bones" ],
         "pass": "Opaque",
-        "vertexShader": "super/BasicModel/VertSkelly",
-        "fragmentShader": "super/BasicModel/FragDiffuseSpecular",
+        "vertexShader": "gbuffer/BasicModel/VertSkelly",
+        "fragmentShader": "gbuffer/BasicModel/Frag",
         "cullFace": "Back",
         "alphaCoverage": "Disable",
         "depthTest": "Replace",
-        "colourBlend": "Disable"
+        "colourBlend": [ "Disable", "Disable" ]
       },
       "Hair": {
         "attributes": [ "TexCoords", "Normals", "Tangents", "Bones" ],
         "pass": "Opaque",
-        "vertexShader": "super/BasicModel/VertSkellyTangents",
-        "fragmentShader": "super/BasicModel/FragDiffuseSpecularMaskNormal",
+        "vertexShader": "gbuffer/BasicModel/VertSkellyTangents",
+        "fragmentShader": "gbuffer/BasicModel/FragMaskNormal",
         "cullFace": "Disable",
-        "alphaCoverage": "Conditional",
+        "alphaCoverage": "Disable",
         "depthTest": "Replace",
-        "colourBlend": "Disable"
+        "colourBlend": [ "Disable", "Disable" ]
       }
     },
     "materials": {
       "Body": {
         "pipeline": "Body",
         "textures": {
-          "tx_Diffuse": "Body_diff",
-          "tx_Specular": "Body_spec"
+          "tx_Albedo": "Body_albedo",
+          "tx_Roughness": "Body_roughness",
+          "tx_Metallic": "Body_metallic"
         },
         "params": {}
       },
       "Hair": {
         "pipeline": "Hair",
         "textures": {
-          "tx_Diffuse": "Hair_diff",
-          "tx_Specular": "Hair_spec",
-          "tx_Mask": "Hair_mask",
-          "tx_Normal": "Hair_norm"
+          "tx_Albedo": "Hair_albedo",
+          "tx_Roughness": "Hair_roughness",
+          "tx_Normal": "Hair_normal",
+          "tx_Metallic": "Black",
+          "tx_Mask": "Hair_mask"
         },
         "params": {}
       }
@@ -60,14 +64,12 @@
       "condition": null,
       "material": "Body",
       "mesh": "Body",
-      "pass": "Opaque",
       "submesh": null
     },
     {
       "condition": null,
       "material": "Hair",
       "mesh": "Hair",
-      "pass": "Opaque",
       "submesh": null
     }
   ]

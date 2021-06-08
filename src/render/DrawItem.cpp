@@ -8,15 +8,11 @@ using namespace sts;
 
 //============================================================================//
 
-SQEE_ENUM_JSON_CONVERSIONS(sts::DrawPass)
-
-//============================================================================//
-
 std::vector<DrawItemDef> DrawItemDef::load_from_json(const String& path, ResourceCaches& caches)
 {
     JsonValue json = sq::parse_json_from_file(path);
 
-    //-- replace program/texture names with assets -----------//
+    //-- replace pipeline/texture names with assets ----------//
 
     JsonValue& jsonAssets = json.at("assets");
     JsonValue& jsonMaterials = jsonAssets.at("materials");
@@ -61,15 +57,11 @@ std::vector<DrawItemDef> DrawItemDef::load_from_json(const String& path, Resourc
         const String& meshKey = jsonMeshes.at(meshName);
         def.mesh =  caches.meshes.acquire(meshKey);
 
-        def.pass = jobj.at("pass");
-
         if (auto& submesh = jobj.at("submesh"); !submesh.is_null())
             def.subMesh = submesh;
     }
 
     //--------------------------------------------------------//
-
-    // todo: sort the result before returning it
 
     return result;
 }

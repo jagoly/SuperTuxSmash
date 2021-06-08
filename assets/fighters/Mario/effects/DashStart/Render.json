@@ -16,7 +16,7 @@
         "cullFace": "Disable",
         "alphaCoverage": "Disable",
         "depthTest": "Keep",
-        "colourBlend": "Alpha"
+        "colourBlend": [ "Alpha" ]
       }
     },
     "materials": {
@@ -41,21 +41,18 @@
       "condition": null,
       "material": "dash",
       "mesh": "",
-      "pass": "Transparent",
       "submesh": 0
     },
     {
       "condition": null,
       "material": "dash",
       "mesh": "",
-      "pass": "Transparent",
       "submesh": 1
     },
     {
       "condition": null,
       "material": "storm",
       "mesh": "",
-      "pass": "Transparent",
       "submesh": 2
     }
   ]

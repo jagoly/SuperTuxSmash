@@ -13,15 +13,15 @@
     "radius": 0.07,
     "region": "Middle"
   },
-  "ArmC.L": {
-    "bone": "ArmC.L",
+  "ArmB.L": {
+    "bone": "ArmB.L",
     "originA": [ -0.45, 1.33, -0.02 ],
     "originB": [ -0.67, 1.26, -0.015 ],
     "radius": 0.07,
     "region": "Middle"
   },
-  "ArmC.R": {
-    "bone": "ArmC.R",
+  "ArmB.R": {
+    "bone": "ArmB.R",
     "originA": [ 0.45, 1.33, -0.02 ],
     "originB": [ 0.67, 1.26, -0.015 ],
     "radius": 0.07,

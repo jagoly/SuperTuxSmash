@@ -29,7 +29,8 @@ function (target_add_shaders TARGET)
         file(MAKE_DIRECTORY ${OUTDIR})
 
         add_custom_command( OUTPUT ${OUTPATH}
-                            COMMAND glslc ${SHADER} -o ${OUTPATH}
+                            #COMMAND glslc ${SHADER} -o ${OUTPATH}
+                            COMMAND glslc ${SHADER} -o - | spirv-opt -O - -o ${OUTPATH}
                             DEPENDS ${SHADER}
                             IMPLICIT_DEPENDS CXX ${SHADER}
                             VERBATIM )

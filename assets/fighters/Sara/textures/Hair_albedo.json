@@ -1,0 +1,8 @@
+{
+  "format": "4x8_Srgb",
+  "wrapX": "Repeat",
+  "wrapY": "Clamp",
+  "swizzle": "RGBA",
+  "filter": "Anisotropic",
+  "mipmaps": "Generate"
+}

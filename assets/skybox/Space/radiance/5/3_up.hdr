@@ -1,0 +1,9 @@
+#?RADIANCE
+# Output from cmft.
+EXPOSURE=1
+GAMMA=1
+PRIMARIES=0 0 0 0 0 0 0 0
+FORMAT=32-bit_rle_rgbe
+
+-Y 4 +X 4
+&>œy$>˜y9ù{1ß}‘½xUf–w6Æz2½}ŽžÆxp…¾w7šz?ô}7Kƒy(K¯y){3Ë}

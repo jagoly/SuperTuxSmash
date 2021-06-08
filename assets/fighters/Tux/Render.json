@@ -4,27 +4,29 @@
       "Tux": "fighters/Tux/meshes/Tux"
     },
     "textures": {
-      "Tux_diff": "fighters/Tux/textures/Tux_diff",
-      "Tux_spec": "fighters/Tux/textures/Tux_spec"
+      "Tux_albedo": "fighters/Tux/textures/Tux_albedo",
+      "Tux_roughness": "fighters/Tux/textures/Tux_roughness",
+      "Black": "textures/Black"
     },
     "pipelines": {
       "Tux": {
         "attributes": [ "TexCoords", "Normals", "Bones" ],
         "pass": "Opaque",
-        "vertexShader": "super/BasicModel/VertSkelly",
-        "fragmentShader": "super/BasicModel/FragDiffuseSpecular",
+        "vertexShader": "gbuffer/BasicModel/VertSkelly",
+        "fragmentShader": "gbuffer/BasicModel/Frag",
         "cullFace": "Back",
         "alphaCoverage": "Disable",
         "depthTest": "Replace",
-        "colourBlend": "Disable"
+        "colourBlend": [ "Disable", "Disable" ]
       }
     },
     "materials": {
       "Tux": {
         "pipeline": "Tux",
         "textures": {
-          "tx_Diffuse": "Tux_diff",
-          "tx_Specular": "Tux_spec"
+          "tx_Albedo": "Tux_albedo",
+          "tx_Roughness": "Tux_roughness",
+          "tx_Metallic": "Black"
         },
         "params": {}
       }
@@ -35,7 +37,6 @@
       "condition": null,
       "material": "Tux",
       "mesh": "Tux",
-      "pass": "Opaque",
       "submesh": null
     }
   ]

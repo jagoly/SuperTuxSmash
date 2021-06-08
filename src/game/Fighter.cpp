@@ -9,7 +9,6 @@
 
 #include "render/Renderer.hpp"
 #include "render/UniformBlocks.hpp"
-#include "render/Camera.hpp"
 
 #include <sqee/debug/Assert.hpp>
 #include <sqee/debug/Logging.hpp>
@@ -529,13 +528,12 @@ void Fighter::integrate(float blend)
 
     const sq::Armature::Pose pose = mArmature.blend_poses(previous.pose, current.pose, blend);
 
-    auto& camera = world.renderer.get_camera().get_block();
-
     mDescriptorSet.swap();
     auto& block = *reinterpret_cast<SkellyBlock*>(mSkellyUbo.swap_map());
 
-    block.matrix = camera.projViewMat * mInterpModelMatrix;
-    block.normMat = Mat34F(maths::normal_matrix(camera.viewMat * mInterpModelMatrix));
+    block.matrix = mInterpModelMatrix;
+    //block.normMat = Mat34F(maths::normal_matrix(camera.viewMat * mInterpModelMatrix));
+    block.normMat = Mat34F(maths::normal_matrix(mInterpModelMatrix));
 
     mArmature.compute_ubo_data(pose, block.bones, 80u);
 }

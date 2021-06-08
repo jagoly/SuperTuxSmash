@@ -1,8 +1,7 @@
 {
-  "format": "4x8_Srgb",
+  "format": "5999_Hdr",
   "swizzle": "RGBA",
-  "filter": true,
-  "anisotropy": true,
-  "size": 2048,
-  "mipmaps": true
+  "filter": "Linear",
+  "mipmaps": "Disable",
+  "size": 2048
 }

@@ -1,0 +1,8 @@
+{
+  "format": "1x8_Unorm",
+  "wrapX": "Repeat",
+  "wrapY": "Repeat",
+  "swizzle": "RRR1",
+  "filter": "Anisotropic",
+  "mipmaps": "Generate"
+}

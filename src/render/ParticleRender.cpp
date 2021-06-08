@@ -18,7 +18,7 @@ ParticleRenderer::ParticleRenderer(Renderer& renderer) : renderer(renderer)
     mDescriptorSetLayout = sq::vk_create_descriptor_set_layout (
         ctx, {}, {
             vk::DescriptorSetLayoutBinding { 0u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment },
-            vk::DescriptorSetLayoutBinding { 1u, vk::DescriptorType::eInputAttachment, 1u, vk::ShaderStageFlagBits::eFragment }
+            vk::DescriptorSetLayoutBinding { 1u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment }
         }
     );
 
@@ -62,15 +62,12 @@ void ParticleRenderer::refresh_options_destroy()
 void ParticleRenderer::refresh_options_create()
 {
     const auto& ctx = sq::VulkanContext::get();
-
-    const auto msaaMode = vk::SampleCountFlagBits(renderer.options.msaa_quality);
     const auto windowSize = renderer.window.get_size();
 
     // create pipeline
     {
         const auto shaderModules = sq::ShaderModules (
-            ctx, "shaders/particles/Generic.vert.spv", "shaders/particles/Generic.geom.spv",
-            "shaders/particles/Generic{}x.frag.spv"_format(int(msaaMode))
+            ctx, "shaders/particles/Generic.vert.spv", "shaders/particles/Generic.geom.spv", "shaders/particles/Generic.frag.spv"
         );
 
         const auto vertexBindingDescriptions = std::array {
@@ -87,7 +84,7 @@ void ParticleRenderer::refresh_options_create()
         };
 
         mPipeline = sq::vk_create_graphics_pipeline (
-            ctx, mPipelineLayout, renderer.targets.mainRenderPass, 1u, shaderModules.stages,
+            ctx, mPipelineLayout, renderer.targets.lightsRenderPass, 0u, shaderModules.stages,
             vk::PipelineVertexInputStateCreateInfo {
                 {}, vertexBindingDescriptions, vertexAttributeDescriptions
             },
@@ -99,7 +96,7 @@ void ParticleRenderer::refresh_options_create()
                 vk::FrontFace::eClockwise, false, 0.f, false, 0.f, 1.f
             },
             vk::PipelineMultisampleStateCreateInfo {
-                {}, msaaMode, false, 0.f, nullptr, false, false
+                {}, vk::SampleCountFlagBits::e1, false, 0.f, nullptr, false, false
             },
             vk::PipelineDepthStencilStateCreateInfo {
                 {}, false, false, {}, false, false, {}, {}, 0.f, 0.f
@@ -114,9 +111,9 @@ void ParticleRenderer::refresh_options_create()
         );
 
         sq::vk_update_descriptor_set (
-            ctx, mDescriptorSet, 1u, 0u, vk::DescriptorType::eInputAttachment,
+            ctx, mDescriptorSet, 1u, 0u, vk::DescriptorType::eCombinedImageSampler,
             vk::DescriptorImageInfo {
-                {}, renderer.images.depthView, vk::ImageLayout::eDepthStencilReadOnlyOptimal,
+                renderer.samplers.nearestRepeat, renderer.images.depthView, vk::ImageLayout::eDepthStencilReadOnlyOptimal
             }
         );
     }

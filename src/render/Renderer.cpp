@@ -23,10 +23,32 @@ Renderer::Renderer(const sq::Window& window, const Options& options, ResourceCac
 {
     impl_initialise_layouts();
 
+    mPassConfigOpaque = &caches.passConfigMap["Opaque"];
+    mPassConfigTransparent = &caches.passConfigMap["Transparent"];
+
     mDebugRenderer = std::make_unique<DebugRenderer>(*this);
     mParticleRenderer = std::make_unique<ParticleRenderer>(*this);
 
-    mSkyboxTexture.load_from_file_cube("assets/skybox/Space");
+    // load brdf lookup texture
+    {
+        sq::Texture::Config config;
+        config.format = vk::Format::eR16G16Unorm;
+        config.wrapX = config.wrapY = config.wrapZ = vk::SamplerAddressMode::eClampToEdge;
+        config.swizzle = vk::ComponentMapping();
+        config.filter = sq::Texture::FilterMode::Linear;
+        config.mipmaps = sq::Texture::MipmapsMode::Disable;
+        config.size = Vec3U(512u, 512u, 1u);
+        config.mipLevels = 1u;
+
+        // todo: embed image data into the source
+        mLutTexture.initialise_2D(config);
+        mLutTexture.load_from_memory(sq::read_bytes_from_file("assets/BrdfLut512.bin").data(), 0u, 0u, config);
+    }
+
+    // todo: these need to be cached for the editor
+    mSkyboxTexture.load_from_file_cube(options.editor_mode ? "assets/skybox/Space/small" : "assets/skybox/Space");
+    mIrradianceTexture.load_from_file_cube("assets/skybox/Space/irradiance");
+    mRadianceTexture.load_from_file_cube("assets/skybox/Space/radiance");
 
     const auto& ctx = sq::VulkanContext::get();
 
@@ -44,10 +66,10 @@ Renderer::Renderer(const sq::Window& window, const Options& options, ResourceCac
     // initialise light ubo and descriptor set
     {
         mLightUbo.initialise(sizeof(LightBlock), vk::BufferUsageFlagBits::eUniformBuffer);
-        sets.light = sq::vk_allocate_descriptor_set_swapper(ctx, setLayouts.light);
+        sets.lightDefault = sq::vk_allocate_descriptor_set_swapper(ctx, setLayouts.lightDefault);
 
         sq::vk_update_descriptor_set_swapper (
-            ctx, sets.light, 0u, 0u, vk::DescriptorType::eUniformBuffer,
+            ctx, sets.lightDefault, 0u, 0u, vk::DescriptorType::eUniformBuffer,
             mLightUbo.get_descriptor_info_front(), mLightUbo.get_descriptor_info_back()
         );
     }
@@ -63,8 +85,9 @@ Renderer::~Renderer()
     const auto& ctx = sq::VulkanContext::get();
 
     ctx.device.destroy(setLayouts.camera);
+    ctx.device.destroy(setLayouts.gbuffer);
     ctx.device.destroy(setLayouts.skybox);
-    ctx.device.destroy(setLayouts.light);
+    ctx.device.destroy(setLayouts.lightDefault);
     ctx.device.destroy(setLayouts.object);
     ctx.device.destroy(setLayouts.composite);
 
@@ -72,12 +95,13 @@ Renderer::~Renderer()
     ctx.device.free(ctx.descriptorPool, sets.camera.back);
     ctx.device.free(ctx.descriptorPool, sets.skybox.front);
     ctx.device.free(ctx.descriptorPool, sets.skybox.back);
-    ctx.device.free(ctx.descriptorPool, sets.light.front);
-    ctx.device.free(ctx.descriptorPool, sets.light.back);
+    ctx.device.free(ctx.descriptorPool, sets.lightDefault.front);
+    ctx.device.free(ctx.descriptorPool, sets.lightDefault.back);
     ctx.device.free(ctx.descriptorPool, sets.composite);
 
     ctx.device.destroy(pipelineLayouts.skybox);
     ctx.device.destroy(pipelineLayouts.standard);
+    ctx.device.destroy(pipelineLayouts.lightDefault);
     ctx.device.destroy(pipelineLayouts.composite);
 
     impl_destroy_render_targets();
@@ -98,6 +122,9 @@ void Renderer::impl_initialise_layouts()
             }
         }
     );
+    setLayouts.gbuffer = sq::vk_create_descriptor_set_layout (
+        ctx, {}, {}
+    );
     setLayouts.skybox = sq::vk_create_descriptor_set_layout (
         ctx, {}, {
             vk::DescriptorSetLayoutBinding {
@@ -105,10 +132,28 @@ void Renderer::impl_initialise_layouts()
             }
         }
     );
-    setLayouts.light = sq::vk_create_descriptor_set_layout (
+    setLayouts.lightDefault = sq::vk_create_descriptor_set_layout (
         ctx, {}, {
             vk::DescriptorSetLayoutBinding {
                 0u, vk::DescriptorType::eUniformBuffer, 1u, vk::ShaderStageFlagBits::eFragment
+            },
+            vk::DescriptorSetLayoutBinding {
+                1u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment
+            },
+            vk::DescriptorSetLayoutBinding {
+                2u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment
+            },
+            vk::DescriptorSetLayoutBinding {
+                3u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment
+            },
+            vk::DescriptorSetLayoutBinding {
+                4u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment
+            },
+            vk::DescriptorSetLayoutBinding {
+                5u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment
+            },
+            vk::DescriptorSetLayoutBinding {
+                6u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment
             }
         }
     );
@@ -129,11 +174,12 @@ void Renderer::impl_initialise_layouts()
 
     sets.camera = sq::vk_allocate_descriptor_set_swapper(ctx, setLayouts.camera);
     sets.skybox = sq::vk_allocate_descriptor_set_swapper(ctx, setLayouts.skybox);
-    sets.light = sq::vk_allocate_descriptor_set_swapper(ctx, setLayouts.light);
+    sets.lightDefault = sq::vk_allocate_descriptor_set_swapper(ctx, setLayouts.lightDefault);
     sets.composite = sq::vk_allocate_descriptor_set(ctx, setLayouts.composite);
 
+    pipelineLayouts.standard = sq::vk_create_pipeline_layout(ctx, {}, { setLayouts.camera }, {});
     pipelineLayouts.skybox = sq::vk_create_pipeline_layout(ctx, {}, { setLayouts.camera, setLayouts.skybox }, {});
-    pipelineLayouts.standard = sq::vk_create_pipeline_layout(ctx, {}, { setLayouts.camera, setLayouts.light }, {});
+    pipelineLayouts.lightDefault = sq::vk_create_pipeline_layout(ctx, {}, { setLayouts.camera, setLayouts.lightDefault }, {});
     pipelineLayouts.composite = sq::vk_create_pipeline_layout(ctx, {}, { setLayouts.composite }, {});
 }
 
@@ -143,37 +189,44 @@ void Renderer::impl_create_render_targets()
 {
     const auto& ctx = sq::VulkanContext::get();
 
-    const auto msaaMode = vk::SampleCountFlagBits(options.msaa_quality);
     const auto windowSize = window.get_size();
 
     //--------------------------------------------------------//
 
     // create images and samplers
     {
-        if (msaaMode > vk::SampleCountFlagBits::e1)
-        {
-            std::tie(images.msColour, images.msColourMem, images.msColourView) = sq::vk_create_image_2D (
-                ctx, vk::Format::eB8G8R8A8Srgb, windowSize, 1u, msaaMode, false,
-                vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransientAttachment,
-                false, {}, vk::ImageAspectFlagBits::eColor
-            );
-            ctx.set_debug_object_name(images.msColour, "renderer.images.msColour");
-            ctx.set_debug_object_name(images.msColourView, "renderer.images.msColourView");
-        }
+        std::tie(images.depthStencil, images.depthStencilMem, images.depthStencilView) = sq::vk_create_image_2D (
+            ctx, vk::Format::eD24UnormS8Uint, windowSize, 1u, vk::SampleCountFlagBits::e1, false,
+            vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled,
+            false, {}, vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil
+        );
 
-        std::tie(images.resolveColour, images.resolveColourMem, images.resolveColourView) = sq::vk_create_image_2D (
+        images.depthView = ctx.device.createImageView (
+            vk::ImageViewCreateInfo {
+                {}, images.depthStencil, vk::ImageViewType::e2D, vk::Format::eD24UnormS8Uint, {},
+                vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eDepth, 0u, 1u, 0u, 1u)
+            }
+        );
+
+        std::tie(images.albedoRoughness, images.albedoRoughnessMem, images.albedoRoughnessView) = sq::vk_create_image_2D (
             ctx, vk::Format::eB8G8R8A8Srgb, windowSize, 1u, vk::SampleCountFlagBits::e1, false,
             vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
             false, {}, vk::ImageAspectFlagBits::eColor
         );
 
-        std::tie(images.depth, images.depthMem, images.depthView) = sq::vk_create_image_2D (
-            ctx, vk::Format::eD32Sfloat, windowSize, 1u, msaaMode, false,
-            vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eTransientAttachment | vk::ImageUsageFlagBits::eInputAttachment,
-            false, {}, vk::ImageAspectFlagBits::eDepth
+        std::tie(images.normalMetalic, images.normalMetalicMem, images.normalMetalicView) = sq::vk_create_image_2D (
+            ctx, vk::Format::eR16G16B16A16Snorm, windowSize, 1u, vk::SampleCountFlagBits::e1, false,
+            vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
+            false, {}, vk::ImageAspectFlagBits::eColor
         );
 
-        samplers.resolveColour = ctx.device.createSampler (
+        std::tie(images.colour, images.colourMem, images.colourView) = sq::vk_create_image_2D (
+            ctx, vk::Format::eR16G16B16A16Sfloat, windowSize, 1u, vk::SampleCountFlagBits::e1, false,
+            vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
+            false, {}, vk::ImageAspectFlagBits::eColor
+        );
+
+        samplers.nearestRepeat = ctx.device.createSampler (
             vk::SamplerCreateInfo {
                 {}, vk::Filter::eNearest, vk::Filter::eNearest, vk::SamplerMipmapMode::eNearest,
                 vk::SamplerAddressMode::eRepeat, vk::SamplerAddressMode::eRepeat, vk::SamplerAddressMode::eRepeat,
@@ -181,148 +234,153 @@ void Renderer::impl_create_render_targets()
             }
         );
 
-        ctx.set_debug_object_name(images.resolveColour, "renderer.images.resolveColour");
-        ctx.set_debug_object_name(images.resolveColourView, "renderer.images.resolveColourView");
-        ctx.set_debug_object_name(images.depth, "renderer.images.depth");
-        ctx.set_debug_object_name(images.depthView, "renderer.images.depthView");
-        ctx.set_debug_object_name(samplers.resolveColour, "renderer.samplers.resolveColour");
+        samplers.linearRepeat = ctx.device.createSampler (
+            vk::SamplerCreateInfo {
+                {}, vk::Filter::eLinear, vk::Filter::eLinear, vk::SamplerMipmapMode::eNearest,
+                vk::SamplerAddressMode::eRepeat, vk::SamplerAddressMode::eRepeat, vk::SamplerAddressMode::eRepeat,
+                0.f, false, 0.f, false, {}, 0.f, 0.f, {}, false
+            }
+        );
+
+        ctx.set_debug_object_name(images.depthStencil, "Renderer.images.depthStencil");
+        ctx.set_debug_object_name(images.depthStencilView, "Renderer.images.depthStencilView");
+        ctx.set_debug_object_name(images.depthView, "Renderer.images.depthView");
+        ctx.set_debug_object_name(images.albedoRoughness, "Renderer.images.albedoRoughness");
+        ctx.set_debug_object_name(images.albedoRoughnessView, "Renderer.images.albedoRoughnessView");
+        ctx.set_debug_object_name(images.normalMetalic, "Renderer.images.normalMetalic");
+        ctx.set_debug_object_name(images.normalMetalicView, "Renderer.images.normalMetalicView");
+        ctx.set_debug_object_name(images.colour, "Renderer.images.colour");
+        ctx.set_debug_object_name(images.colourView, "Renderer.images.colourView");
     }
 
-    // create ms render pass
+    // create gbuffer render pass and framebuffer
     {
-        if (msaaMode > vk::SampleCountFlagBits::e1)
-        {
-            const auto attachments = std::array {
-                vk::AttachmentDescription {
-                    {}, vk::Format::eB8G8R8A8Srgb, msaaMode,
-                    vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eDontCare,
-                    vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
-                    vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal
-                },
-                vk::AttachmentDescription {
-                    {}, vk::Format::eD32Sfloat, msaaMode,
-                    vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eDontCare,
-                    vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
-                    vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthStencilReadOnlyOptimal
-                },
-                vk::AttachmentDescription {
-                    {}, vk::Format::eB8G8R8A8Srgb, vk::SampleCountFlagBits::e1,
-                    vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eStore,
-                    vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
-                    vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal
-                }
-            };
+        const auto attachments = std::array {
+            vk::AttachmentDescription { // albedo, roughness
+                {}, vk::Format::eB8G8R8A8Srgb, vk::SampleCountFlagBits::e1,
+                vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore,
+                vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
+                vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal
+            },
+            vk::AttachmentDescription { // normal, metalic
+                {}, vk::Format::eR16G16B16A16Snorm, vk::SampleCountFlagBits::e1,
+                vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore,
+                vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
+                vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal
+            },
+            vk::AttachmentDescription { // depth, stencil
+                {}, vk::Format::eD24UnormS8Uint, vk::SampleCountFlagBits::e1,
+                vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore,
+                vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore,
+                vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthStencilReadOnlyOptimal
+            }
+        };
 
-            const auto colourAttachment    = vk::AttachmentReference { 0u, vk::ImageLayout::eColorAttachmentOptimal };
-            const auto depthAttachment     = vk::AttachmentReference { 1u, vk::ImageLayout::eDepthStencilAttachmentOptimal };
-            const auto resolveAttachment   = vk::AttachmentReference { 2u, vk::ImageLayout::eColorAttachmentOptimal };
-            const auto depthReadAttachment = vk::AttachmentReference { 1u, vk::ImageLayout::eDepthStencilReadOnlyOptimal };
+        const auto albedoRoughAttachment = vk::AttachmentReference { 0u, vk::ImageLayout::eColorAttachmentOptimal };
+        const auto normalMetalAttachment = vk::AttachmentReference { 1u, vk::ImageLayout::eColorAttachmentOptimal };
+        const auto depthAttachment       = vk::AttachmentReference { 2u, vk::ImageLayout::eDepthStencilAttachmentOptimal };
 
-            const auto subpasses = std::array {
-                vk::SubpassDescription {
-                    {}, vk::PipelineBindPoint::eGraphics, {}, colourAttachment, {}, &depthAttachment, {}
-                },
-                vk::SubpassDescription {
-                    {}, vk::PipelineBindPoint::eGraphics, depthReadAttachment, colourAttachment, resolveAttachment, &depthReadAttachment, {}
-                }
-            };
+        const auto colourAttachments = std::array { albedoRoughAttachment, normalMetalAttachment };
 
-            const auto dependencies = std::array {
-                vk::SubpassDependency {
-                    0u, 1u,
-                    vk::PipelineStageFlagBits::eLateFragmentTests, vk::PipelineStageFlagBits::eEarlyFragmentTests,
-                    vk::AccessFlagBits::eDepthStencilAttachmentWrite, vk::AccessFlagBits::eDepthStencilAttachmentRead,
-                    vk::DependencyFlagBits::eByRegion
-                },
-                vk::SubpassDependency {
-                    1u, VK_SUBPASS_EXTERNAL,
-                    vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eFragmentShader,
-                    vk::AccessFlagBits::eColorAttachmentWrite, vk::AccessFlagBits::eShaderRead,
-                    vk::DependencyFlagBits::eByRegion
-                }
-            };
+        const auto subpasses = std::array {
+            vk::SubpassDescription {
+                {}, vk::PipelineBindPoint::eGraphics, {}, colourAttachments, {}, &depthAttachment, {}
+            }
+        };
 
-            targets.mainRenderPass = ctx.device.createRenderPass (
-                vk::RenderPassCreateInfo { {}, attachments, subpasses, dependencies }
-            );
-        }
-        else // no multisample
-        {
-            const auto attachments = std::array {
-                vk::AttachmentDescription {
-                    {}, vk::Format::eB8G8R8A8Srgb, vk::SampleCountFlagBits::e1,
-                    vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore,
-                    vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
-                    vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal
-                },
-                vk::AttachmentDescription {
-                    {}, vk::Format::eD32Sfloat, vk::SampleCountFlagBits::e1,
-                    vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore,
-                    vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
-                    vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthStencilReadOnlyOptimal
-                }
-            };
+        const auto dependencies = std::array {
+            vk::SubpassDependency {
+                0u, VK_SUBPASS_EXTERNAL,
+                vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eLateFragmentTests,
+                vk::PipelineStageFlagBits::eFragmentShader | vk::PipelineStageFlagBits::eEarlyFragmentTests,
+                vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentWrite,
+                vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eDepthStencilAttachmentRead,
+                vk::DependencyFlagBits::eByRegion
+            }
+        };
 
-            const auto colourAttachment    = vk::AttachmentReference { 0u, vk::ImageLayout::eColorAttachmentOptimal };
-            const auto depthAttachment     = vk::AttachmentReference { 1u, vk::ImageLayout::eDepthStencilAttachmentOptimal };
-            const auto depthReadAttachment = vk::AttachmentReference { 1u, vk::ImageLayout::eDepthStencilReadOnlyOptimal };
+        targets.gbufferRenderPass = ctx.device.createRenderPass (
+            vk::RenderPassCreateInfo { {}, attachments, subpasses, dependencies }
+        );
 
-            const auto subpasses = std::array {
-                vk::SubpassDescription {
-                    {}, vk::PipelineBindPoint::eGraphics, {}, colourAttachment, {}, &depthAttachment, {}
-                },
-                vk::SubpassDescription {
-                    {}, vk::PipelineBindPoint::eGraphics, depthReadAttachment, colourAttachment, {}, &depthReadAttachment, {}
-                }
-            };
+        const auto fbAttachments = std::array { images.albedoRoughnessView, images.normalMetalicView, images.depthStencilView };
 
-            const auto dependencies = std::array {
-                vk::SubpassDependency {
-                    0u, 1u,
-                    vk::PipelineStageFlagBits::eLateFragmentTests, vk::PipelineStageFlagBits::eEarlyFragmentTests,
-                    vk::AccessFlagBits::eDepthStencilAttachmentWrite, vk::AccessFlagBits::eDepthStencilAttachmentRead,
-                    vk::DependencyFlagBits::eByRegion
-                },
-                vk::SubpassDependency {
-                    1u, VK_SUBPASS_EXTERNAL,
-                    vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eFragmentShader,
-                    vk::AccessFlagBits::eColorAttachmentWrite, vk::AccessFlagBits::eShaderRead,
-                    vk::DependencyFlagBits::eByRegion
-                }
-            };
+        targets.gbufferFramebuffer = ctx.device.createFramebuffer (
+            vk::FramebufferCreateInfo { {}, targets.gbufferRenderPass, fbAttachments, window.get_size().x, window.get_size().y, 1u }
+        );
 
-            targets.mainRenderPass = ctx.device.createRenderPass (
-                vk::RenderPassCreateInfo { {}, attachments, subpasses, dependencies }
-            );
-        }
+        ctx.set_debug_object_name(targets.gbufferRenderPass, "Renderer.targets.gbufferRenderPass");
+        ctx.set_debug_object_name(targets.gbufferFramebuffer, "Renderer.targets.gbufferFramebuffer");
     }
 
-    // create ms framebuffer
+    // create lights renderpass and framebuffer
     {
-        if (msaaMode > vk::SampleCountFlagBits::e1)
-        {
-            const auto attachments = std::array { images.msColourView, images.depthView, images.resolveColourView };
+        const auto attachments = std::array {
+            vk::AttachmentDescription {
+                {}, vk::Format::eR16G16B16A16Sfloat, vk::SampleCountFlagBits::e1,
+                vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore,
+                vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
+                vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal
+            },
+            vk::AttachmentDescription {
+                {}, vk::Format::eD24UnormS8Uint, vk::SampleCountFlagBits::e1,
+                vk::AttachmentLoadOp::eLoad, vk::AttachmentStoreOp::eStore,
+                vk::AttachmentLoadOp::eLoad, vk::AttachmentStoreOp::eStore,
+                vk::ImageLayout::eDepthStencilReadOnlyOptimal, vk::ImageLayout::eDepthStencilReadOnlyOptimal
+            }
+        };
 
-            targets.mainFramebuffer = ctx.device.createFramebuffer (
-                vk::FramebufferCreateInfo { {}, targets.mainRenderPass, attachments, window.get_size().x, window.get_size().y, 1u }
-            );
-        }
-        else // no multisample
-        {
-            const auto attachments = std::array { images.resolveColourView, images.depthView };
+        const auto colourAttachment  = vk::AttachmentReference { 0u, vk::ImageLayout::eColorAttachmentOptimal };
+        const auto stencilAttachment = vk::AttachmentReference { 1u, vk::ImageLayout::eDepthStencilReadOnlyOptimal };
 
-            targets.mainFramebuffer = ctx.device.createFramebuffer (
-                vk::FramebufferCreateInfo { {}, targets.mainRenderPass, attachments, window.get_size().x, window.get_size().y, 1u }
-            );
-        }
+        const auto subpasses = std::array {
+            vk::SubpassDescription {
+                {}, vk::PipelineBindPoint::eGraphics, {}, colourAttachment, {}, &stencilAttachment, {}
+            }
+        };
+
+        const auto dependencies = std::array {
+            vk::SubpassDependency {
+                0u, 0u,
+                vk::PipelineStageFlagBits::eLateFragmentTests, vk::PipelineStageFlagBits::eLateFragmentTests,
+                vk::AccessFlagBits::eDepthStencilAttachmentRead, vk::AccessFlagBits::eDepthStencilAttachmentWrite,
+                vk::DependencyFlagBits::eByRegion
+            },
+            vk::SubpassDependency {
+                0u, VK_SUBPASS_EXTERNAL,
+                vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eLateFragmentTests,
+                vk::PipelineStageFlagBits::eFragmentShader,
+                vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentWrite,
+                vk::AccessFlagBits::eShaderRead,
+                vk::DependencyFlagBits::eByRegion
+            }
+        };
+
+        targets.lightsRenderPass = ctx.device.createRenderPass (
+            vk::RenderPassCreateInfo { {}, attachments, subpasses, dependencies }
+        );
+
+        const auto fbAttachments = std::array { images.colourView, images.depthStencilView };
+
+        targets.lightsFramebuffer = ctx.device.createFramebuffer (
+            vk::FramebufferCreateInfo { {}, targets.lightsRenderPass, fbAttachments, window.get_size().x, window.get_size().y, 1u }
+        );
+
+        ctx.set_debug_object_name(targets.lightsRenderPass, "Renderer.targets.lightsRenderPass");
+        ctx.set_debug_object_name(targets.lightsFramebuffer, "Renderer.targets.lightsFramebuffer");
     }
 
-    ctx.set_debug_object_name(targets.mainRenderPass, "renderer.targets.mainRenderPass");
-    ctx.set_debug_object_name(targets.mainFramebuffer, "renderer.targets.mainFramebuffer");
+    *mPassConfigOpaque = sq::PassConfig {
+        targets.gbufferRenderPass, 0u, vk::SampleCountFlagBits::e1,
+        vk::StencilOpState { {}, vk::StencilOp::eReplace, {}, vk::CompareOp::eAlways, 0, 0b1, 0b1 },
+        window.get_size(), setLayouts.camera, setLayouts.gbuffer,
+        sq::SpecialisationConstants(4u, int(options.debug_toggle_1), 5u, int(options.debug_toggle_2))
+    };
 
-    caches.passConfigMap = {
-        { "Opaque", { targets.mainRenderPass, 0u, msaaMode, window.get_size(), setLayouts.camera, setLayouts.light, {} } },
-        { "Transparent", { targets.mainRenderPass, 0u, msaaMode, window.get_size(), setLayouts.camera, setLayouts.light, {} } }
+    *mPassConfigTransparent = sq::PassConfig {
+        targets.lightsRenderPass, 0u, vk::SampleCountFlagBits::e1, vk::StencilOpState(),
+        window.get_size(), setLayouts.camera, setLayouts.gbuffer,
+        sq::SpecialisationConstants(4u, int(options.debug_toggle_1), 5u, int(options.debug_toggle_2))
     };
 }
 
@@ -332,21 +390,31 @@ void Renderer::impl_destroy_render_targets()
 {
     const auto& ctx = sq::VulkanContext::get();
 
-    if (images.msColourMem) ctx.device.destroy(images.msColourView);
-    if (images.msColourMem) ctx.device.destroy(images.msColour);
-    if (images.msColourMem) images.msColourMem.free();
-
-    ctx.device.destroy(samplers.resolveColour);
-    ctx.device.destroy(images.resolveColourView);
-    ctx.device.destroy(images.resolveColour);
-    images.resolveColourMem.free();
-
     ctx.device.destroy(images.depthView);
-    ctx.device.destroy(images.depth);
-    images.depthMem.free();
+    ctx.device.destroy(images.depthStencilView);
+    ctx.device.destroy(images.depthStencil);
+    images.depthStencilMem.free();
 
-    ctx.device.destroy(targets.mainFramebuffer);
-    ctx.device.destroy(targets.mainRenderPass);
+    ctx.device.destroy(images.albedoRoughnessView);
+    ctx.device.destroy(images.albedoRoughness);
+    images.albedoRoughnessMem.free();
+
+    ctx.device.destroy(images.normalMetalicView);
+    ctx.device.destroy(images.normalMetalic);
+    images.normalMetalicMem.free();
+
+    ctx.device.destroy(images.colourView);
+    ctx.device.destroy(images.colour);
+    images.colourMem.free();
+
+    ctx.device.destroy(samplers.nearestRepeat);
+    ctx.device.destroy(samplers.linearRepeat);
+
+    ctx.device.destroy(targets.gbufferFramebuffer);
+    ctx.device.destroy(targets.gbufferRenderPass);
+
+    ctx.device.destroy(targets.lightsFramebuffer);
+    ctx.device.destroy(targets.lightsRenderPass);
 }
 
 //============================================================================//
@@ -354,8 +422,6 @@ void Renderer::impl_destroy_render_targets()
 void Renderer::impl_create_pipelines()
 {
     const auto& ctx = sq::VulkanContext::get();
-
-    const auto msaaMode = vk::SampleCountFlagBits(options.msaa_quality);
     const auto windowSize = window.get_size();
 
     // skybox pipeline
@@ -365,7 +431,7 @@ void Renderer::impl_create_pipelines()
         );
 
         pipelines.skybox = sq::vk_create_graphics_pipeline (
-            ctx, pipelineLayouts.skybox, targets.mainRenderPass, 0u, shaderModules.stages, {},
+            ctx, pipelineLayouts.skybox, targets.lightsRenderPass, 0u, shaderModules.stages, {},
             vk::PipelineInputAssemblyStateCreateInfo {
                 {}, vk::PrimitiveTopology::eTriangleList, false
             },
@@ -374,12 +440,12 @@ void Renderer::impl_create_pipelines()
                 vk::FrontFace::eClockwise, false, 0.f, false, 0.f, 1.f
             },
             vk::PipelineMultisampleStateCreateInfo {
-                {}, msaaMode, false, 0.f, nullptr, false, false
+                {}, vk::SampleCountFlagBits::e1, false, 0.f, nullptr, false, false
             },
             vk::PipelineDepthStencilStateCreateInfo {
-                {}, false, false, {}, false, false, {}, {}, 0.f, 0.f
+                {}, false, false, {}, false, true, vk::StencilOpState({}, {}, {}, vk::CompareOp::eEqual, 0b1, 0, 0b0), {}, 0.f, 0.f
             },
-            vk::Viewport { 0.f, float(windowSize.y), float(windowSize.x), -float(windowSize.y), 0.f, 1.f },
+            vk::Viewport { 0.f, 0.f, float(windowSize.x), float(windowSize.y) },
             vk::Rect2D { {0, 0}, {windowSize.x, windowSize.y} },
             vk::PipelineColorBlendAttachmentState { false, {}, {}, {}, {}, {}, {}, vk::ColorComponentFlags(0b1111) },
             nullptr
@@ -391,10 +457,75 @@ void Renderer::impl_create_pipelines()
         );
     }
 
-    // composite pipeline
+    // default light pipeline
     {
         const auto shaderModules = sq::ShaderModules (
-            ctx, "shaders/FullScreen.vert.spv", {}, "shaders/Composite.frag.spv"
+            ctx, "shaders/FullScreen.vert.spv", {}, "shaders/lights/Default.frag.spv"
+        );
+
+        pipelines.lightDefault = sq::vk_create_graphics_pipeline (
+            ctx, pipelineLayouts.lightDefault, targets.lightsRenderPass, 0u, shaderModules.stages, {},
+            vk::PipelineInputAssemblyStateCreateInfo {
+                {}, vk::PrimitiveTopology::eTriangleList, false
+            },
+            vk::PipelineRasterizationStateCreateInfo {
+                {}, false, false, vk::PolygonMode::eFill, vk::CullModeFlagBits::eNone,
+                vk::FrontFace::eClockwise, false, 0.f, false, 0.f, 1.f
+            },
+            vk::PipelineMultisampleStateCreateInfo {
+                {}, vk::SampleCountFlagBits::e1, false, 0.f, nullptr, false, false
+            },
+            vk::PipelineDepthStencilStateCreateInfo {
+                {}, false, false, {}, false, true, vk::StencilOpState({}, {}, {}, vk::CompareOp::eEqual, 0b1, 0, 0b1), {}, 0.f, 0.f
+            },
+            vk::Viewport { 0.f, 0.f, float(windowSize.x), float(windowSize.y) },
+            vk::Rect2D { {0, 0}, {windowSize.x, windowSize.y} },
+            vk::PipelineColorBlendAttachmentState { false, {}, {}, {}, {}, {}, {}, vk::ColorComponentFlags(0b1111) },
+            nullptr
+        );
+
+        sq::vk_update_descriptor_set_swapper (
+            ctx, sets.lightDefault, 1u, 0u, vk::DescriptorType::eCombinedImageSampler,
+            mLutTexture.get_descriptor_info(), mLutTexture.get_descriptor_info()
+        );
+        sq::vk_update_descriptor_set_swapper (
+            ctx, sets.lightDefault, 2u, 0u, vk::DescriptorType::eCombinedImageSampler,
+            mIrradianceTexture.get_descriptor_info(), mIrradianceTexture.get_descriptor_info()
+        );
+        sq::vk_update_descriptor_set_swapper (
+            ctx, sets.lightDefault, 3u, 0u, vk::DescriptorType::eCombinedImageSampler,
+            mRadianceTexture.get_descriptor_info(), mRadianceTexture.get_descriptor_info()
+        );
+        sq::vk_update_descriptor_set_swapper (
+            ctx, sets.lightDefault, 4u, 0u, vk::DescriptorType::eCombinedImageSampler,
+            vk::DescriptorImageInfo { samplers.nearestRepeat, images.albedoRoughnessView, vk::ImageLayout::eShaderReadOnlyOptimal },
+            vk::DescriptorImageInfo { samplers.nearestRepeat, images.albedoRoughnessView, vk::ImageLayout::eShaderReadOnlyOptimal }
+        );
+        sq::vk_update_descriptor_set_swapper (
+            ctx, sets.lightDefault, 5u, 0u, vk::DescriptorType::eCombinedImageSampler,
+            vk::DescriptorImageInfo { samplers.nearestRepeat, images.normalMetalicView, vk::ImageLayout::eShaderReadOnlyOptimal },
+            vk::DescriptorImageInfo { samplers.nearestRepeat, images.normalMetalicView, vk::ImageLayout::eShaderReadOnlyOptimal }
+        );
+        sq::vk_update_descriptor_set_swapper (
+            ctx, sets.lightDefault, 6u, 0u, vk::DescriptorType::eCombinedImageSampler,
+            vk::DescriptorImageInfo { samplers.nearestRepeat, images.depthView, vk::ImageLayout::eDepthStencilReadOnlyOptimal },
+            vk::DescriptorImageInfo { samplers.nearestRepeat, images.depthView, vk::ImageLayout::eDepthStencilReadOnlyOptimal }
+        );
+    }
+
+    // composite pipeline
+    {
+        const auto specialisationMap = vk::SpecializationMapEntry(0u, 0u, sizeof(int));
+        const auto specialisationData = int (
+            options.debug_texture == "NoToneMap" || options.debug_texture == "Albedo" ? 1 :
+            options.debug_texture == "Roughness" || options.debug_texture == "Metallic" ? 2 :
+            options.debug_texture == "Depth" || options.debug_texture == "SSAO" ? 3 :
+            options.debug_texture == "Normal" ? 4 : 0
+        );
+        const auto specialisation = vk::SpecializationInfo(1u, &specialisationMap, sizeof(int), &specialisationData);
+
+        const auto shaderModules = sq::ShaderModules (
+            ctx, "shaders/FullScreen.vert.spv", {}, "shaders/Composite.frag.spv", &specialisation
         );
 
         pipelines.composite = sq::vk_create_graphics_pipeline (
@@ -404,7 +535,7 @@ void Renderer::impl_create_pipelines()
             },
             vk::PipelineRasterizationStateCreateInfo {
                 {}, false, false, vk::PolygonMode::eFill, vk::CullModeFlagBits::eNone,
-                vk::FrontFace::eCounterClockwise, false, 0.f, 0.f, 0.f, 1.f
+                vk::FrontFace::eClockwise, false, 0.f, 0.f, 0.f, 1.f
             },
             vk::PipelineMultisampleStateCreateInfo {
                 {}, vk::SampleCountFlagBits::e1, false, 0.f, nullptr, false, false
@@ -418,16 +549,31 @@ void Renderer::impl_create_pipelines()
             nullptr
         );
 
-        sq::vk_update_descriptor_set (
-            ctx, sets.composite, 0u, 0u, vk::DescriptorType::eCombinedImageSampler,
-            vk::DescriptorImageInfo {
-                samplers.resolveColour, images.resolveColourView, vk::ImageLayout::eShaderReadOnlyOptimal
-            }
-        );
+        if (options.debug_texture == "Albedo" || options.debug_texture == "Roughness")
+            sq::vk_update_descriptor_set (
+                ctx, sets.composite, 0u, 0u, vk::DescriptorType::eCombinedImageSampler,
+                vk::DescriptorImageInfo { samplers.nearestRepeat, images.albedoRoughnessView, vk::ImageLayout::eShaderReadOnlyOptimal }
+            );
+        else if (options.debug_texture == "Normal" || options.debug_texture == "Metallic")
+            sq::vk_update_descriptor_set (
+                ctx, sets.composite, 0u, 0u, vk::DescriptorType::eCombinedImageSampler,
+                vk::DescriptorImageInfo { samplers.nearestRepeat, images.normalMetalicView, vk::ImageLayout::eShaderReadOnlyOptimal }
+            );
+        else if (options.debug_texture == "Depth")
+            sq::vk_update_descriptor_set (
+                ctx, sets.composite, 0u, 0u, vk::DescriptorType::eCombinedImageSampler,
+                vk::DescriptorImageInfo { samplers.nearestRepeat, images.depthView, vk::ImageLayout::eDepthStencilReadOnlyOptimal }
+            );
+        else
+            sq::vk_update_descriptor_set (
+                ctx, sets.composite, 0u, 0u, vk::DescriptorType::eCombinedImageSampler,
+                vk::DescriptorImageInfo { samplers.nearestRepeat, images.colourView, vk::ImageLayout::eShaderReadOnlyOptimal }
+            );
     }
 
-    ctx.set_debug_object_name(pipelines.skybox, "renderer.pipelines.skybox");
-    ctx.set_debug_object_name(pipelines.composite, "renderer.pipelines.composite");
+    ctx.set_debug_object_name(pipelines.skybox, "Renderer.pipelines.skybox");
+    ctx.set_debug_object_name(pipelines.lightDefault, "Renderer.pipelines.lightDefault");
+    ctx.set_debug_object_name(pipelines.composite, "Renderer.pipelines.composite");
 }
 
 //============================================================================//
@@ -437,6 +583,7 @@ void Renderer::impl_destroy_pipelines()
     const auto& ctx = sq::VulkanContext::get();
 
     ctx.device.destroy(pipelines.skybox);
+    ctx.device.destroy(pipelines.lightDefault);
     ctx.device.destroy(pipelines.composite);
 }
 
@@ -477,7 +624,14 @@ int64_t Renderer::create_draw_items(const std::vector<DrawItemDef>& defs,
 
     for (const DrawItemDef& def : defs)
     {
-        DrawItem& item = mDrawItems.emplace_back();
+        std::vector<DrawItem>* drawItems = nullptr;
+
+        if (def.material->get_pipeline().get_pass_config() == mPassConfigOpaque)
+            drawItems = &mDrawItemsOpaque;
+        if (def.material->get_pipeline().get_pass_config() == mPassConfigTransparent)
+            drawItems = &mDrawItemsTransparent;
+
+        DrawItem& item = drawItems->emplace_back();
 
         if (def.condition.empty() == false)
             item.condition = conditions.at(def.condition);
@@ -485,7 +639,6 @@ int64_t Renderer::create_draw_items(const std::vector<DrawItemDef>& defs,
         item.material = def.material;
         item.mesh = def.mesh;
 
-        item.pass = def.pass;
         item.invertCondition = def.invertCondition;
         item.subMesh = def.subMesh;
 
@@ -501,7 +654,8 @@ int64_t Renderer::create_draw_items(const std::vector<DrawItemDef>& defs,
 void Renderer::delete_draw_items(int64_t groupId)
 {
     const auto predicate = [groupId](DrawItem& item) { return item.groupId == groupId; };
-    algo::erase_if(mDrawItems, predicate);
+    algo::erase_if(mDrawItemsOpaque, predicate);
+    algo::erase_if(mDrawItemsTransparent, predicate);
 }
 
 //============================================================================//
@@ -518,10 +672,10 @@ void Renderer::integrate_camera(float blend)
 
     //-- Update the Lighting ---------------------------------//
 
-    sets.light.swap();
+    sets.lightDefault.swap();
     auto& lightBlock = *reinterpret_cast<LightBlock*>(mLightUbo.swap_map());
-    lightBlock.ambiColour = { 0.5f, 0.5f, 0.5f };
-    lightBlock.skyColour = { 0.7f, 0.7f, 0.7f };
+    lightBlock.ambiColour = { 0.1f, 0.1f, 0.1f };
+    lightBlock.skyColour = { 3.0f, 3.0f, 3.0f };
     lightBlock.skyDirection = maths::normalize(Vec3F(0.f, -1.f, 0.5f));
     lightBlock.skyMatrix = Mat4F();
 }
@@ -544,74 +698,99 @@ void Renderer::integrate_debug(float blend, const FightWorld& world)
 
 void Renderer::populate_command_buffer(vk::CommandBuffer cmdbuf)
 {
-    //-- Begin the main render pass --------------------------//
-
-    const auto clearValues = std::array {
-        vk::ClearValue(vk::ClearColorValue().setFloat32({})),
-        vk::ClearValue(vk::ClearDepthStencilValue(1.f))
-    };
-
-    cmdbuf.beginRenderPass (
-        vk::RenderPassBeginInfo {
-            targets.mainRenderPass, targets.mainFramebuffer,
-            vk::Rect2D({0, 0}, {window.get_size().x, window.get_size().y}),
-            clearValues
-        }, vk::SubpassContents::eInline
-    );
-
-    //-- Render the skybox -----------------------------------//
-
-    cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayouts.skybox, 0u, sets.camera.front, {});
-    cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayouts.skybox, 1u, sets.skybox.front, {});
-    cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipelines.skybox);
-
-    cmdbuf.draw(3u, 1u, 0u, 0u);
-
-    //--------------------------------------------------------//
-
-    const auto render_items_for_draw_pass = [&](DrawPass pass)
+    const auto render_draw_items = [&](const std::vector<DrawItem>& drawItems)
     {
-        const void* prevMtrl = nullptr;
-        //const void* prevSet = nullptr;
-        const void* prevMesh = nullptr;
+        const void *prevPipeline = nullptr, *prevMaterial = nullptr, *prevObject = nullptr, *prevMesh = nullptr;
 
-        for (const DrawItem& item : mDrawItems)
+        for (const DrawItem& item : drawItems)
         {
-            // skip item if wrong pass or condition not satisfied
-            if (item.pass != pass || (item.condition && *item.condition == item.invertCondition))
+            // skip item if condition not satisfied
+            if (item.condition && *item.condition == item.invertCondition)
                 continue;
 
-            // TODO: seperate binding of pipeline and material
-            if (prevMtrl != &item.material.get())
-                item.material->bind(cmdbuf),
-                    prevMtrl = &item.material.get();
+            if (prevPipeline != &item.material->get_pipeline())
+            {
+                item.material->get_pipeline().bind(cmdbuf);
+                prevPipeline = &item.material->get_pipeline();
+                prevObject = nullptr; // force rebinding
+            }
 
-            // TODO: set needs rebinding when pipeline changes
-            //if (prevSet != item.descriptorSet)
-            //    item.material->bind_final_descriptor_set(cmdbuf, item.descriptorSet->front),
-            //        prevSet = item.descriptorSet;
-            item.material->bind_final_descriptor_set(cmdbuf, item.descriptorSet->front);
+            if (prevMaterial != &item.material.get())
+            {
+                item.material->bind_material_set(cmdbuf);
+                prevMaterial = &item.material.get();
+            }
 
-            // TODO: does mesh need rebinding when pipeline changes?
+            if (prevObject != item.descriptorSet)
+            {
+                item.material->bind_object_set(cmdbuf, item.descriptorSet->front);
+                prevObject = item.descriptorSet;
+            }
+
             if (prevMesh != &item.mesh.get())
+            {
                 item.mesh->bind_buffers(cmdbuf);
-                    prevMesh = &item.mesh.get();
+                prevMesh = &item.mesh.get();
+            }
 
             item.mesh->draw(cmdbuf, item.subMesh);
         }
     };
 
+    const auto clearValues = std::array {
+        vk::ClearValue(vk::ClearColorValue().setFloat32({})),
+        vk::ClearValue(vk::ClearColorValue().setFloat32({})),
+        vk::ClearValue(vk::ClearDepthStencilValue(1.f))
+    };
+
     cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayouts.standard, 0u, sets.camera.front, {});
-    cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayouts.standard, 1u, sets.light.front, {});
 
-    render_items_for_draw_pass(DrawPass::Opaque);
-    render_items_for_draw_pass(DrawPass::Transparent);
+    //-- GBuffer Pass ----------------------------------------//
 
-    //--------------------------------------------------------//
+    cmdbuf.beginRenderPass (
+        vk::RenderPassBeginInfo {
+            targets.gbufferRenderPass, targets.gbufferFramebuffer,
+            vk::Rect2D({0, 0}, {window.get_size().x, window.get_size().y}),
+            clearValues
+        }, vk::SubpassContents::eInline
+    );
 
-    cmdbuf.nextSubpass(vk::SubpassContents::eInline);
+    render_draw_items(mDrawItemsOpaque);
+
+    cmdbuf.endRenderPass();
+
+    //-- Deferred Shading Pass -------------------------------//
+
+    cmdbuf.beginRenderPass (
+        vk::RenderPassBeginInfo {
+            targets.lightsRenderPass, targets.lightsFramebuffer,
+            vk::Rect2D({0, 0}, {window.get_size().x, window.get_size().y}),
+            clearValues.front()
+        }, vk::SubpassContents::eInline
+    );
+
+    cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayouts.skybox, 1u, sets.skybox.front, {});
+    cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipelines.skybox);
+    cmdbuf.draw(3u, 1u, 0u, 0u);
+
+    cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipelines.lightDefault);
+    cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayouts.lightDefault, 1u, sets.lightDefault.front, {});
+    cmdbuf.draw(3u, 1u, 0u, 0u);
+
+    render_draw_items(mDrawItemsTransparent);
 
     mParticleRenderer->populate_command_buffer(cmdbuf);
+
+    // make sure that we are finished with the depth texture before the attachment store op
+    cmdbuf.pipelineBarrier (
+        vk::PipelineStageFlagBits::eLateFragmentTests, vk::PipelineStageFlagBits::eLateFragmentTests, vk::DependencyFlagBits::eByRegion, {}, {},
+        vk::ImageMemoryBarrier {
+            vk::AccessFlagBits::eDepthStencilAttachmentRead, vk::AccessFlagBits::eDepthStencilAttachmentWrite,
+            vk::ImageLayout::eDepthStencilReadOnlyOptimal, vk::ImageLayout::eDepthStencilReadOnlyOptimal,
+            VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED, images.depthStencil,
+            vk::ImageSubresourceRange(vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil, 0u, 1u, 0u, 1u)
+        }
+    );
 
     cmdbuf.endRenderPass();
 }

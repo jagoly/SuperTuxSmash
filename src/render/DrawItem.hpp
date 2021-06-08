@@ -11,11 +11,6 @@ namespace sts {
 
 //============================================================================//
 
-/// Defines when a DrawItem should be drawn.
-enum class DrawPass : int8_t { Opaque, Transparent };
-
-//============================================================================//
-
 /// Parsed from json, then used to create DrawItems.
 struct DrawItemDef final
 {
@@ -27,7 +22,6 @@ struct DrawItemDef final
     MaterialHandle material;
     MeshHandle mesh;
 
-    DrawPass pass;
     bool invertCondition = false;
     int8_t subMesh = -1;
 };
@@ -42,7 +36,6 @@ struct DrawItem final
     MaterialHandle material;
     MeshHandle mesh;
 
-    DrawPass pass;
     bool invertCondition;
     int8_t subMesh;
 
@@ -55,7 +48,3 @@ struct DrawItem final
 //============================================================================//
 
 } // namespace sts
-
-//============================================================================//
-
-SQEE_ENUM_HELPER(sts::DrawPass, Opaque, Transparent)

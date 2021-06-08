@@ -1,9 +1,0 @@
-{
-  "format": "4x8_Srgb",
-  "wrapX": "Repeat",
-  "wrapY": "Repeat",
-  "swizzle": "RGBA",
-  "filter": true,
-  "mipmaps": true,
-  "anisotropy": true
-}
