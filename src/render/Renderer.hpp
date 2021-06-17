@@ -75,6 +75,9 @@ public: //====================================================//
     struct {
         vk::DescriptorSetLayout camera;
         vk::DescriptorSetLayout gbuffer;
+        vk::DescriptorSetLayout depthMipGen;
+        vk::DescriptorSetLayout ssao;
+        vk::DescriptorSetLayout ssaoBlur;
         vk::DescriptorSetLayout skybox;
         vk::DescriptorSetLayout lightDefault;
         vk::DescriptorSetLayout object;
@@ -83,6 +86,9 @@ public: //====================================================//
 
     struct {
         vk::PipelineLayout standard;
+        vk::PipelineLayout depthMipGen;
+        vk::PipelineLayout ssao;
+        vk::PipelineLayout ssaoBlur;
         vk::PipelineLayout skybox;
         vk::PipelineLayout lightDefault;
         vk::PipelineLayout composite;
@@ -90,12 +96,16 @@ public: //====================================================//
 
     struct {
         sq::Swapper<vk::DescriptorSet> camera;
-        sq::Swapper<vk::DescriptorSet> skybox;
+        vk::DescriptorSet ssao;
+        vk::DescriptorSet ssaoBlur;
+        vk::DescriptorSet skybox;
         sq::Swapper<vk::DescriptorSet> lightDefault;
         vk::DescriptorSet composite;
     } sets;
 
     struct {
+        vk::Pipeline ssao;
+        vk::Pipeline ssaoBlur;
         vk::Pipeline skybox;
         vk::Pipeline lightDefault;
         vk::Pipeline composite;
@@ -110,25 +120,70 @@ public: //====================================================//
         vk::Image albedoRoughness;
         sq::VulkanMemory albedoRoughnessMem;
         vk::ImageView albedoRoughnessView;
-        vk::Image normalMetalic;
-        sq::VulkanMemory normalMetalicMem;
-        vk::ImageView normalMetalicView;
+        vk::Image normalMetallic;
+        sq::VulkanMemory normalMetallicMem;
+        vk::ImageView normalMetallicView;
+        vk::Image depthMips;
+        sq::VulkanMemory depthMipsMem;
+        vk::ImageView depthMipsView;
+        vk::Image ssao;
+        sq::VulkanMemory ssaoMem;
+        vk::ImageView ssaoView;
+        vk::Image ssaoBlur;
+        sq::VulkanMemory ssaoBlurMem;
+        vk::ImageView ssaoBlurView;
         vk::Image colour;
         sq::VulkanMemory colourMem;
         vk::ImageView colourView;
     } images;
 
     struct {
-        vk::Sampler nearestRepeat;
-        vk::Sampler linearRepeat;
+        vk::Sampler nearestClamp;
+        vk::Sampler linearClamp;
+        vk::Sampler depthMips;
     } samplers;
 
     struct {
         vk::RenderPass gbufferRenderPass;
         vk::Framebuffer gbufferFramebuffer;
-        vk::RenderPass lightsRenderPass;
-        vk::Framebuffer lightsFramebuffer;
+        vk::RenderPass ssaoRenderPass;
+        vk::Framebuffer ssaoFramebuffer;
+        vk::RenderPass ssaoBlurRenderPass;
+        vk::Framebuffer ssaoBlurFramebuffer;
+        vk::RenderPass hdrRenderPass;
+        vk::Framebuffer hdrFramebuffer;
     } targets;
+
+    //--------------------------------------------------------//
+
+    enum class TimeStamp : uint
+    {
+        BeginGbuffer,
+        Opaque,
+        EndGbuffer,
+        DepthMipGen,
+        SSAO,
+        BlurSSAO,
+        BeginHDR,
+        Skybox,
+        LightDefault,
+        Transparent,
+        Particles,
+        EndHDR,
+        BeginFinal,
+        Composite,
+        Debug,
+        Gui,
+        EndFinal
+    };
+    static constexpr uint NUM_TIME_STAMPS = 17u;
+
+    const std::array<double, NUM_TIME_STAMPS>& get_frame_timings() { return mFrameTimings; }
+
+    void write_time_stamp(vk::CommandBuffer cmdbuf [[maybe_unused]], TimeStamp stamp [[maybe_unused]])
+    {
+        cmdbuf.writeTimestamp(vk::PipelineStageFlagBits::eBottomOfPipe, mTimestampQueryPool.front, uint(stamp) + 1u);
+    }
 
 private: //===================================================//
 
@@ -142,6 +197,12 @@ private: //===================================================//
 
     void impl_destroy_pipelines();
 
+    void impl_create_depth_mip_gen_stuff();
+
+    void impl_destroy_depth_mip_gen_stuff();
+
+    bool mNeedDestroySSAO = false;
+
     //--------------------------------------------------------//
 
     sq::Texture mLutTexture;
@@ -152,6 +213,19 @@ private: //===================================================//
     sq::Texture mRadianceTexture;
 
     //--------------------------------------------------------//
+
+    struct DepthMipGenStuff
+    {
+        vk::ImageView srcView; // reference
+        vk::ImageView destView;
+        vk::RenderPass renderPass;
+        vk::Framebuffer framebuffer;
+        vk::Pipeline pipeline;
+        vk::DescriptorSet descriptorSet;
+        Vec2U dimensions;
+    };
+
+    std::vector<DepthMipGenStuff> mDepthMipGenStuff;
 
     std::unique_ptr<Camera> mCamera;
 
@@ -168,6 +242,11 @@ private: //===================================================//
     std::vector<DrawItem> mDrawItemsTransparent;
 
     int64_t mCurrentGroupId = -1;
+
+    //--------------------------------------------------------//
+
+    std::array<double, NUM_TIME_STAMPS> mFrameTimings {};
+    sq::Swapper<vk::QueryPool> mTimestampQueryPool;
 };
 
 //============================================================================//

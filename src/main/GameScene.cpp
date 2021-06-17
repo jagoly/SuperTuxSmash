@@ -26,6 +26,12 @@ GameScene::GameScene(SmashApp& smashApp, GameSetup setup)
     // default to testzone, it's the only stage anyway
     if (setup.stage == StageEnum::Null) setup.stage = StageEnum::TestZone;
 
+    mSmashApp.get_debug_overlay().set_sub_timers ({
+        "BeginGbuffer", " Opaque", "EndGbuffer", "DepthMipGen", "SSAO", "BlurSSAO",
+        "BeginHDR", " Skybox", " LightDefault", " Transparent", " Particles", "EndHDR",
+        "BeginFinal", " Composite", " Debug", " Gui", "EndFinal"
+    });
+
     //--------------------------------------------------------//
 
     sq::Window& window = mSmashApp.get_window();
@@ -177,6 +183,8 @@ void GameScene::integrate(double /*elapsed*/, float blend)
                 controller->integrate();
         }
     }
+
+    mSmashApp.get_debug_overlay().update_sub_timers(mRenderer->get_frame_timings().data());
 }
 
 //============================================================================//
@@ -218,8 +226,6 @@ void GameScene::impl_show_general_window()
     //--------------------------------------------------------//
 
     auto& options = mSmashApp.get_options();
-
-    ImGui::SameLine();
 
     if (ImGui::Button("swap control"))
     {
@@ -316,10 +322,13 @@ void GameScene::populate_command_buffer(vk::CommandBuffer cmdbuf, vk::Framebuffe
             mSmashApp.get_window().get_render_pass(), framebuf, vk::Rect2D({0, 0}, {windowSize.x, windowSize.y})
         }, vk::SubpassContents::eInline
     );
+    mRenderer->write_time_stamp(cmdbuf, Renderer::TimeStamp::BeginFinal);
 
     mRenderer->populate_final_pass(cmdbuf);
 
     mSmashApp.get_gui_system().render_gui(cmdbuf);
+    mRenderer->write_time_stamp(cmdbuf, Renderer::TimeStamp::Gui);
 
     cmdbuf.endRenderPass();
+    mRenderer->write_time_stamp(cmdbuf, Renderer::TimeStamp::EndFinal);
 }

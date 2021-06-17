@@ -13,6 +13,8 @@ MenuScene::MenuScene(SmashApp& smashApp)
     : Scene(1.0 / 60.0), mSmashApp(smashApp)
 {
     mSmashApp.get_window().set_key_repeat(false);
+
+    mSmashApp.get_debug_overlay().set_sub_timers({});
 }
 
 MenuScene::~MenuScene() = default;

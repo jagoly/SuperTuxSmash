@@ -21,10 +21,10 @@ struct CameraBlock
 
 struct LightBlock
 {
-    alignas(16) Vec3F ambiColour;
-    alignas(16) Vec3F skyColour;
-    alignas(16) Vec3F skyDirection;
-    alignas(16) Mat4F skyMatrix;
+    alignas(16) Vec3F ambientColour;
+    alignas(16) Vec3F lightColour;
+    alignas(16) Vec3F lightDirection;
+    alignas(16) Mat4F lightMatrix;
 };
 
 //============================================================================//

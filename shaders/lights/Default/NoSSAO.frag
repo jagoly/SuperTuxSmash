@@ -2,4 +2,4 @@
 
 #define OPTION_SSAO 0
 
-#include "Default.frag.glsl"
+#include "../Default.frag.glsl"

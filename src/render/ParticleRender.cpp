@@ -45,7 +45,6 @@ ParticleRenderer::~ParticleRenderer()
     ctx.device.destroy(mDescriptorSetLayout);
     ctx.device.free(ctx.descriptorPool, mDescriptorSet);
     ctx.device.destroy(mPipelineLayout);
-    ctx.device.destroy(mPipeline);
 }
 
 //============================================================================//
@@ -84,7 +83,7 @@ void ParticleRenderer::refresh_options_create()
         };
 
         mPipeline = sq::vk_create_graphics_pipeline (
-            ctx, mPipelineLayout, renderer.targets.lightsRenderPass, 0u, shaderModules.stages,
+            ctx, mPipelineLayout, renderer.targets.hdrRenderPass, 0u, shaderModules.stages,
             vk::PipelineVertexInputStateCreateInfo {
                 {}, vertexBindingDescriptions, vertexAttributeDescriptions
             },
@@ -113,7 +112,7 @@ void ParticleRenderer::refresh_options_create()
         sq::vk_update_descriptor_set (
             ctx, mDescriptorSet, 1u, 0u, vk::DescriptorType::eCombinedImageSampler,
             vk::DescriptorImageInfo {
-                renderer.samplers.nearestRepeat, renderer.images.depthView, vk::ImageLayout::eDepthStencilReadOnlyOptimal
+                renderer.samplers.nearestClamp, renderer.images.depthView, vk::ImageLayout::eDepthStencilReadOnlyOptimal
             }
         );
     }

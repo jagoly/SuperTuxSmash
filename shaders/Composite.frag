@@ -8,9 +8,19 @@ layout(location=0) in vec2 io_TexCoord;
 
 layout(location=0) out vec4 frag_Colour;
 
+//============================================================================//
+
+// TODO: configurable tone mapping
+
+// TODO: Because offsreen target sizes are rounded down to even numbers, nearest-neighbour filtering
+//       causes double pixel lines to appear in the centre of the image. This should be fixed so that
+//       the lines appear at the top and right instead. Low priority since its barely noticable and
+//       only ever happens if the user manually resizes the window.
+
+//============================================================================//
+
 vec3 tone_map(vec3 vec)
 {
-    // todo: configurable tone mapping
     const float A = 0.15, B = 0.50, C = 0.10, D = 0.20, E = 0.02, F = 0.30;
     return ((vec * (A * vec + C*B) + D*E) / (vec * (A * vec + B) + D*F)) - E/F;
 }

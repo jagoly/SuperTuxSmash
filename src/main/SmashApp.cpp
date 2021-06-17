@@ -164,8 +164,8 @@ void SmashApp::handle_event(sq::Event event)
 
         if (data.keyboard.key == Key::O)
         {
-            constexpr const auto STRINGS = std::array { "OFF", "LOW", "HIGH" };
-            if (++mOptions->ssao_quality == 3) mOptions->ssao_quality = 0;
+            constexpr const auto STRINGS = std::array { "OFF", "LOW", "MEDIUM", "HIGH" };
+            if (++mOptions->ssao_quality == 4) mOptions->ssao_quality = 0;
             mDebugOverlay->notify(sq::build_string("ssao set to ", STRINGS[mOptions->ssao_quality]));
             refresh_options();
         }

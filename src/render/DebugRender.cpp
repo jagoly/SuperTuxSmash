@@ -54,8 +54,6 @@ DebugRenderer::~DebugRenderer()
 
     ctx.device.destroy(mBlobPipelineLayout);
     ctx.device.destroy(mLinesPipelineLayout);
-    ctx.device.destroy(mBlobPipeline);
-    ctx.device.destroy(mLinesPipeline);
 }
 
 //============================================================================//

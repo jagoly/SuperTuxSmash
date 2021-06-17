@@ -43,7 +43,7 @@ void EditorCamera::intergrate(float /*blend*/)
 {
     const float aspect = float(renderer.window.get_size().x) / float(renderer.window.get_size().y);
 
-    mBlock.projMat = maths::perspective_LH(1.f, aspect, 0.5f, 100.f);
+    mBlock.projMat = maths::perspective_LH(maths::radians(0.15f), aspect, 0.5f, 100.f);
 
     const Mat3F rotation = maths::rotation({1.f, 0.f, 0.f}, mPitch) * maths::rotation({0.f, 1.f, 0.f}, mYaw);
 
