@@ -8,6 +8,7 @@
 
 #include <sqee/objects/Texture.hpp>
 #include <sqee/vk/SwapBuffer.hpp>
+#include <sqee/vk/Wrappers.hpp>
 
 //============================================================================//
 
@@ -112,29 +113,14 @@ public: //====================================================//
     } pipelines;
 
     struct {
-        vk::Image depthStencil;
-        sq::VulkanMemory depthStencilMem;
-        vk::ImageView depthStencilView;
+        sq::ImageStuff depthStencil;
         vk::ImageView depthView;
-        vk::ImageView stencilView;
-        vk::Image albedoRoughness;
-        sq::VulkanMemory albedoRoughnessMem;
-        vk::ImageView albedoRoughnessView;
-        vk::Image normalMetallic;
-        sq::VulkanMemory normalMetallicMem;
-        vk::ImageView normalMetallicView;
-        vk::Image depthMips;
-        sq::VulkanMemory depthMipsMem;
-        vk::ImageView depthMipsView;
-        vk::Image ssao;
-        sq::VulkanMemory ssaoMem;
-        vk::ImageView ssaoView;
-        vk::Image ssaoBlur;
-        sq::VulkanMemory ssaoBlurMem;
-        vk::ImageView ssaoBlurView;
-        vk::Image colour;
-        sq::VulkanMemory colourMem;
-        vk::ImageView colourView;
+        sq::ImageStuff albedoRoughness;
+        sq::ImageStuff normalMetallic;
+        sq::ImageStuff depthMips;
+        sq::ImageStuff ssao;
+        sq::ImageStuff ssaoBlur;
+        sq::ImageStuff colour;
     } images;
 
     struct {
@@ -144,15 +130,11 @@ public: //====================================================//
     } samplers;
 
     struct {
-        vk::RenderPass gbufferRenderPass;
-        vk::Framebuffer gbufferFramebuffer;
-        vk::RenderPass ssaoRenderPass;
-        vk::Framebuffer ssaoFramebuffer;
-        vk::RenderPass ssaoBlurRenderPass;
-        vk::Framebuffer ssaoBlurFramebuffer;
-        vk::RenderPass hdrRenderPass;
-        vk::Framebuffer hdrFramebuffer;
-    } targets;
+        sq::RenderPassStuff gbuffer;
+        sq::RenderPassStuff ssao;
+        sq::RenderPassStuff ssaoBlur;
+        sq::RenderPassStuff hdr;
+    } passes;
 
     //--------------------------------------------------------//
 
@@ -201,7 +183,9 @@ private: //===================================================//
 
     void impl_destroy_depth_mip_gen_stuff();
 
-    bool mNeedDestroySSAO = false;
+    void impl_create_ssao_stuff();
+
+    void impl_destroy_ssao_stuff();
 
     //--------------------------------------------------------//
 
@@ -218,8 +202,7 @@ private: //===================================================//
     {
         vk::ImageView srcView; // reference
         vk::ImageView destView;
-        vk::RenderPass renderPass;
-        vk::Framebuffer framebuffer;
+        sq::RenderPassStuff pass;
         vk::Pipeline pipeline;
         vk::DescriptorSet descriptorSet;
         Vec2U dimensions;
@@ -240,6 +223,8 @@ private: //===================================================//
 
     std::vector<DrawItem> mDrawItemsOpaque;
     std::vector<DrawItem> mDrawItemsTransparent;
+
+    bool mNeedDestroySSAO = false;
 
     int64_t mCurrentGroupId = -1;
 

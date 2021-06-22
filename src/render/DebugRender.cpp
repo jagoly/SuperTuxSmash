@@ -25,15 +25,15 @@ DebugRenderer::DebugRenderer(Renderer& renderer) : renderer(renderer)
 {
     const auto& ctx = sq::VulkanContext::get();
 
-    mBlobPipelineLayout = sq::vk_create_pipeline_layout (
-        ctx, {}, {}, {
+    mBlobPipelineLayout = ctx.create_pipeline_layout (
+        {}, {
             vk::PushConstantRange { vk::ShaderStageFlagBits::eVertex, 0u, 64u },
             vk::PushConstantRange { vk::ShaderStageFlagBits::eFragment, 64u, 16u },
         }
     );
 
-    mLinesPipelineLayout = sq::vk_create_pipeline_layout (
-        ctx, {}, {}, {
+    mLinesPipelineLayout = ctx.create_pipeline_layout (
+        {}, {
             vk::PushConstantRange { vk::ShaderStageFlagBits::eFragment, 0u, 16u },
         }
     );

@@ -37,8 +37,7 @@ void EffectSystem::play_effect(const VisualEffect& effect)
     instance.descriptorSet = sq::vk_allocate_descriptor_set_swapper(ctx, renderer.setLayouts.object);
 
     sq::vk_update_descriptor_set_swapper (
-        ctx, instance.descriptorSet, 0u, 0u, vk::DescriptorType::eUniformBuffer,
-        instance.ubo.get_descriptor_info_front(), instance.ubo.get_descriptor_info_back()
+        ctx, instance.descriptorSet, sq::DescriptorUniformBuffer(0u, 0u, instance.ubo.get_descriptor_info())
     );
 
     const EffectAsset& asset = effect.handle.get();

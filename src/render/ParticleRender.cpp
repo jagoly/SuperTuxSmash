@@ -15,15 +15,13 @@ ParticleRenderer::ParticleRenderer(Renderer& renderer) : renderer(renderer)
 {
     const auto& ctx = sq::VulkanContext::get();
 
-    mDescriptorSetLayout = sq::vk_create_descriptor_set_layout (
-        ctx, {}, {
-            vk::DescriptorSetLayoutBinding { 0u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment },
-            vk::DescriptorSetLayoutBinding { 1u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment }
-        }
-    );
+    mDescriptorSetLayout = ctx.create_descriptor_set_layout ({
+        vk::DescriptorSetLayoutBinding { 0u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment },
+        vk::DescriptorSetLayoutBinding { 1u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment }
+    });
 
-    mPipelineLayout = sq::vk_create_pipeline_layout (
-        ctx, {}, { renderer.setLayouts.camera, mDescriptorSetLayout }, {}
+    mPipelineLayout = ctx.create_pipeline_layout (
+        { renderer.setLayouts.camera, mDescriptorSetLayout }, {}
     );
 
     mVertexBuffer.initialise(sizeof(ParticleVertex) * MAX_PARTICLES, vk::BufferUsageFlagBits::eVertexBuffer);
@@ -32,7 +30,7 @@ ParticleRenderer::ParticleRenderer(Renderer& renderer) : renderer(renderer)
 
     mDescriptorSet = sq::vk_allocate_descriptor_set(ctx, mDescriptorSetLayout);
     sq::vk_update_descriptor_set (
-        ctx, mDescriptorSet, 0u, 0u, vk::DescriptorType::eCombinedImageSampler, mTexture.get_descriptor_info()
+        ctx, mDescriptorSet, sq::DescriptorImageSampler(0u, 0u, mTexture.get_descriptor_info())
     );
 }
 
@@ -83,7 +81,7 @@ void ParticleRenderer::refresh_options_create()
         };
 
         mPipeline = sq::vk_create_graphics_pipeline (
-            ctx, mPipelineLayout, renderer.targets.hdrRenderPass, 0u, shaderModules.stages,
+            ctx, mPipelineLayout, renderer.passes.hdr.pass, 0u, shaderModules.stages,
             vk::PipelineVertexInputStateCreateInfo {
                 {}, vertexBindingDescriptions, vertexAttributeDescriptions
             },
@@ -110,10 +108,10 @@ void ParticleRenderer::refresh_options_create()
         );
 
         sq::vk_update_descriptor_set (
-            ctx, mDescriptorSet, 1u, 0u, vk::DescriptorType::eCombinedImageSampler,
-            vk::DescriptorImageInfo {
-                renderer.samplers.nearestClamp, renderer.images.depthView, vk::ImageLayout::eDepthStencilReadOnlyOptimal
-            }
+            ctx, mDescriptorSet,
+            sq::DescriptorImageSampler (
+                1u, 0u, renderer.samplers.nearestClamp, renderer.images.depthView, vk::ImageLayout::eDepthStencilReadOnlyOptimal
+            )
         );
     }
 }

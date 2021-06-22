@@ -39,8 +39,7 @@ Fighter::Fighter(FightWorld& world, FighterEnum type, uint8_t index)
         mDescriptorSet = sq::vk_allocate_descriptor_set_swapper(ctx, world.renderer.setLayouts.object);
 
         sq::vk_update_descriptor_set_swapper (
-            ctx, mDescriptorSet, 0u, 0u, vk::DescriptorType::eUniformBuffer,
-            mSkellyUbo.get_descriptor_info_front(), mSkellyUbo.get_descriptor_info_back()
+            ctx, mDescriptorSet, sq::DescriptorUniformBuffer(0u, 0u, mSkellyUbo.get_descriptor_info())
         );
     }
 

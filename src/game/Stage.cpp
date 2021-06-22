@@ -57,8 +57,7 @@ Stage::Stage(FightWorld& world, StageEnum type)
         mDescriptorSet = sq::vk_allocate_descriptor_set_swapper(ctx, world.renderer.setLayouts.object);
 
         sq::vk_update_descriptor_set_swapper (
-            ctx, mDescriptorSet, 0u, 0u, vk::DescriptorType::eUniformBuffer,
-            mStaticUbo.get_descriptor_info_front(), mStaticUbo.get_descriptor_info_back()
+            ctx, mDescriptorSet, sq::DescriptorUniformBuffer(0u, 0u, mStaticUbo.get_descriptor_info())
         );
     }
 

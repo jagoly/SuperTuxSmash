@@ -9,6 +9,8 @@
 // NUM_OFFSETS:   number of offset iterations to do per pixel
 // LOD_BIAS:      tweak the selection of depth mipmap levels
 
+//#define FALLOFF_MODE_SIMPLE
+
 //============================================================================//
 
 #include "../headers/blocks/Camera.glsl"
@@ -57,7 +59,7 @@ vec3 get_view_normal(float depth)
 
 //============================================================================//
 
-float get_horizon_sample(vec3 viewPos, vec3 viewDir, float lod, vec2 sampleOffset)
+float get_horizon_sample(vec3 viewPos, vec3 viewDir, float lod, vec2 sampleOffset, float closest)
 {
     const vec2 texCoord = (gl_FragCoord.xy + sampleOffset) * INVERSE_VIEWPORT;
     const float depth = textureLod(tx_DepthMips, texCoord, lod).r;
@@ -70,14 +72,18 @@ float get_horizon_sample(vec3 viewPos, vec3 viewDir, float lod, vec2 sampleOffse
 
     const float dist2 = dot(ws, ws);
     const float invdist = inversesqrt(dist2);
-    const float cosh = invdist * dot(ws, viewDir);
+    const float cosH = dot(ws, viewDir) * invdist;
 
-    const float FALLOFF_START = 0.08 * AO_RADIUS;
-    const float FALLOFF_END = 2.0 * AO_RADIUS;
-
-    const float falloff = clamp((dist2 - FALLOFF_START) / (FALLOFF_END - FALLOFF_START), 0.0, 1.0);
-
-    return cosh - (2.0 * falloff);
+  #ifdef FALLOFF_MODE_SIMPLE
+    // version from the tutorial (no thickness heuristic)
+    const float falloff = clamp(dist2 / (2.0 * AO_RADIUS), 0.0, 1.0);
+    return max(cosH - (2.0 * falloff), closest);
+  #else
+    // version from MXAO (thickness heuristic)
+    const float falloff = clamp(dist2 / (0.25 * AO_RADIUS * AO_RADIUS), 0.0, 1.0);
+    const float foCosH = mix(cosH, closest, falloff);
+    return foCosH > closest ? foCosH : mix(foCosH, closest, 0.8);
+  #endif
 }
 
 //============================================================================//
@@ -86,16 +92,16 @@ float compute_visiblity(vec3 viewPos, vec3 viewDir, vec3 viewNorm, float stepSiz
 {
     const vec2 sampleDir = vec2(cos(rotation), sin(rotation));
 
-    // positive and negative horizon angles
+    // positive and negative horizon cosines
     vec2 horizons = vec2(-1.0, -1.0);
     float sampleDist = 1.0 + stepSize - offset;
 
     for (int j = 0; j < NUM_STEPS; ++j)
     {
-        const vec2 sampleOffset = round(sampleDir * sampleDist);
+        const vec2 sampleOffset = sampleDir * sampleDist;
 
-        horizons.x = max(get_horizon_sample(viewPos, viewDir, lod, +sampleOffset), horizons.x);
-        horizons.y = max(get_horizon_sample(viewPos, viewDir, lod, -sampleOffset), horizons.y);
+        horizons.x = get_horizon_sample(viewPos, viewDir, lod, +sampleOffset, horizons.x);
+        horizons.y = get_horizon_sample(viewPos, viewDir, lod, -sampleOffset, horizons.y);
 
         sampleDist += stepSize;
     }
