@@ -19,7 +19,7 @@ struct CameraBlock
 
 //============================================================================//
 
-struct LightBlock
+struct EnvironmentBlock
 {
     alignas(16) Vec3F ambientColour;
     alignas(16) Vec3F lightColour;

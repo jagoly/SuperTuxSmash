@@ -13,27 +13,21 @@ using namespace sts;
 
 void EditorScene::impl_show_widget_emitters()
 {
-    if (mActiveActionContext == nullptr) return;
-
     if (mDoResetDockEmitters) ImGui::SetNextWindowDockID(mDockRightId);
     mDoResetDockEmitters = false;
 
     const ImPlus::ScopeWindow window = { "Emitters", 0 };
     if (window.show == false) return;
 
-    //--------------------------------------------------------//
-
     ActionContext& ctx = *mActiveActionContext;
-    Fighter& fighter = *ctx.fighter;
-    Action& action = *fighter.get_action(ctx.key.action);
-
-    const ImPlus::ScopeID ctxKeyIdScope = ctx.key.hash();
+    Action& action = *ctx.fighter->get_action(ctx.key.action);
+    const sq::Armature& armature = ctx.fighter->get_armature();
 
     //--------------------------------------------------------//
 
     const auto funcInit = [&](Emitter& emitter)
     {
-        emitter.fighter = &fighter;
+        emitter.fighter = ctx.fighter;
     };
 
     const auto funcEdit = [&](Emitter& emitter)
@@ -42,7 +36,7 @@ void EditorScene::impl_show_widget_emitters()
 
         ImPlus::InputVector(" Origin", emitter.origin, 0, "%.4f");
 
-        ImPlus::Combo(" Bone", fighter.get_armature().get_bone_names(), emitter.bone, "(None)");
+        ImPlus::Combo(" Bone", armature.get_bone_names(), emitter.bone, "(None)");
 
         ImPlus::SliderValue(" Count", emitter.count, 0u, 120u, "%u");
 
@@ -80,6 +74,8 @@ void EditorScene::impl_show_widget_emitters()
     };
 
     //--------------------------------------------------------//
+
+    const ImPlus::ScopeID ctxKeyIdScope = ctx.key.hash();
 
     helper_edit_objects(action.mEmitters, funcInit, funcEdit);
 }

@@ -29,40 +29,48 @@ Renderer::Renderer(const sq::Window& window, const Options& options, ResourceCac
     mDebugRenderer = std::make_unique<DebugRenderer>(*this);
     mParticleRenderer = std::make_unique<ParticleRenderer>(*this);
 
-    // load brdf lookup texture
-    {
-        sq::Texture::Config config;
-        config.format = vk::Format::eR16G16Unorm;
-        config.wrapX = config.wrapY = config.wrapZ = vk::SamplerAddressMode::eClampToEdge;
-        config.swizzle = vk::ComponentMapping();
-        config.filter = sq::Texture::FilterMode::Linear;
-        config.mipmaps = sq::Texture::MipmapsMode::Disable;
-        config.size = Vec3U(512u, 512u, 1u);
-        config.mipLevels = 1u;
-
-        // todo: embed image data into the source
-        mLutTexture.initialise_2D(config);
-        mLutTexture.load_from_memory(sq::read_bytes_from_file("assets/BrdfLut512.bin").data(), 0u, 0u, config);
-    }
-
-    // todo: these need to be cached for the editor
-    mSkyboxTexture.load_from_file_cube(options.editor_mode ? "assets/skybox/Space/small" : "assets/skybox/Space");
-    mIrradianceTexture.load_from_file_cube("assets/skybox/Space/irradiance");
-    mRadianceTexture.load_from_file_cube("assets/skybox/Space/radiance");
-
     const auto& ctx = sq::VulkanContext::get();
 
-    // initialise camera ubo and update descriptor set
+    // initialise camera and environment uniform buffers
     {
-        mCameraUbo.initialise(sizeof(CameraBlock), vk::BufferUsageFlagBits::eUniformBuffer);
+        ubos.camera.initialise(sizeof(CameraBlock), vk::BufferUsageFlagBits::eUniformBuffer);
+        ubos.environment.initialise(sizeof(EnvironmentBlock), vk::BufferUsageFlagBits::eUniformBuffer);
+
+        sets.camera = sq::vk_allocate_descriptor_set_swapper(ctx, setLayouts.camera);
+        sets.environment = sq::vk_allocate_descriptor_set_swapper(ctx, setLayouts.environment);
 
         sq::vk_update_descriptor_set_swapper (
-            ctx, sets.camera, sq::DescriptorUniformBuffer(0u, 0u, mCameraUbo.get_descriptor_info())
+            ctx, sets.camera, sq::DescriptorUniformBuffer(0u, 0u, ubos.camera.get_descriptor_info())
+        );
+        sq::vk_update_descriptor_set_swapper (
+            ctx, sets.environment, sq::DescriptorUniformBuffer(0u, 0u, ubos.environment.get_descriptor_info())
         );
     }
 
-    // initialise default light ubo
-    mLightUbo.initialise(sizeof(LightBlock), vk::BufferUsageFlagBits::eUniformBuffer);
+    // allocate other descriptor sets
+    {
+        sets.ssao = sq::vk_allocate_descriptor_set(ctx, setLayouts.ssao);
+        sets.ssaoBlur = sq::vk_allocate_descriptor_set(ctx, setLayouts.ssaoBlur);
+        sets.skybox = sq::vk_allocate_descriptor_set(ctx, setLayouts.skybox);
+        sets.composite = sq::vk_allocate_descriptor_set(ctx, setLayouts.composite);
+    }
+
+    // create immutable samplers
+    {
+        samplers.nearestClamp = ctx.create_sampler (
+            vk::Filter::eNearest, vk::Filter::eNearest, {},
+            vk::SamplerAddressMode::eClampToEdge, vk::SamplerAddressMode::eClampToEdge, {},
+            0.f, 0u, 0u, false, false
+        );
+
+        samplers.linearClamp = ctx.create_sampler (
+            vk::Filter::eLinear, vk::Filter::eLinear, {},
+            vk::SamplerAddressMode::eClampToEdge, vk::SamplerAddressMode::eClampToEdge, {},
+            0.f, 0u, 0u, false, false
+        );
+    }
+
+    mLutTexture.load_from_file_2D("assets/BrdfLut512");
 
     mTimestampQueryPool.front = ctx.device.createQueryPool({ {}, vk::QueryType::eTimestamp, NUM_TIME_STAMPS + 1u, {} });
     mTimestampQueryPool.back = ctx.device.createQueryPool({ {}, vk::QueryType::eTimestamp, NUM_TIME_STAMPS + 1u, {} });
@@ -77,6 +85,7 @@ Renderer::~Renderer()
     const auto& ctx = sq::VulkanContext::get();
 
     ctx.device.destroy(setLayouts.camera);
+    ctx.device.destroy(setLayouts.environment);
     ctx.device.destroy(setLayouts.gbuffer);
     ctx.device.destroy(setLayouts.depthMipGen);
     ctx.device.destroy(setLayouts.ssao);
@@ -102,6 +111,9 @@ Renderer::~Renderer()
     ctx.device.destroy(mTimestampQueryPool.front);
     ctx.device.destroy(mTimestampQueryPool.back);
 
+    ctx.device.destroy(samplers.nearestClamp);
+    ctx.device.destroy(samplers.linearClamp);
+
     refresh_options_destroy();
 }
 
@@ -116,6 +128,11 @@ void Renderer::impl_initialise_layouts()
             0u, vk::DescriptorType::eUniformBuffer, 1u,
             vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eGeometry | vk::ShaderStageFlagBits::eFragment
         }
+    });
+    setLayouts.environment = ctx.create_descriptor_set_layout ({
+        vk::DescriptorSetLayoutBinding { 0u, vk::DescriptorType::eUniformBuffer, 1u, vk::ShaderStageFlagBits::eFragment },
+        vk::DescriptorSetLayoutBinding { 1u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment },
+        vk::DescriptorSetLayoutBinding { 2u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment }
     });
     setLayouts.gbuffer = ctx.create_descriptor_set_layout ({
     });
@@ -140,12 +157,6 @@ void Renderer::impl_initialise_layouts()
     setLayouts.composite = ctx.create_descriptor_set_layout ({
         vk::DescriptorSetLayoutBinding { 0u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment }
     });
-
-    sets.camera    = sq::vk_allocate_descriptor_set_swapper(ctx, setLayouts.camera);
-    sets.ssao      = sq::vk_allocate_descriptor_set(ctx, setLayouts.ssao);
-    sets.ssaoBlur  = sq::vk_allocate_descriptor_set(ctx, setLayouts.ssaoBlur);
-    sets.skybox    = sq::vk_allocate_descriptor_set(ctx, setLayouts.skybox);
-    sets.composite = sq::vk_allocate_descriptor_set(ctx, setLayouts.composite);
 
     pipelineLayouts.standard    = ctx.create_pipeline_layout({ setLayouts.camera }, {});
     pipelineLayouts.depthMipGen = ctx.create_pipeline_layout({ setLayouts.depthMipGen }, {});
@@ -201,18 +212,6 @@ void Renderer::impl_create_render_targets()
             ctx, vk::Format::eR16G16B16A16Sfloat, renderSize, 1u, vk::SampleCountFlagBits::e1,
             vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, false,
             {}, vk::ImageAspectFlagBits::eColor
-        );
-
-        samplers.nearestClamp = ctx.create_sampler (
-            vk::Filter::eNearest, vk::Filter::eNearest, {},
-            vk::SamplerAddressMode::eClampToEdge, vk::SamplerAddressMode::eClampToEdge, {},
-            0.f, 0u, 0u, false, false
-        );
-
-        samplers.linearClamp = ctx.create_sampler (
-            vk::Filter::eLinear, vk::Filter::eLinear, {},
-            vk::SamplerAddressMode::eClampToEdge, vk::SamplerAddressMode::eClampToEdge, {},
-            0.f, 0u, 0u, false, false
         );
 
         samplers.depthMips = ctx.create_sampler (
@@ -362,8 +361,6 @@ void Renderer::impl_destroy_render_targets()
     images.colour.destroy(ctx);
 
     ctx.device.destroy(images.depthView);
-    ctx.device.destroy(samplers.nearestClamp);
-    ctx.device.destroy(samplers.linearClamp);
     ctx.device.destroy(samplers.depthMips);
 
     passes.gbuffer.destroy(ctx);
@@ -405,11 +402,6 @@ void Renderer::impl_create_pipelines()
             nullptr
         );
 
-        sq::vk_update_descriptor_set (
-            ctx, sets.skybox,
-            sq::DescriptorImageSampler(0u, 0u, mSkyboxTexture.get_descriptor_info())
-        );
-
         ctx.set_debug_object_name(pipelines.skybox, "Renderer.pipelines.skybox");
     }
 
@@ -417,27 +409,21 @@ void Renderer::impl_create_pipelines()
     {
         setLayouts.lightDefault = options.ssao_quality == 0u ?
             ctx.create_descriptor_set_layout ({
-                vk::DescriptorSetLayoutBinding { 0u, vk::DescriptorType::eUniformBuffer, 1u, vk::ShaderStageFlagBits::eFragment },
+                vk::DescriptorSetLayoutBinding { 0u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment },
                 vk::DescriptorSetLayoutBinding { 1u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment },
                 vk::DescriptorSetLayoutBinding { 2u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment },
-                vk::DescriptorSetLayoutBinding { 3u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment },
-                vk::DescriptorSetLayoutBinding { 4u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment },
-                vk::DescriptorSetLayoutBinding { 5u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment },
-                vk::DescriptorSetLayoutBinding { 6u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment }
+                vk::DescriptorSetLayoutBinding { 3u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment }
             }) :
             ctx.create_descriptor_set_layout ({
-                vk::DescriptorSetLayoutBinding { 0u, vk::DescriptorType::eUniformBuffer, 1u, vk::ShaderStageFlagBits::eFragment },
+                vk::DescriptorSetLayoutBinding { 0u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment },
                 vk::DescriptorSetLayoutBinding { 1u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment },
                 vk::DescriptorSetLayoutBinding { 2u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment },
                 vk::DescriptorSetLayoutBinding { 3u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment },
                 vk::DescriptorSetLayoutBinding { 4u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment },
-                vk::DescriptorSetLayoutBinding { 5u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment },
-                vk::DescriptorSetLayoutBinding { 6u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment },
-                vk::DescriptorSetLayoutBinding { 7u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment },
-                vk::DescriptorSetLayoutBinding { 8u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment }
+                vk::DescriptorSetLayoutBinding { 5u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment }
             });
 
-        pipelineLayouts.lightDefault = ctx.create_pipeline_layout({ setLayouts.camera, setLayouts.lightDefault }, {});
+        pipelineLayouts.lightDefault = ctx.create_pipeline_layout({ setLayouts.camera, setLayouts.environment, setLayouts.lightDefault }, {});
 
         const auto shaderModules = sq::ShaderModules (
             ctx, "shaders/FullScreenTC.vert.spv", {},
@@ -465,25 +451,22 @@ void Renderer::impl_create_pipelines()
             nullptr
         );
 
-        sets.lightDefault = sq::vk_allocate_descriptor_set_swapper(ctx, setLayouts.lightDefault);
+        sets.lightDefault = ctx.allocate_descriptor_set(ctx.descriptorPool, setLayouts.lightDefault);
 
-        sq::vk_update_descriptor_set_swapper (
+        sq::vk_update_descriptor_set (
             ctx, sets.lightDefault,
-            sq::DescriptorUniformBuffer(0u, 0u, mLightUbo.get_descriptor_info()),
-            sq::DescriptorImageSampler(1u, 0u, mLutTexture.get_descriptor_info()),
-            sq::DescriptorImageSampler(2u, 0u, mIrradianceTexture.get_descriptor_info()),
-            sq::DescriptorImageSampler(3u, 0u, mRadianceTexture.get_descriptor_info()),
-            sq::DescriptorImageSampler(4u, 0u, samplers.nearestClamp, images.albedoRoughness.view, vk::ImageLayout::eShaderReadOnlyOptimal),
-            sq::DescriptorImageSampler(5u, 0u, samplers.nearestClamp, images.normalMetallic.view, vk::ImageLayout::eShaderReadOnlyOptimal),
-            sq::DescriptorImageSampler(6u, 0u, samplers.nearestClamp, images.depthView, vk::ImageLayout::eDepthStencilReadOnlyOptimal)
+            sq::DescriptorImageSampler(0u, 0u, mLutTexture.get_descriptor_info()),
+            sq::DescriptorImageSampler(1u, 0u, samplers.nearestClamp, images.albedoRoughness.view, vk::ImageLayout::eShaderReadOnlyOptimal),
+            sq::DescriptorImageSampler(2u, 0u, samplers.nearestClamp, images.normalMetallic.view, vk::ImageLayout::eShaderReadOnlyOptimal),
+            sq::DescriptorImageSampler(3u, 0u, samplers.nearestClamp, images.depthView, vk::ImageLayout::eDepthStencilReadOnlyOptimal)
         );
 
         if (options.ssao_quality != 0u)
         {
-            sq::vk_update_descriptor_set_swapper (
+            sq::vk_update_descriptor_set (
                 ctx, sets.lightDefault,
-                sq::DescriptorImageSampler(7u, 0u, samplers.linearClamp, images.ssaoBlur.view, vk::ImageLayout::eShaderReadOnlyOptimal),
-                sq::DescriptorImageSampler(8u, 0u, samplers.nearestClamp, images.depthMips.view, vk::ImageLayout::eDepthStencilReadOnlyOptimal)
+                sq::DescriptorImageSampler(4u, 0u, samplers.linearClamp, images.ssaoBlur.view, vk::ImageLayout::eShaderReadOnlyOptimal),
+                sq::DescriptorImageSampler(5u, 0u, samplers.nearestClamp, images.depthMips.view, vk::ImageLayout::eDepthStencilReadOnlyOptimal)
             );
         }
 
@@ -557,8 +540,7 @@ void Renderer::impl_destroy_pipelines()
     ctx.device.destroy(pipelines.lightDefault);
     ctx.device.destroy(pipelines.composite);
 
-    ctx.device.free(ctx.descriptorPool, sets.lightDefault.front);
-    ctx.device.free(ctx.descriptorPool, sets.lightDefault.back);
+    ctx.device.free(ctx.descriptorPool, sets.lightDefault);
 }
 
 //============================================================================//
@@ -941,20 +923,17 @@ void Renderer::integrate_camera(float blend)
     mCamera->intergrate(blend);
 
     sets.camera.swap();
-    auto& cameraBlock = *reinterpret_cast<CameraBlock*>(mCameraUbo.swap_map());
+    auto& cameraBlock = *reinterpret_cast<CameraBlock*>(ubos.camera.swap_map());
     cameraBlock = mCamera->get_block();
 
-    //-- Update the Lighting ---------------------------------//
+    //-- Update the Environment ------------------------------//
 
-    sets.lightDefault.swap();
-    auto& lightBlock = *reinterpret_cast<LightBlock*>(mLightUbo.swap_map());
-    lightBlock.ambientColour = { 0.05f, 0.05f, 0.05f };
-    lightBlock.lightColour = { 3.0f, 3.0f, 3.0f };
-    lightBlock.lightDirection = maths::normalize(Vec3F(0.f, -1.f, 0.5f));
-    lightBlock.lightMatrix = Mat4F();
-
-    if (options.debug_toggle_1 == false) lightBlock.ambientColour.r = 0.f;
-    else lightBlock.ambientColour.r = 1.f;
+    sets.environment.swap();
+    auto& environmentBlock = *reinterpret_cast<EnvironmentBlock*>(ubos.environment.swap_map());
+    environmentBlock.ambientColour = { 0.025f, 0.025f, 0.025f };
+    environmentBlock.lightColour = { 3.0f, 3.0f, 3.0f };
+    environmentBlock.lightDirection = maths::normalize(Vec3F(0.f, -1.f, 0.5f));
+    environmentBlock.lightMatrix = Mat4F();
 }
 
 //============================================================================//
@@ -1141,7 +1120,8 @@ void Renderer::populate_command_buffer(vk::CommandBuffer cmdbuf)
     cmdbuf.draw(3u, 1u, 0u, 0u);
     write_time_stamp(cmdbuf, TimeStamp::Skybox);
 
-    cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayouts.lightDefault, 1u, sets.lightDefault.front, {});
+    cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayouts.lightDefault, 1u, sets.environment.front, {});
+    cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayouts.lightDefault, 2u, sets.lightDefault, {});
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipelines.lightDefault);
     cmdbuf.draw(3u, 1u, 0u, 0u);
     write_time_stamp(cmdbuf, TimeStamp::LightDefault);

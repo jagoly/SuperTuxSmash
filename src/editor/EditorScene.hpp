@@ -6,6 +6,8 @@
 #include "main/MainEnums.hpp"
 
 #include <sqee/app/Scene.hpp>
+#include <sqee/objects/Texture.hpp>
+#include <sqee/vk/Wrappers.hpp>
 
 // IWYU pragma: no_include "game/Action.hpp"
 // IWYU pragma: no_include "game/FightWorld.hpp"
@@ -50,21 +52,29 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
+    struct ShrunkCubeMap;
+
     struct ActionKey
     {
         FighterEnum fighter; ActionType action;
-        constexpr int hash() const { return int(fighter) * 256 + int(action); }
-        constexpr bool operator==(const ActionKey& other) const { return hash() == other.hash(); }
-        constexpr bool operator<(const ActionKey& other) const { return hash() < other.hash(); }
+        int hash() const { return int(fighter) * 256 + int(action); }
+        bool operator==(const ActionKey& other) const { return hash() == other.hash(); }
+        bool operator<(const ActionKey& other) const { return hash() < other.hash(); }
     };
+
+    struct CubeMapView
+    {
+        void initialise(EditorScene& editor, uint level, vk::Image image, vk::Sampler sampler);
+        std::array<vk::ImageView, 6u> imageViews;
+        std::array<vk::DescriptorSet, 6u> descriptorSets;
+    };
+
+    //--------------------------------------------------------//
 
     struct BaseContext
     {
         std::unique_ptr<Renderer> renderer;
         std::unique_ptr<FightWorld> world;
-
-        Fighter* fighter;
-        RenderObject* renderFighter;
 
         bool modified = false;
         size_t undoIndex = 0u;
@@ -72,30 +82,47 @@ private: //===================================================//
 
     struct ActionContext : public BaseContext
     {
-        ActionKey key;
+        ActionKey key; Fighter* fighter;
 
         std::unique_ptr<Action> savedData;
         std::vector<std::unique_ptr<Action>> undoStack;
 
-        int timelineLength = 0;
-        int currentFrame = -1;
+        int timelineLength = 0, currentFrame = -1;
     };
 
     struct HurtblobsContext : public BaseContext
     {
-        FighterEnum key;
+        FighterEnum key; Fighter* fighter;
 
         std::unique_ptr<std::pmr::map<TinyString, HurtBlob>> savedData;
         std::vector<std::unique_ptr<std::pmr::map<TinyString, HurtBlob>>> undoStack;
     };
 
+    struct StageContext : public BaseContext
+    {
+        StageEnum key; Stage* stage;
+
+        CubeMapView skybox;
+        CubeMapView irradiance;
+        std::array<CubeMapView, 8u> radiance;
+
+        bool irradianceModified = false;
+        bool radianceModified = false;
+
+        ~StageContext();
+    };
+
+    //--------------------------------------------------------//
+
     std::map<ActionKey, ActionContext> mActionContexts;
     std::map<FighterEnum, HurtblobsContext> mHurtblobsContexts;
+    std::map<StageEnum, StageContext> mStageContexts;
 
-    // todo: these should probably be a variant, or I should use dynamic cast
     BaseContext* mActiveContext = nullptr;
+
     ActionContext* mActiveActionContext = nullptr;
     HurtblobsContext* mActiveHurtblobsContext = nullptr;
+    StageContext* mActiveStageContext = nullptr;
 
     //--------------------------------------------------------//
 
@@ -107,8 +134,10 @@ private: //===================================================//
     void impl_show_widget_emitters();
     void impl_show_widget_sounds();
     void impl_show_widget_script();
-    void impl_show_widget_hurtblobs();
     void impl_show_widget_timeline();
+    void impl_show_widget_hurtblobs();
+    void impl_show_widget_stage();
+    void impl_show_widget_cubemaps();
 
     void impl_show_widget_fighter();
 
@@ -118,22 +147,27 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
-    void create_base_context(FighterEnum fighterKey, BaseContext& ctx);
+    void initialise_base_context(BaseContext& ctx);
 
     ActionContext& get_action_context(ActionKey key);
 
     HurtblobsContext& get_hurtblobs_context(FighterEnum key);
 
+    StageContext& get_stage_context(StageEnum key);
+
     //--------------------------------------------------------//
 
     void apply_working_changes(ActionContext& ctx);
     void apply_working_changes(HurtblobsContext& ctx);
+    void apply_working_changes(StageContext& ctx);
 
     void do_undo_redo(ActionContext& ctx, bool redo);
     void do_undo_redo(HurtblobsContext& ctx, bool redo);
+    void do_undo_redo(StageContext& ctx, bool redo);
 
     void save_changes(ActionContext& ctx);
     void save_changes(HurtblobsContext& ctx);
+    void save_changes(StageContext& ctx);
 
     //--------------------------------------------------------//
 
@@ -145,8 +179,24 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
+    ShrunkCubeMap shrink_cube_map_skybox(vk::ImageLayout layout) const;
+
+    void generate_cube_map_irradiance();
+    void generate_cube_map_radiance();
+
+    void update_cube_map_texture(sq::ImageStuff source, uint size, uint levels, sq::Texture& texture);
+
+    //--------------------------------------------------------//
+
+    // layouts for basic pipelines with a single image sampler
+    vk::DescriptorSetLayout mImageProcessSetLayout;
+    vk::PipelineLayout mImageProcessPipelineLayout;
+
+    //--------------------------------------------------------//
+
     ActionContext* mConfirmCloseActionCtx = nullptr;
     HurtblobsContext* mConfirmCloseHurtblobsCtx = nullptr;
+    StageContext* mConfirmCloseStageCtx = nullptr;
     uint mConfirmQuitNumUnsaved = 0u;
 
     PreviewMode mPreviewMode = PreviewMode::Pause;
@@ -172,8 +222,10 @@ private: //===================================================//
     bool mDoResetDockEmitters = false;
     bool mDoResetDockSounds = false;
     bool mDoResetDockScript = false;
-    bool mDoResetDockHurtblobs = false;
     bool mDoResetDockTimeline = false;
+    bool mDoResetDockHurtblobs = false;
+    bool mDoResetDockStage = false;
+    bool mDoResetDockCubemaps = false;
     bool mDoResetDockFighter = false;
 
     bool mDoRestartAction = false;

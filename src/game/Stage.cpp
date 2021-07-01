@@ -21,6 +21,9 @@ Stage::Stage(FightWorld& world, StageEnum type)
     const String path = sq::build_string("assets/stages/", sq::enum_to_string(type));
     const JsonValue json = sq::parse_json_from_file(path + "/Stage.json");
 
+    const JsonValue& render = json.at("render");
+    mSkyboxPath = render.at("skybox");
+
     const JsonValue& general = json.at("general");
     mInnerBoundary.min = general.at("inner_boundary_min");
     mInnerBoundary.max = general.at("inner_boundary_max");
@@ -49,10 +52,28 @@ Stage::Stage(FightWorld& world, StageEnum type)
         platform.maxX = jplatform.at("maxX");
     }
 
+    const auto& ctx = sq::VulkanContext::get();
+
+    // load environment maps
+    {
+        world.renderer.cubemaps.skybox.load_from_file_cube(sq::build_string("assets/", mSkyboxPath + "/Sky"));
+        world.renderer.cubemaps.irradiance.load_from_file_cube(sq::build_string("assets/", mSkyboxPath + "/Irradiance"));
+        world.renderer.cubemaps.radiance.load_from_file_cube(sq::build_string("assets/", mSkyboxPath + "/Radiance"));
+
+        sq::vk_update_descriptor_set (
+            ctx, world.renderer.sets.skybox,
+            sq::DescriptorImageSampler(0u, 0u, world.renderer.cubemaps.skybox.get_descriptor_info())
+        );
+
+        sq::vk_update_descriptor_set_swapper (
+            ctx, world.renderer.sets.environment,
+            sq::DescriptorImageSampler(1u, 0u, world.renderer.cubemaps.irradiance.get_descriptor_info()),
+            sq::DescriptorImageSampler(2u, 0u, world.renderer.cubemaps.radiance.get_descriptor_info())
+        );
+    }
+
     // uniform buffer and descriptor set
     {
-        const auto& ctx = sq::VulkanContext::get();
-
         mStaticUbo.initialise(sizeof(StaticBlock), vk::BufferUsageFlagBits::eUniformBuffer);
         mDescriptorSet = sq::vk_allocate_descriptor_set_swapper(ctx, world.renderer.setLayouts.object);
 

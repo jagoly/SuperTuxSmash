@@ -6,8 +6,8 @@
 
 //============================================================================//
 
-#include "../headers/blocks/Camera.glsl"
-#include "../headers/blocks/Effect.glsl"
+#include "../blocks/Camera.glsl"
+#include "../blocks/Effect.glsl"
 
 //============================================================================//
 
@@ -29,16 +29,16 @@ void main()
     const float weightSum = v_Weights.r + v_Weights.g + v_Weights.b + v_Weights.a;
     const vec4 weights = v_Weights * (1.0 / weightSum);
 
-    vec3 position                  = vec4(v_Position, 1.0) * EB.bones[v_Bones.r] * weights.r;
-    if (v_Bones.g != -1) position += vec4(v_Position, 1.0) * EB.bones[v_Bones.g] * weights.g;
-    if (v_Bones.b != -1) position += vec4(v_Position, 1.0) * EB.bones[v_Bones.b] * weights.b;
-    if (v_Bones.a != -1) position += vec4(v_Position, 1.0) * EB.bones[v_Bones.a] * weights.a;
+    vec3 position                  = vec4(v_Position, 1.0) * EFFECT.bones[v_Bones.r] * weights.r;
+    if (v_Bones.g != -1) position += vec4(v_Position, 1.0) * EFFECT.bones[v_Bones.g] * weights.g;
+    if (v_Bones.b != -1) position += vec4(v_Position, 1.0) * EFFECT.bones[v_Bones.b] * weights.b;
+    if (v_Bones.a != -1) position += vec4(v_Position, 1.0) * EFFECT.bones[v_Bones.a] * weights.a;
 
-    io_ViewPos = vec3(CB.invProjMat * EB.matrix * vec4(position, 1.0));
+    io_ViewPos = vec3(CAMERA.invProjMat * EFFECT.matrix * vec4(position, 1.0));
     io_TexCoord = v_TexCoord;
     
     // note: could be blended from multiple tracks, for now just use the first
-    io_Params = EB.params[v_Bones.r];
+    io_Params = EFFECT.params[v_Bones.r];
 
-    gl_Position = EB.matrix * vec4(position, 1.0);
+    gl_Position = EFFECT.matrix * vec4(position, 1.0);
 }

@@ -36,7 +36,6 @@ class EffectSystem;
 class FightWorld;
 class Fighter;
 class ParticleSystem;
-class RenderObject;
 class Renderer;
 class ResourceCaches;
 class SmashApp;

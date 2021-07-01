@@ -1,0 +1,10 @@
+{
+  "format": "2x8_Unorm",
+  "wrapX": "Clamp",
+  "wrapY": "Clamp",
+  "wrapZ": "Clamp",
+  "swizzle": "RRRG",
+  "filter": "Linear",
+  "mipmaps": "Disable",
+  "size": [ 128, 128, 20 ]
+}

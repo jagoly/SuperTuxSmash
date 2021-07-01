@@ -4,5 +4,6 @@
   "wrapY": "Clamp",
   "swizzle": "111R",
   "filter": "Anisotropic",
-  "mipmaps": "Generate"
+  "mipmaps": "Generate",
+  "size": [ 32, 64 ]
 }

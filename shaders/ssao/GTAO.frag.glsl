@@ -13,7 +13,7 @@
 
 //============================================================================//
 
-#include "../headers/blocks/Camera.glsl"
+#include "../blocks/Camera.glsl"
 
 layout(constant_id=0) const float INVERSE_WIDTH = 0.0;
 layout(constant_id=1) const float INVERSE_HEIGHT = 0.0;
@@ -42,7 +42,7 @@ vec3 get_view_normal(float depth)
     const vec4 gatherZ = textureGather(tx_Normal, texCoord, 2);
 
     const vec4 gatherDepthW = textureGather(tx_Depth, texCoord, 0);
-    const vec4 gatherDepth = 1.0 / (gatherDepthW * CB.invProjMat[2][3] + CB.invProjMat[3][3]);
+    const vec4 gatherDepth = 1.0 / (gatherDepthW * CAMERA.invProjMat[2][3] + CAMERA.invProjMat[3][3]);
 
     const vec4 diffs = abs(depth - gatherDepth);
 
@@ -52,7 +52,7 @@ vec3 get_view_normal(float depth)
     if (diffs.b < threshold) worldNormal += vec3(gatherX.b, gatherY.b, gatherZ.b);
     if (diffs.a < threshold) worldNormal += vec3(gatherX.a, gatherY.a, gatherZ.a);
 
-    const vec3 viewNormal = normalize(mat3(CB.viewMat) * worldNormal);
+    const vec3 viewNormal = normalize(mat3(CAMERA.viewMat) * worldNormal);
 
     return vec3(viewNormal.x, -viewNormal.y, viewNormal.z);
 }
@@ -65,7 +65,7 @@ float get_horizon_sample(vec3 viewPos, vec3 viewDir, float lod, vec2 sampleOffse
     const float depth = textureLod(tx_DepthMips, texCoord, lod).r;
 
     const vec2 ndc = texCoord * 2.0 - 1.0;
-    const vec4 posW = CB.invProjMat * vec4(ndc.x, ndc.y, depth, 1.0);
+    const vec4 posW = CAMERA.invProjMat * vec4(ndc.x, ndc.y, depth, 1.0);
 
     const vec3 s = posW.xyz / posW.w;
     const vec3 ws = s - viewPos;
@@ -155,14 +155,14 @@ void main()
     if (depthW == 1.0) { frag_SSAO = 1.0; return; }
 
     const vec2 ndcPos = gl_FragCoord.xy * INVERSE_VIEWPORT * 2.0 - 1.0;
-    const vec4 viewPosW = CB.invProjMat * vec4(ndcPos.x, ndcPos.y, depthW, 1.0);
+    const vec4 viewPosW = CAMERA.invProjMat * vec4(ndcPos.x, ndcPos.y, depthW, 1.0);
 
     const vec3 viewPos = viewPosW.xyz / viewPosW.w;
     const vec3 viewNorm = get_view_normal(viewPos.z);
     const vec3 viewDir = normalize(-viewPos);
 
     // convert from view space to pixels (when z is 1.0)
-    const float pixelScale = CB.projMat[1][1] / INVERSE_HEIGHT * 0.25;
+    const float pixelScale = CAMERA.projMat[1][1] / INVERSE_HEIGHT * 0.25;
 
     // horizon search radius and step size, both in pixels
     const float radius = max((AO_RADIUS * pixelScale) / viewPos.z, NUM_STEPS * 1.415);

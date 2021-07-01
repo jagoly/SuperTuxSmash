@@ -13,23 +13,15 @@ using namespace sts;
 
 void EditorScene::impl_show_widget_hitblobs()
 {
-    if (mActiveActionContext == nullptr) return;
-
     if (mDoResetDockHitblobs) ImGui::SetNextWindowDockID(mDockRightId);
     mDoResetDockHitblobs = false;
 
     const ImPlus::ScopeWindow window = { "HitBlobs", 0 };
     if (window.show == false) return;
 
-    //--------------------------------------------------------//
-
     ActionContext& ctx = *mActiveActionContext;
-    Fighter& fighter = *ctx.fighter;
-    Action& action = *fighter.get_action(ctx.key.action);
-
-    const sq::Armature& armature = fighter.get_armature();
-
-    const ImPlus::ScopeID ctxKeyIdScope = ctx.key.hash();
+    Action& action = *ctx.fighter->get_action(ctx.key.action);
+    const sq::Armature& armature = ctx.fighter->get_armature();
 
     //--------------------------------------------------------//
 
@@ -92,6 +84,8 @@ void EditorScene::impl_show_widget_hitblobs()
     };
 
     //--------------------------------------------------------//
+
+    const ImPlus::ScopeID ctxKeyIdScope = ctx.key.hash();
 
     helper_edit_objects(action.mBlobs, funcInit, funcEdit);
 }

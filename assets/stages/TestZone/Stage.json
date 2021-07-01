@@ -1,4 +1,7 @@
 {
+  "render": {
+    "skybox": "skybox/Space"
+  },
   "general": {
     "inner_boundary_min": [ -14.0, -6.0 ],
     "inner_boundary_max": [ 14.0, 14.0 ],

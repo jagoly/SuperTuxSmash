@@ -1,6 +1,6 @@
 #version 450
 
-#include "../headers/blocks/Camera.glsl"
+#include "../blocks/Camera.glsl"
 
 layout(constant_id=0) const float INVERSE_WIDTH = 0.0;
 layout(constant_id=1) const float INVERSE_HEIGHT = 0.0;
@@ -22,7 +22,7 @@ void gather_ao(vec2 fragCoord, float depth, inout float aoSum, inout float weigh
     const vec2 texCoord = fragCoord * vec2(INVERSE_WIDTH, INVERSE_HEIGHT);
 
     const vec4 gatherDepthW = textureGather(tx_DepthHalf, texCoord, 0);
-    const vec4 gatherDepth = 1.0 / (gatherDepthW * CB.invProjMat[2][3] + CB.invProjMat[3][3]);
+    const vec4 gatherDepth = 1.0 / (gatherDepthW * CAMERA.invProjMat[2][3] + CAMERA.invProjMat[3][3]);
 
     const vec4 ao = textureGather(tx_SSAO, texCoord, 0);
     const vec4 weight = max((MAX_DIFF - abs(gatherDepth - depth)) / MAX_DIFF, 0.0);
@@ -38,7 +38,7 @@ void main()
     const float depthW = texelFetch(tx_DepthHalf, ivec2(gl_FragCoord), 0).r;
     if (depthW == 1.0) { frag_Blur = 1.0; return; }
 
-    const float depth = 1.0 / (depthW * CB.invProjMat[2][3] + CB.invProjMat[3][3]);
+    const float depth = 1.0 / (depthW * CAMERA.invProjMat[2][3] + CAMERA.invProjMat[3][3]);
 
     float aoSum = 0.0;
     float weightSum = 0.0;

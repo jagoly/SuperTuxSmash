@@ -263,7 +263,7 @@ void SmashApp::start_game(GameSetup setup)
     refresh_options();
 }
 
-void SmashApp::start_action_editor()
+void SmashApp::start_editor()
 {
     mActiveScene = std::make_unique<EditorScene>(*this);
     refresh_options();

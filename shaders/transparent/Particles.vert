@@ -1,6 +1,6 @@
 #version 450
 
-#include "../headers/blocks/Camera.glsl"
+#include "../blocks/Camera.glsl"
 
 layout(location=0) in vec3 v_Position;
 layout(location=1) in float v_Radius;
@@ -21,7 +21,7 @@ OUT;
 
 void main() 
 {
-    OUT.viewPos = vec3(CB.viewMat * vec4(v_Position, 1.0));
+    OUT.viewPos = vec3(CAMERA.viewMat * vec4(v_Position, 1.0));
     OUT.radius = v_Radius;
     OUT.colour = v_Colour;
     OUT.opacity = v_Opacity;

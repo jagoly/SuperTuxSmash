@@ -15,17 +15,16 @@ constexpr const float MAX_HEIGHT_ERRORS = 160;
 
 void EditorScene::impl_show_widget_script()
 {
-    if (mActiveActionContext == nullptr) return;
-
-    ActionContext& ctx = *mActiveActionContext;
-    //Fighter& fighter = *ctx.fighter;
-    Action& action = *ctx.fighter->get_action(ctx.key.action);
-
     if (mDoResetDockScript) ImGui::SetNextWindowDockID(mDockRightId);
     mDoResetDockScript = false;
 
     const ImPlus::ScopeWindow window { "Script", 0 };
     if (window.show == false) return;
+
+    ActionContext& ctx = *mActiveActionContext;
+    Action& action = *ctx.fighter->get_action(ctx.key.action);
+
+    //--------------------------------------------------------//
 
     const ImPlus::ScopeFont font { ImPlus::FONT_MONO };
 
@@ -41,28 +40,26 @@ void EditorScene::impl_show_widget_script()
 
 void EditorScene::impl_show_widget_timeline()
 {
-    if (mActiveActionContext == nullptr) return;
-
-    ActionContext& ctx = *mActiveActionContext;
-    //Fighter& fighter = *ctx.fighter;
-    //Action& action = *ctx.fighter->get_action(ctx.key.action);
-
     if (mDoResetDockTimeline) ImGui::SetNextWindowDockID(mDockDownId);
     mDoResetDockTimeline = false;
 
     const ImPlus::ScopeWindow window { "Timeline", ImGuiWindowFlags_AlwaysHorizontalScrollbar };
     if (window.show == false) return;
 
+    ActionContext& ctx = *mActiveActionContext;
+
+    //--------------------------------------------------------//
+
     const ImPlus::ScopeID ctxKeyIdScope = ctx.key.hash();
 
-    //--------------------------------------------------------//
-
     const ImPlus::ScopeFont font = ImPlus::FONT_MONO;
-    const ImPlus::Style_ButtonTextAlign align = {0.f, 0.f};
+
+    const ImPlus::Style_ButtonTextAlign buttonAlign = {0.f, 0.f};
+    const ImPlus::Style_SelectableTextAlign selectableAlign = {0.5f, 0.f};
 
     //--------------------------------------------------------//
 
-    const auto selectableAlign = ImPlus::Style_SelectableTextAlign(0.5f, 0.f);
+    // todo: can this be done better using imgui's tables?
 
     for (int i = -1; i < int(ctx.timelineLength); ++i)
     {
@@ -85,7 +82,7 @@ void EditorScene::impl_show_widget_timeline()
 
         ImDrawList* drawList = ImGui::GetWindowDrawList();
 
-        drawList->AddRect(rectMin, rectMax, ImGui::GetColorU32(ImGuiCol_Border)); // inefficient, lots of overlap
+        drawList->AddRect(rectMin, rectMax, ImGui::GetColorU32(ImGuiCol_Border));
 
         if (i == ctx.currentFrame)
         {

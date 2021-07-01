@@ -27,7 +27,7 @@ public: //====================================================//
 
     void start_game(GameSetup setup);
 
-    void start_action_editor();
+    void start_editor();
 
     void return_to_main_menu();
 

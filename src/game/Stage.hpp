@@ -83,6 +83,8 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
+    const String& get_skybox_path() const { return mSkyboxPath; }
+
     const auto& get_inner_boundary() const { return mInnerBoundary; }
     const auto& get_outer_boundary() const { return mOuterBoundary; }
 
@@ -92,6 +94,8 @@ protected: //=================================================//
     struct { Vec2F min, max; } mOuterBoundary;
 
     //--------------------------------------------------------//
+
+    String mSkyboxPath;
 
     std::vector<Platform> mPlatforms;
 

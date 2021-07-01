@@ -4,5 +4,6 @@
   "wrapY": "Repeat",
   "swizzle": "RRR1",
   "filter": "Nearest",
-  "mipmaps": "Disable"
+  "mipmaps": "Disable",
+  "size": [ 1, 1 ]
 }

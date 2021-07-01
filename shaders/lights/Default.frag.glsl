@@ -6,22 +6,22 @@
   #error
 #endif
 
-#include "../headers/blocks/Camera.glsl"
-#include "../headers/blocks/Light.glsl"
+#include "../blocks/Camera.glsl"
+#include "../blocks/Environment.glsl"
 
 //============================================================================//
 
-layout(set=1, binding=1) uniform sampler2D tx_BrdfLut;
-layout(set=1, binding=2) uniform samplerCube tx_Irradiance;
-layout(set=1, binding=3) uniform samplerCube tx_Radiance;
+layout(set=1, binding=1) uniform samplerCube tx_Irradiance;
+layout(set=1, binding=2) uniform samplerCube tx_Radiance;
 
-layout(set=1, binding=4) uniform sampler2D tx_Albedo_Roughness;
-layout(set=1, binding=5) uniform sampler2D tx_Normal_Metallic;
-layout(set=1, binding=6) uniform sampler2D tx_Depth;
+layout(set=2, binding=0) uniform sampler2D tx_BrdfLut;
+layout(set=2, binding=1) uniform sampler2D tx_Albedo_Roughness;
+layout(set=2, binding=2) uniform sampler2D tx_Normal_Metallic;
+layout(set=2, binding=3) uniform sampler2D tx_Depth;
 
 #if OPTION_SSAO
-  layout(set=1, binding=7) uniform sampler2D tx_SSAO;
-  layout(set=1, binding=8) uniform sampler2D tx_DepthHalf;
+  layout(set=2, binding=4) uniform sampler2D tx_SSAO;
+  layout(set=2, binding=5) uniform sampler2D tx_DepthHalf;
 #endif
 
 layout(location=0) in vec2 io_TexCoord;
@@ -35,7 +35,7 @@ vec3 get_view_position()
     const float depth = texture(tx_Depth, io_TexCoord).r;
 
     const vec2 ndcPos = io_TexCoord * 2.0 - 1.0;
-    const vec4 viewPosW = CB.invProjMat * vec4(ndcPos.x, -ndcPos.y, depth, 1.0);
+    const vec4 viewPosW = CAMERA.invProjMat * vec4(ndcPos.x, -ndcPos.y, depth, 1.0);
 
     return viewPosW.xyz / viewPosW.w;
 }
@@ -49,7 +49,7 @@ float get_occlusion(float depth)
     const float MAX_DIFF = 0.04 * depth;
 
     const vec4 depthGatherW = textureGather(tx_DepthHalf, io_TexCoord);
-    const vec4 depthGather = 1.0 / (depthGatherW * CB.invProjMat[2][3] + CB.invProjMat[3][3]);
+    const vec4 depthGather = 1.0 / (depthGatherW * CAMERA.invProjMat[2][3] + CAMERA.invProjMat[3][3]);
 
     const vec4 diffs = abs(depthGather - depth);
     const vec4 ao = textureGather(tx_SSAO, io_TexCoord);
@@ -127,10 +127,10 @@ void main()
     const float metallic = texture(tx_Normal_Metallic, io_TexCoord).a;
 
     const vec3 viewPos = get_view_position();
-    const vec3 worldPos = vec3(CB.invViewMat * vec4(viewPos, 1.0));
+    const vec3 worldPos = vec3(CAMERA.invViewMat * vec4(viewPos, 1.0));
 
     const vec3 N = normalize(normal);
-    const vec3 V = normalize(CB.invViewMat[3].xyz - worldPos);
+    const vec3 V = normalize(CAMERA.invViewMat[3].xyz - worldPos);
 
     const vec3 F0 = mix(vec3(0.04), albedo, metallic);
 
@@ -145,12 +145,14 @@ void main()
         const vec3 F = fresnel_schlick_roughness(NdotV, F0, roughness);
         const vec2 lookup = texture(tx_BrdfLut, vec2(NdotV, 1.0 - roughness)).rg;
 
+        const float radianceLod = roughness * 7.0; // 128 64 32 16 8 4 2 1
+
         // todo: flip cube maps during load
-        const vec3 radiance = textureLod(tx_Radiance, reflect(-V, N) * vec3(1,-1,1), roughness * 7.0).rgb;
+        const vec3 radiance = textureLod(tx_Radiance, reflect(-V, N) * vec3(1,-1,1), radianceLod).rgb;
         const vec3 irradiance = texture(tx_Irradiance, N * vec3(1,-1,1)).rgb;
 
         // temporary workaround until I make a better skybox + add hdr tone mapping options
-        const vec3 fakeLight = LB.ambientColour;
+        const vec3 fakeLight = ENV.ambientColour;
 
         const vec3 diffuse = (1.0 - F) * (1.0 - metallic) * albedo * (irradiance + fakeLight);
         const vec3 specular = (F * lookup.x + lookup.y) * (radiance + fakeLight);
@@ -160,7 +162,7 @@ void main()
 
     // direct lighting
     {
-        const vec3 L = -LB.lightDirection;
+        const vec3 L = -ENV.lightDirection;
         const vec3 H = normalize(V + L);
 
         const float NdotL = max(dot(N, L), 0.0);
@@ -176,7 +178,7 @@ void main()
         // makes no physical sense, but looks good for now given the lack of shadows
         const float nonsenseOcclusion = mix(occlusion, 1.0, 0.4);
 
-        frag_Colour += (diffuse + specular) * NdotL * LB.lightColour * nonsenseOcclusion;
+        frag_Colour += (diffuse + specular) * NdotL * ENV.lightColour * nonsenseOcclusion;
     }
 
     //frag_Colour = vec3(occlusion);

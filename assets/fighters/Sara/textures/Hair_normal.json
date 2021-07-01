@@ -4,5 +4,6 @@
   "wrapY": "Clamp",
   "swizzle": "RGBA",
   "filter": "Anisotropic",
-  "mipmaps": "Generate"
+  "mipmaps": "Generate",
+  "size": [ 256, 256 ]
 }

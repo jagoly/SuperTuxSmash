@@ -27,6 +27,7 @@
 #include <sqee/misc/Files.hpp>
 #include <sqee/misc/Json.hpp>
 #include <sqee/objects/Armature.hpp>
+#include <sqee/vk/Helpers.hpp>
 #include <sqee/vk/VulkanContext.hpp>
 
 using namespace sts;
@@ -53,13 +54,29 @@ EditorScene::EditorScene(SmashApp& smashApp)
 
     auto& window = mSmashApp.get_window();
 
-    window.set_title("SuperTuxSmash - Action Editor");
+    window.set_title("SuperTuxSmash - Editor");
     window.set_key_repeat(true);
+
+    //--------------------------------------------------------//
+
+    const auto& ctx = sq::VulkanContext::get();
+
+    mImageProcessSetLayout = ctx.create_descriptor_set_layout ({
+        vk::DescriptorSetLayoutBinding(0u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment)
+    });
+
+    mImageProcessPipelineLayout = ctx.create_pipeline_layout (
+        mImageProcessSetLayout, vk::PushConstantRange(vk::ShaderStageFlagBits::eVertex, 0u, sizeof(Vec2F))
+    );
 }
 
 EditorScene::~EditorScene()
 {
-    sq::VulkanContext::get().device.waitIdle();
+    const auto& ctx = sq::VulkanContext::get();
+    ctx.device.waitIdle();
+
+    ctx.device.destroy(mImageProcessSetLayout);
+    ctx.device.destroy(mImageProcessPipelineLayout);
 }
 
 //============================================================================//
@@ -223,8 +240,10 @@ void EditorScene::impl_show_widget_toolbar()
         mDoResetDockEmitters = true;
         mDoResetDockSounds = true;
         mDoResetDockScript = true;
-        mDoResetDockHurtblobs = true;
         mDoResetDockTimeline = true;
+        mDoResetDockHurtblobs = true;
+        mDoResetDockStage = true;
+        mDoResetDockCubemaps = true;
         mDoResetDockFighter = true;
 
         const auto viewSize = ImGui::GetWindowViewport()->Size;
@@ -384,7 +403,7 @@ void EditorScene::impl_show_widget_navigator()
         if (mActiveContext == &ctx)
         {
             sq::VulkanContext::get().device.waitIdle();
-            mSmashApp.get_window().set_title("SuperTuxSmash - Action Editor");
+            mSmashApp.get_window().set_title("SuperTuxSmash - Editor");
             mActiveContext = mActiveActionContext = nullptr;
         }
         mActionContexts.erase(ctx.key);
@@ -395,10 +414,21 @@ void EditorScene::impl_show_widget_navigator()
         if (mActiveContext == &ctx)
         {
             sq::VulkanContext::get().device.waitIdle();
-            mSmashApp.get_window().set_title("SuperTuxSmash - Action Editor");
+            mSmashApp.get_window().set_title("SuperTuxSmash - Editor");
             mActiveContext = mActiveHurtblobsContext = nullptr;
         }
         mHurtblobsContexts.erase(ctx.key);
+    };
+
+    const auto do_close_stage = [this](StageContext& ctx)
+    {
+        if (mActiveContext == &ctx)
+        {
+            sq::VulkanContext::get().device.waitIdle();
+            mSmashApp.get_window().set_title("SuperTuxSmash - Editor");
+            mActiveContext = mActiveStageContext = nullptr;
+        }
+        mStageContexts.erase(ctx.key);
     };
 
     //--------------------------------------------------------//
@@ -434,9 +464,10 @@ void EditorScene::impl_show_widget_navigator()
                     if (loaded) ImPlus::PushFont(ImPlus::FONT_BOLD);
                     if (ImPlus::Selectable(label, active || highlight) && !active)
                     {
-                        mSmashApp.get_window().set_title("SuperTuxSmash - Action Editor - {}/{}"_format(fighterName, actionName));
+                        mSmashApp.get_window().set_title("SuperTuxSmash - Editor - {}/{}"_format(fighterName, actionName));
 
                         mActiveHurtblobsContext = nullptr;
+                        mActiveStageContext = nullptr;
                         mActiveContext = mActiveActionContext = &get_action_context(key);
                         mActiveContext->renderer->refresh_options_destroy();
                         mActiveContext->renderer->refresh_options_create();
@@ -476,9 +507,10 @@ void EditorScene::impl_show_widget_navigator()
                 if (loaded) ImPlus::PushFont(ImPlus::FONT_BOLD);
                 if (ImPlus::Selectable(label, active || highlight) && !active)
                 {
-                    mSmashApp.get_window().set_title("SuperTuxSmash - Action Editor - {} HurtBlobs"_format(key));
+                    mSmashApp.get_window().set_title("SuperTuxSmash - Editor - {} (HurtBlobs)"_format(key));
 
                     mActiveActionContext = nullptr;
+                    mActiveStageContext = nullptr;
                     mActiveContext = mActiveHurtblobsContext = &get_hurtblobs_context(key);
                     mActiveContext->renderer->refresh_options_destroy();
                     mActiveContext->renderer->refresh_options_create();
@@ -491,6 +523,48 @@ void EditorScene::impl_show_widget_navigator()
                     {
                         if (modified) mConfirmCloseHurtblobsCtx = &iter->second;
                         else do_close_hurtblobs(iter->second);
+                    }
+                    if (ImGui::MenuItem("Save", nullptr, false, modified))
+                        save_changes(iter->second);
+                });
+            }
+        });
+
+        ImPlus::if_TabItemChild("Stages", 0, [&]()
+        {
+            for (int8_t i = 0; i < sq::enum_count_v<StageEnum>; ++i)
+            {
+                const char* const stageName = sq::to_c_string(StageEnum(i));
+                const StageEnum key = StageEnum(i);
+
+                const auto iter = mStageContexts.find(key);
+
+                const bool loaded = iter != mStageContexts.end();
+                const bool modified = loaded && iter->second.modified;
+                const bool active = loaded && &iter->second == mActiveContext;
+
+                const String label = sq::build_string(stageName, modified ? " *" : "");
+                const bool highlight = ImPlus::IsPopupOpen(label);
+
+                if (loaded) ImPlus::PushFont(ImPlus::FONT_BOLD);
+                if (ImPlus::Selectable(label, active || highlight) && !active)
+                {
+                    mSmashApp.get_window().set_title("SuperTuxSmash - Editor - {} (Stage)"_format(key));
+
+                    mActiveActionContext = nullptr;
+                    mActiveHurtblobsContext = nullptr;
+                    mActiveContext = mActiveStageContext = &get_stage_context(key);
+                    mActiveContext->renderer->refresh_options_destroy();
+                    mActiveContext->renderer->refresh_options_create();
+                }
+                if (loaded) ImGui::PopFont();
+
+                ImPlus::if_PopupContextItem(nullptr, ImPlus::MOUSE_RIGHT, [&]()
+                {
+                    if (ImGui::MenuItem("Close", nullptr, false, loaded))
+                    {
+                        if (modified) mConfirmCloseStageCtx = &iter->second;
+                        else do_close_stage(iter->second);
                     }
                     if (ImGui::MenuItem("Save", nullptr, false, modified))
                         save_changes(iter->second);
@@ -515,6 +589,13 @@ void EditorScene::impl_show_widget_navigator()
         if (result == ImPlus::DialogResult::Cancel) mConfirmCloseHurtblobsCtx = nullptr;
     }
 
+    if (mConfirmCloseStageCtx != nullptr)
+    {
+        const auto result = ImPlus::DialogConfirmation("Discard Changes", "Stage has been modified, really discard changes?");
+        if (result == ImPlus::DialogResult::Confirm) do_close_stage(*mConfirmCloseStageCtx);
+        if (result == ImPlus::DialogResult::Cancel) mConfirmCloseStageCtx = nullptr;
+    }
+
     //--------------------------------------------------------//
 
     if (mConfirmQuitNumUnsaved != 0u)
@@ -526,20 +607,23 @@ void EditorScene::impl_show_widget_navigator()
         {
             mActionContexts.clear();
             mHurtblobsContexts.clear();
+            mStageContexts.clear();
             mSmashApp.return_to_main_menu();
         }
         if (result == ImPlus::DialogResult::Cancel) mConfirmQuitNumUnsaved = 0u;
     }
 }
 
-//============================================================================//1
+//============================================================================//
 
 void EditorScene::impl_show_widget_fighter()
 {
-    if (mActiveContext == nullptr) return;
+    // todo: make proper widget for editing and saving attributes, maybe merge with HurtBlobs editor?
 
-    BaseContext& ctx = *mActiveContext;
-    Fighter& fighter = *ctx.fighter;
+    Fighter* fighter = nullptr;
+    if (mActiveActionContext != nullptr) fighter = mActiveActionContext->fighter;
+    if (mActiveHurtblobsContext != nullptr) fighter = mActiveHurtblobsContext->fighter;
+    if (fighter == nullptr) return;
 
     if (mDoResetDockFighter) ImGui::SetNextWindowDockID(mDockRightId);
     mDoResetDockFighter = false;
@@ -547,7 +631,7 @@ void EditorScene::impl_show_widget_fighter()
     const ImPlus::ScopeWindow window = { "Fighter", 0 };
     if (window.show == false) return;
 
-    DebugGui::show_widget_fighter(fighter);
+    DebugGui::show_widget_fighter(*fighter);
 }
 
 //============================================================================//
@@ -556,14 +640,27 @@ void EditorScene::show_imgui_widgets()
 {
     impl_show_widget_toolbar();
     impl_show_widget_navigator();
-    impl_show_widget_hitblobs();
-    impl_show_widget_emitters();
-    impl_show_widget_sounds();
-    impl_show_widget_effects();
-    impl_show_widget_script();
-    impl_show_widget_hurtblobs();
-    impl_show_widget_timeline();
-    impl_show_widget_fighter();
+
+    if (mActiveActionContext != nullptr)
+    {
+        impl_show_widget_hitblobs();
+        impl_show_widget_emitters();
+        impl_show_widget_sounds();
+        impl_show_widget_effects();
+        impl_show_widget_script();
+        impl_show_widget_timeline();
+        impl_show_widget_fighter();
+    }
+    else if (mActiveHurtblobsContext != nullptr)
+    {
+        impl_show_widget_hurtblobs();
+        impl_show_widget_fighter();
+    }
+    else if (mActiveStageContext != nullptr)
+    {
+        impl_show_widget_stage();
+        impl_show_widget_cubemaps();
+    }
 }
 
 //============================================================================//
@@ -647,7 +744,7 @@ uint EditorScene::get_default_timeline_length(const ActionContext& ctx)
 
 //============================================================================//
 
-void EditorScene::create_base_context(FighterEnum fighterKey, BaseContext& ctx)
+void EditorScene::initialise_base_context(BaseContext& ctx)
 {
     sq::Window& window = mSmashApp.get_window();
     sq::AudioContext& audioContext = mSmashApp.get_audio_context();
@@ -659,14 +756,6 @@ void EditorScene::create_base_context(FighterEnum fighterKey, BaseContext& ctx)
     ctx.world = std::make_unique<FightWorld>(options, audioContext, resourceCaches, *ctx.renderer);
 
     ctx.renderer->set_camera(std::make_unique<EditorCamera>(*ctx.renderer));
-
-    auto stage = std::make_unique<Stage>(*ctx.world, StageEnum::TestZone);
-    auto fighter = std::make_unique<Fighter>(*ctx.world, fighterKey, 0u);
-
-    ctx.fighter = fighter.get();
-
-    ctx.world->set_stage(std::move(stage));
-    ctx.world->add_fighter(std::move(fighter));
 }
 
 //----------------------------------------------------------------------------//
@@ -677,10 +766,13 @@ EditorScene::ActionContext& EditorScene::get_action_context(ActionKey key)
         return iter->second;
 
     ActionContext& ctx = mActionContexts[key];
+    initialise_base_context(ctx);
 
-    create_base_context(key.fighter, ctx);
+    ctx.world->set_stage(std::make_unique<Stage>(*ctx.world, StageEnum::TestZone));
+    ctx.world->add_fighter(std::make_unique<Fighter>(*ctx.world, key.fighter, 0u));
 
     ctx.key = key;
+    ctx.fighter = ctx.world->get_fighter(0u);
 
     scrub_to_frame_current(ctx);
 
@@ -700,16 +792,46 @@ EditorScene::HurtblobsContext& EditorScene::get_hurtblobs_context(FighterEnum ke
         return iter->second;
 
     HurtblobsContext& ctx = mHurtblobsContexts[key];
+    initialise_base_context(ctx);
 
-    create_base_context(key, ctx);
+    ctx.world->set_stage(std::make_unique<Stage>(*ctx.world, StageEnum::TestZone));
+    ctx.world->add_fighter(std::make_unique<Fighter>(*ctx.world, key, 0u));
 
     ctx.key = key;
+    ctx.fighter = ctx.world->get_fighter(0u);
 
     ctx.fighter->state_transition(FighterState::EditorPreview, 0u, nullptr, 0u, nullptr);
     ctx.world->tick();
 
     ctx.savedData = std::make_unique<decltype(Fighter::mHurtBlobs)>(ctx.fighter->mHurtBlobs);
     ctx.undoStack.push_back(std::make_unique<decltype(Fighter::mHurtBlobs)>(ctx.fighter->mHurtBlobs));
+
+    return ctx;
+}
+
+//----------------------------------------------------------------------------//
+
+EditorScene::StageContext& EditorScene::get_stage_context(StageEnum key)
+{
+    if (auto iter = mStageContexts.find(key); iter != mStageContexts.end())
+        return iter->second;
+
+    StageContext& ctx = mStageContexts[key];
+    initialise_base_context(ctx);
+
+    ctx.world->set_stage(std::make_unique<Stage>(*ctx.world, key));
+
+    ctx.key = key;
+    ctx.stage = &ctx.world->get_stage();
+
+    ctx.skybox.initialise(*this, 0u, ctx.renderer->cubemaps.skybox.get_image(), ctx.renderer->samplers.linearClamp);
+    ctx.irradiance.initialise(*this, 0u, ctx.renderer->cubemaps.irradiance.get_image(), ctx.renderer->samplers.linearClamp);
+
+    for (uint level = 0u; level < ctx.radiance.size(); ++level)
+        ctx.radiance[level].initialise(*this, level, ctx.renderer->cubemaps.radiance.get_image(), ctx.renderer->samplers.linearClamp);
+
+    //ctx.savedData = std::make_unique<decltype(Fighter::mHurtBlobs)>(ctx.fighter->mHurtBlobs);
+    //ctx.undoStack.push_back(std::make_unique<decltype(Fighter::mHurtBlobs)>(ctx.fighter->mHurtBlobs));
 
     return ctx;
 }
@@ -753,6 +875,19 @@ void EditorScene::apply_working_changes(HurtblobsContext& ctx)
         ctx.undoStack.push_back(std::make_unique<decltype(Fighter::mHurtBlobs)>(ctx.fighter->mHurtBlobs));
 
         ctx.modified = ctx.fighter->mHurtBlobs != *ctx.savedData;
+    }
+}
+
+void EditorScene::apply_working_changes(StageContext& ctx)
+{
+    //if (ctx.fighter->mHurtBlobs != *ctx.undoStack[ctx.undoIndex])
+    {
+        ctx.world->tick();
+
+        //ctx.undoStack.erase(ctx.undoStack.begin() + ++ctx.undoIndex, ctx.undoStack.end());
+        //ctx.undoStack.push_back(std::make_unique<decltype(Fighter::mHurtBlobs)>(ctx.fighter->mHurtBlobs));
+
+        ctx.modified = true;//ctx.fighter->mHurtBlobs != *ctx.savedData;
     }
 }
 
@@ -841,6 +976,18 @@ void EditorScene::save_changes(HurtblobsContext& ctx)
     sq::write_text_to_file("assets/fighters/{}/HurtBlobs.json"_format(ctx.fighter->type), json.dump(2));
 
     *ctx.savedData = ctx.fighter->mHurtBlobs;
+    ctx.modified = false;
+}
+
+void EditorScene::save_changes(StageContext& ctx)
+{
+//    JsonValue json;
+//    for (const auto& [key, blob] : ctx.fighter->mHurtBlobs)
+//        blob.to_json(json[key.c_str()]);
+
+//    sq::write_text_to_file("assets/fighters/{}/HurtBlobs.json"_format(ctx.fighter->type), json.dump(2));
+
+//    *ctx.savedData = ctx.fighter->mHurtBlobs;
     ctx.modified = false;
 }
 
@@ -964,4 +1111,51 @@ void EditorScene::populate_command_buffer(vk::CommandBuffer cmdbuf, vk::Framebuf
     mSmashApp.get_gui_system().render_gui(cmdbuf);
 
     cmdbuf.endRenderPass();
+}
+
+//============================================================================//
+
+void EditorScene::CubeMapView::initialise(EditorScene& editor, uint level, vk::Image image, vk::Sampler sampler)
+{
+    const auto& ctx = sq::VulkanContext::get();
+
+    for (uint face = 0u; face < 6u; ++face)
+    {
+        if (imageViews[face]) ctx.device.destroy(imageViews[face]);
+
+        imageViews[face] = ctx.create_image_view (
+            image, vk::ImageViewType::e2D, vk::Format::eE5B9G9R9UfloatPack32,
+            vk::ComponentMapping(), vk::ImageAspectFlagBits::eColor, level, 1u, face, 1u
+        );
+
+        if (!descriptorSets[face])
+            descriptorSets[face] = ctx.allocate_descriptor_set (
+                ctx.descriptorPool, editor.mSmashApp.get_gui_system().get_descriptor_set_layout()
+            );
+
+        sq::vk_update_descriptor_set (
+            ctx, descriptorSets[face],
+            sq::DescriptorImageSampler(0u, 0u, sampler, imageViews[face], vk::ImageLayout::eShaderReadOnlyOptimal)
+        );
+    }
+}
+
+EditorScene::StageContext::~StageContext()
+{
+    const auto& ctx = sq::VulkanContext::get();
+
+    ctx.device.free(ctx.descriptorPool, skybox.descriptorSets);
+    for (auto& imageView : skybox.imageViews)
+        ctx.device.destroy(imageView);
+
+    ctx.device.free(ctx.descriptorPool, irradiance.descriptorSets);
+    for (auto& imageView : irradiance.imageViews)
+        ctx.device.destroy(imageView);
+
+    for (auto& radianceLevel : radiance)
+    {
+        ctx.device.free(ctx.descriptorPool, radianceLevel.descriptorSets);
+        for (auto& imageView : radianceLevel.imageViews)
+            ctx.device.destroy(imageView);
+    }
 }

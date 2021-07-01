@@ -18,21 +18,14 @@ using namespace sts;
 
 void EditorScene::impl_show_widget_effects()
 {
-    if (mActiveActionContext == nullptr) return;
-
     if (mDoResetDockEffects) ImGui::SetNextWindowDockID(mDockRightId);
     mDoResetDockEffects = false;
 
     const ImPlus::ScopeWindow window = { "Effects", 0 };
     if (window.show == false) return;
 
-    //--------------------------------------------------------//
-
     ActionContext& ctx = *mActiveActionContext;
-    Fighter& fighter = *ctx.fighter;
-    Action& action = *fighter.get_action(ctx.key.action);
-
-    const ImPlus::ScopeID ctxKeyIdScope = ctx.key.hash();
+    Action& action = *ctx.fighter->get_action(ctx.key.action);
 
     //--------------------------------------------------------//
 
@@ -41,7 +34,7 @@ void EditorScene::impl_show_widget_effects()
         effect.cache = &ctx.world->caches.effects;
         effect.fighter = ctx.fighter;
 
-        effect.path = fmt::format("fighters/{}/effects/{}", fighter.type, effect.get_key());
+        effect.path = fmt::format("fighters/{}/effects/{}", ctx.fighter->type, effect.get_key());
         effect.handle = effect.cache->try_acquire(effect.path.c_str(), true);
 
         effect.origin = { 0.f, 0.f, 0.f };
@@ -71,6 +64,8 @@ void EditorScene::impl_show_widget_effects()
     };
 
     //--------------------------------------------------------//
+
+    const ImPlus::ScopeID ctxKeyIdScope = ctx.key.hash();
 
     helper_edit_objects(action.mEffects, funcInit, funcEdit);
 }

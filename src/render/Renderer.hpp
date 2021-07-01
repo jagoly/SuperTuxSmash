@@ -74,7 +74,19 @@ public: //====================================================//
     //--------------------------------------------------------//
 
     struct {
+        sq::SwapBuffer camera;
+        sq::SwapBuffer environment;
+    } ubos;
+
+    struct {
+        sq::Texture skybox;
+        sq::Texture irradiance;
+        sq::Texture radiance;
+    } cubemaps;
+
+    struct {
         vk::DescriptorSetLayout camera;
+        vk::DescriptorSetLayout environment;
         vk::DescriptorSetLayout gbuffer;
         vk::DescriptorSetLayout depthMipGen;
         vk::DescriptorSetLayout ssao;
@@ -97,10 +109,11 @@ public: //====================================================//
 
     struct {
         sq::Swapper<vk::DescriptorSet> camera;
+        sq::Swapper<vk::DescriptorSet> environment;
         vk::DescriptorSet ssao;
         vk::DescriptorSet ssaoBlur;
         vk::DescriptorSet skybox;
-        sq::Swapper<vk::DescriptorSet> lightDefault;
+        vk::DescriptorSet lightDefault;
         vk::DescriptorSet composite;
     } sets;
 
@@ -189,15 +202,6 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
-    sq::Texture mLutTexture;
-
-    // todo: should be part of the stage
-    sq::Texture mSkyboxTexture;
-    sq::Texture mIrradianceTexture;
-    sq::Texture mRadianceTexture;
-
-    //--------------------------------------------------------//
-
     struct DepthMipGenStuff
     {
         vk::ImageView srcView; // reference
@@ -215,8 +219,7 @@ private: //===================================================//
     std::unique_ptr<DebugRenderer> mDebugRenderer;
     std::unique_ptr<ParticleRenderer> mParticleRenderer;
 
-    sq::SwapBuffer mCameraUbo;
-    sq::SwapBuffer mLightUbo;
+    sq::Texture mLutTexture;
 
     sq::PassConfig* mPassConfigOpaque = nullptr;
     sq::PassConfig* mPassConfigTransparent = nullptr;

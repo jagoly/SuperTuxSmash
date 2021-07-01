@@ -87,9 +87,9 @@ void MenuScene::show_imgui_widgets()
 
     ImGui::SameLine();
 
-    if (ImPlus::Button("Start Action Editor"))
+    if (ImPlus::Button("Start Editor"))
     {
-        mSmashApp.start_action_editor();
+        mSmashApp.start_editor();
     }
 
     ImGui::SameLine();

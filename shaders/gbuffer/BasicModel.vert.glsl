@@ -9,12 +9,12 @@
 
 //============================================================================//
 
-#include "../headers/blocks/Camera.glsl"
+#include "../blocks/Camera.glsl"
 
 #if OPTION_SKELLY
-  #include "../headers/blocks/Skelly.glsl"
+  #include "../blocks/Skelly.glsl"
 #else
-  #include "../headers/blocks/Static.glsl"
+  #include "../blocks/Static.glsl"
 #endif
 
 //============================================================================//
@@ -51,21 +51,21 @@ void main()
       const float weightSum = v_Weights.r + v_Weights.g + v_Weights.b + v_Weights.a;
       const vec4 weights = v_Weights * (1.0 / weightSum);
 
-      vec3 position                  = vec4(v_Position, 1.0) * SB.bones[v_Bones.r] * weights.r;
-      if (v_Bones.g != -1) position += vec4(v_Position, 1.0) * SB.bones[v_Bones.g] * weights.g;
-      if (v_Bones.b != -1) position += vec4(v_Position, 1.0) * SB.bones[v_Bones.b] * weights.b;
-      if (v_Bones.a != -1) position += vec4(v_Position, 1.0) * SB.bones[v_Bones.a] * weights.a;
+      vec3 position                  = vec4(v_Position, 1.0) * MODEL.bones[v_Bones.r] * weights.r;
+      if (v_Bones.g != -1) position += vec4(v_Position, 1.0) * MODEL.bones[v_Bones.g] * weights.g;
+      if (v_Bones.b != -1) position += vec4(v_Position, 1.0) * MODEL.bones[v_Bones.b] * weights.b;
+      if (v_Bones.a != -1) position += vec4(v_Position, 1.0) * MODEL.bones[v_Bones.a] * weights.a;
 
-      vec3 normal                  = v_Normal * mat3(SB.bones[v_Bones.r]) * weights.r;
-      if (v_Bones.g != -1) normal += v_Normal * mat3(SB.bones[v_Bones.g]) * weights.g;
-      if (v_Bones.b != -1) normal += v_Normal * mat3(SB.bones[v_Bones.b]) * weights.b;
-      if (v_Bones.a != -1) normal += v_Normal * mat3(SB.bones[v_Bones.a]) * weights.a;
+      vec3 normal                  = v_Normal * mat3(MODEL.bones[v_Bones.r]) * weights.r;
+      if (v_Bones.g != -1) normal += v_Normal * mat3(MODEL.bones[v_Bones.g]) * weights.g;
+      if (v_Bones.b != -1) normal += v_Normal * mat3(MODEL.bones[v_Bones.b]) * weights.b;
+      if (v_Bones.a != -1) normal += v_Normal * mat3(MODEL.bones[v_Bones.a]) * weights.a;
 
       #if OPTION_TANGENTS
-        vec3 tangent                  = v_Tangent.xyz * mat3(SB.bones[v_Bones.r]) * weights.r;
-        if (v_Bones.g != -1) tangent += v_Tangent.xyz * mat3(SB.bones[v_Bones.g]) * weights.g;
-        if (v_Bones.b != -1) tangent += v_Tangent.xyz * mat3(SB.bones[v_Bones.b]) * weights.b;
-        if (v_Bones.a != -1) tangent += v_Tangent.xyz * mat3(SB.bones[v_Bones.a]) * weights.a;
+        vec3 tangent                  = v_Tangent.xyz * mat3(MODEL.bones[v_Bones.r]) * weights.r;
+        if (v_Bones.g != -1) tangent += v_Tangent.xyz * mat3(MODEL.bones[v_Bones.g]) * weights.g;
+        if (v_Bones.b != -1) tangent += v_Tangent.xyz * mat3(MODEL.bones[v_Bones.b]) * weights.b;
+        if (v_Bones.a != -1) tangent += v_Tangent.xyz * mat3(MODEL.bones[v_Bones.a]) * weights.a;
       #endif
 
     #else // not OPTION_SKELLY
@@ -79,15 +79,15 @@ void main()
 
     #endif // OPTION_SKELLY
 
-    const vec4 worldPos = SB.matrix * vec4(position, 1.0);
+    const vec4 worldPos = MODEL.matrix * vec4(position, 1.0);
 
     io_TexCoord = v_TexCoord;
-    io_Normal = normalize(SB.normMat * normal);
+    io_Normal = normalize(MODEL.normMat * normal);
     
     #if OPTION_TANGENTS
-      io_Tangent = normalize(SB.normMat * tangent);
-      io_Bitangent = normalize(SB.normMat * cross(normal, tangent) * v_Tangent.w);
+      io_Tangent = normalize(MODEL.normMat * tangent);
+      io_Bitangent = normalize(MODEL.normMat * cross(normal, tangent) * v_Tangent.w);
     #endif
 
-    gl_Position = CB.projViewMat * worldPos;
+    gl_Position = CAMERA.projViewMat * worldPos;
 }

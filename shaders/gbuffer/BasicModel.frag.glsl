@@ -6,8 +6,7 @@
   #error
 #endif
 
-#include "../headers/blocks/Camera.glsl"
-#include "../headers/blocks/Light.glsl"
+#include "../blocks/Camera.glsl"
 
 //============================================================================//
 

@@ -12,28 +12,20 @@ using namespace sts;
 
 void EditorScene::impl_show_widget_hurtblobs()
 {
-    if (mActiveHurtblobsContext == nullptr) return;
-
     if (mDoResetDockHurtblobs) ImGui::SetNextWindowDockID(mDockRightId);
     mDoResetDockHurtblobs = false;
 
     const ImPlus::ScopeWindow window = { "HurtBlobs", 0 };
     if (window.show == false) return;
 
-    //--------------------------------------------------------//
-
     HurtblobsContext& ctx = *mActiveHurtblobsContext;
-    Fighter& fighter = *ctx.fighter;
-
-    const sq::Armature& armature = fighter.get_armature();
-
-    const ImPlus::ScopeID ctxKeyIdScope = int(ctx.key);
+    const sq::Armature& armature = ctx.fighter->get_armature();
 
     //--------------------------------------------------------//
 
     const auto funcInit = [&](HurtBlob& blob)
     {
-        blob.fighter = &fighter;
+        blob.fighter = ctx.fighter;
     };
 
     const auto funcEdit = [&](HurtBlob& blob)
@@ -91,5 +83,7 @@ void EditorScene::impl_show_widget_hurtblobs()
 
     //--------------------------------------------------------//
 
-    helper_edit_objects(fighter.mHurtBlobs, funcInit, funcEdit);
+    const ImPlus::ScopeID ctxKeyIdScope = int(ctx.key);
+
+    helper_edit_objects(ctx.fighter->mHurtBlobs, funcInit, funcEdit);
 }
