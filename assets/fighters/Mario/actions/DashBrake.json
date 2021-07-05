@@ -6,7 +6,7 @@
       "ballOffset": [ 0.1, 0.1 ],
       "ballSpeed": [ 0.024, 0.048 ],
       "baseOpacity": 1.0,
-      "baseRadius": [ 0.32, 0.32 ],
+      "baseRadius": [ 0.15, 0.15 ],
       "bone": null,
       "colour": [
         [ 1.0, 1.0, 1.0 ]

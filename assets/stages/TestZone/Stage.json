@@ -1,6 +1,11 @@
 {
   "render": {
-    "skybox": "skybox/Space"
+    "skybox": "skybox/Space",
+    "light.colour": [ 2.0, 2.0, 2.0 ],
+    "light.direction": [ 0.0, -1.0, 0.5 ],
+    "tonemap.black": 1.3,
+    "tonemap.contrast": 1.0,
+    "tonemap.exposure": 1.4
   },
   "general": {
     "inner_boundary_min": [ -14.0, -6.0 ],

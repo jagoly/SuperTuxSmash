@@ -11,6 +11,8 @@
 
 //============================================================================//
 
+layout(constant_id=0) const float MAX_RADIANCE_LOD = 0.0;
+
 layout(set=1, binding=1) uniform samplerCube tx_Irradiance;
 layout(set=1, binding=2) uniform samplerCube tx_Radiance;
 
@@ -114,7 +116,7 @@ float distribution_ggx(vec3 N, vec3 H, float roughness)
     const float aa = roughness * roughness * roughness * roughness;
     const float root = 1.0 + NdotH * NdotH * (aa - 1.0);
 
-    return aa / (3.14159265359 * root * root);
+    return aa / (3.141592654 * root * root);
 }
 
 //============================================================================//
@@ -145,17 +147,14 @@ void main()
         const vec3 F = fresnel_schlick_roughness(NdotV, F0, roughness);
         const vec2 lookup = texture(tx_BrdfLut, vec2(NdotV, 1.0 - roughness)).rg;
 
-        const float radianceLod = roughness * 7.0; // 128 64 32 16 8 4 2 1
+        const float radianceLod = roughness * MAX_RADIANCE_LOD;
 
         // todo: flip cube maps during load
         const vec3 radiance = textureLod(tx_Radiance, reflect(-V, N) * vec3(1,-1,1), radianceLod).rgb;
         const vec3 irradiance = texture(tx_Irradiance, N * vec3(1,-1,1)).rgb;
 
-        // temporary workaround until I make a better skybox + add hdr tone mapping options
-        const vec3 fakeLight = ENV.ambientColour;
-
-        const vec3 diffuse = (1.0 - F) * (1.0 - metallic) * albedo * (irradiance + fakeLight);
-        const vec3 specular = (F * lookup.x + lookup.y) * (radiance + fakeLight);
+        const vec3 diffuse = (1.0 - F) * (1.0 - metallic) * albedo * irradiance;
+        const vec3 specular = (F * lookup.x + lookup.y) * radiance;
 
         frag_Colour = (diffuse + specular) * occlusion;
     }
@@ -172,7 +171,7 @@ void main()
         const float G = geometry_smith_schlick_ggx(NdotV, NdotL, roughness);
         const float D = distribution_ggx(N, H, roughness);
 
-        const vec3 diffuse = (1.0 - F) * (1.0 - metallic) * albedo / 3.14159265359;
+        const vec3 diffuse = (1.0 - F) * (1.0 - metallic) * albedo / 3.141592654;
         const vec3 specular = F * G * D / max(4.0 * NdotV * NdotL, 0.0001);
 
         // makes no physical sense, but looks good for now given the lack of shadows

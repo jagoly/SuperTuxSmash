@@ -1,0 +1,33 @@
+{
+  "render": {
+    "skybox": "skybox/Field",
+    "light.colour": [ 2.5, 2.5, 2.5 ],
+    "light.direction": [ 0.0, -1.0, 0.5 ],
+    "tonemap.black": 1.2,
+    "tonemap.contrast": 1.0,
+    "tonemap.exposure": 1.0
+  },
+  "general": {
+    "inner_boundary_min": [ -10.0, -4.0 ],
+    "inner_boundary_max": [ 10.0, 10.0 ],
+    "outer_boundary_min": [ -14.0, -8.0 ],
+    "outer_boundary_max": [ 14.0, 14.0 ]
+  },
+  "blocks": {
+    "Main": {
+      "minimum": [ -8.0, -1.0 ],
+      "maximum": [ 8.0, 0.0 ]
+    }
+  },
+  "ledges": {
+    "Left": {
+      "position": [ -8.0, 0.0 ],
+      "direction": -1
+    },
+    "Right": {
+      "position": [ 8.0, 0.0 ],
+      "direction": 1
+    }
+  },
+  "platforms": {}
+}

@@ -37,7 +37,7 @@ private: //===================================================//
         float radius;
         uint16_t colour[3];
         uint16_t opacity;
-        float index;
+        float layer;
         float padding;
     };
 

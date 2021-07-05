@@ -9,7 +9,7 @@
 // NUM_OFFSETS:   number of offset iterations to do per pixel
 // LOD_BIAS:      tweak the selection of depth mipmap levels
 
-//#define FALLOFF_MODE_SIMPLE
+//#define FALLOFF_MODE_SIMPLE: don't use a thickness heuristic
 
 //============================================================================//
 
@@ -17,7 +17,7 @@
 
 layout(constant_id=0) const float INVERSE_WIDTH = 0.0;
 layout(constant_id=1) const float INVERSE_HEIGHT = 0.0;
-layout(constant_id=2) const int MAX_DEPTH_LOD = 0;
+layout(constant_id=2) const float MAX_DEPTH_LOD = 0.0;
 
 #define INVERSE_VIEWPORT vec2(INVERSE_WIDTH, INVERSE_HEIGHT)
 

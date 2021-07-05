@@ -74,6 +74,12 @@ public: //====================================================//
     //--------------------------------------------------------//
 
     struct {
+        float exposure;
+        float contrast;
+        float black;
+    } tonemap;
+
+    struct {
         sq::SwapBuffer camera;
         sq::SwapBuffer environment;
     } ubos;

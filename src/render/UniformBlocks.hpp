@@ -21,7 +21,6 @@ struct CameraBlock
 
 struct EnvironmentBlock
 {
-    alignas(16) Vec3F ambientColour;
     alignas(16) Vec3F lightColour;
     alignas(16) Vec3F lightDirection;
     alignas(16) Mat4F lightMatrix;

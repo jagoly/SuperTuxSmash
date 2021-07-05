@@ -2,7 +2,11 @@
 
 #include "game/Action.hpp"
 #include "game/Controller.hpp"
+#include "game/FightWorld.hpp"
 #include "game/Fighter.hpp"
+#include "game/Stage.hpp"
+
+#include "render/Renderer.hpp"
 
 #include <sqee/app/GuiWidgets.hpp>
 
@@ -153,5 +157,26 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
                 }
             }
         }
+    }
+}
+
+//============================================================================//
+
+void DebugGui::show_widget_stage(Stage& stage)
+{
+    if (!ImPlus::CollapsingHeader("Stage - {}"_format(stage.type), 0))
+        return;
+
+    //--------------------------------------------------------//
+
+    if (ImGui::CollapsingHeader("Tone Mapping", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        const ImPlus::ScopeItemWidth width = 150.f;
+
+        auto& tonemap = stage.world.renderer.tonemap;
+
+        ImPlus::SliderValue("Exposure", tonemap.exposure, 0.25f, 4.f);
+        ImPlus::SliderValue("Contrast", tonemap.contrast, 0.5f, 2.f);
+        ImPlus::SliderValue("Black", tonemap.black, 0.5f, 2.f);
     }
 }

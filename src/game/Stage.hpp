@@ -97,6 +97,11 @@ protected: //=================================================//
 
     String mSkyboxPath;
 
+    Vec3F mLightDirection;
+    Vec3F mLightColour;
+
+    //--------------------------------------------------------//
+
     std::vector<Platform> mPlatforms;
 
     std::vector<AlignedBlock> mAlignedBlocks;

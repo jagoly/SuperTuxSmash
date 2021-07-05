@@ -1,0 +1,60 @@
+{
+  "assets": {
+    "meshes": {
+      "Stage": "stages/TestZone/meshes/Stage",
+      "Platforms": "stages/TestZone/meshes/Platforms",
+      "Bounds": "stages/TestZone/meshes/Bounds"
+    },
+    "textures": {
+      "TestZone_albedo": "stages/TestZone/textures/TestZone_albedo",
+      "TestZone_roughness": "stages/TestZone/textures/TestZone_roughness",
+      "TestZone_normal": "stages/TestZone/textures/TestZone_normal",
+      "TestZone_metallic": "stages/TestZone/textures/TestZone_metallic",
+      "White": "textures/White"
+    },
+    "pipelines": {
+      "": {
+        "attributes": [ "TexCoords", "Normals", "Tangents" ],
+        "pass": "Opaque",
+        "vertexShader": "gbuffer/BasicModel/VertTangents",
+        "fragmentShader": "gbuffer/BasicModel/FragNormal",
+        "cullFace": "Back",
+        "alphaCoverage": "Disable",
+        "depthTest": "Replace",
+        "colourBlend": [ "Disable", "Disable" ]
+      }
+    },
+    "materials": {
+      "": {
+        "pipeline": "",
+        "textures": {
+          "tx_Albedo": "TestZone_albedo",
+          "tx_Roughness": "TestZone_roughness",
+          "tx_Normal": "TestZone_normal",
+          "tx_Metallic": "White"
+        },
+        "params": {}
+      }
+    }
+  },
+  "items": [
+    {
+      "condition": null,
+      "material": "",
+      "mesh": "Stage",
+      "submesh": null
+    },
+    {
+      "condition": null,
+      "material": "",
+      "mesh": "Platforms",
+      "submesh": null
+    },
+    {
+      "condition": null,
+      "material": "",
+      "mesh": "Bounds",
+      "submesh": null
+    }
+  ]
+}

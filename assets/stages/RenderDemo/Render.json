@@ -1,0 +1,43 @@
+{
+  "assets": {
+    "meshes": {
+      "Spheres": "stages/RenderDemo/meshes/Spheres"
+    },
+    "textures": {
+      "Spheres_roughness": "stages/RenderDemo/textures/Spheres_roughness",
+      "Spheres_metallic": "stages/RenderDemo/textures/Spheres_metallic",
+      "White": "textures/White"
+    },
+    "pipelines": {
+      "": {
+        "attributes": [ "TexCoords", "Normals" ],
+        "pass": "Opaque",
+        "vertexShader": "gbuffer/BasicModel/Vert",
+        "fragmentShader": "gbuffer/BasicModel/Frag",
+        "cullFace": "Back",
+        "alphaCoverage": "Disable",
+        "depthTest": "Replace",
+        "colourBlend": [ "Disable", "Disable" ]
+      }
+    },
+    "materials": {
+      "": {
+        "pipeline": "",
+        "textures": {
+          "tx_Albedo": "White",
+          "tx_Roughness": "Spheres_roughness",
+          "tx_Metallic": "Spheres_metallic"
+        },
+        "params": {}
+      }
+    }
+  },
+  "items": [
+    {
+      "condition": null,
+      "material": "",
+      "mesh": "Spheres",
+      "submesh": null
+    }
+  ]
+}

@@ -28,7 +28,16 @@ void EditorScene::impl_show_widget_stage()
 
     const ImPlus::ScopeID ctxKeyIdScope = int(ctx.key);
 
+    if (ImGui::CollapsingHeader("Tone Mapping", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        const ImPlus::ScopeItemWidth width = -100.f;
 
+        auto& tonemap = ctx.renderer->tonemap;
+
+        ImPlus::SliderValue("Exposure", tonemap.exposure, 0.25f, 4.f);
+        ImPlus::SliderValue("Contrast", tonemap.contrast, 0.5f, 2.f);
+        ImPlus::SliderValue("Black", tonemap.black, 0.5f, 2.f);
+    }
 }
 
 //============================================================================//
@@ -63,11 +72,11 @@ void EditorScene::impl_show_widget_cubemaps()
         {
             ctx.renderer->cubemaps.skybox.save_as_compressed (
                 sq::build_string("assets/", ctx.stage->get_skybox_path(), "/Sky.lz4"),
-                vk::Format::eE5B9G9R9UfloatPack32, Vec3U(2048u, 2048u, 6u), 1u
+                vk::Format::eE5B9G9R9UfloatPack32, Vec3U(SKYBOX_SIZE, SKYBOX_SIZE, 6u), 1u
             );
         }
 
-        for (size_t face = 0u; face < 6u; ++face)
+        for (uint face = 0u; face < 6u; ++face)
         {
             ImGui::Image(&ctx.skybox.descriptorSets[faceMap[face]], {size, size}, {0,1}, {1,0});
             ImPlus::HoverTooltip(faceNames[faceMap[face]]);
@@ -90,12 +99,12 @@ void EditorScene::impl_show_widget_cubemaps()
         {
             ctx.renderer->cubemaps.irradiance.save_as_compressed (
                 sq::build_string("assets/", ctx.stage->get_skybox_path(), "/Irradiance.lz4"),
-                vk::Format::eE5B9G9R9UfloatPack32, Vec3U(32u, 32u, 6u), 1u
+                vk::Format::eE5B9G9R9UfloatPack32, Vec3U(IRRADIANCE_SIZE, IRRADIANCE_SIZE, 6u), 1u
             );
             ctx.irradianceModified = false;
         }
 
-        for (size_t face = 0u; face < 6u; ++face)
+        for (uint face = 0u; face < 6u; ++face)
         {
             ImGui::Image(&ctx.irradiance.descriptorSets[faceMap[face]], {size, size}, {0,1}, {1,0});
             ImPlus::HoverTooltip(faceNames[faceMap[face]]);
@@ -118,17 +127,17 @@ void EditorScene::impl_show_widget_cubemaps()
         {
             ctx.renderer->cubemaps.radiance.save_as_compressed (
                 sq::build_string("assets/", ctx.stage->get_skybox_path(), "/Radiance.lz4"),
-                vk::Format::eE5B9G9R9UfloatPack32, Vec3U(128u, 128u, 6u), 8u
+                vk::Format::eE5B9G9R9UfloatPack32, Vec3U(RADIANCE_SIZE, RADIANCE_SIZE, 6u), RADIANCE_LEVELS
             );
             ctx.radianceModified = false;
         }
 
-        for (size_t level = 0u; level < 8u; ++level)
+        for (uint level = 0u; level < RADIANCE_LEVELS; ++level)
         {
-            for (size_t face = 0u; face < 6u; ++face)
+            for (uint face = 0u; face < 6u; ++face)
             {
                 ImGui::Image(&ctx.radiance[level].descriptorSets[faceMap[face]], {size, size}, {0,1}, {1,0});
-                ImPlus::HoverTooltip("{} ({:.0f}%)"_format(faceNames[faceMap[face]], 100.f / 7.f * float(level)));
+                ImPlus::HoverTooltip("{} ({:.0f}%)"_format(faceNames[faceMap[face]], float(level * 100u) / float(RADIANCE_LEVELS - 1u)));
                 if (face < 5u) ImGui::SameLine();
             }
         }
@@ -143,11 +152,8 @@ struct EditorScene::ShrunkCubeMap
     vk::DescriptorSet descriptorSet;
 };
 
-EditorScene::ShrunkCubeMap EditorScene::shrink_cube_map_skybox(vk::ImageLayout layout) const
+EditorScene::ShrunkCubeMap EditorScene::shrink_cube_map_skybox(vk::ImageLayout layout, uint outputSize) const
 {
-    constexpr uint SOURCE_SIZE = 2048u;
-    constexpr uint OUTPUT_SIZE = 128u;
-
     ShrunkCubeMap result;
 
     struct {
@@ -163,7 +169,7 @@ EditorScene::ShrunkCubeMap EditorScene::shrink_cube_map_skybox(vk::ImageLayout l
     // create result image and descriptor set
     {
         result.image.initialise_cube (
-            vctx, vk::Format::eR32G32B32A32Sfloat, OUTPUT_SIZE, 1u, vk::SampleCountFlagBits::e1,
+            vctx, vk::Format::eR32G32B32A32Sfloat, outputSize, 1u, vk::SampleCountFlagBits::e1,
             vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eSampled, false,
             vk::ComponentMapping(), vk::ImageAspectFlagBits::eColor
         );
@@ -202,7 +208,7 @@ EditorScene::ShrunkCubeMap EditorScene::shrink_cube_map_skybox(vk::ImageLayout l
             );
 
             stuff.framebuffers[face] = vctx.create_framebuffer (
-                stuff.renderPass, stuff.imageViews[face], Vec2U(OUTPUT_SIZE), 1u
+                stuff.renderPass, stuff.imageViews[face], Vec2U(outputSize), 1u
             );
         }
     }
@@ -210,7 +216,7 @@ EditorScene::ShrunkCubeMap EditorScene::shrink_cube_map_skybox(vk::ImageLayout l
     // create pipelines
     for (uint face = 0u; face < 6u; ++face)
     {
-        const auto specialise = sq::SpecialisationInfo ( int(SOURCE_SIZE), int(OUTPUT_SIZE) );
+        const auto specialise = sq::SpecialisationInfo ( int(SKYBOX_SIZE), int(outputSize) );
 
         const auto shaderModules = sq::ShaderModules (
             vctx, "shaders/FullScreenFC.vert.spv", {}, "shaders/editor/Shrink.frag.spv", &specialise.info
@@ -231,8 +237,8 @@ EditorScene::ShrunkCubeMap EditorScene::shrink_cube_map_skybox(vk::ImageLayout l
             vk::PipelineDepthStencilStateCreateInfo {
                 {}, false, false, {}, false, false, {}, {}, 0.f, 0.f
             },
-            vk::Viewport { 0.f, 0.f, float(OUTPUT_SIZE), float(OUTPUT_SIZE) },
-            vk::Rect2D { {0, 0}, {OUTPUT_SIZE, OUTPUT_SIZE} },
+            vk::Viewport { 0.f, 0.f, float(outputSize), float(outputSize) },
+            vk::Rect2D { {0, 0}, {outputSize, outputSize} },
             vk::PipelineColorBlendAttachmentState { false, {}, {}, {}, {}, {}, {}, vk::ColorComponentFlags(0b1111) },
             nullptr
         );
@@ -252,7 +258,7 @@ EditorScene::ShrunkCubeMap EditorScene::shrink_cube_map_skybox(vk::ImageLayout l
 
             cmdbuf->beginRenderPass (
                 vk::RenderPassBeginInfo {
-                    stuff.renderPass, stuff.framebuffers[face], vk::Rect2D({0, 0}, {OUTPUT_SIZE, OUTPUT_SIZE})
+                    stuff.renderPass, stuff.framebuffers[face], vk::Rect2D({0, 0}, {outputSize, outputSize})
                 }, vk::SubpassContents::eInline
             );
             cmdbuf->draw(3u, 1u, 0u, 0u);
@@ -280,9 +286,6 @@ EditorScene::ShrunkCubeMap EditorScene::shrink_cube_map_skybox(vk::ImageLayout l
 
 void EditorScene::generate_cube_map_irradiance()
 {
-    constexpr uint SOURCE_SIZE = 128u;
-    constexpr uint OUTPUT_SIZE = 32u;
-
     struct {
         sq::ImageStuff image;
         vk::RenderPass renderPass;
@@ -294,12 +297,12 @@ void EditorScene::generate_cube_map_irradiance()
     StageContext& ctx = *mActiveStageContext;
     const auto& vctx = sq::VulkanContext::get();
 
-    ShrunkCubeMap shrunk = shrink_cube_map_skybox(vk::ImageLayout::eShaderReadOnlyOptimal);
+    ShrunkCubeMap shrunk = shrink_cube_map_skybox(vk::ImageLayout::eShaderReadOnlyOptimal, RADIANCE_SIZE);
 
     // create render targets
     {
         stuff.image.initialise_cube (
-            vctx, vk::Format::eR32G32B32A32Sfloat, OUTPUT_SIZE, 1u, vk::SampleCountFlagBits::e1,
+            vctx, vk::Format::eR32G32B32A32Sfloat, IRRADIANCE_SIZE, 1u, vk::SampleCountFlagBits::e1,
             vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferSrc, false,
             vk::ComponentMapping(), vk::ImageAspectFlagBits::eColor
         );
@@ -318,7 +321,7 @@ void EditorScene::generate_cube_map_irradiance()
         };
 
         stuff.renderPass = vctx.create_render_pass(attachment, subpass, nullptr);
-        vctx.set_debug_object_name(stuff.renderPass, "Editor.irradiance.renderPass");
+        vctx.set_debug_object_name(stuff.renderPass, "Editor.RenderPass.Irradiance");
 
         for (uint face = 0u; face < 6u; ++face)
         {
@@ -328,7 +331,7 @@ void EditorScene::generate_cube_map_irradiance()
             );
 
             stuff.framebuffers[face] = vctx.create_framebuffer (
-                stuff.renderPass, stuff.imageViews[face], Vec2U(OUTPUT_SIZE), 1u
+                stuff.renderPass, stuff.imageViews[face], Vec2U(IRRADIANCE_SIZE), 1u
             );
         }
     }
@@ -336,7 +339,7 @@ void EditorScene::generate_cube_map_irradiance()
     // create pipelines
     for (uint face = 0u; face < 6u; ++face)
     {
-        const auto specialise = sq::SpecialisationInfo(int(SOURCE_SIZE), int(OUTPUT_SIZE), int(face));
+        const auto specialise = sq::SpecialisationInfo(int(RADIANCE_SIZE), int(IRRADIANCE_SIZE), int(face));
 
         const auto shaderModules = sq::ShaderModules (
             vctx, "shaders/FullScreenFC.vert.spv", {}, "shaders/editor/Irradiance.frag.spv", &specialise.info
@@ -357,12 +360,12 @@ void EditorScene::generate_cube_map_irradiance()
             vk::PipelineDepthStencilStateCreateInfo {
                 {}, false, false, {}, false, false, {}, {}, 0.f, 0.f
             },
-            vk::Viewport { 0.f, 0.f, float(OUTPUT_SIZE), float(OUTPUT_SIZE) },
-            vk::Rect2D { {0, 0}, {OUTPUT_SIZE, OUTPUT_SIZE} },
+            vk::Viewport { 0.f, 0.f, float(IRRADIANCE_SIZE), float(IRRADIANCE_SIZE) },
+            vk::Rect2D { {0, 0}, {IRRADIANCE_SIZE, IRRADIANCE_SIZE} },
             vk::PipelineColorBlendAttachmentState { false, {}, {}, {}, {}, {}, {}, vk::ColorComponentFlags(0b1111) },
             nullptr
         );
-        vctx.set_debug_object_name(stuff.pipelines[face], "Editor.irradiance.pipeline");
+        vctx.set_debug_object_name(stuff.pipelines[face], "Editor.Pipeline.Irradiance");
     }
 
     //--------------------------------------------------------//
@@ -378,7 +381,7 @@ void EditorScene::generate_cube_map_irradiance()
 
             cmdbuf->beginRenderPass (
                 vk::RenderPassBeginInfo {
-                    stuff.renderPass, stuff.framebuffers[face], vk::Rect2D({0, 0}, {OUTPUT_SIZE, OUTPUT_SIZE})
+                    stuff.renderPass, stuff.framebuffers[face], vk::Rect2D({0, 0}, {IRRADIANCE_SIZE, IRRADIANCE_SIZE})
                 }, vk::SubpassContents::eInline
             );
             cmdbuf->draw(3u, 1u, 0u, 0u);
@@ -388,7 +391,7 @@ void EditorScene::generate_cube_map_irradiance()
 
     //--------------------------------------------------------//
 
-    update_cube_map_texture(stuff.image, OUTPUT_SIZE, 1u, ctx.renderer->cubemaps.irradiance);
+    update_cube_map_texture(stuff.image, IRRADIANCE_SIZE, 1u, ctx.renderer->cubemaps.irradiance);
 
     sq::vk_update_descriptor_set_swapper (
         vctx, ctx.renderer->sets.environment,
@@ -421,18 +424,15 @@ void EditorScene::generate_cube_map_irradiance()
 
 void EditorScene::generate_cube_map_radiance()
 {
-    constexpr uint OUTPUT_SIZE = 128u;
-    constexpr uint MAX_LEVEL = 7u;
-
     struct {
         sq::ImageStuff image;
         vk::RenderPass renderPass;
-        std::array<std::array<vk::ImageView, 6u>, MAX_LEVEL> imageViews;
-        std::array<std::array<vk::Framebuffer, 6u>, MAX_LEVEL> framebuffers;
-        std::array<std::array<vk::Pipeline, 6u>, MAX_LEVEL>  pipelines;
+        std::array<std::array<vk::ImageView, 6u>, RADIANCE_LEVELS - 1u> imageViews;
+        std::array<std::array<vk::Framebuffer, 6u>, RADIANCE_LEVELS - 1u> framebuffers;
+        std::array<std::array<vk::Pipeline, 6u>, RADIANCE_LEVELS - 1u>  pipelines;
     } stuff;
 
-    ShrunkCubeMap shrunk = shrink_cube_map_skybox(vk::ImageLayout::eTransferSrcOptimal);
+    ShrunkCubeMap shrunk = shrink_cube_map_skybox(vk::ImageLayout::eTransferSrcOptimal, RADIANCE_SIZE);
 
     StageContext& ctx = *mActiveStageContext;
     const auto& vctx = sq::VulkanContext::get();
@@ -440,7 +440,7 @@ void EditorScene::generate_cube_map_radiance()
     // create render targets
     {
         stuff.image.initialise_cube (
-            vctx, vk::Format::eR32G32B32A32Sfloat, OUTPUT_SIZE, MAX_LEVEL+1u, vk::SampleCountFlagBits::e1,
+            vctx, vk::Format::eR32G32B32A32Sfloat, RADIANCE_SIZE, RADIANCE_LEVELS, vk::SampleCountFlagBits::e1,
             vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc, false,
             vk::ComponentMapping(), vk::ImageAspectFlagBits::eColor
         );
@@ -459,40 +459,44 @@ void EditorScene::generate_cube_map_radiance()
         };
 
         stuff.renderPass = vctx.create_render_pass(attachment, subpass, nullptr);
-        vctx.set_debug_object_name(stuff.renderPass, "Editor.radiance.renderPass");
+        vctx.set_debug_object_name(stuff.renderPass, "Editor.RenderPass.Radiance");
 
-        for (uint level = 0u; level < MAX_LEVEL; ++level)
+        for (uint level = 1u; level < RADIANCE_LEVELS; ++level)
         {
-            const uint levelSize = OUTPUT_SIZE / uint(std::exp2(level+1u));
+            const uint index = level - 1u;
+            const uint levelSize = RADIANCE_SIZE / uint(std::exp2(level));
+
             for (uint face = 0u; face < 6u; ++face)
             {
-                stuff.imageViews[level][face] = vctx.create_image_view (
+                stuff.imageViews[index][face] = vctx.create_image_view (
                     stuff.image.image, vk::ImageViewType::e2D, vk::Format::eR32G32B32A32Sfloat,
-                    vk::ComponentMapping(), vk::ImageAspectFlagBits::eColor, level+1u, 1u, face, 1u
+                    vk::ComponentMapping(), vk::ImageAspectFlagBits::eColor, level, 1u, face, 1u
                 );
 
-                stuff.framebuffers[level][face] = vctx.create_framebuffer (
-                    stuff.renderPass, stuff.imageViews[level][face], Vec2U(levelSize), 1u
+                stuff.framebuffers[index][face] = vctx.create_framebuffer (
+                    stuff.renderPass, stuff.imageViews[index][face], Vec2U(levelSize), 1u
                 );
             }
         }
     }
 
     // create pipelines
-    for (uint level = 0u; level < MAX_LEVEL; ++level)
+    for (uint level = 1u; level < RADIANCE_LEVELS; ++level)
     {
-        const uint levelSize = OUTPUT_SIZE / uint(std::exp2(level+1u));
+        const uint index = level - 1u;
+        const uint levelSize = RADIANCE_SIZE / uint(std::exp2(level));
+
         for (uint face = 0u; face < 6u; ++face)
         {
             const auto specialise = sq::SpecialisationInfo (
-                int(OUTPUT_SIZE), int(levelSize), int(face), 1.f / float(MAX_LEVEL) * float(level+1u)
+                int(RADIANCE_SIZE), int(levelSize), int(face), float(level) / float(RADIANCE_LEVELS - 1u)
             );
 
             const auto shaderModules = sq::ShaderModules (
                 vctx, "shaders/FullScreenFC.vert.spv", {}, "shaders/editor/Radiance.frag.spv", &specialise.info
             );
 
-            stuff.pipelines[level][face] = sq::vk_create_graphics_pipeline (
+            stuff.pipelines[index][face] = sq::vk_create_graphics_pipeline (
                 vctx, mImageProcessPipelineLayout, stuff.renderPass, 0u, shaderModules.stages, {},
                 vk::PipelineInputAssemblyStateCreateInfo {
                     {}, vk::PrimitiveTopology::eTriangleList, false
@@ -512,7 +516,7 @@ void EditorScene::generate_cube_map_radiance()
                 vk::PipelineColorBlendAttachmentState { false, {}, {}, {}, {}, {}, {}, vk::ColorComponentFlags(0b1111) },
                 nullptr
             );
-            vctx.set_debug_object_name(stuff.pipelines[level][face], "Editor.irradiance.pipeline");
+            vctx.set_debug_object_name(stuff.pipelines[index][face], "Editor.Pipeline.Radiance");
         }
     }
 
@@ -539,7 +543,7 @@ void EditorScene::generate_cube_map_radiance()
                 vk::ImageCopy (
                     vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, 0u, 0u, 6u), vk::Offset3D(0, 0, 0),
                     vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, 0u, 0u, 6u), vk::Offset3D(0, 0, 0),
-                    vk::Extent3D(OUTPUT_SIZE, OUTPUT_SIZE, 1u)
+                    vk::Extent3D(RADIANCE_SIZE, RADIANCE_SIZE, 1u)
                 )
             );
 
@@ -560,17 +564,19 @@ void EditorScene::generate_cube_map_radiance()
             );
         }
 
-        for (uint level = 0u; level < MAX_LEVEL; ++level)
+        for (uint level = 1u; level < RADIANCE_LEVELS; ++level)
         {
-            const uint levelSize = OUTPUT_SIZE / uint(std::exp2(level+1u));
+            const uint index = level - 1u;
+            const uint levelSize = RADIANCE_SIZE / uint(std::exp2(level));
+
             for (uint face = 0u; face < 6u; ++face)
             {
-                cmdbuf->bindPipeline(vk::PipelineBindPoint::eGraphics, stuff.pipelines[level][face]);
+                cmdbuf->bindPipeline(vk::PipelineBindPoint::eGraphics, stuff.pipelines[index][face]);
                 cmdbuf->bindDescriptorSets(vk::PipelineBindPoint::eGraphics, mImageProcessPipelineLayout, 0u, shrunk.descriptorSet, {});
 
                 cmdbuf->beginRenderPass (
                     vk::RenderPassBeginInfo {
-                        stuff.renderPass, stuff.framebuffers[level][face], vk::Rect2D({0, 0}, {levelSize, levelSize})
+                        stuff.renderPass, stuff.framebuffers[index][face], vk::Rect2D({0, 0}, {levelSize, levelSize})
                     }, vk::SubpassContents::eInline
                 );
                 cmdbuf->draw(3u, 1u, 0u, 0u);
@@ -581,14 +587,14 @@ void EditorScene::generate_cube_map_radiance()
 
     //--------------------------------------------------------//
 
-    update_cube_map_texture(stuff.image, OUTPUT_SIZE, MAX_LEVEL+1u, ctx.renderer->cubemaps.radiance);
+    update_cube_map_texture(stuff.image, RADIANCE_SIZE, RADIANCE_LEVELS, ctx.renderer->cubemaps.radiance);
 
     sq::vk_update_descriptor_set_swapper (
         vctx, ctx.renderer->sets.environment,
         sq::DescriptorImageSampler(2u, 0u, ctx.renderer->cubemaps.radiance.get_descriptor_info())
     );
 
-    for (uint level = 0u; level < MAX_LEVEL+1u; ++level)
+    for (uint level = 0u; level < RADIANCE_LEVELS; ++level)
         ctx.radiance[level].initialise(*this, level, ctx.renderer->cubemaps.radiance.get_image(), ctx.renderer->samplers.linearClamp);
 
     ctx.radianceModified = true;

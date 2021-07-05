@@ -158,12 +158,14 @@ void Renderer::impl_initialise_layouts()
         vk::DescriptorSetLayoutBinding { 0u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment }
     });
 
+    const auto compositePushConstants = vk::PushConstantRange(vk::ShaderStageFlagBits::eFragment, 0u, sizeof(tonemap));
+
     pipelineLayouts.standard    = ctx.create_pipeline_layout({ setLayouts.camera }, {});
     pipelineLayouts.depthMipGen = ctx.create_pipeline_layout({ setLayouts.depthMipGen }, {});
     pipelineLayouts.ssao        = ctx.create_pipeline_layout({ setLayouts.camera, setLayouts.ssao }, {});
     pipelineLayouts.ssaoBlur    = ctx.create_pipeline_layout({ setLayouts.camera, setLayouts.ssaoBlur }, {});
     pipelineLayouts.skybox      = ctx.create_pipeline_layout({ setLayouts.camera, setLayouts.skybox }, {});
-    pipelineLayouts.composite   = ctx.create_pipeline_layout({ setLayouts.composite }, {});
+    pipelineLayouts.composite   = ctx.create_pipeline_layout({ setLayouts.composite }, compositePushConstants);
 }
 
 //============================================================================//
@@ -425,9 +427,12 @@ void Renderer::impl_create_pipelines()
 
         pipelineLayouts.lightDefault = ctx.create_pipeline_layout({ setLayouts.camera, setLayouts.environment, setLayouts.lightDefault }, {});
 
+        const auto specialise = sq::SpecialisationInfo ( float(RADIANCE_LEVELS - 1u) );
+
         const auto shaderModules = sq::ShaderModules (
             ctx, "shaders/FullScreenTC.vert.spv", {},
-            options.ssao_quality == 0u ? "shaders/lights/Default/NoSSAO.frag.spv" : "shaders/lights/Default/WithSSAO.frag.spv"
+            options.ssao_quality == 0u ? "shaders/lights/Default/NoSSAO.frag.spv" : "shaders/lights/Default/WithSSAO.frag.spv",
+            &specialise.info
         );
 
         pipelines.lightDefault = sq::vk_create_graphics_pipeline (
@@ -739,7 +744,7 @@ void Renderer::impl_create_ssao_stuff()
     // create ssao pipeline
     {
         const auto specialise = sq::SpecialisationInfo (
-            1.f / float(halfSize.x), 1.f / float(halfSize.y), int(mDepthMipGenStuff.size()) / 2
+            1.f / float(halfSize.x), 1.f / float(halfSize.y), float(mDepthMipGenStuff.size()) * 0.5f
         );
 
         const auto shaderModules = sq::ShaderModules (
@@ -918,22 +923,11 @@ void Renderer::delete_draw_items(int64_t groupId)
 
 void Renderer::integrate_camera(float blend)
 {
-    //-- Update the Camera -----------------------------------//
-
     mCamera->intergrate(blend);
 
     sets.camera.swap();
     auto& cameraBlock = *reinterpret_cast<CameraBlock*>(ubos.camera.swap_map());
     cameraBlock = mCamera->get_block();
-
-    //-- Update the Environment ------------------------------//
-
-    sets.environment.swap();
-    auto& environmentBlock = *reinterpret_cast<EnvironmentBlock*>(ubos.environment.swap_map());
-    environmentBlock.ambientColour = { 0.025f, 0.025f, 0.025f };
-    environmentBlock.lightColour = { 3.0f, 3.0f, 3.0f };
-    environmentBlock.lightDirection = maths::normalize(Vec3F(0.f, -1.f, 0.5f));
-    environmentBlock.lightMatrix = Mat4F();
 }
 
 //============================================================================//
@@ -1151,6 +1145,8 @@ void Renderer::populate_final_pass(vk::CommandBuffer cmdbuf)
 {
     cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayouts.composite, 0u, sets.composite, {});
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipelines.composite);
+
+    cmdbuf.pushConstants<decltype(tonemap)>(pipelineLayouts.composite, vk::ShaderStageFlagBits::eFragment, 0u, tonemap);
 
     cmdbuf.draw(3u, 1u, 0u, 0u);
     write_time_stamp(cmdbuf, TimeStamp::Composite);

@@ -104,7 +104,7 @@ private: //===================================================//
 
         CubeMapView skybox;
         CubeMapView irradiance;
-        std::array<CubeMapView, 8u> radiance;
+        std::array<CubeMapView, RADIANCE_LEVELS> radiance;
 
         bool irradianceModified = false;
         bool radianceModified = false;
@@ -179,7 +179,7 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
-    ShrunkCubeMap shrink_cube_map_skybox(vk::ImageLayout layout) const;
+    ShrunkCubeMap shrink_cube_map_skybox(vk::ImageLayout layout, uint outputSize) const;
 
     void generate_cube_map_irradiance();
     void generate_cube_map_radiance();

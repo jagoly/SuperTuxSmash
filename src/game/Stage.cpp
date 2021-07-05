@@ -23,6 +23,11 @@ Stage::Stage(FightWorld& world, StageEnum type)
 
     const JsonValue& render = json.at("render");
     mSkyboxPath = render.at("skybox");
+    mLightDirection = render.at("light.direction");
+    mLightColour = render.at("light.colour");
+    world.renderer.tonemap.exposure = render.at("tonemap.exposure");
+    world.renderer.tonemap.contrast = render.at("tonemap.contrast");
+    world.renderer.tonemap.black = render.at("tonemap.black");
 
     const JsonValue& general = json.at("general");
     mInnerBoundary.min = general.at("inner_boundary_min");
@@ -104,6 +109,12 @@ void Stage::integrate(float /*blend*/)
     block.matrix = Mat4F();
     //block.normMat = Mat34F(maths::normal_matrix(camera.viewMat));
     block.normMat = Mat34F();
+
+    world.renderer.sets.environment.swap();
+    auto& environmentBlock = *reinterpret_cast<EnvironmentBlock*>(world.renderer.ubos.environment.swap_map());
+    environmentBlock.lightColour = mLightColour;
+    environmentBlock.lightDirection = maths::normalize(mLightDirection);
+    environmentBlock.lightMatrix = Mat4F();
 }
 
 //============================================================================//

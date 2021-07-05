@@ -121,4 +121,11 @@ constexpr const size_t MAX_THIN_LINES = 2048u;
 
 //============================================================================//
 
+constexpr const uint SKYBOX_SIZE     = 2048u;
+constexpr const uint IRRADIANCE_SIZE = 32u;
+constexpr const uint RADIANCE_SIZE   = 128u;
+constexpr const uint RADIANCE_LEVELS = 6u;
+
+//============================================================================//
+
 } // namespace sts

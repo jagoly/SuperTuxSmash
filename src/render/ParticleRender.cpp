@@ -21,7 +21,7 @@ ParticleRenderer::ParticleRenderer(Renderer& renderer) : renderer(renderer)
     });
 
     mPipelineLayout = ctx.create_pipeline_layout (
-        { renderer.setLayouts.camera, mDescriptorSetLayout }, {}
+        { renderer.setLayouts.camera, renderer.setLayouts.environment, mDescriptorSetLayout }, {}
     );
 
     mVertexBuffer.initialise(sizeof(ParticleVertex) * MAX_PARTICLES, vk::BufferUsageFlagBits::eVertexBuffer);
@@ -64,7 +64,7 @@ void ParticleRenderer::refresh_options_create()
     // create pipeline
     {
         const auto shaderModules = sq::ShaderModules (
-            ctx, "shaders/particles/Generic.vert.spv", "shaders/particles/Generic.geom.spv", "shaders/particles/Generic.frag.spv"
+            ctx, "shaders/transparent/Particles.vert.spv", "shaders/transparent/Particles.geom.spv", "shaders/transparent/Particles.frag.spv"
         );
 
         const auto vertexBindingDescriptions = std::array {
@@ -140,7 +140,7 @@ void ParticleRenderer::integrate(float blend, const ParticleSystem& system)
         vertex.colour[2] = UNorm16(p.colour.b);
         //vertex.opacity = UNorm16(std::pow(p.baseOpacity * maths::mix(1.f, p.endOpacity, factor), 0.5f));
         vertex.opacity = UNorm16(p.baseOpacity * maths::mix(1.f, p.endOpacity, factor));
-        vertex.index = float(p.sprite);
+        vertex.layer = float(p.sprite);
         vertex.padding = 0.f;
     }
 }
@@ -150,7 +150,8 @@ void ParticleRenderer::integrate(float blend, const ParticleSystem& system)
 void ParticleRenderer::populate_command_buffer(vk::CommandBuffer cmdbuf)
 {
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, mPipeline);
-    cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, mPipelineLayout, 1u, mDescriptorSet, {});
+    cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, mPipelineLayout, 1u, renderer.sets.environment.front, {});
+    cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, mPipelineLayout, 2u, mDescriptorSet, {});
     cmdbuf.bindVertexBuffers(0u, mVertexBuffer.front(), size_t(0u));
 
     cmdbuf.draw(mVertexCount, 1u, 0u, 0u);

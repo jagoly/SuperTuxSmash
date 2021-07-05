@@ -297,6 +297,8 @@ void GameScene::impl_show_fighters_window()
 
     //--------------------------------------------------------//
 
+    DebugGui::show_widget_stage(mFightWorld->get_stage());
+
     for (Fighter* fighter : mFightWorld->get_fighters())
         DebugGui::show_widget_fighter(*fighter);
 }

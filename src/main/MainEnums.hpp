@@ -17,7 +17,9 @@ enum class FighterEnum : int8_t
 enum class StageEnum : int8_t
 {
     Null = -1,
-    TestZone
+    TestZone,
+    Field,
+    RenderDemo
 };
 
 } // namespace sts
@@ -25,4 +27,4 @@ enum class StageEnum : int8_t
 //============================================================================//
 
 SQEE_ENUM_HELPER(sts::FighterEnum, Null, Sara, Tux, Mario)
-SQEE_ENUM_HELPER(sts::StageEnum, Null, TestZone)
+SQEE_ENUM_HELPER(sts::StageEnum, Null, TestZone, Field, RenderDemo)
