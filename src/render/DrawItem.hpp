@@ -37,6 +37,7 @@ struct DrawItem final
     MeshHandle mesh;
 
     bool invertCondition;
+    uint8_t materialPass;
     int8_t subMesh;
 
     // todo: change to vk::DescriptorSet and allow updating using groupId

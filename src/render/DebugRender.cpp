@@ -79,7 +79,7 @@ void DebugRenderer::refresh_options_create()
             ctx, "shaders/debug/Blob.vert.spv", {}, "shaders/debug/Blob.frag.spv"
         );
 
-        const auto vertexConfig = sq::Mesh::VertexConfig({});
+        const auto vertexConfig = sq::Mesh::VertexConfig({}, {}); // position only
 
         mBlobPipeline = sq::vk_create_graphics_pipeline (
             ctx, mBlobPipelineLayout, renderer.window.get_render_pass(), 0u, shaderModules.stages, vertexConfig.state,

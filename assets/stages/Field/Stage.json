@@ -1,7 +1,7 @@
 {
   "render": {
     "skybox": "skybox/Field",
-    "light.colour": [ 1.3, 1.3, 1.3 ],
+    "light.colour": [ 1.5, 1.5, 1.5 ],
     "light.direction": [ 0.0, -1.0, 0.5 ],
     "tonemap.black": 1.2,
     "tonemap.contrast": 0.9,
@@ -11,7 +11,9 @@
     "inner_boundary_min": [ -14.0, -6.0 ],
     "inner_boundary_max": [ 14.0, 14.0 ],
     "outer_boundary_min": [ -18.0, -10.0 ],
-    "outer_boundary_max": [ 18.0, 18.0 ]
+    "outer_boundary_max": [ 18.0, 18.0 ],
+    "shadow_casters_min": [ -8.0, -1.0, -2.0 ],
+    "shadow_casters_max": [ 8.0, 7.5, 2.0 ]
   },
   "blocks": {
     "Main": {

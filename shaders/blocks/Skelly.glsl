@@ -1,4 +1,3 @@
-layout(std140, set=3, binding=0)
 uniform ModelSkellyBlock
 {
     mat4 matrix;

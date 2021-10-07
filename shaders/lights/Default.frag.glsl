@@ -2,28 +2,36 @@
 
 //============================================================================//
 
-#if !defined(OPTION_SSAO)
+#if !defined(OPTION_SHADOW) || !defined(OPTION_SSAO)
   #error
 #endif
-
-#include "../blocks/Camera.glsl"
-#include "../blocks/Environment.glsl"
 
 //============================================================================//
 
 layout(constant_id=0) const float MAX_RADIANCE_LOD = 0.0;
+layout(constant_id=1) const float SHADOW_PIXEL_SIZE = 0.0;
+layout(constant_id=2) const int SHADOW_PCF_QUALITY = 0;
 
-layout(set=1, binding=1) uniform samplerCube tx_Irradiance;
-layout(set=1, binding=2) uniform samplerCube tx_Radiance;
+layout(set=0, binding=0, std140)
+#include "../blocks/Camera.glsl"
 
-layout(set=2, binding=0) uniform sampler2D tx_BrdfLut;
-layout(set=2, binding=1) uniform sampler2D tx_Albedo_Roughness;
-layout(set=2, binding=2) uniform sampler2D tx_Normal_Metallic;
-layout(set=2, binding=3) uniform sampler2D tx_Depth;
+layout(set=0, binding=1, std140)
+#include "../blocks/Environment.glsl"
+
+layout(set=0, binding=2) uniform sampler2D tx_BrdfLut;
+layout(set=0, binding=3) uniform samplerCube tx_Irradiance;
+layout(set=0, binding=4) uniform samplerCube tx_Radiance;
+layout(set=0, binding=5) uniform sampler2D tx_Albedo_Roughness;
+layout(set=0, binding=6) uniform sampler2D tx_Normal_Metallic;
+layout(set=0, binding=7) uniform sampler2D tx_Depth;
+
+#if OPTION_SHADOW
+  layout(set=0, binding=8) uniform sampler2DShadow tx_Shadow;
+#endif
 
 #if OPTION_SSAO
-  layout(set=2, binding=4) uniform sampler2D tx_SSAO;
-  layout(set=2, binding=5) uniform sampler2D tx_DepthHalf;
+  layout(set=0, binding=9) uniform sampler2D tx_SSAO;
+  layout(set=0, binding=10) uniform sampler2D tx_DepthHalf;
 #endif
 
 layout(location=0) in vec2 io_TexCoord;
@@ -44,10 +52,42 @@ vec3 get_view_position()
 
 //============================================================================//
 
-// combine baked occlusion with screen space occlusion
-float get_occlusion(float depth)
+#if OPTION_SHADOW
+
+float get_shadow(vec3 worldPos, vec3 worldNorm, float NdotL)
 {
-  #if OPTION_SSAO
+    // TODO: use non-midpoint shadow maps with a bias for faster low quality shadows
+    // TODO: add contact hardening for high quality shadows (PCSS)
+
+    const vec3 shadowPos = vec3(ENV.projViewMatrix * vec4(worldPos + worldNorm * NdotL * 0.01, 1.0));
+    const vec2 shadowCoord = shadowPos.xy * vec2(0.5, -0.5) + 0.5;
+    const float shadowDepth = shadowPos.z;// - 0.005;
+
+    vec2 begin, end; float sampleCount;
+    if (SHADOW_PCF_QUALITY == 1) { begin = vec2(-0.5); end = vec2(+0.5); sampleCount =   4.0; }
+    if (SHADOW_PCF_QUALITY == 2) { begin = vec2(-2.5); end = vec2(+2.5); sampleCount =  36.0; }
+    if (SHADOW_PCF_QUALITY == 3) { begin = vec2(-4.5); end = vec2(+4.5); sampleCount = 100.0; }
+    //if (SHADOW_PCF_QUALITY == 1) { begin = vec2(-1.0); end = vec2(+1.0); sampleCount =   9.0; }
+    //if (SHADOW_PCF_QUALITY == 2) { begin = vec2(-3.0); end = vec2(+3.0); sampleCount =  49.0; }
+    //if (SHADOW_PCF_QUALITY == 3) { begin = vec2(-5.0); end = vec2(+5.0); sampleCount = 121.0; }
+
+    float result = 0.0;
+
+    for (float y = begin.y; y <= end.y; y += 1.0)
+        for (float x = begin.x; x <= end.x; x += 1.0)
+            result += texture(tx_Shadow, vec3(shadowCoord + vec2(x, y) * SHADOW_PIXEL_SIZE, shadowDepth));
+
+    return result / sampleCount;
+}
+
+#endif
+
+//============================================================================//
+
+#if OPTION_SSAO
+
+float get_ssao(float depth)
+{
     const float MAX_DIFF = 0.04 * depth;
 
     const vec4 depthGatherW = textureGather(tx_DepthHalf, io_TexCoord);
@@ -77,16 +117,15 @@ float get_occlusion(float depth)
     }
 
     // no pixels are within the threshold, so just use the closest one
-    float minDiff = diffs.r, result = ao.r;
+    float minDiff = diffs.r; float result = ao.r;
     if (diffs.g < minDiff) { minDiff = diffs.g; result = ao.g; }
     if (diffs.b < minDiff) { minDiff = diffs.b; result = ao.b; }
     if (diffs.a < minDiff) { minDiff = diffs.a; result = ao.a; }
 
     return result;
-  #else
-    return 1.0;
-  #endif
 }
+
+#endif
 
 //============================================================================//
 
@@ -139,9 +178,6 @@ void main()
     // non-zero to prevent black spots on normals pointing away from camera
     const float NdotV = max(dot(N, V), 0.0001);
 
-    // todo: look into calculating SSDO as well for the main light
-    const float occlusion = get_occlusion(viewPos.z);
-
     // indirect lighting
     {
         const vec3 F = fresnel_schlick_roughness(NdotV, F0, roughness);
@@ -156,29 +192,41 @@ void main()
         const vec3 diffuse = (1.0 - F) * (1.0 - metallic) * albedo * irradiance;
         const vec3 specular = (F * lookup.x + lookup.y) * radiance;
 
+        #if OPTION_SSAO
+          //const float occlusion = min(texture(tx_Occlusion, io_TexCoord).r, get_ssao(viewPos.z));
+          const float occlusion = get_ssao(viewPos.z);
+        #else
+          //const float occlusion = texture(tx_Occlusion, io_TexCoord).r;
+          const float occlusion = 1.0;
+        #endif
+
         frag_Colour = (diffuse + specular) * occlusion;
     }
 
     // direct lighting
     {
         const vec3 L = -ENV.lightDirection;
-        const vec3 H = normalize(V + L);
+        const float NdotL = dot(N, L);
 
-        const float NdotL = max(dot(N, L), 0.0);
+        if (NdotL > 0.0)
+        {
+            const vec3 H = normalize(V + L);
 
-        // cook torrance brdf
-        const vec3 F = fresnel_schlick(max(dot(H, V), 0.0), F0);
-        const float G = geometry_smith_schlick_ggx(NdotV, NdotL, roughness);
-        const float D = distribution_ggx(N, H, roughness);
+            // cook torrance brdf
+            const vec3 F = fresnel_schlick(max(dot(H, V), 0.0), F0);
+            const float G = geometry_smith_schlick_ggx(NdotV, NdotL, roughness);
+            const float D = distribution_ggx(N, H, roughness);
 
-        const vec3 diffuse = (1.0 - F) * (1.0 - metallic) * albedo / 3.141592654;
-        const vec3 specular = F * G * D / max(4.0 * NdotV * NdotL, 0.0001);
+            const vec3 diffuse = (1.0 - F) * (1.0 - metallic) * albedo / 3.141592654;
+            const vec3 specular = F * G * D / max(4.0 * NdotV * NdotL, 0.0001);
 
-        // makes no physical sense, but looks good for now given the lack of shadows
-        const float nonsenseOcclusion = mix(occlusion, 1.0, 0.4);
+            #if OPTION_SHADOW
+              const float shadow = get_shadow(worldPos, N, 1.0 -NdotL);
+            #else
+              const float shadow = 1.0;
+            #endif
 
-        frag_Colour += (diffuse + specular) * NdotL * ENV.lightColour * nonsenseOcclusion;
+            frag_Colour += (diffuse + specular) * NdotL * ENV.lightColour * shadow;
+        }
     }
-
-    //frag_Colour = vec3(occlusion);
 }

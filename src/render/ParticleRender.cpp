@@ -15,22 +15,30 @@ ParticleRenderer::ParticleRenderer(Renderer& renderer) : renderer(renderer)
 {
     const auto& ctx = sq::VulkanContext::get();
 
-    mDescriptorSetLayout = ctx.create_descriptor_set_layout ({
-        vk::DescriptorSetLayoutBinding { 0u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment },
-        vk::DescriptorSetLayoutBinding { 1u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment }
+    renderer.setLayouts.particles = ctx.create_descriptor_set_layout ({
+        vk::DescriptorSetLayoutBinding {
+            0u, vk::DescriptorType::eUniformBuffer, 1u,
+            vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eGeometry | vk::ShaderStageFlagBits::eFragment
+        },
+        vk::DescriptorSetLayoutBinding { 1u, vk::DescriptorType::eUniformBuffer, 1u, vk::ShaderStageFlagBits::eFragment },
+        vk::DescriptorSetLayoutBinding { 2u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment },
+        vk::DescriptorSetLayoutBinding { 3u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment },
+        vk::DescriptorSetLayoutBinding { 4u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment }
     });
 
-    mPipelineLayout = ctx.create_pipeline_layout (
-        { renderer.setLayouts.camera, renderer.setLayouts.environment, mDescriptorSetLayout }, {}
-    );
+    renderer.pipelineLayouts.particles = ctx.create_pipeline_layout(renderer.setLayouts.particles, {});
 
     mVertexBuffer.initialise(sizeof(ParticleVertex) * MAX_PARTICLES, vk::BufferUsageFlagBits::eVertexBuffer);
 
     mTexture.load_from_file_array("assets/particles/Basic128");
 
-    mDescriptorSet = sq::vk_allocate_descriptor_set(ctx, mDescriptorSetLayout);
-    sq::vk_update_descriptor_set (
-        ctx, mDescriptorSet, sq::DescriptorImageSampler(0u, 0u, mTexture.get_descriptor_info())
+    renderer.sets.particles = sq::vk_allocate_descriptor_set_swapper(ctx, renderer.setLayouts.particles);
+
+    sq::vk_update_descriptor_set_swapper (
+        ctx, renderer.sets.particles,
+        sq::DescriptorUniformBuffer(0u, 0u, renderer.ubos.camera.get_descriptor_info()),
+        sq::DescriptorUniformBuffer(1u, 0u, renderer.ubos.environment.get_descriptor_info()),
+        sq::DescriptorImageSampler(2u, 0u, mTexture.get_descriptor_info())
     );
 }
 
@@ -40,9 +48,9 @@ ParticleRenderer::~ParticleRenderer()
 {
     const auto& ctx = sq::VulkanContext::get();
 
-    ctx.device.destroy(mDescriptorSetLayout);
-    ctx.device.free(ctx.descriptorPool, mDescriptorSet);
-    ctx.device.destroy(mPipelineLayout);
+    ctx.device.destroy(renderer.setLayouts.particles);
+    ctx.device.free(ctx.descriptorPool, {renderer.sets.particles.front, renderer.sets.particles.back});
+    ctx.device.destroy(renderer.pipelineLayouts.particles);
 }
 
 //============================================================================//
@@ -51,7 +59,7 @@ void ParticleRenderer::refresh_options_destroy()
 {
     const auto& ctx = sq::VulkanContext::get();
 
-    ctx.device.destroy(mPipeline);
+    ctx.device.destroy(renderer.pipelines.particles);
 }
 
 //============================================================================//
@@ -80,8 +88,8 @@ void ParticleRenderer::refresh_options_create()
             vk::VertexInputAttributeDescription { 5u, 0u, vk::Format::eR32Sfloat, 28u },
         };
 
-        mPipeline = sq::vk_create_graphics_pipeline (
-            ctx, mPipelineLayout, renderer.passes.hdr.pass, 0u, shaderModules.stages,
+        renderer.pipelines.particles = sq::vk_create_graphics_pipeline (
+            ctx, renderer.pipelineLayouts.particles, renderer.passes.hdr.pass, 0u, shaderModules.stages,
             vk::PipelineVertexInputStateCreateInfo {
                 {}, vertexBindingDescriptions, vertexAttributeDescriptions
             },
@@ -106,14 +114,12 @@ void ParticleRenderer::refresh_options_create()
             },
             nullptr
         );
-
-        sq::vk_update_descriptor_set (
-            ctx, mDescriptorSet,
-            sq::DescriptorImageSampler (
-                1u, 0u, renderer.samplers.nearestClamp, renderer.images.depthView, vk::ImageLayout::eDepthStencilReadOnlyOptimal
-            )
-        );
     }
+
+    sq::vk_update_descriptor_set_swapper (
+        ctx, renderer.sets.particles,
+        sq::DescriptorImageSampler(4u, 0u, renderer.samplers.nearestClamp, renderer.images.depthView, vk::ImageLayout::eDepthStencilReadOnlyOptimal)
+    );
 }
 
 //============================================================================//
@@ -149,10 +155,9 @@ void ParticleRenderer::integrate(float blend, const ParticleSystem& system)
 
 void ParticleRenderer::populate_command_buffer(vk::CommandBuffer cmdbuf)
 {
-    cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, mPipeline);
-    cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, mPipelineLayout, 1u, renderer.sets.environment.front, {});
-    cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, mPipelineLayout, 2u, mDescriptorSet, {});
-    cmdbuf.bindVertexBuffers(0u, mVertexBuffer.front(), size_t(0u));
+    cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, renderer.pipelineLayouts.particles, 0u, renderer.sets.particles.front, {});
 
+    cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, renderer.pipelines.particles);
+    cmdbuf.bindVertexBuffers(0u, mVertexBuffer.front(), size_t(0u));
     cmdbuf.draw(mVertexCount, 1u, 0u, 0u);
 }

@@ -126,6 +126,8 @@ constexpr const uint IRRADIANCE_SIZE = 32u;
 constexpr const uint RADIANCE_SIZE   = 128u;
 constexpr const uint RADIANCE_LEVELS = 6u;
 
+constexpr const uint SHADOW_MAP_BASE_SIZE = 2048u;
+
 //============================================================================//
 
 } // namespace sts

@@ -79,4 +79,5 @@ void ResourceCaches::refresh_options()
     meshes.free_unreachable();
 
     pipelines.reload_resources();
+    materials.reload_resources();
 }

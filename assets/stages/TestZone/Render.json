@@ -13,7 +13,7 @@
       "White": "textures/White"
     },
     "pipelines": {
-      "": {
+      "Main": {
         "attributes": [ "TexCoords", "Normals", "Tangents" ],
         "pass": "Opaque",
         "vertexShader": "gbuffer/BasicModel/VertTangents",
@@ -22,11 +22,31 @@
         "alphaCoverage": "Disable",
         "depthTest": "Replace",
         "colourBlend": [ "Disable", "Disable" ]
+      },
+      "ShadowFront": {
+        "attributes": [ "#TexCoords", "#Normals", "#Tangents" ],
+        "pass": "ShadowFront",
+        "vertexShader": "shadow/BasicModel/Vert",
+        "fragmentShader": "shadow/BasicModel/Frag",
+        "cullFace": "Back",
+        "alphaCoverage": "Disable",
+        "depthTest": "Replace",
+        "colourBlend": []
+      },
+      "ShadowBack": {
+        "attributes": [ "#TexCoords", "#Normals", "#Tangents" ],
+        "pass": "ShadowBack",
+        "vertexShader": "shadow/BasicModel/Vert",
+        "fragmentShader": "shadow/BasicModel/Frag",
+        "cullFace": "Front",
+        "alphaCoverage": "Disable",
+        "depthTest": "Replace",
+        "colourBlend": []
       }
     },
     "materials": {
-      "": {
-        "pipeline": "",
+      "Main": {
+        "pipeline": "Main",
         "textures": {
           "tx_Albedo": "TestZone_albedo",
           "tx_Roughness": "TestZone_roughness",
@@ -34,26 +54,50 @@
           "tx_Metallic": "White"
         },
         "params": {}
-      }
+      },
+      "Shadow": [
+        {
+          "pipeline": "ShadowFront",
+          "textures": {},
+          "params": {}
+        },
+        {
+          "pipeline": "ShadowBack",
+          "textures": {},
+          "params": {}
+        }
+      ]
     }
   },
   "items": [
     {
       "condition": null,
-      "material": "",
+      "material": "Main",
       "mesh": "Stage",
       "submesh": null
     },
     {
       "condition": null,
-      "material": "",
+      "material": "Main",
       "mesh": "Platforms",
       "submesh": null
     },
     {
       "condition": null,
-      "material": "",
+      "material": "Main",
       "mesh": "Bounds",
+      "submesh": null
+    },
+    {
+      "condition": null,
+      "material": "Shadow",
+      "mesh": "Stage",
+      "submesh": null
+    },
+    {
+      "condition": null,
+      "material": "Shadow",
+      "mesh": "Platforms",
       "submesh": null
     }
   ]

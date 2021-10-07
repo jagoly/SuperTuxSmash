@@ -43,12 +43,6 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
-    vk::DescriptorSetLayout mDescriptorSetLayout;
-    vk::PipelineLayout mPipelineLayout;
-
-    vk::DescriptorSet mDescriptorSet;
-    vk::Pipeline mPipeline;
-
     sq::SwapBuffer mVertexBuffer;
 
     sq::Texture mTexture;

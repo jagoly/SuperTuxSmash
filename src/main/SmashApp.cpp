@@ -34,6 +34,8 @@ void SmashApp::initialise(std::vector<String> /*args*/)
         "SuperTuxSmash - Main Menu", Vec2U(1280u, 720u),
         "SuperTuxSmash", Vec3U(0u, 0u, 1u)
     );
+
+    mWindow->set_size_limits(Vec2U(640u, 360u), Vec2U(3840u, 2160u));
     mWindow->create_swapchain_and_friends();
     mWindow->set_vsync_enabled(true);
     mWindow->set_key_repeat(false);
@@ -162,6 +164,14 @@ void SmashApp::handle_event(sq::Event event)
             refresh_options();
         }
 
+        if (data.keyboard.key == Key::S)
+        {
+            constexpr const auto STRINGS = std::array { "OFF", "LOW", "MEDIUM", "HIGH" };
+            if (++mOptions->shadow_quality == 4) mOptions->shadow_quality = 0;
+            mDebugOverlay->notify(sq::build_string("shadow quality set to ", STRINGS[mOptions->shadow_quality]));
+            refresh_options();
+        }
+
         if (data.keyboard.key == Key::O)
         {
             constexpr const auto STRINGS = std::array { "OFF", "LOW", "MEDIUM", "HIGH" };
@@ -190,8 +200,9 @@ void SmashApp::handle_event(sq::Event event)
             else if (mOptions->debug_texture == "Roughness") mOptions->debug_texture = data.keyboard.shift ? "Albedo"    : "Normal";
             else if (mOptions->debug_texture == "Normal")    mOptions->debug_texture = data.keyboard.shift ? "Roughness" : "Metallic";
             else if (mOptions->debug_texture == "Metallic")  mOptions->debug_texture = data.keyboard.shift ? "Normal"    : "Depth";
-            else if (mOptions->debug_texture == "Depth")     mOptions->debug_texture = data.keyboard.shift ? "Metallic"  : "SSAO";
-            else if (mOptions->debug_texture == "SSAO")      mOptions->debug_texture = data.keyboard.shift ? "Depth"     : "";
+            else if (mOptions->debug_texture == "Depth")     mOptions->debug_texture = data.keyboard.shift ? "Metallic"  : "Shadow";
+            else if (mOptions->debug_texture == "Shadow")    mOptions->debug_texture = data.keyboard.shift ? "Depth"     : "SSAO";
+            else if (mOptions->debug_texture == "SSAO")      mOptions->debug_texture = data.keyboard.shift ? "Shadow"    : "";
 
             mDebugOverlay->notify("debug texture set to '{}'"_format(mOptions->debug_texture));
             refresh_options();
@@ -260,13 +271,13 @@ void SmashApp::refresh_options()
 void SmashApp::start_game(GameSetup setup)
 {
     mActiveScene = std::make_unique<GameScene>(*this, setup);
-    refresh_options();
+    //refresh_options();
 }
 
 void SmashApp::start_editor()
 {
     mActiveScene = std::make_unique<EditorScene>(*this);
-    refresh_options();
+    //refresh_options();
 }
 
 void SmashApp::return_to_main_menu()

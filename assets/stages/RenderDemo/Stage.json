@@ -11,7 +11,9 @@
     "inner_boundary_min": [ -10.0, -4.0 ],
     "inner_boundary_max": [ 10.0, 10.0 ],
     "outer_boundary_min": [ -14.0, -8.0 ],
-    "outer_boundary_max": [ 14.0, 14.0 ]
+    "outer_boundary_max": [ 14.0, 14.0 ],
+    "shadow_casters_min": [ -4.1, 0.1, -1.3 ],
+    "shadow_casters_max": [ 4.1, 1.7, 1.3 ]
   },
   "blocks": {
     "Main": {

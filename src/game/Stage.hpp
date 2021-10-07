@@ -87,11 +87,13 @@ public: //====================================================//
 
     const auto& get_inner_boundary() const { return mInnerBoundary; }
     const auto& get_outer_boundary() const { return mOuterBoundary; }
+    const auto& get_shadow_casters() const { return mShadowCasters; }
 
 protected: //=================================================//
 
     struct { Vec2F min, max; } mInnerBoundary;
     struct { Vec2F min, max; } mOuterBoundary;
+    struct { Vec3F min, max; } mShadowCasters;
 
     //--------------------------------------------------------//
 
@@ -112,6 +114,9 @@ protected: //=================================================//
 
     sq::SwapBuffer mStaticUbo;
     sq::Swapper<vk::DescriptorSet> mDescriptorSet;
+
+    friend EditorScene;
+    friend DebugGui;
 };
 
 //============================================================================//

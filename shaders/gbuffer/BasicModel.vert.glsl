@@ -2,15 +2,16 @@
 
 //============================================================================//
 
-#if !defined(OPTION_SKELLY) ||\
-    !defined(OPTION_TANGENTS)
+#if !defined(OPTION_SKELLY) || !defined(OPTION_TANGENTS)
   #error
 #endif
 
 //============================================================================//
 
+layout(set=0, binding=0, std140)
 #include "../blocks/Camera.glsl"
 
+layout(set=2, binding=0, std140)
 #if OPTION_SKELLY
   #include "../blocks/Skelly.glsl"
 #else

@@ -2,6 +2,7 @@
 
 //============================================================================//
 
+layout(set=0, binding=0, std140)
 #include "../blocks/Camera.glsl"
 
 layout(points) in;

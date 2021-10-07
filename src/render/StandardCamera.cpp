@@ -73,8 +73,6 @@ void StandardCamera::intergrate(float blend)
 {
     const float aspect = float(renderer.window.get_size().x) / float(renderer.window.get_size().y);
 
-    mBlock.direction = Vec3F(0.f, 0.f, +1.f);
-
     mBlock.projMat = maths::perspective_LH(maths::radians(0.15f), aspect, 0.5f, 100.f);
 
     const Vec2F minView = maths::mix(mPreviousView.min, mCurrentView.min, blend);
@@ -99,14 +97,14 @@ void StandardCamera::intergrate(float blend)
     cameraTarget.x = clamp_to_bounds(cameraTarget.x, minBounds.x, maxBounds.x, cameraDistanceY * aspect);
     cameraTarget.y = clamp_to_bounds(cameraTarget.y, minBounds.y, maxBounds.y, cameraDistanceX / aspect);
 
-    mBlock.position = cameraTarget - mBlock.direction * cameraDistance;
+    Vec3F position = cameraTarget - Vec3F(0.f, 0.f, cameraDistance);
 
     const float factorX = cameraTarget.x / (cameraTarget.x > 0.f ? maxBounds.x : -minBounds.x);
     const float factorY = cameraTarget.y / (cameraTarget.y > 0.f ? maxBounds.y : -minBounds.y);
-    mBlock.position.x += factorX * cameraDistance * 0.125f;
-    mBlock.position.y += factorY * cameraDistance * 0.125f;
+    position.x += factorX * cameraDistance * 0.125f;
+    position.y += factorY * cameraDistance * 0.125f;
 
-    mBlock.viewMat = maths::look_at_LH(mBlock.position, cameraTarget, Vec3F(0.f, 1.f, 0.f));
+    mBlock.viewMat = maths::look_at_LH(position, cameraTarget, Vec3F(0.f, 1.f, 0.f));
 
     mBlock.invViewMat = maths::inverse(mBlock.viewMat);
     mBlock.invProjMat = maths::inverse(mBlock.projMat);

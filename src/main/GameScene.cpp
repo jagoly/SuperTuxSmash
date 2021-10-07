@@ -27,7 +27,8 @@ GameScene::GameScene(SmashApp& smashApp, GameSetup setup)
     if (setup.stage == StageEnum::Null) setup.stage = StageEnum::TestZone;
 
     mSmashApp.get_debug_overlay().set_sub_timers ({
-        "BeginGbuffer", " Opaque", "EndGbuffer", "DepthMipGen", "SSAO", "BlurSSAO",
+        "BeginGbuffer", " Opaque", "EndGbuffer",
+        "Shadows", "ShadowAverage", "DepthMipGen", "SSAO", "BlurSSAO",
         "BeginHDR", " Skybox", " LightDefault", " Transparent", " Particles", "EndHDR",
         "BeginFinal", " Composite", " Debug", " Gui", "EndFinal"
     });

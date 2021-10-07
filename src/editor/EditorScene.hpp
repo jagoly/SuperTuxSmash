@@ -149,7 +149,7 @@ private: //===================================================//
 
     void initialise_base_context(BaseContext& ctx);
 
-    ActionContext& get_action_context(ActionKey key);
+    void activate_action_context(ActionKey key);
 
     HurtblobsContext& get_hurtblobs_context(FighterEnum key);
 

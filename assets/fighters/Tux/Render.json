@@ -18,18 +18,50 @@
         "alphaCoverage": "Disable",
         "depthTest": "Replace",
         "colourBlend": [ "Disable", "Disable" ]
+      },
+      "ShadowFront": {
+        "attributes": [ "#TexCoords", "#Normals", "Bones" ],
+        "pass": "ShadowFront",
+        "vertexShader": "shadow/BasicModel/Vert_Skelly",
+        "fragmentShader": "shadow/BasicModel/Frag",
+        "cullFace": "Back",
+        "alphaCoverage": "Disable",
+        "depthTest": "Replace",
+        "colourBlend": []
+      },
+      "ShadowBack": {
+        "attributes": [ "#TexCoords", "#Normals", "Bones" ],
+        "pass": "ShadowBack",
+        "vertexShader": "shadow/BasicModel/Vert_Skelly",
+        "fragmentShader": "shadow/BasicModel/Frag",
+        "cullFace": "Front",
+        "alphaCoverage": "Disable",
+        "depthTest": "Replace",
+        "colourBlend": []
       }
     },
     "materials": {
-      "Tux": {
-        "pipeline": "Tux",
-        "textures": {
-          "tx_Albedo": "Tux_albedo",
-          "tx_Roughness": "Tux_roughness",
-          "tx_Metallic": "Black"
+      "Tux": [
+        {
+          "pipeline": "Tux",
+          "textures": {
+            "tx_Albedo": "Tux_albedo",
+            "tx_Roughness": "Tux_roughness",
+            "tx_Metallic": "Black"
+          },
+          "params": {}
         },
-        "params": {}
-      }
+        {
+          "pipeline": "ShadowFront",
+          "textures": {},
+          "params": {}
+        },
+        {
+          "pipeline": "ShadowBack",
+          "textures": {},
+          "params": {}
+        }
+      ]
     }
   },
   "items": [

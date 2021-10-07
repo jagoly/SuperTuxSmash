@@ -12,8 +12,8 @@
       "": {
         "attributes": [ "TexCoords", "Bones" ],
         "pass": "Transparent",
-        "vertexShader": "super/BasicEffect/Vert",
-        "fragmentShader": "super/BasicEffect/Frag",
+        "vertexShader": "transparent/BasicEffect/Vert",
+        "fragmentShader": "transparent/BasicEffect/Frag",
         "cullFace": "Disable",
         "alphaCoverage": "Disable",
         "depthTest": "Keep",

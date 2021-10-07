@@ -464,13 +464,7 @@ void EditorScene::impl_show_widget_navigator()
                     if (loaded) ImPlus::PushFont(ImPlus::FONT_BOLD);
                     if (ImPlus::Selectable(label, active || highlight) && !active)
                     {
-                        mSmashApp.get_window().set_title("SuperTuxSmash - Editor - {}/{}"_format(fighterName, actionName));
-
-                        mActiveHurtblobsContext = nullptr;
-                        mActiveStageContext = nullptr;
-                        mActiveContext = mActiveActionContext = &get_action_context(key);
-                        mActiveContext->renderer->refresh_options_destroy();
-                        mActiveContext->renderer->refresh_options_create();
+                        activate_action_context(key);
                     }
                     if (loaded) ImGui::PopFont();
 
@@ -631,6 +625,7 @@ void EditorScene::impl_show_widget_fighter()
     const ImPlus::ScopeWindow window = { "Fighter", 0 };
     if (window.show == false) return;
 
+    DebugGui::show_widget_stage(mActiveActionContext->world->get_stage());
     DebugGui::show_widget_fighter(*fighter);
 }
 
@@ -760,10 +755,20 @@ void EditorScene::initialise_base_context(BaseContext& ctx)
 
 //----------------------------------------------------------------------------//
 
-EditorScene::ActionContext& EditorScene::get_action_context(ActionKey key)
+void EditorScene::activate_action_context(ActionKey key)
 {
+    mSmashApp.get_window().set_title("SuperTuxSmash - Editor - {}/{}"_format(key.fighter, key.action));
+
+    mActiveHurtblobsContext = nullptr;
+    mActiveStageContext = nullptr;
+
     if (auto iter = mActionContexts.find(key); iter != mActionContexts.end())
-        return iter->second;
+    {
+        mActiveContext = mActiveActionContext = &iter->second;
+        mActiveContext->renderer->refresh_options_destroy();
+        mActiveContext->renderer->refresh_options_create();
+        return; // already loaded
+    }
 
     ActionContext& ctx = mActionContexts[key];
     initialise_base_context(ctx);
@@ -781,7 +786,7 @@ EditorScene::ActionContext& EditorScene::get_action_context(ActionKey key)
 
     ctx.timelineLength = get_default_timeline_length(ctx);
 
-    return ctx;
+    mActiveContext = mActiveActionContext = &ctx;
 }
 
 //----------------------------------------------------------------------------//

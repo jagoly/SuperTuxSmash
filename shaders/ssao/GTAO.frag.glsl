@@ -13,17 +13,18 @@
 
 //============================================================================//
 
-#include "../blocks/Camera.glsl"
-
 layout(constant_id=0) const float INVERSE_WIDTH = 0.0;
 layout(constant_id=1) const float INVERSE_HEIGHT = 0.0;
 layout(constant_id=2) const float MAX_DEPTH_LOD = 0.0;
 
 #define INVERSE_VIEWPORT vec2(INVERSE_WIDTH, INVERSE_HEIGHT)
 
-layout(set=1, binding=0) uniform sampler2D tx_Normal;
-layout(set=1, binding=1) uniform sampler2D tx_Depth;
-layout(set=1, binding=2) uniform sampler2D tx_DepthMips;
+layout(set=0, binding=0, std140)
+#include "../blocks/Camera.glsl"
+
+layout(set=0, binding=1) uniform sampler2D tx_Normal;
+layout(set=0, binding=2) uniform sampler2D tx_Depth;
+layout(set=0, binding=3) uniform sampler2D tx_DepthMips;
 
 layout(location=0) out float frag_SSAO;
 

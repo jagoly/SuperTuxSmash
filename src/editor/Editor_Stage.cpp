@@ -38,6 +38,14 @@ void EditorScene::impl_show_widget_stage()
         ImPlus::SliderValue("Contrast", tonemap.contrast, 0.5f, 2.f);
         ImPlus::SliderValue("Black", tonemap.black, 0.5f, 2.f);
     }
+
+    if (ImGui::CollapsingHeader("Directional Light", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        const ImPlus::ScopeItemWidth width = -100.f;
+
+        ImPlus::InputVector("Colour", ctx.stage->mLightColour, 0, "%.2f");
+        ImPlus::InputVector("Direction", ctx.stage->mLightDirection, 0, "%.2f");
+    }
 }
 
 //============================================================================//
@@ -393,12 +401,10 @@ void EditorScene::generate_cube_map_irradiance()
 
     update_cube_map_texture(stuff.image, IRRADIANCE_SIZE, 1u, ctx.renderer->cubemaps.irradiance);
 
-    sq::vk_update_descriptor_set_swapper (
-        vctx, ctx.renderer->sets.environment,
-        sq::DescriptorImageSampler(1u, 0u, ctx.renderer->cubemaps.irradiance.get_descriptor_info())
-    );
-
     ctx.irradiance.initialise(*this, 0u, ctx.renderer->cubemaps.irradiance.get_image(), ctx.renderer->samplers.linearClamp);
+
+    ctx.renderer->refresh_options_destroy();
+    ctx.renderer->refresh_options_create();
 
     ctx.irradianceModified = true;
 
@@ -589,13 +595,11 @@ void EditorScene::generate_cube_map_radiance()
 
     update_cube_map_texture(stuff.image, RADIANCE_SIZE, RADIANCE_LEVELS, ctx.renderer->cubemaps.radiance);
 
-    sq::vk_update_descriptor_set_swapper (
-        vctx, ctx.renderer->sets.environment,
-        sq::DescriptorImageSampler(2u, 0u, ctx.renderer->cubemaps.radiance.get_descriptor_info())
-    );
-
     for (uint level = 0u; level < RADIANCE_LEVELS; ++level)
         ctx.radiance[level].initialise(*this, level, ctx.renderer->cubemaps.radiance.get_image(), ctx.renderer->samplers.linearClamp);
+
+    ctx.renderer->refresh_options_destroy();
+    ctx.renderer->refresh_options_create();
 
     ctx.radianceModified = true;
 

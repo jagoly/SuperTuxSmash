@@ -47,12 +47,6 @@ void EditorCamera::intergrate(float /*blend*/)
 
     const Mat3F rotation = maths::rotation({1.f, 0.f, 0.f}, mPitch) * maths::rotation({0.f, 1.f, 0.f}, mYaw);
 
-    mBlock.position = rotation * Vec3F(0.f, 0.f, -mZoom);
-    mBlock.position.x -= mCentre.x;
-    mBlock.position.y -= mCentre.y;
-
-    mBlock.direction = maths::normalize(rotation * Vec3F(0.f, 0.f, 1.f));
-
     mBlock.viewMat = maths::translate(maths::transform(Vec3F(0.f, 0.f, mZoom), rotation), Vec3F(-mCentre, 0.f));
 
     mBlock.invViewMat = maths::inverse(mBlock.viewMat);

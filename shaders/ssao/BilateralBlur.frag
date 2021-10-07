@@ -1,12 +1,13 @@
 #version 450
 
-#include "../blocks/Camera.glsl"
-
 layout(constant_id=0) const float INVERSE_WIDTH = 0.0;
 layout(constant_id=1) const float INVERSE_HEIGHT = 0.0;
 
-layout(set=1, binding=0) uniform sampler2D tx_SSAO;
-layout(set=1, binding=1) uniform sampler2D tx_DepthHalf;
+layout(set=0, binding=0, std140)
+#include "../blocks/Camera.glsl"
+
+layout(set=0, binding=1) uniform sampler2D tx_SSAO;
+layout(set=0, binding=2) uniform sampler2D tx_DepthHalf;
 
 layout(location=0) out float frag_Blur;
 

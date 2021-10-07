@@ -9,7 +9,7 @@
       "White": "textures/White"
     },
     "pipelines": {
-      "": {
+      "Main": {
         "attributes": [ "TexCoords", "Normals" ],
         "pass": "Opaque",
         "vertexShader": "gbuffer/BasicModel/Vert",
@@ -18,24 +18,62 @@
         "alphaCoverage": "Disable",
         "depthTest": "Replace",
         "colourBlend": [ "Disable", "Disable" ]
+      },
+      "ShadowFront": {
+        "attributes": [ "#TexCoords", "#Normals" ],
+        "pass": "ShadowFront",
+        "vertexShader": "shadow/BasicModel/Vert",
+        "fragmentShader": "shadow/BasicModel/Frag",
+        "cullFace": "Back",
+        "alphaCoverage": "Disable",
+        "depthTest": "Replace",
+        "colourBlend": []
+      },
+      "ShadowBack": {
+        "attributes": [ "#TexCoords", "#Normals" ],
+        "pass": "ShadowBack",
+        "vertexShader": "shadow/BasicModel/Vert",
+        "fragmentShader": "shadow/BasicModel/Frag",
+        "cullFace": "Front",
+        "alphaCoverage": "Disable",
+        "depthTest": "Replace",
+        "colourBlend": []
       }
     },
     "materials": {
-      "": {
-        "pipeline": "",
+      "Main": {
+        "pipeline": "Main",
         "textures": {
           "tx_Albedo": "White",
           "tx_Roughness": "Spheres_roughness",
           "tx_Metallic": "Spheres_metallic"
         },
         "params": {}
-      }
+      },
+      "Shadow": [
+        {
+          "pipeline": "ShadowFront",
+          "textures": {},
+          "params": {}
+        },
+        {
+          "pipeline": "ShadowBack",
+          "textures": {},
+          "params": {}
+        }
+      ]
     }
   },
   "items": [
     {
       "condition": null,
-      "material": "",
+      "material": "Main",
+      "mesh": "Spheres",
+      "submesh": null
+    },
+    {
+      "condition": null,
+      "material": "Shadow",
       "mesh": "Spheres",
       "submesh": null
     }

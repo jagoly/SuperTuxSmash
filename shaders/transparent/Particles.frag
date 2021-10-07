@@ -2,13 +2,15 @@
 
 //============================================================================//
 
+layout(set=0, binding=0, std140)
 #include "../blocks/Camera.glsl"
+
+layout(set=0, binding=1, std140)
 #include "../blocks/Environment.glsl"
 
-layout(set=1, binding=1) uniform samplerCube tx_Irradiance;
-
-layout(set=2, binding=0) uniform sampler2DArray tx_Particles;
-layout(set=2, binding=1) uniform sampler2D tx_Depth;
+layout(set=0, binding=2) uniform sampler2DArray tx_Particles;
+layout(set=0, binding=3) uniform samplerCube tx_Irradiance;
+layout(set=0, binding=4) uniform sampler2D tx_Depth;
 
 layout(location=0) in GeometryBlock
 {

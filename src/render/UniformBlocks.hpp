@@ -13,8 +13,6 @@ struct CameraBlock
     alignas(16) Mat4F invViewMat;
     alignas(16) Mat4F invProjMat;
     alignas(16) Mat4F projViewMat;
-    alignas(16) Vec3F position;
-    alignas(16) Vec3F direction;
 };
 
 //============================================================================//
@@ -23,7 +21,8 @@ struct EnvironmentBlock
 {
     alignas(16) Vec3F lightColour;
     alignas(16) Vec3F lightDirection;
-    alignas(16) Mat4F lightMatrix;
+    alignas(16) Mat4F viewMatrix;
+    alignas(16) Mat4F projViewMatrix;
 };
 
 //============================================================================//

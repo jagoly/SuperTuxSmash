@@ -20,6 +20,8 @@ struct Options final : sq::NonCopyable
 
     uint8_t msaa_quality = 1u;      ///< Multi Sample Anti-Aliasing quality
 
+    uint8_t shadow_quality = 2u;    ///< Shadow Mapping quality
+
     bool imgui_demo = false;        ///< Show the ImGui demo window
 
     //--------------------------------------------------------//

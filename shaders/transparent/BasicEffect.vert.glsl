@@ -6,10 +6,11 @@
 
 //============================================================================//
 
+layout(set=0, binding=0, std140)
 #include "../blocks/Camera.glsl"
-#include "../blocks/Effect.glsl"
 
-//============================================================================//
+layout(set=2, binding=0, std140)
+#include "../blocks/Effect.glsl"
 
 layout(location=0) in vec3 v_Position;
 layout(location=1) in vec2 v_TexCoord;

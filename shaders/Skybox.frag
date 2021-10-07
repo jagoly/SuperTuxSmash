@@ -1,6 +1,6 @@
 #version 450
 
-layout(set=1, binding=0) uniform samplerCube tx_Skybox;
+layout(set=0, binding=1) uniform samplerCube tx_Skybox;
 
 layout(location=0) in vec3 io_CubeNorm;
 

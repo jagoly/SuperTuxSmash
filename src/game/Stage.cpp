@@ -8,6 +8,7 @@
 #include "render/Camera.hpp"
 
 #include <sqee/maths/Culling.hpp>
+#include <sqee/maths/Functions.hpp>
 #include <sqee/misc/Json.hpp>
 #include <sqee/vk/Helpers.hpp>
 
@@ -34,6 +35,8 @@ Stage::Stage(FightWorld& world, StageEnum type)
     mInnerBoundary.max = general.at("inner_boundary_max");
     mOuterBoundary.min = general.at("outer_boundary_min");
     mOuterBoundary.max = general.at("outer_boundary_max");
+    mShadowCasters.min = general.at("shadow_casters_min");
+    mShadowCasters.max = general.at("shadow_casters_max");
 
     for (const JsonValue& jblock : json.at("blocks"))
     {
@@ -65,16 +68,7 @@ Stage::Stage(FightWorld& world, StageEnum type)
         world.renderer.cubemaps.irradiance.load_from_file_cube(sq::build_string("assets/", mSkyboxPath + "/Irradiance"));
         world.renderer.cubemaps.radiance.load_from_file_cube(sq::build_string("assets/", mSkyboxPath + "/Radiance"));
 
-        sq::vk_update_descriptor_set (
-            ctx, world.renderer.sets.skybox,
-            sq::DescriptorImageSampler(0u, 0u, world.renderer.cubemaps.skybox.get_descriptor_info())
-        );
-
-        sq::vk_update_descriptor_set_swapper (
-            ctx, world.renderer.sets.environment,
-            sq::DescriptorImageSampler(1u, 0u, world.renderer.cubemaps.irradiance.get_descriptor_info()),
-            sq::DescriptorImageSampler(2u, 0u, world.renderer.cubemaps.radiance.get_descriptor_info())
-        );
+        world.renderer.update_cubemap_descriptor_sets();
     }
 
     // uniform buffer and descriptor set
@@ -83,7 +77,8 @@ Stage::Stage(FightWorld& world, StageEnum type)
         mDescriptorSet = sq::vk_allocate_descriptor_set_swapper(ctx, world.renderer.setLayouts.object);
 
         sq::vk_update_descriptor_set_swapper (
-            ctx, mDescriptorSet, sq::DescriptorUniformBuffer(0u, 0u, mStaticUbo.get_descriptor_info())
+            ctx, mDescriptorSet,
+            sq::DescriptorUniformBuffer(0u, 0u, mStaticUbo.get_descriptor_info())
         );
     }
 
@@ -110,11 +105,27 @@ void Stage::integrate(float /*blend*/)
     //block.normMat = Mat34F(maths::normal_matrix(camera.viewMat));
     block.normMat = Mat34F();
 
-    world.renderer.sets.environment.swap();
     auto& environmentBlock = *reinterpret_cast<EnvironmentBlock*>(world.renderer.ubos.environment.swap_map());
     environmentBlock.lightColour = mLightColour;
     environmentBlock.lightDirection = maths::normalize(mLightDirection);
-    environmentBlock.lightMatrix = Mat4F();
+
+    environmentBlock.viewMatrix = maths::look_at_LH(Vec3F(), environmentBlock.lightDirection, Vec3F(0.f, 0.f, 1.f));
+
+    Vec3F minimum = mShadowCasters.min;
+    Vec3F maximum = mShadowCasters.max;
+
+    for (const Fighter* fighter : world.get_fighters())
+    {
+        if (fighter == nullptr) continue;
+
+        // todo: better estimates for fighter model size
+        minimum.x = maths::min(minimum.x, fighter->status.position.x + fighter->get_diamond().min().x - 1.f);
+        minimum.y = maths::min(minimum.y, fighter->status.position.y + fighter->get_diamond().min().y - 0.5f);
+        maximum.x = maths::max(maximum.x, fighter->status.position.x + fighter->get_diamond().max().x + 1.f);
+        maximum.y = maths::max(maximum.y, fighter->status.position.y + fighter->get_diamond().max().y + 0.5f);
+    }
+
+    environmentBlock.projViewMatrix = world.renderer.get_camera().compute_light_matrix(environmentBlock.viewMatrix, minimum, maximum);
 }
 
 //============================================================================//

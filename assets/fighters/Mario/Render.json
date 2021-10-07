@@ -41,6 +41,26 @@
         "alphaCoverage": "Disable",
         "depthTest": "Replace",
         "colourBlend": [ "Disable", "Disable" ]
+      },
+      "ShadowFront": {
+        "attributes": [ "#TexCoords", "#Normals", "Bones" ],
+        "pass": "ShadowFront",
+        "vertexShader": "shadow/BasicModel/Vert_Skelly",
+        "fragmentShader": "shadow/BasicModel/Frag",
+        "cullFace": "Back",
+        "alphaCoverage": "Disable",
+        "depthTest": "Replace",
+        "colourBlend": []
+      },
+      "ShadowBack": {
+        "attributes": [ "#TexCoords", "#Normals", "Bones" ],
+        "pass": "ShadowBack",
+        "vertexShader": "shadow/BasicModel/Vert_Skelly",
+        "fragmentShader": "shadow/BasicModel/Frag",
+        "cullFace": "Front",
+        "alphaCoverage": "Disable",
+        "depthTest": "Replace",
+        "colourBlend": []
       }
     },
     "materials": {
@@ -99,7 +119,19 @@
           "tx_Metallic": "Black"
         },
         "params": {}
-      }
+      },
+      "Shadow": [
+        {
+          "pipeline": "ShadowFront",
+          "textures": {},
+          "params": {}
+        },
+        {
+          "pipeline": "ShadowBack",
+          "textures": {},
+          "params": {}
+        }
+      ]
     }
   },
   "items": [
@@ -156,6 +188,36 @@
       "material": "EyesHurt",
       "mesh": "HeadHurt",
       "submesh": 1
+    },
+    {
+      "condition": null,
+      "material": "Shadow",
+      "mesh": "Body",
+      "submesh": null
+    },
+    {
+      "condition": null,
+      "material": "Shadow",
+      "mesh": "HairHat",
+      "submesh": null
+    },
+    {
+      "condition": "!flinch",
+      "material": "Shadow",
+      "mesh": "Head",
+      "submesh": null
+    },
+    {
+      "condition": "!flinch",
+      "material": "Shadow",
+      "mesh": "EyesWhite",
+      "submesh": null
+    },
+    {
+      "condition": "flinch",
+      "material": "Shadow",
+      "mesh": "HeadHurt",
+      "submesh": null
     }
   ]
 }

@@ -23,11 +23,22 @@ std::vector<DrawItemDef> DrawItemDef::load_from_json(const String& path, Resourc
 
     for (JsonValue& material : jsonMaterials)
     {
-        JsonValue& pipeline = material.at("pipeline");
-        pipeline = jsonPipelines.at(pipeline.get_ref<const String&>());
+        if (material.is_object() == true)
+        {
+            JsonValue& pipeline = material.at("pipeline");
+            pipeline = jsonPipelines.at(pipeline.get_ref<const String&>());
 
-        for (JsonValue& texture : material.at("textures"))
-            texture = jsonTextures.at(texture.get_ref<const String&>());
+            for (JsonValue& texture : material.at("textures"))
+                texture = jsonTextures.at(texture.get_ref<const String&>());
+        }
+        else for (JsonValue& materialPass : material)
+        {
+            JsonValue& pipeline = materialPass.at("pipeline");
+            pipeline = jsonPipelines.at(pipeline.get_ref<const String&>());
+
+            for (JsonValue& texture : materialPass.at("textures"))
+                texture = jsonTextures.at(texture.get_ref<const String&>());
+        }
     }
 
     //-- populate the result vector --------------------------//
@@ -35,7 +46,6 @@ std::vector<DrawItemDef> DrawItemDef::load_from_json(const String& path, Resourc
     const JsonValue& jsonItems = json.at("items");
 
     std::vector<DrawItemDef> result;
-    result.reserve(jsonItems.size());
 
     for (const auto& jobj : jsonItems)
     {

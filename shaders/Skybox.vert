@@ -1,5 +1,6 @@
 #version 450
 
+layout(set=0, binding=0, std140)
 #include "blocks/Camera.glsl"
 
 layout(location=0) out vec3 io_CubeNorm;

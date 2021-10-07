@@ -34,29 +34,97 @@
         "alphaCoverage": "Disable",
         "depthTest": "Replace",
         "colourBlend": [ "Disable", "Disable" ]
+      },
+      "BodyShadowFront": {
+        "attributes": [ "#TexCoords", "#Normals", "Bones" ],
+        "pass": "ShadowFront",
+        "vertexShader": "shadow/BasicModel/Vert_Skelly",
+        "fragmentShader": "shadow/BasicModel/Frag",
+        "cullFace": "Back",
+        "alphaCoverage": "Disable",
+        "depthTest": "Replace",
+        "colourBlend": []
+      },
+      "BodyShadowBack": {
+        "attributes": [ "#TexCoords", "#Normals", "Bones" ],
+        "pass": "ShadowBack",
+        "vertexShader": "shadow/BasicModel/Vert_Skelly",
+        "fragmentShader": "shadow/BasicModel/Frag",
+        "cullFace": "Front",
+        "alphaCoverage": "Disable",
+        "depthTest": "Replace",
+        "colourBlend": []
+      },
+      "HairShadowFront": {
+        "attributes": [ "TexCoords", "#Normals", "#Tangents", "Bones" ],
+        "pass": "ShadowFront",
+        "vertexShader": "shadow/BasicModel/Vert_Skelly_Mask",
+        "fragmentShader": "shadow/BasicModel/Frag_Mask",
+        "cullFace": "Back",
+        "alphaCoverage": "Disable",
+        "depthTest": "Replace",
+        "colourBlend": []
+      },
+      "HairShadowBack": {
+        "attributes": [ "TexCoords", "#Normals", "#Tangents", "Bones" ],
+        "pass": "ShadowBack",
+        "vertexShader": "shadow/BasicModel/Vert_Skelly_Mask",
+        "fragmentShader": "shadow/BasicModel/Frag_Mask",
+        "cullFace": "Back",
+        "alphaCoverage": "Disable",
+        "depthTest": "Replace",
+        "colourBlend": []
       }
     },
     "materials": {
-      "Body": {
-        "pipeline": "Body",
-        "textures": {
-          "tx_Albedo": "Body_albedo",
-          "tx_Roughness": "Body_roughness",
-          "tx_Metallic": "Body_metallic"
+      "Body": [
+        {
+          "pipeline": "Body",
+          "textures": {
+            "tx_Albedo": "Body_albedo",
+            "tx_Roughness": "Body_roughness",
+            "tx_Metallic": "Body_metallic"
+          },
+          "params": {}
         },
-        "params": {}
-      },
-      "Hair": {
-        "pipeline": "Hair",
-        "textures": {
-          "tx_Albedo": "Hair_albedo",
-          "tx_Roughness": "Hair_roughness",
-          "tx_Normal": "Hair_normal",
-          "tx_Metallic": "Black",
-          "tx_Mask": "Hair_mask"
+        {
+          "pipeline": "BodyShadowFront",
+          "textures": {},
+          "params": {}
         },
-        "params": {}
-      }
+        {
+          "pipeline": "BodyShadowBack",
+          "textures": {},
+          "params": {}
+        }
+      ],
+      "Hair": [
+        {
+          "pipeline": "Hair",
+          "textures": {
+            "tx_Albedo": "Hair_albedo",
+            "tx_Roughness": "Hair_roughness",
+            "tx_Normal": "Hair_normal",
+            "tx_Metallic": "Black",
+            "tx_Mask": "Hair_mask"
+          },
+          "params": {}
+        },
+        {
+          "pipeline": "HairShadowFront",
+          "textures": {
+            "tx_Mask": "Hair_mask"
+          },
+          "params": {}
+        },
+        {
+          "pipeline": "HairShadowBack",
+          "textures": {
+            "tx_Mask": "Hair_mask"
+          },
+          "params": {}
+        }
+      ]
     }
   },
   "items": [
