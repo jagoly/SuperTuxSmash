@@ -1,0 +1,14 @@
+{
+    "cmake.configureOnOpen": false,
+    "cmake.configureSettings": {
+        "SQEE_BUILD_ROOT" : "c:/Projects/sqee/build"
+    },
+    "cmake.buildDirectory": "c:/Projects/SuperTuxSmash/build",
+    "cmake.debugConfig": {
+        "cwd": "${command:cmake.launchTargetDirectory}",
+        "environment": [
+            { "name": "PATH", "value": "c:/Projects/sqee/build/${command:cmake.buildType}" }
+        ],
+        "console": "integratedTerminal"
+    }
+}

@@ -717,7 +717,7 @@ void Renderer::impl_create_shadow_stuff()
             vk::PipelineDepthStencilStateCreateInfo {
                 {}, true, true, vk::CompareOp::eAlways, false, false, {}, {}, 0.f, 0.f
             },
-            vk::Viewport { 0.f, 0.f, float(shadowSize), float(shadowSize) },
+            vk::Viewport { 0.f, 0.f, float(shadowSize), float(shadowSize), 0.f, 1.f },
             vk::Rect2D { {0, 0}, {shadowSize, shadowSize} },
             nullptr, nullptr
         );

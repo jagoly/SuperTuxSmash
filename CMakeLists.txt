@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.20)
 project(SuperTuxSmash CXX)
 
 ################################################################################
@@ -9,38 +9,11 @@ if (NOT SQEE_BUILD_ROOT)
     message(FATAL_ERROR "SQEE_BUILD_ROOT not specified")
 endif ()
 
-################################################################################
+set(CMAKE_PREFIX_PATH ${SQEE_BUILD_ROOT})
 
-set(SHADER_OUTPUT_DIR "${CMAKE_BINARY_DIR}/shaders")
+find_package(sqee REQUIRED)
 
-function (target_add_shaders TARGET)
-    foreach (SHADER ${ARGN})
-
-        string( REGEX REPLACE
-                "${PROJECT_SOURCE_DIR}/shaders/(.*)\.(vert|geom|frag)"
-                "${SHADER_OUTPUT_DIR}/\\1\.\\2\.spv"
-                OUTPATH ${SHADER} )
-
-        if (${SHADER} STREQUAL ${OUTPATH})
-            message(FATAL_ERROR "bad shader path '${SHADER}'")
-        endif ()
-
-        get_filename_component(OUTDIR ${OUTPATH} DIRECTORY)
-        file(MAKE_DIRECTORY ${OUTDIR})
-
-        add_custom_command( OUTPUT ${OUTPATH}
-                            COMMAND glslc ${SHADER} -o ${OUTPATH}
-                            # todo: how to pipe on windows?
-                            #COMMAND glslc ${SHADER} -o - | spirv-opt -O - -o ${OUTPATH}
-                            DEPENDS ${SHADER}
-                            IMPLICIT_DEPENDS CXX ${SHADER}
-                            VERBATIM )
-
-        set_source_files_properties(${OUTPATH} PROPERTIES GENERATED True)
-        target_sources(${TARGET} PRIVATE ${OUTPATH})
-
-    endforeach ()
-endfunction ()
+include(sqeeHelpers)
 
 ################################################################################
 
@@ -48,6 +21,8 @@ file(GLOB_RECURSE HEADERS "${PROJECT_SOURCE_DIR}/src/*.hpp")
 file(GLOB_RECURSE SOURCES "${PROJECT_SOURCE_DIR}/src/*.cpp")
 
 add_executable(sts-game ${HEADERS} ${SOURCES})
+
+target_set_output_directory(sts-game "")
 
 file(GLOB_RECURSE VERT_SHADERS "${PROJECT_SOURCE_DIR}/shaders/*.vert")
 file(GLOB_RECURSE GEOM_SHADERS "${PROJECT_SOURCE_DIR}/shaders/*.geom")
@@ -64,21 +39,9 @@ target_include_directories(sts-game PRIVATE "${PROJECT_SOURCE_DIR}/src")
 set_property(TARGET sts-game PROPERTY CXX_STANDARD 17)
 set_property(TARGET sts-game PROPERTY CXX_STANDARD_REQUIRED True)
 
-# force use of the static msvc runtime so we don't need a bunch of extra dlls
-set_property(TARGET sts-game PROPERTY MSVC_RUNTIME_LIBRARY MultiThreaded$<$<CONFIG:Debug>:Debug>)
-
-################################################################################
-
-#set_property(TARGET sts-game PROPERTY CXX_INCLUDE_WHAT_YOU_USE
-#    "iwyu;-Xiwyu;any;-Xiwyu;iwyu;-Xiwyu;--mapping_file=/storage/Projects/SQEE/sqee/extras/iwyu-mapping.imp")
-
-#target_precompile_headers(sts-game PUBLIC <setup.hpp>)
-
-################################################################################
-
-set(CMAKE_PREFIX_PATH APPEND ${SQEE_BUILD_ROOT})
-
-find_package(sqee REQUIRED)
+target_link_or_copy_directory(sts-game "assets")
+target_link_or_copy_directory(sts-game "config")
+target_link_or_copy_directory(sts-game "wren")
 
 ################################################################################
 
@@ -86,6 +49,7 @@ if (SQEE_GNU OR SQEE_CLANG)
     target_compile_options(sts-game PRIVATE -Wall -Wextra -Wpedantic)
 elseif (SQEE_MSVC)
     target_compile_options(sts-game PRIVATE /W3 /wd4251)
+    target_set_msvc_options(sts-game)
 endif ()
 
 # this will automatically link dependencies and add include paths
@@ -93,15 +57,7 @@ target_link_libraries(sts-game sqee)
 
 ################################################################################
 
-if (NOT CMAKE_BINARY_DIR STREQUAL PROJECT_SOURCE_DIR)
+#set_property(TARGET sts-game PROPERTY CXX_INCLUDE_WHAT_YOU_USE
+#    "iwyu;-Xiwyu;any;-Xiwyu;iwyu;-Xiwyu;--mapping_file=/storage/Projects/SQEE/sqee/extras/iwyu-mapping.imp")
 
-    add_custom_command(TARGET sts-game POST_BUILD COMMAND ${CMAKE_COMMAND} -E create_symlink
-        "${PROJECT_SOURCE_DIR}/assets" "${CMAKE_BINARY_DIR}/assets")
-
-    add_custom_command(TARGET sts-game POST_BUILD COMMAND ${CMAKE_COMMAND} -E create_symlink
-        "${PROJECT_SOURCE_DIR}/wren" "${CMAKE_BINARY_DIR}/wren")
-
-    add_custom_command(TARGET sts-game POST_BUILD COMMAND ${CMAKE_COMMAND} -E create_symlink
-        "${PROJECT_SOURCE_DIR}/config" "${CMAKE_BINARY_DIR}/config")
-
-endif ()
+#target_precompile_headers(sts-game PUBLIC <setup.hpp>)
