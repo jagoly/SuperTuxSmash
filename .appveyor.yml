@@ -4,7 +4,7 @@ before_build:
 
   - cd c:/projects
   - curl -fsSL -o vulkan-sdk.exe https://sdk.lunarg.com/sdk/download/1.2.189.2/windows/VulkanSDK-1.2.189.2-Installer.exe
-  - vulkan-sdk.exe /S
+  - vulkan-sdk.exe --accept-licenses --default-answer --confirm-command install
   - set VULKAN_SDK=c:/VulkanSDK/1.2.189.2
   - set PATH=c:/VulkanSDK/1.2.189.2/Bin;%PATH%
 
