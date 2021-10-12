@@ -23,7 +23,7 @@ before_build:
 
 build_script:
 
-  - mkdir c:/projects/SuperTuxSmash/build
+  - mkdir c:\projects\SuperTuxSmash\build
   - cd c:/projects/SuperTuxSmash/build
   - cmake .. -DSQEE_BUILD_ROOT=c:/projects/sqee -G "Visual Studio 16 2019" -A x64
   - cmake --build . --config Debug
