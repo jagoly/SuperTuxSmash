@@ -1,8 +1,8 @@
 #include "editor/EditorScene.hpp" // IWYU pragma: associated
 #include "editor/Editor_Helpers.hpp"
 
-#include "game/Action.hpp"
 #include "game/Fighter.hpp"
+#include "game/FighterAction.hpp"
 #include "game/HitBlob.hpp"
 
 #include <sqee/app/GuiWidgets.hpp>
@@ -20,7 +20,7 @@ void EditorScene::impl_show_widget_hitblobs()
     if (window.show == false) return;
 
     ActionContext& ctx = *mActiveActionContext;
-    Action& action = *ctx.fighter->get_action(ctx.key.action);
+    FighterAction& action = *ctx.action;
     const sq::Armature& armature = ctx.fighter->get_armature();
 
     //--------------------------------------------------------//
@@ -67,19 +67,28 @@ void EditorScene::impl_show_widget_hitblobs()
         ImPlus::InputValue(" Index", blob.index, 1, "%u");
 
         ImPlus::InputValue(" Damage", blob.damage, 1.f, "%.2f %");
-        ImPlus::InputValue(" FreezeFactor", blob.freezeFactor, 0.1f, "%.2f ×");
+        ImPlus::InputValue(" FreezeMult", blob.freezeMult, 0.1f, "%.2f ×");
+        ImPlus::InputValue(" FreezeDiMult", blob.freezeDiMult, 0.1f, "%.2f ×");
+
         ImPlus::InputValue(" KnockAngle", blob.knockAngle, 1.f, "%.2f degrees");
         ImPlus::InputValue(" KnockBase", blob.knockBase, 1.f, "%.2f units");
         ImPlus::InputValue(" KnockScale", blob.knockScale, 1.f, "%.2f units");
 
-        ImPlus::ComboEnum(" Facing", blob.facing);
+        ImPlus::ComboEnum(" AngleMode", blob.angleMode);
+        ImPlus::ComboEnum(" FacingMode", blob.facingMode);
+        ImPlus::ComboEnum(" ClangMode", blob.clangMode);
         ImPlus::ComboEnum(" Flavour", blob.flavour);
 
-        ImPlus::Checkbox("FixedKnockback ", &blob.useFixedKnockback);
+        ImPlus::Checkbox("IgnoreDamage ", &blob.ignoreDamage);
         ImGui::SameLine();
-        ImPlus::Checkbox("SakuraiAngle ", &blob.useSakuraiAngle);
+        ImPlus::Checkbox("IgnoreWeight ", &blob.ignoreWeight);
 
-        // todo: make this a combo box, or at least show a warning if the sound doesn't exist
+        ImPlus::Checkbox("CanHitGround ", &blob.canHitGround);
+        ImGui::SameLine();
+        ImPlus::Checkbox("CanHitAir ", &blob.canHitAir);
+
+        // todo: make these combo boxes, or at least show a warning if the key doesn't exist
+        ImGui::InputText(" Handler", blob.handler.data(), blob.handler.buffer_size());
         ImGui::InputText(" Sound", blob.sound.data(), blob.sound.buffer_size());
     };
 

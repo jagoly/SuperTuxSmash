@@ -1,0 +1,13 @@
+[
+  [ "NeutralComboBBegin", "Basic" ],
+  [ "NeutralComboBEnd", "Basic" ],
+  [ "NeutralComboBLoop", "Loop" ],
+  [ "SpecialAirDown", "Basic" ],
+  [ "SpecialAirForward", "Basic" ],
+  [ "SpecialAirNeutral", "Basic" ],
+  [ "SpecialAirUp", "Motion" ],
+  [ "SpecialDown", "Basic" ],
+  [ "SpecialForward", "Basic" ],
+  [ "SpecialNeutral", "Basic" ],
+  [ "SpecialUp", "Motion" ]
+]

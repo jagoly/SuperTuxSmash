@@ -1,7 +1,7 @@
 #include "game/HitBlob.hpp"
 
-#include "game/Action.hpp"
 #include "game/Fighter.hpp"
+#include "game/FighterAction.hpp"
 
 #include <sqee/debug/Assert.hpp>
 #include <sqee/misc/Json.hpp>
@@ -10,39 +10,43 @@ using namespace sts;
 
 //============================================================================//
 
-SQEE_ENUM_JSON_CONVERSIONS(sts::BlobFacing)
-SQEE_ENUM_JSON_CONVERSIONS(sts::BlobFlavour)
-
-//============================================================================//
-
 void HitBlob::from_json(const JsonValue& json)
 {
     SQASSERT(action != nullptr, "");
 
-    if (auto& jb = json.at("bone"); jb.is_null() == false)
-    {
-        bone = action->fighter.get_armature().get_bone_index(jb);
-        if (bone == -1) SQEE_THROW("invalid bone '{}'", jb);
-    }
-    else bone = -1;
-
     json.at("origin").get_to(origin);
     json.at("radius").get_to(radius);
+
+    if (auto& jb = json.at("bone"); jb.is_null() == false)
+    {
+        const auto& key = jb.get_ref<const String&>();
+        bone = action->fighter.get_armature().get_bone_index(key);
+        if (bone == -1) SQEE_THROW("invalid bone '{}'", key);
+    }
+    else bone = -1;
 
     json.at("index").get_to(index);
 
     json.at("damage").get_to(damage);
-    json.at("freezeFactor").get_to(freezeFactor);
+    json.at("freezeMult").get_to(freezeMult);
+    json.at("freezeDiMult").get_to(freezeDiMult);
+
     json.at("knockAngle").get_to(knockAngle);
     json.at("knockBase").get_to(knockBase);
     json.at("knockScale").get_to(knockScale);
 
-    json.at("facing").get_to(facing);
+    json.at("angleMode").get_to(angleMode);
+    json.at("facingMode").get_to(facingMode);
+    json.at("clangMode").get_to(clangMode);
     json.at("flavour").get_to(flavour);
 
-    json.at("useFixedKnockback").get_to(useFixedKnockback);
-    json.at("useSakuraiAngle").get_to(useSakuraiAngle);
+    json.at("ignoreDamage").get_to(ignoreDamage);
+    json.at("ignoreWeight").get_to(ignoreWeight);
 
+    json.at("canHitGround").get_to(canHitGround);
+    json.at("canHitAir").get_to(canHitAir);
+
+    json.at("handler").get_to(handler);
     json.at("sound").get_to(sound);
 }
 
@@ -52,51 +56,73 @@ void HitBlob::to_json(JsonValue& json) const
 {
     SQASSERT(action != nullptr, "");
 
-    if (bone == -1) json["bone"] = nullptr;
-    else json["bone"] = action->fighter.get_armature().get_bone_name(bone);
-
     json["origin"] = origin;
     json["radius"] = radius;
+
+    if (bone == -1) json["bone"] = nullptr;
+    else json["bone"] = action->fighter.get_armature().get_bone_name(bone);
 
     json["index"] = index;
 
     json["damage"] = damage;
-    json["freezeFactor"] = freezeFactor;
+    json["freezeMult"] = freezeMult;
+    json["freezeDiMult"] = freezeDiMult;
+
     json["knockAngle"] = knockAngle;
     json["knockBase"] = knockBase;
     json["knockScale"] = knockScale;
 
-    json["facing"] = facing;
+    json["angleMode"] = angleMode;
+    json["facingMode"] = facingMode;
+    json["clangMode"] = clangMode;
     json["flavour"] = flavour;
 
-    json["useFixedKnockback"] = useFixedKnockback;
-    json["useSakuraiAngle"] = useSakuraiAngle;
+    json["ignoreDamage"] = ignoreDamage;
+    json["ignoreWeight"] = ignoreWeight;
 
+    json["canHitGround"] = canHitGround;
+    json["canHitAir"] = canHitAir;
+
+    json["handler"] = handler;
     json["sound"] = sound;
+}
+
+//============================================================================//
+
+Vec3F HitBlob::get_debug_colour() const
+{
+    if (flavour == BlobFlavour::Sour)  return { 0.6f, 0.6f, 0.0f };
+    if (flavour == BlobFlavour::Tangy) return { 0.2f, 1.0f, 0.0f };
+    if (flavour == BlobFlavour::Sweet) return { 1.0f, 0.1f, 0.1f };
+    SQEE_UNREACHABLE();
 }
 
 //============================================================================//
 
 DISABLE_WARNING_FLOAT_EQUALITY()
 
-bool sts::operator==(const HitBlob& a, const HitBlob& b)
+bool HitBlob::operator==(const HitBlob& other) const
 {
-    if (a.origin != b.origin) return false;
-    if (a.radius != b.radius) return false;
-    if (a.bone != b.bone) return false;
-    if (a.index != b.index) return false;
-    if (a.damage != b.damage) return false;
-    if (a.freezeFactor != b.freezeFactor) return false;
-    if (a.knockAngle != b.knockAngle) return false;
-    if (a.knockBase != b.knockBase) return false;
-    if (a.knockScale != b.knockScale) return false;
-    if (a.facing != b.facing) return false;
-    if (a.flavour != b.flavour) return false;
-    if (a.useFixedKnockback != b.useFixedKnockback) return false;
-    if (a.useSakuraiAngle != b.useSakuraiAngle) return false;
-    if (a.sound != b.sound) return false;
-
-    return true;
+    return origin == other.origin &&
+           radius == other.radius &&
+           bone == other.bone &&
+           index == other.index &&
+           damage == other.damage &&
+           freezeMult == other.freezeMult &&
+           freezeDiMult == other.freezeDiMult &&
+           knockAngle == other.knockAngle &&
+           knockBase == other.knockBase &&
+           knockScale == other.knockScale &&
+           angleMode == other.angleMode &&
+           facingMode == other.facingMode &&
+           clangMode == other.clangMode &&
+           flavour == other.flavour &&
+           ignoreDamage == other.ignoreDamage &&
+           ignoreWeight == other.ignoreWeight &&
+           canHitGround == other.canHitGround &&
+           canHitAir == other.canHitAir &&
+           handler == other.handler &&
+           sound == other.sound;
 }
 
 ENABLE_WARNING_FLOAT_EQUALITY()

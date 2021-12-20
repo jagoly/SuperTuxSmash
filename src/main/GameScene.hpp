@@ -35,8 +35,6 @@ private: //===================================================//
 
     void integrate(double elapsed, float blend) override;
 
-    void render(double elapsed) override;
-
     //--------------------------------------------------------//
 
     std::unique_ptr<Renderer> mRenderer;
@@ -52,7 +50,7 @@ private: //===================================================//
     //--------------------------------------------------------//
 
     void impl_show_general_window();
-    void impl_show_fighters_window();
+    void impl_show_objects_window();
 
     //--------------------------------------------------------//
 

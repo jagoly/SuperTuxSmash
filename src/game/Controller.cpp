@@ -1,5 +1,6 @@
 #include "game/Controller.hpp"
 
+#include <sqee/debug/Logging.hpp>
 #include <sqee/misc/Json.hpp>
 
 using namespace sts;
@@ -11,223 +12,246 @@ Controller::Controller(const sq::InputDevices& devices, const String& configPath
 {
     const JsonValue root = sq::parse_json_from_file(configPath);
 
-    config.gamepad_port  = static_cast<int>                (int(root.at("gamepad_port")));
-    config.axis_move_x   = static_cast<sq::Gamepad_Axis>   (int(root.at("axis_move_x")));
-    config.axis_move_y   = static_cast<sq::Gamepad_Axis>   (int(root.at("axis_move_y")));
-    config.button_attack = static_cast<sq::Gamepad_Button> (int(root.at("button_attack")));
-    config.button_jump   = static_cast<sq::Gamepad_Button> (int(root.at("button_jump")));
-    config.button_shield = static_cast<sq::Gamepad_Button> (int(root.at("button_shield")));
-    config.key_left      = static_cast<sq::Keyboard_Key>   (int(root.at("key_left")));
-    config.key_up        = static_cast<sq::Keyboard_Key>   (int(root.at("key_up")));
-    config.key_right     = static_cast<sq::Keyboard_Key>   (int(root.at("key_right")));
-    config.key_down      = static_cast<sq::Keyboard_Key>   (int(root.at("key_down")));
-    config.key_attack    = static_cast<sq::Keyboard_Key>   (int(root.at("key_attack")));
-    config.key_jump      = static_cast<sq::Keyboard_Key>   (int(root.at("key_jump")));
-    config.key_shield    = static_cast<sq::Keyboard_Key>   (int(root.at("key_shield")));
-}
-
-//============================================================================//
-
-void Controller::handle_event(sq::Event event)
-{
-    // don't handle events while playing recording
-    if (mPlaybackIndex >= 0) return;
-
-    // todo: fix keyboard input to handle press/release the same way as gamepad
-    // don't really care for now since it only makes a difference in slo-mo
-    if (event.type == sq::Event::Type::Keyboard_Press && event.data.keyboard.key != sq::Keyboard_Key::Unknown)
+    const auto get_config_value = [&root](const String& key, auto& ref) -> bool
     {
-        const auto key = event.data.keyboard.key;
+        const JsonValue& j = root.at(key);
+        if (j.is_null() == false) j.get_to(ref);
+        return int8_t(ref) != -1;
+    };
 
-        if (key == config.key_attack) mInput.press_attack = mInput.hold_attack = true;
-        if (key == config.key_jump)   mInput.press_jump   = mInput.hold_jump   = true;
-        if (key == config.key_shield) mInput.press_shield = mInput.hold_shield = true;
-    }
+    mGamepadEnabled = get_config_value("gamepad_port", config.gamepad_port);
+    mGamepadEnabled &= get_config_value("axis_move_x", config.axis_move_x);
+    mGamepadEnabled &= get_config_value("axis_move_y", config.axis_move_y);
+    mGamepadEnabled &= get_config_value("button_attack", config.button_attack);
+    mGamepadEnabled &= get_config_value("button_special", config.button_special);
+    mGamepadEnabled &= get_config_value("button_jump", config.button_jump);
+    mGamepadEnabled &= get_config_value("button_shield", config.button_shield);
+
+    if (config.gamepad_port >= 0 && mGamepadEnabled == false)
+        sq::log_warning("invalid Gamepad configuration in '{}'", configPath);
+
+    mKeyboardEnabled = true;
+    mKeyboardEnabled &= get_config_value("key_left", config.key_left);
+    mKeyboardEnabled &= get_config_value("key_up", config.key_up);
+    mKeyboardEnabled &= get_config_value("key_right", config.key_right);
+    mKeyboardEnabled &= get_config_value("key_down", config.key_down);
+    mKeyboardEnabled &= get_config_value("key_attack", config.key_attack);
+    mKeyboardEnabled &= get_config_value("key_special", config.key_special);
+    mKeyboardEnabled &= get_config_value("key_jump", config.key_jump);
+    mKeyboardEnabled &= get_config_value("key_shield", config.key_shield);
+
+    mKeyboardMode = mKeyboardEnabled;
+
+    // make sure we have a "previous" value
+    history.frames.emplace_back();
 }
 
 //============================================================================//
 
 void Controller::integrate()
 {
-    // don't handle input while playing recording
-    if (mPlaybackIndex >= 0) return;
+    // don't handle input while playing back a recording
+    if (mPlaybackIndex >= 0)
+        return;
 
-    // ask operating system for updated gamepad state
-    if (config.gamepad_port >= 0)
-        mGamepad.integrate(devices.poll_gamepad_state(config.gamepad_port));
+    mPolledSinceLastTick = true;
+
+    //--------------------------------------------------------//
+
+    // ask the operating system for updated gamepad state
+    if (mGamepadEnabled == true)
+    {
+        if (devices.check_gamepad_connected(config.gamepad_port))
+        {
+            mGamepad.integrate(devices.poll_gamepad_state(config.gamepad_port));
+            mKeyboardMode = false;
+        }
+        else // gamepad is configured but not connected
+        {
+            mGamepad = {};
+            mKeyboardMode = mKeyboardEnabled;
+        }
+    }
+
+    //--------------------------------------------------------//
+
+    // do the same thing but for keyboard input
+    if (mKeyboardMode == true)
+    {
+        const auto update_button = [this](sq::Keyboard_Key key, uint8_t index)
+        {
+            const bool latest = devices.is_pressed(key);
+
+            mKeyboard.pressed[index] |= !mKeyboard.buttons[index] && latest;
+            mKeyboard.released[index] |= mKeyboard.buttons[index] && !latest;
+            mKeyboard.buttons[index] = latest;
+        };
+
+        const auto update_axis = [this](sq::Keyboard_Key negKey, sq::Keyboard_Key posKey, uint8_t index)
+        {
+            float latest = 0.f;
+
+            if (devices.is_pressed(negKey)) latest -= 1.f;
+            if (devices.is_pressed(posKey)) latest += 1.f;
+
+            if (std::abs(latest) >= std::abs(mKeyboard.axes[index]))
+                mKeyboard.axes[index] = latest;
+        };
+
+        update_button(config.key_attack, 0u);
+        update_button(config.key_special, 1u);
+        update_button(config.key_jump, 2u);
+        update_button(config.key_shield, 3u);
+
+        update_axis(config.key_left, config.key_right, 0u);
+        update_axis(config.key_down, config.key_up, 1u);
+    }
 }
 
 //============================================================================//
 
-InputFrame Controller::get_input()
+void Controller::tick()
 {
+    // make sure we have polled at least once
+    if (mPolledSinceLastTick == false)
+        integrate();
+
+    mPolledSinceLastTick = false;
+
+    if (history.frames.full() == true)
+        history.frames.pop_back();
+
+    //--------------------------------------------------------//
+
+    // playing back some recorded input
     if (mPlaybackIndex >= 0)
     {
         if (mPlaybackIndex < int(mRecordedInput.size()))
-            return mRecordedInput[size_t(mPlaybackIndex++)];
+        {
+            const InputFrame& record = mRecordedInput[mPlaybackIndex++];
+
+            if (history.cleared == true)
+            {
+                history.frames = { record };
+                history.cleared = false;
+            }
+            else history.frames.insert(history.frames.begin(), record);
+
+            return; // don't bother getting a new frame
+        }
 
         mPlaybackIndex = -2;
     }
 
     //--------------------------------------------------------//
 
-    // Note that if a button was pressed since last tick, hold will be set to true this tick.
-    // This applies even if the button was no longer held on the most recent poll.
-    // Likewise, if a button was released since last tick, then hold will be set to false.
-    // As a result, press can never be true for multiple ticks in a row.
+    // default construct a new frame at the beginning of the vector
+    InputFrame& current = *history.frames.emplace(history.frames.begin());
 
-    if (config.gamepad_port >= 0)
+    // we use the previous frame to sanitise button press and hold values
+    const InputFrame& previous = history.frames[1];
+
+    // input axis without any discretisation
+    Vec2F rawAxis = { 0.f, 0.f };
+
+    //--------------------------------------------------------//
+
+    const auto update_button = [](const auto& state, auto index, bool previousHold, bool& press, bool& hold)
     {
-        if (config.button_attack != sq::Gamepad_Button::Unknown)
-        {
-            if (mInput.hold_attack == true)
-                mInput.hold_attack = mGamepad.buttons[int8_t(config.button_attack)] && !mGamepad.released[int8_t(config.button_attack)];
-            else
-                mInput.press_attack = mInput.hold_attack = mGamepad.pressed[int8_t(config.button_attack)];
-        }
-
-        if (config.button_jump != sq::Gamepad_Button::Unknown)
-        {
-            if (mInput.hold_jump == true)
-                mInput.hold_jump = mGamepad.buttons[int8_t(config.button_jump)] && !mGamepad.released[int8_t(config.button_jump)];
-            else
-                mInput.press_jump = mInput.hold_jump = mGamepad.pressed[int8_t(config.button_jump)];
-        }
-
-        if (config.button_shield != sq::Gamepad_Button::Unknown)
-        {
-            if (mInput.hold_shield == true)
-                mInput.hold_shield = mGamepad.buttons[int8_t(config.button_shield)] && !mGamepad.released[int8_t(config.button_shield)];
-            else
-                mInput.press_shield = mInput.hold_shield = mGamepad.pressed[int8_t(config.button_shield)];
-        }
-
-        if (config.axis_move_x != sq::Gamepad_Axis::Unknown)
-            mInput.float_axis.x = mGamepad.axes[int8_t(config.axis_move_x)];
-
-        if (config.axis_move_y != sq::Gamepad_Axis::Unknown)
-            mInput.float_axis.y = mGamepad.axes[int8_t(config.axis_move_y)];
-    }
-
-    //--------------------------------------------------------//
-
-    if (config.key_left != sq::Keyboard_Key::Unknown)
-        if (devices.is_pressed(config.key_left))
-            mInput.float_axis.x -= 1.f;
-
-    if (config.key_up != sq::Keyboard_Key::Unknown)
-        if (devices.is_pressed(config.key_up))
-            mInput.float_axis.y += 1.f;
-
-    if (config.key_right != sq::Keyboard_Key::Unknown)
-        if (devices.is_pressed(config.key_right))
-            mInput.float_axis.x += 1.f;
-
-    if (config.key_down != sq::Keyboard_Key::Unknown)
-        if (devices.is_pressed(config.key_down))
-            mInput.float_axis.y -= 1.f;
-
-    if (config.key_attack != sq::Keyboard_Key::Unknown)
-        if (devices.is_pressed(config.key_attack))
-            mInput.hold_attack = true;
-
-    if (config.key_jump != sq::Keyboard_Key::Unknown)
-        if (devices.is_pressed(config.key_jump))
-            mInput.hold_jump = true;
-
-    if (config.key_shield != sq::Keyboard_Key::Unknown)
-        if (devices.is_pressed(config.key_shield))
-            mInput.hold_shield = true;
-
-    //--------------------------------------------------------//
-
-    DISABLE_WARNING_FLOAT_EQUALITY();
-
-    //--------------------------------------------------------//
-
-    const auto remove_deadzone_and_discretise = [](float value) -> float
-    {
-        const float absValue = std::abs(value);
-
-        if (absValue < 0.2f) return std::copysign(0.f, value);
-        if (absValue > 0.7f) return std::copysign(1.f, value);
-
-        return std::copysign(0.5f, value);
+        // state.pressed always results in exactly one frame of press = true
+        // state.released always results in at least one frame of hold = false
+        if (previousHold == true)
+            hold = state.buttons[int8_t(index)] && !state.released[int8_t(index)];
+        else
+            press = hold = state.pressed[int8_t(index)];
     };
 
-    const auto clamp_difference = [](float previous, float target) -> float
+    const auto update_raw_axis = [](const auto& state, auto index, float& axis)
     {
-        if (previous == -0.5f) return maths::clamp(target, -1.0f, -0.0f);
-        if (previous == +0.5f) return maths::clamp(target, +0.0f, +1.0f);
-
-        if (previous == -1.0f) return maths::min(target, -0.5f);
-        if (previous == +1.0f) return maths::max(target, +0.5f);
-
-        return maths::clamp(target, -0.5f, +0.5f);
+        // the maximum absolute value from all polls since last tick
+        axis = state.axes[int8_t(index)];
     };
 
-    //--------------------------------------------------------//
-
-    mInput.float_axis.x = remove_deadzone_and_discretise(mInput.float_axis.x);
-    mInput.float_axis.y = remove_deadzone_and_discretise(mInput.float_axis.y);
-
-    mInput.float_axis.x = clamp_difference(mPrevAxisMove.x, mInput.float_axis.x);
-    mInput.float_axis.y = clamp_difference(mPrevAxisMove.y, mInput.float_axis.y);
-
-    //--------------------------------------------------------//
-
-    // todo: should really go from int to float
-
-    mInput.int_axis.x = int8_t(mInput.float_axis.x * 2.f);
-    mInput.int_axis.y = int8_t(mInput.float_axis.y * 2.f);
-
-    //--------------------------------------------------------//
-
-    if (mInput.float_axis.x != 0.f && ++mTimeSinceZeroX <= 4u)
+    if (mKeyboardMode == false && mGamepadEnabled == true)
     {
-        if (!mDoneMashX && mInput.float_axis.x == -1.f) mDoneMashX = (mInput.mash_axis.x = -1);
-        if (!mDoneMashX && mInput.float_axis.x == +1.f) mDoneMashX = (mInput.mash_axis.x = +1);
-        mInput.mod_axis.x = std::signbit(mInput.float_axis.x) ? -1 : +1;
+        update_button(mGamepad, config.button_attack, previous.holdAttack, current.pressAttack, current.holdAttack);
+        update_button(mGamepad, config.button_special, previous.holdSpecial, current.pressSpecial, current.holdSpecial);
+        update_button(mGamepad, config.button_jump, previous.holdJump, current.pressJump, current.holdJump);
+        update_button(mGamepad, config.button_shield, previous.holdShield, current.pressShield, current.holdShield);
+
+        update_raw_axis(mGamepad, config.axis_move_x, rawAxis.x);
+        update_raw_axis(mGamepad, config.axis_move_y, rawAxis.y);
     }
 
-    if (mInput.float_axis.y != 0.f && ++mTimeSinceZeroY <= 4u)
+    if (mKeyboardMode == true)
     {
-        if (!mDoneMashY && mInput.float_axis.y == -1.f) mDoneMashY = (mInput.mash_axis.y = -1);
-        if (!mDoneMashY && mInput.float_axis.y == +1.f) mDoneMashY = (mInput.mash_axis.y = +1);
-        mInput.mod_axis.y = std::signbit(mInput.float_axis.y) ? -1 : +1;
+        update_button(mKeyboard, 0u, previous.holdAttack, current.pressAttack, current.holdAttack);
+        update_button(mKeyboard, 1u, previous.holdSpecial, current.pressSpecial, current.holdSpecial);
+        update_button(mKeyboard, 2u, previous.holdJump, current.pressJump, current.holdJump);
+        update_button(mKeyboard, 3u, previous.holdShield, current.pressShield, current.holdShield);
+
+        update_raw_axis(mKeyboard, 0u, rawAxis.x);
+        update_raw_axis(mKeyboard, 1u, rawAxis.y);
     }
 
-    if (mInput.float_axis.x == 0.f) mDoneMashX = (mTimeSinceZeroX = 0u);
-    if (mInput.float_axis.y == 0.f) mDoneMashY = (mTimeSinceZeroY = 0u);
-
     //--------------------------------------------------------//
 
-    ENABLE_WARNING_FLOAT_EQUALITY();
+    // todo: add values to config file (calibration)
+    const auto compute_int_axis = [](float raw) -> int8_t
+    {
+        if (raw < -0.8f) return -4;
+        if (raw < -0.6f) return -3;
+        if (raw < -0.4f) return -2;
+        if (raw < -0.2f) return -1;
+        if (raw > +0.8f) return +4;
+        if (raw > +0.6f) return +3;
+        if (raw > +0.4f) return +2;
+        if (raw > +0.2f) return +1;
+        return 0;
+    };
+
+    const auto update_mash_mod = [](int8_t prevAxis, int8_t axis, uint8_t& timeSinceZero, bool& doneMash, int8_t& mash, int8_t& mod)
+    {
+        if (prevAxis * axis <= 0) timeSinceZero = 0u, doneMash = false;
+
+        if (timeSinceZero < 6)
+        {
+            if (doneMash == false)
+            {
+                if (axis == -4) mash = -1, doneMash = true;
+                if (axis == +4) mash = +1, doneMash = true;
+            }
+            if (axis <= -3) mod = -1;
+            if (axis >= +3) mod = +1;
+        }
+
+        if (timeSinceZero < 255u) ++timeSinceZero;
+    };
+
+    current.intX = compute_int_axis(rawAxis.x);
+    current.intY = compute_int_axis(rawAxis.y);
+
+    update_mash_mod(previous.intX, current.intX, mTimeSinceZeroX, mDoneMashX, current.mashX, current.modX);
+    update_mash_mod(previous.intY, current.intY, mTimeSinceZeroY, mDoneMashY, current.mashY, current.modY);
+
+    current.floatX = float(current.intX) * 0.25f;
+    current.floatY = float(current.intY) * 0.25f;
 
     //--------------------------------------------------------//
-
-    mInput.norm_axis = { mInput.int_axis.x, mInput.int_axis.y };
-
-    if (mInput.norm_axis.x == -2) mInput.norm_axis.x = -1;
-    else if (mInput.norm_axis.x == +2) mInput.norm_axis.x = +1;
-
-    if (mInput.norm_axis.y == -2) mInput.norm_axis.y = -1;
-    else if (mInput.norm_axis.y == +2) mInput.norm_axis.y = +1;
-
-    //--------------------------------------------------------//
-
-    mPrevAxisMove = mInput.float_axis;
-
-    InputFrame result = mInput;
-
-    // need to keep button hold values for next tick
-    mInput.press_attack = mInput.press_jump = mInput.press_shield = false;
-    mInput.mash_axis = mInput.mod_axis = {};
 
     mGamepad.finish_tick();
+    mKeyboard.pressed.fill(false);
+    mKeyboard.released.fill(false);
+    mKeyboard.axes.fill(0.f);
 
+    if (history.cleared == true)
+    {
+        // keep the new frame that we just created
+        history.frames.erase(history.frames.begin()+1, history.frames.end());
+        history.cleared = false;
+    }
+
+    // append the new frame to the recording
     if (mPlaybackIndex == -1)
-        mRecordedInput.push_back(result);
-
-    return result;
+        mRecordedInput.push_back(current);
 }

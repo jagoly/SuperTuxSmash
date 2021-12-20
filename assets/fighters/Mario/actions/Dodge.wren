@@ -1,22 +1,19 @@
-import "sts" for ScriptBase
+import "actions/Dodge" for Script as Base
 
-class Script is ScriptBase {
-  construct new(a, f) { super(a, f) }
+class Script is Base {
+  construct new(a) { super(a) }
 
   execute() {
+    default_begin()
 
     wait_until(1)
-    fighter.set_intangible(true)
     action.play_sound("Evade")
+    vars.intangible = true
 
     wait_until(20)
-    fighter.set_intangible(false)
+    vars.intangible = false
 
-    wait_until(25)
-    action.allow_interrupt()
-  }
-
-  cancel() {
-    fighter.set_intangible(false)
+    wait_until(25) // 32
+    default_end()
   }
 }

@@ -2,9 +2,9 @@
 
 #include "main/Options.hpp"
 
-#include "game/Action.hpp"
 #include "game/FightWorld.hpp"
 #include "game/Fighter.hpp"
+#include "game/FighterAction.hpp"
 #include "game/HitBlob.hpp"
 #include "game/HurtBlob.hpp"
 
@@ -161,11 +161,11 @@ void DebugRenderer::integrate(float /*blend*/, const FightWorld& world)
         impl_integrate_hurt_blobs(world.get_hurt_blobs());
 
     if (renderer.options.render_diamonds == true)
-        for (const auto fighter : world.get_fighters())
+        for (const auto& fighter : world.get_fighters())
             impl_integrate_diamond(*fighter);
 
     if (renderer.options.render_skeletons == true)
-        for (const auto fighter : world.get_fighters())
+        for (const auto& fighter : world.get_fighters())
             impl_integrate_skeleton(*fighter);
 }
 
@@ -187,12 +187,12 @@ void DebugRenderer::impl_integrate_hit_blobs(const std::vector<HitBlob*>& blobs)
         draw.sortValue = int(blob->flavour);
 
         // for relative facing, we just show an arrow in the most likely direction
-        // can give weird results when origin is close to zero
-        const float facingRelative = blob->action->fighter.status.position.x < blob->sphere.origin.x ? +1.f : -1.f;
-        const float facing = blob->facing == BlobFacing::Relative ? facingRelative : blob->facing == BlobFacing::Forward
-                             ? float(blob->action->fighter.status.facing) : float(-blob->action->fighter.status.facing);
+        // todo: if game is paused, alternate direction every 0.5 seconds
+        const float facing = blob->facingMode == BlobFacingMode::Forward ? +float(blob->action->fighter.variables.facing) :
+                             blob->facingMode == BlobFacingMode::Reverse ? -float(blob->action->fighter.variables.facing) :
+                             blob->action->fighter.variables.position.x < blob->sphere.origin.x ? +1.f : -1.f;
 
-        if (blob->useSakuraiAngle == true)
+        if (blob->angleMode == BlobAngleMode::Sakurai)
         {
             const float angle = maths::radians(40.f / 360.f);
             const Vec3F offsetGround = Vec3F(facing, 0.f, 0.f) * blob->sphere.radius;
@@ -206,7 +206,7 @@ void DebugRenderer::impl_integrate_hit_blobs(const std::vector<HitBlob*>& blobs)
             thick[mThickLineCount++] = Line { pB, Vec4F(1,1,1,1), pC, Vec4F(1,1,1,1) };
             thick[mThickLineCount++] = Line { pC, Vec4F(1,1,1,1), pA, Vec4F(1,1,1,1) };
         }
-        else
+        else // todo: AutoLink
         {
             const float angleA = maths::radians(blob->knockAngle / 360.f);
             const float angleB = maths::radians(blob->knockAngle / 360.f + 0.0625f);
@@ -278,19 +278,19 @@ void DebugRenderer::impl_integrate_diamond(const Fighter& fighter)
 {
     const Mat4F projViewMat = renderer.get_camera().get_block().projViewMat;
 
-    const Vec3F translate = Vec3F(fighter.status.position + Vec2F(0.f, fighter.get_diamond().offsetCross), 0.f);
-    const float scaleBtm = fighter.get_diamond().offsetCross;
-    const float scaleTop = fighter.get_diamond().offsetTop - fighter.get_diamond().offsetCross;
+    const Vec3F translate = Vec3F(fighter.variables.position + Vec2F(0.f, fighter.localDiamond.offsetCross), 0.f);
+    const float scaleBtm = fighter.localDiamond.offsetCross;
+    const float scaleTop = fighter.localDiamond.offsetTop - fighter.localDiamond.offsetCross;
 
     DrawBlob& drawBtm = mDrawBlobs.emplace_back();
-    drawBtm.matrix = projViewMat * maths::transform(translate, Vec3F(fighter.get_diamond().halfWidth, scaleBtm, 0.1f));
+    drawBtm.matrix = projViewMat * maths::transform(translate, Vec3F(fighter.localDiamond.halfWidth, scaleBtm, 0.1f));
     drawBtm.colour = maths::srgb_to_linear(Vec4F(1.f, 1.f, 1.f, 0.25f));
     drawBtm.mesh = &mDiamondMesh;
     drawBtm.subMesh = 0;
     drawBtm.sortValue = -4;
 
     DrawBlob& drawTop = mDrawBlobs.emplace_back();
-    drawTop.matrix = projViewMat * maths::transform(translate, Vec3F(fighter.get_diamond().halfWidth, scaleTop, 0.1f));
+    drawTop.matrix = projViewMat * maths::transform(translate, Vec3F(fighter.localDiamond.halfWidth, scaleTop, 0.1f));
     drawTop.colour = maths::srgb_to_linear(Vec4F(1.f, 1.f, 1.f, 0.25f));
     drawTop.mesh = &mDiamondMesh;
     drawTop.subMesh = 1;

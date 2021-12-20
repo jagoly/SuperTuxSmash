@@ -10,9 +10,9 @@
 
 #include <sqee/misc/StackVector.hpp> // IWYU pragma: export
 
-#include <fmt/format.h> // IWYU pragma: export
+#include <sqee/app/WrenForward.hpp> // IWYU pragma: export
 
-#include <memory_resource> // IWYU pragma: export
+#include <fmt/format.h> // IWYU pragma: export
 
 namespace sts {
 
@@ -29,28 +29,37 @@ using sq::StackVector;
 
 //============================================================================//
 
-class Action;
+struct DebugGui;
+struct Emitter;
+struct GameSetup;
+struct HitBlob;
+struct HurtBlob;
+struct Ledge;
+struct LocalDiamond;
+struct MoveAttempt;
+struct Options;
+struct SoundEffect;
+struct VisualEffect;
+
 class Camera;
 class Controller;
+class EditorScene;
 class EffectSystem;
 class FightWorld;
 class Fighter;
+class FighterAction;
+class FighterState;
 class ParticleSystem;
 class Renderer;
 class ResourceCaches;
 class SmashApp;
 class Stage;
 
-struct Emitter;
-struct GameSetup;
-struct HitBlob;
-struct HurtBlob;
-struct Options;
-struct SoundEffect;
-struct VisualEffect;
+//============================================================================//
 
-class EditorScene;
-struct DebugGui;
+/// Simple AAAB which SuperTuxSmash uses in many places.
+template <class Type>
+struct MinMax { Type min = Type(+INFINITY), max = Type(-INFINITY); };
 
 //============================================================================//
 
@@ -58,19 +67,10 @@ struct DebugGui;
 constexpr const size_t MAX_FIGHTERS = 4u;
 
 /// Number of frames that input commands are buffered for.
-constexpr const size_t CMD_BUFFER_SIZE = 8u;
+constexpr const size_t CMD_BUFFER_SIZE = 9u;
 
 /// Maximum number of bones in a visual effect.
 constexpr const size_t MAX_EFFECT_BONES = 8u;
-
-/// Length of window to release jump and perform a short hop.
-constexpr const uint8_t JUMP_DELAY = 6u;
-
-/// Minimum time after releasing a ledge before being able to catch again.
-constexpr const uint8_t LEDGE_CATCH_NOPE_TIME = 48u;
-
-/// Minimum time to hang from a ledge before being able to drop, climb, etc.
-constexpr const uint8_t LEDGE_HANG_MIN_TIME = 16u;
 
 /// Minimum amount of hitstun required to cause heavy flinch animations.
 constexpr const uint8_t MIN_HITSTUN_HEAVY = 16u;
@@ -131,3 +131,6 @@ constexpr const uint SHADOW_MAP_BASE_SIZE = 2048u;
 //============================================================================//
 
 } // namespace sts
+
+WRENPLUS_TRAITS_HEADER(sq::coretypes::Vec2I)
+WRENPLUS_TRAITS_HEADER(sq::coretypes::Vec2F)

@@ -2,33 +2,29 @@
 
 "comment": "stats and actions are a mix of brawl, sm4sh, and in between",
 
-"walk_speed":     0.11,
-"dash_speed":     0.16,
-"air_speed":      0.115,
-"traction":       0.0055,
-"air_mobility":   0.008,
-"air_friction":   0.0015,
-"hop_height":     1.75,
-"jump_height":    3.63,
-"airhop_height":  3.63,
-"gravity":        0.008715,
-"fall_speed":     0.15,
-"fastfall_speed": 0.24,
-"weight":         98.0,
+"walkSpeed":   0.11,
+"dashSpeed":   0.16,
+"airSpeed":    0.115,
+"traction":    0.0055,
+"airMobility": 0.008,
+"airFriction": 0.0015,
 
-"extra_jumps": 10,
+"hopHeight":     1.75,
+"jumpHeight":    3.63,
+"airHopHeight":  3.63,
+"gravity":       0.0087,
+"fallSpeed":     0.15,
+"fastFallSpeed": 0.24,
+"weight":        98.0,
 
-"land_heavy_fall_time": 4,
+"walkAnimStride": 2.87,
+"dashAnimStride": 3.3,
 
-"dash_start_time":  11,
-"dash_brake_time":  12,
-"dash_turn_time":   14,
+"extraJumps":    10,
+"lightLandTime": 4,
 
-"anim_walk_stride": 2.87,
-"anim_dash_stride": 3.3,
-
-"diamond_half_width": 0.4,
-"diamond_offset_top": 1.4,
-"diamond_offset_cross": 0.8
+"diamondHalfWidth":   0.4,
+"diamondOffsetTop":   1.4,
+"diamondOffsetCross": 0.8
 
 }

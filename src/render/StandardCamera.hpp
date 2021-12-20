@@ -20,12 +20,10 @@ public: //====================================================//
 
 private: //===================================================//
 
-    struct MinMax { Vec2F min, max; };
+    std::array<MinMax<Vec2F>, 16> mViewHistory;
 
-    std::array<MinMax, 16u> mViewHistory;
-
-    MinMax mPreviousView, mCurrentView;
-    MinMax mPreviousBounds, mCurrentBounds;
+    MinMax<Vec2F> mPreviousView, mCurrentView;
+    MinMax<Vec2F> mPreviousBounds, mCurrentBounds;
 };
 
 //============================================================================//

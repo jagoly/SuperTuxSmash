@@ -2,14 +2,12 @@
 
 #include "setup.hpp"
 
-#include "game/ActionEnums.hpp"
 #include "main/MainEnums.hpp"
 
 #include <sqee/app/Scene.hpp>
 #include <sqee/objects/Texture.hpp>
 #include <sqee/vk/Wrappers.hpp>
 
-// IWYU pragma: no_include "game/Action.hpp"
 // IWYU pragma: no_include "game/FightWorld.hpp"
 // IWYU pragma: no_include "render/Renderer.hpp"
 
@@ -48,6 +46,8 @@ private: //===================================================//
 
     void integrate(double elapsed, float blend) override;
 
+    std::unique_ptr<Controller> mController;
+
     SmashApp& mSmashApp;
 
     //--------------------------------------------------------//
@@ -56,10 +56,10 @@ private: //===================================================//
 
     struct ActionKey
     {
-        FighterEnum fighter; ActionType action;
-        int hash() const { return int(fighter) * 256 + int(action); }
-        bool operator==(const ActionKey& other) const { return hash() == other.hash(); }
-        bool operator<(const ActionKey& other) const { return hash() < other.hash(); }
+        FighterEnum fighter; SmallString name;
+        bool operator==(const ActionKey& other) const { return std::memcmp(this, &other, sizeof(ActionKey)) == 0; }
+        bool operator<(const ActionKey& other) const { return std::memcmp(this, &other, sizeof(ActionKey)) < 0; }
+        const void* hash() const;
     };
 
     struct CubeMapView
@@ -82,10 +82,12 @@ private: //===================================================//
 
     struct ActionContext : public BaseContext
     {
-        ActionKey key; Fighter* fighter;
+        ActionKey key;
+        Fighter* fighter;
+        FighterAction* action;
 
-        std::unique_ptr<Action> savedData;
-        std::vector<std::unique_ptr<Action>> undoStack;
+        std::unique_ptr<FighterAction> savedData;
+        std::vector<std::unique_ptr<FighterAction>> undoStack;
 
         int timelineLength = 0, currentFrame = -1;
     };
@@ -94,8 +96,8 @@ private: //===================================================//
     {
         FighterEnum key; Fighter* fighter;
 
-        std::unique_ptr<std::pmr::map<TinyString, HurtBlob>> savedData;
-        std::vector<std::unique_ptr<std::pmr::map<TinyString, HurtBlob>>> undoStack;
+        std::unique_ptr<std::map<TinyString, HurtBlob>> savedData;
+        std::vector<std::unique_ptr<std::map<TinyString, HurtBlob>>> undoStack;
     };
 
     struct StageContext : public BaseContext
@@ -113,6 +115,16 @@ private: //===================================================//
     };
 
     //--------------------------------------------------------//
+
+    struct FighterInfo
+    {
+        std::vector<SmallString> animations;
+        std::vector<SmallString> actions;
+        std::vector<SmallString> states;
+    };
+
+    std::array<FighterInfo, sq::enum_count_v<FighterEnum>> mFighterInfos;
+    FighterInfo mFighterInfoCommon;
 
     std::map<ActionKey, ActionContext> mActionContexts;
     std::map<FighterEnum, HurtblobsContext> mHurtblobsContexts;
@@ -234,8 +246,8 @@ private: //===================================================//
 
     // make sure any source file that uses these includes Editor_Helpers.hpp
 
-    template <class Map, class FuncInit, class FuncEdit>
-    void helper_edit_objects(Map& objects, FuncInit funcInit, FuncEdit funcEdit);
+    template <class Object, class FuncInit, class FuncEdit>
+    void helper_edit_objects(std::map<TinyString, Object>& objects, FuncInit funcInit, FuncEdit funcEdit);
 };
 
 //============================================================================//

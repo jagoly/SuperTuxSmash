@@ -2,13 +2,14 @@
 
 #include "main/Options.hpp"
 
-#include "game/Action.hpp"
+#include "game/Controller.hpp"
 #include "game/FightWorld.hpp"
+#include "game/FighterAction.hpp"
+#include "game/FighterState.hpp"
 #include "game/HitBlob.hpp"
 #include "game/HurtBlob.hpp"
 
 #include "render/Renderer.hpp"
-#include "render/UniformBlocks.hpp"
 
 #include <sqee/debug/Assert.hpp>
 #include <sqee/debug/Logging.hpp>
@@ -21,15 +22,16 @@ using namespace sts;
 
 //============================================================================//
 
-Fighter::Fighter(FightWorld& world, FighterEnum type, uint8_t index)
-    : world(world), type(type), index(index)
-    , mHurtBlobs(world.get_memory_resource())
+Fighter::Fighter(FightWorld& world, FighterEnum name, uint8_t index)
+    : world(world), name(name), index(index)
 {
-    const String path = sq::build_string("assets/fighters/", sq::enum_to_string(type));
+    initialise_attributes();
+    initialise_armature();
+    initialise_hurtblobs();
 
-    initialise_attributes(path);
-    initialise_armature(path);
-    initialise_hurtblobs(path);
+    initialise_animations();
+    initialise_actions();
+    initialise_states();
 
     // uniform buffer and descriptor set
     {
@@ -43,226 +45,95 @@ Fighter::Fighter(FightWorld& world, FighterEnum type, uint8_t index)
         );
     }
 
-    world.renderer.create_draw_items(DrawItemDef::load_from_json(path + "/Render.json", world.caches),
-                                     mDescriptorSet, { {"flinch", &status.flinch} });
-
-    for (int8_t i = 0; i < sq::enum_count_v<ActionType>; ++i)
+    // create draw items
     {
-        mActions[i] = std::make_unique<Action>(*this, ActionType(i));
-        mActions[i]->load_json_from_file();
-        mActions[i]->load_wren_from_file();
-    }
-}
-
-Fighter::~Fighter() = default;
-
-//============================================================================//
-
-void Fighter::initialise_attributes(const String& path)
-{
-    const auto json = sq::parse_json_from_file(path + "/Attributes.json");
-
-    SQASSERT(json.size() >= 23+1, "not enough attributes in json");
-    SQASSERT(json.size() <= 23+1, "too many attributes in json");
-
-    attributes.walk_speed     = json.at("walk_speed");
-    attributes.dash_speed     = json.at("dash_speed");
-    attributes.air_speed      = json.at("air_speed");
-    attributes.traction       = json.at("traction");
-    attributes.air_mobility   = json.at("air_mobility");
-    attributes.air_friction   = json.at("air_friction");
-    attributes.hop_height     = json.at("hop_height");
-    attributes.jump_height    = json.at("jump_height");
-    attributes.airhop_height  = json.at("airhop_height");
-    attributes.gravity        = json.at("gravity");
-    attributes.fall_speed     = json.at("fall_speed");
-    attributes.fastfall_speed = json.at("fastfall_speed");
-    attributes.weight         = json.at("weight");
-
-    attributes.extra_jumps = json.at("extra_jumps");
-
-    attributes.land_heavy_fall_time = json.at("land_heavy_fall_time");
-
-    attributes.dash_start_time  = json.at("dash_start_time");
-    attributes.dash_brake_time  = json.at("dash_brake_time");
-    attributes.dash_turn_time   = json.at("dash_turn_time");
-
-    attributes.anim_walk_stride = json.at("anim_walk_stride");
-    attributes.anim_dash_stride = json.at("anim_dash_stride");
-
-    mLocalDiamond.halfWidth   = json.at("diamond_half_width");
-    mLocalDiamond.offsetCross = json.at("diamond_offset_cross");
-    mLocalDiamond.offsetTop   = json.at("diamond_offset_top");
-
-    mLocalDiamond.compute_normals();
-}
-
-//============================================================================//
-
-void Fighter::initialise_armature(const String& path)
-{
-    // if this method gets re-called in the editor, only reload animations
-    if (mArmature.get_bone_count() == 0u)
-    {
-        mArmature.load_from_file(path + "/Armature.json");
-        mBoneMatrices.resize(mArmature.get_bone_count());
-        current.pose = previous.pose = mArmature.get_rest_pose();
+        const String path = "assets/fighters/{}/Render.json"_format(name);
+        world.renderer.create_draw_items (
+            DrawItemDef::load_from_json(path, world.caches),
+            mDescriptorSet,
+            { {"flinch", &variables.flinch} }
+        );
     }
 
-    // todo: create a "AnimLibrary" asset type to share between fighters
-    const auto load_anim = [&](const char* name, AnimMode mode) -> Animation
+    // create fighter library
     {
-        const String filePath = sq::build_string(path, "/anims/", name);
-        try {
-            return { mArmature.load_animation_from_file(filePath), mode, name };
-        }
-        catch (const std::exception&) {
-            sq::log_warning("missing animation '{}.sqa'", filePath);
-            return { mArmature.make_null_animation(1u), mode, name };
-        }
-    };
+        const String module = "fighters/{}/Library"_format(name);
+        world.vm.load_module(module.c_str());
+        mLibraryHandle = world.vm.call<WrenHandle*> (
+            world.handles.new_1, wren::GetVar(module.c_str(), "Library"), this
+        );
+    }
 
-    Animations& anims = mAnimations;
+    // todo: proper action for entry upon game start
+    activeState = &mStates.at("Neutral");
+    activeState->call_do_enter();
+    play_animation(mAnimations.at("NeutralLoop"), 0u, true);
+}
 
-    anims.DashingLoop = load_anim("DashingLoop", AnimMode::DashCycle);
-    anims.FallingLoop = load_anim("FallingLoop", AnimMode::Looping);
-    anims.NeutralLoop = load_anim("NeutralLoop", AnimMode::Looping);
-    anims.ProneLoop = load_anim("ProneLoop", AnimMode::Looping);
-    anims.TumbleLoop = load_anim("TumbleLoop", AnimMode::Looping);
-    anims.VertigoLoop = load_anim("VertigoLoop", AnimMode::Looping);
-    anims.WalkingLoop = load_anim("WalkingLoop", AnimMode::WalkCycle);
-
-    anims.ShieldOn = load_anim("ShieldOn", AnimMode::Standard);
-    anims.ShieldOff = load_anim("ShieldOff", AnimMode::Standard);
-    anims.ShieldLoop = load_anim("ShieldLoop", AnimMode::Looping);
-
-    anims.CrouchOn = load_anim("CrouchOn", AnimMode::Standard);
-    anims.CrouchOff = load_anim("CrouchOff", AnimMode::Standard);
-    anims.CrouchLoop = load_anim("CrouchLoop", AnimMode::Looping);
-
-    anims.DashStart = load_anim("DashStart", AnimMode::Standard);
-    anims.VertigoStart = load_anim("VertigoStart", AnimMode::Standard);
-
-    anims.Brake = load_anim("Brake", AnimMode::Standard);
-    anims.PreJump = load_anim("PreJump", AnimMode::Standard);
-    anims.Turn = load_anim("Turn", AnimMode::ApplyTurn);
-    anims.TurnBrake = load_anim("TurnBrake", AnimMode::Standard);
-    anims.TurnDash = load_anim("TurnDash", AnimMode::ApplyTurn);
-
-    anims.JumpBack = load_anim("JumpBack", AnimMode::Standard);
-    anims.JumpForward = load_anim("JumpForward", AnimMode::Standard);
-    anims.AirHopBack = load_anim("AirHopBack", AnimMode::Standard);
-    anims.AirHopForward = load_anim("AirHopForward", AnimMode::Standard);
-
-    anims.LedgeCatch = load_anim("LedgeCatch", AnimMode::Standard);
-    anims.LedgeLoop = load_anim("LedgeLoop", AnimMode::Looping);
-    anims.LedgeClimb = load_anim("LedgeClimb", AnimMode::ApplyMotion);
-    anims.LedgeJump = load_anim("LedgeJump", AnimMode::Standard);
-
-    anims.NeutralFirst = load_anim("NeutralFirst", AnimMode::ApplyMotion);
-    anims.NeutralSecond = load_anim("NeutralSecond", AnimMode::ApplyMotion);
-    anims.NeutralThird = load_anim("NeutralThird", AnimMode::ApplyMotion);
-
-    anims.DashAttack = load_anim("DashAttack", AnimMode::ApplyMotion);
-
-    anims.TiltDown = load_anim("TiltDown", AnimMode::ApplyMotion);
-    anims.TiltForward = load_anim("TiltForward", AnimMode::ApplyMotion);
-    anims.TiltUp = load_anim("TiltUp", AnimMode::ApplyMotion);
-
-    anims.EvadeBack = load_anim("EvadeBack", AnimMode::ApplyMotion);
-    anims.EvadeForward = load_anim("EvadeForward", AnimMode::MotionTurn);
-    anims.Dodge = load_anim("Dodge", AnimMode::ApplyMotion);
-
-    anims.ProneAttack = load_anim("ProneAttack", AnimMode::ApplyMotion);
-    anims.ProneBack = load_anim("ProneBack", AnimMode::ApplyMotion);
-    anims.ProneForward = load_anim("ProneForward", AnimMode::ApplyMotion);
-    anims.ProneStand = load_anim("ProneStand", AnimMode::ApplyMotion);
-
-    anims.SmashDownStart = load_anim("SmashDownStart", AnimMode::ApplyMotion);
-    anims.SmashForwardStart = load_anim("SmashForwardStart", AnimMode::ApplyMotion);
-    anims.SmashUpStart = load_anim("SmashUpStart", AnimMode::ApplyMotion);
-
-    anims.SmashDownCharge = load_anim("SmashDownCharge", AnimMode::Looping);
-    anims.SmashForwardCharge = load_anim("SmashForwardCharge", AnimMode::Looping);
-    anims.SmashUpCharge = load_anim("SmashUpCharge", AnimMode::Looping);
-
-    anims.SmashDownAttack = load_anim("SmashDownAttack", AnimMode::ApplyMotion);
-    anims.SmashForwardAttack = load_anim("SmashForwardAttack", AnimMode::ApplyMotion);
-    anims.SmashUpAttack = load_anim("SmashUpAttack", AnimMode::ApplyMotion);
-
-    anims.AirBack = load_anim("AirBack", AnimMode::Standard);
-    anims.AirDown = load_anim("AirDown", AnimMode::Standard);
-    anims.AirForward = load_anim("AirForward", AnimMode::Standard);
-    anims.AirNeutral = load_anim("AirNeutral", AnimMode::Standard);
-    anims.AirUp = load_anim("AirUp", AnimMode::Standard);
-    anims.AirDodge = load_anim("AirDodge", AnimMode::Standard);
-
-    anims.LandLight = load_anim("LandLight", AnimMode::Standard);
-    anims.LandHeavy = load_anim("LandHeavy", AnimMode::Standard);
-    anims.LandTumble = load_anim("LandTumble", AnimMode::Standard);
-
-    anims.LandAirBack = load_anim("LandAirBack", AnimMode::Standard);
-    anims.LandAirDown = load_anim("LandAirDown", AnimMode::Standard);
-    anims.LandAirForward = load_anim("LandAirForward", AnimMode::Standard);
-    anims.LandAirNeutral = load_anim("LandAirNeutral", AnimMode::Standard);
-    anims.LandAirUp = load_anim("LandAirUp", AnimMode::Standard);
-
-    anims.HurtLowerLight = load_anim("HurtLowerLight", AnimMode::Standard);
-    anims.HurtLowerHeavy = load_anim("HurtLowerHeavy", AnimMode::Standard);
-    anims.HurtLowerTumble = load_anim("HurtLowerTumble", AnimMode::Standard);
-
-    anims.HurtMiddleLight = load_anim("HurtMiddleLight", AnimMode::Standard);
-    anims.HurtMiddleHeavy = load_anim("HurtMiddleHeavy", AnimMode::Standard);
-    anims.HurtMiddleTumble = load_anim("HurtMiddleTumble", AnimMode::Standard);
-
-    anims.HurtUpperLight = load_anim("HurtUpperLight", AnimMode::Standard);
-    anims.HurtUpperHeavy = load_anim("HurtUpperHeavy", AnimMode::Standard);
-    anims.HurtUpperTumble = load_anim("HurtUpperTumble", AnimMode::Standard);
-
-    anims.HurtAirLight = load_anim("HurtAirLight", AnimMode::Standard);
-    anims.HurtAirHeavy = load_anim("HurtAirHeavy", AnimMode::Standard);
-
-    //anims.LaunchLoop = load_anim("LaunchLoop", AnimMode::Looping);
-    //anims.LaunchFinish = load_anim("LaunchFinish", AnimMode::Standard);
-
-    const auto ensure_anim_at_least = [](Animation& anim, uint time, const char* timeName)
-    {
-        if (anim.anim.frameCount > time) return; // anim is longer than time
-
-        if (anim.anim.frameCount != 1u) // fallback animation, don't print another warning
-            sq::log_error("anim '{}' shorter than '{}'", anim.key, timeName);
-
-        anim.anim.frameCount = time + 1u;
-        //anim.anim.poses.resize(time + 1u, anim.anim.poses.back());
-    };
-
-    ensure_anim_at_least(anims.DashStart, attributes.dash_start_time, "dash_start_time");
-    ensure_anim_at_least(anims.Brake, attributes.dash_brake_time, "dash_brake_time");
-    ensure_anim_at_least(anims.TurnDash, attributes.dash_turn_time, "dash_turn_time");
-
-    ensure_anim_at_least(anims.HurtLowerHeavy, MIN_HITSTUN_HEAVY, "MIN_HITSTUN_HEAVY");
-    ensure_anim_at_least(anims.HurtMiddleHeavy, MIN_HITSTUN_HEAVY, "MIN_HITSTUN_HEAVY");
-    ensure_anim_at_least(anims.HurtUpperHeavy, MIN_HITSTUN_HEAVY, "MIN_HITSTUN_HEAVY");
-
-    ensure_anim_at_least(anims.HurtLowerTumble, MIN_HITSTUN_TUMBLE, "MIN_HITSTUN_TUMBLE");
-    ensure_anim_at_least(anims.HurtMiddleTumble, MIN_HITSTUN_TUMBLE, "MIN_HITSTUN_TUMBLE");
-    ensure_anim_at_least(anims.HurtUpperTumble, MIN_HITSTUN_TUMBLE, "MIN_HITSTUN_TUMBLE");
+Fighter::~Fighter()
+{
+    if (mLibraryHandle) wrenReleaseHandle(world.vm, mLibraryHandle);
 }
 
 //============================================================================//
 
-void Fighter::initialise_hurtblobs(const String& path)
+void Fighter::initialise_armature()
 {
-    const JsonValue root = sq::parse_json_from_file(path + "/HurtBlobs.json");
-    for (const auto& item : root.items())
+    const String path = "assets/fighters/{}/Armature.json"_format(name);
+
+    mArmature.load_from_file(path);
+    current.pose = previous.pose = mArmature.get_rest_pose();
+    mBoneMatrices.resize(mArmature.get_bone_count());
+}
+
+//============================================================================//
+
+void Fighter::initialise_attributes()
+{
+    const String path = "assets/fighters/{}/Attributes.json"_format(name);
+    const JsonValue json = sq::parse_json_from_file(path);
+
+    json.at("walkSpeed")   .get_to(attributes.walkSpeed);
+    json.at("dashSpeed")   .get_to(attributes.dashSpeed);
+    json.at("airSpeed")    .get_to(attributes.airSpeed);
+    json.at("traction")    .get_to(attributes.traction);
+    json.at("airMobility") .get_to(attributes.airMobility);
+    json.at("airFriction") .get_to(attributes.airFriction);
+
+    json.at("hopHeight")     .get_to(attributes.hopHeight);
+    json.at("jumpHeight")    .get_to(attributes.jumpHeight);
+    json.at("airHopHeight")  .get_to(attributes.airHopHeight);
+    json.at("gravity")       .get_to(attributes.gravity);
+    json.at("fallSpeed")     .get_to(attributes.fallSpeed);
+    json.at("fastFallSpeed") .get_to(attributes.fastFallSpeed);
+    json.at("weight")        .get_to(attributes.weight);
+
+    json.at("walkAnimStride") .get_to(attributes.walkAnimStride);
+    json.at("dashAnimStride") .get_to(attributes.dashAnimStride);
+
+    json.at("extraJumps")    .get_to(attributes.extraJumps);
+    json.at("lightLandTime") .get_to(attributes.lightLandTime);
+
+    json.at("diamondHalfWidth")   .get_to(localDiamond.halfWidth);
+    json.at("diamondOffsetCross") .get_to(localDiamond.offsetCross);
+    json.at("diamondOffsetTop")   .get_to(localDiamond.offsetTop);
+
+    localDiamond.compute_normals();
+}
+
+//============================================================================//
+
+void Fighter::initialise_hurtblobs()
+{
+    const String path = "assets/fighters/{}/HurtBlobs.json"_format(name);
+    const JsonValue json = sq::parse_json_from_file(path);
+
+    for (const auto& item : json.items())
     {
         HurtBlob& blob = mHurtBlobs[item.key()];
         blob.fighter = this;
 
-        try { blob.from_json(item.value()); }
-        catch (const std::exception& e) {
-            sq::log_warning("problem loading hurtblob '{}': {}", item.key(), e.what());
-        }
+        blob.from_json(item.value());
 
         world.enable_hurtblob(&blob);
     }
@@ -270,57 +141,93 @@ void Fighter::initialise_hurtblobs(const String& path)
 
 //============================================================================//
 
-bool Fighter::consume_command(Command cmd)
+void Fighter::initialise_animations()
 {
-    for (size_t i = CMD_BUFFER_SIZE; i != 0u; --i)
+    const auto load_animation = [this](const String& key, const String& mode)
     {
-        for (size_t j = mCommands[i-1u].size(); j != 0u; --j)
+        if (auto [iter, ok] = mAnimations.try_emplace(key); ok)
         {
-            if (mCommands[i-1u][j-1u] == cmd)
+            try {
+                const String path = "assets/fighters/{}/anims/{}"_format(name, key);
+                iter->second.anim = mArmature.load_animation_from_file(path);
+                iter->second.mode = sq::enum_from_string<AnimMode>(mode);
+            }
+            catch (const std::exception& ex) {
+                sq::log_warning("failed to load animation '{}/{}': {}", name, key, ex.what());
+                iter->second.anim = mArmature.make_null_animation(1u);
+                iter->second.mode = sq::enum_from_string_safe<AnimMode>(mode).value_or(AnimMode::Basic);
+            }
+
+            // todo: add the mode into the .sqa files
+            // something simple like 'Config [some string]' in the Header
+            // then the json mode will only be used for fallback animations
+
+            // animation doesn't have any motion
+            if (iter->second.anim.bones[0][0].track.size() == sizeof(Vec3F))
             {
-                mCommands[i-1u][j-1u] = Command(uint8_t(cmd) | uint8_t(Command::CONSUMED));
-                if (world.options.log_input == true)
-                    sq::log_debug("consumed command: {}", cmd);
-                return true;
+                if (iter->second.mode == AnimMode::Motion) iter->second.mode = AnimMode::Basic;
+                if (iter->second.mode == AnimMode::MotionTurn) iter->second.mode = AnimMode::Turn;
             }
         }
-    }
-    return false;
+        else sq::log_warning("already loaded animation '{}/{}'", name, key);
+    };
+
+    for (const auto& entry : sq::parse_json_from_file("assets/FighterAnimations.json"))
+        load_animation(entry.at(0).get_ref<const String&>(), entry.at(1).get_ref<const String&>());
+
+    for (const auto& entry : sq::parse_json_from_file("assets/fighters/{}/Animations.json"_format(name)))
+        load_animation(entry.at(0).get_ref<const String&>(), entry.at(1).get_ref<const String&>());
 }
 
-bool Fighter::consume_command(std::initializer_list<Command> cmds)
+//============================================================================//
+
+void Fighter::initialise_actions()
 {
-    for (size_t i = CMD_BUFFER_SIZE; i != 0u; --i)
+    const auto load_action = [this](const String& key)
     {
-        for (size_t j = mCommands[i-1u].size(); j != 0u; --j)
+        if (auto [iter, ok] = mActions.try_emplace(key, *this, key); ok)
         {
-            for (Command cmd : cmds)
-            {
-                if (mCommands[i-1u][j-1u] == cmd)
-                {
-                    mCommands[i-1u][j-1u] = Command(uint8_t(cmd) | uint8_t(Command::CONSUMED));
-                    if (world.options.log_input == true)
-                        sq::log_debug("consumed command: {}", cmd);
-                    return true;
-                }
+            try {
+                iter->second.load_json_from_file();
+                iter->second.load_wren_from_file();
+            }
+            catch (const std::exception& ex) {
+                sq::log_warning("failed to load action '{}/{}': {}", name, key, ex.what());
             }
         }
-    }
-    return false;
+        else sq::log_warning("already loaded action '{}/{}'", name, key);
+    };
+
+    for (const auto& entry : sq::parse_json_from_file("assets/FighterActions.json"))
+        load_action(entry.get_ref<const String&>());
+
+    for (const auto& entry : sq::parse_json_from_file("assets/fighters/{}/Actions.json"_format(name)))
+        load_action(entry.get_ref<const String&>());
 }
 
-bool Fighter::consume_command_facing(Command leftCmd, Command rightCmd)
-{
-    if (status.facing == -1) return consume_command(leftCmd);
-    if (status.facing == +1) return consume_command(rightCmd);
-    return false; // make compiler happy
-}
+//============================================================================//
 
-bool Fighter::consume_command_facing(std::initializer_list<Command> leftCmds, std::initializer_list<Command> rightCmds)
+void Fighter::initialise_states()
 {
-    if (status.facing == -1) return consume_command(leftCmds);
-    if (status.facing == +1) return consume_command(rightCmds);
-    return false; // make compiler happy
+    const auto load_state = [this](const String& key)
+    {
+        if (auto [iter, ok] = mStates.try_emplace(key, *this, key); ok)
+        {
+            try {
+                iter->second.load_wren_from_file();
+            }
+            catch (const std::exception& ex) {
+                sq::log_warning("failed to load state '{}/{}': {}", name, key, ex.what());
+            }
+        }
+        else sq::log_warning("already loaded state '{}/{}'", name, key);
+    };
+
+    for (const auto& entry : sq::parse_json_from_file("assets/FighterStates.json"))
+        load_state(entry.get_ref<const String&>());
+
+    for (const auto& entry : sq::parse_json_from_file("assets/fighters/{}/States.json"_format(name)))
+        load_state(entry.get_ref<const String&>());
 }
 
 //============================================================================//
@@ -330,158 +237,173 @@ void Fighter::apply_hit_generic(const HitBlob& hit, const HurtBlob& hurt)
     SQASSERT(&hit.action->fighter != this, "invalid hitblob");
     SQASSERT(hurt.fighter == this, "invalid hurtblob");
 
-    if (status.intangible == true) return;
+    const Attributes& attrs = attributes;
+    Variables& vars = variables;
+    Variables& otherVars = hit.action->fighter.variables;
+
+    if (vars.intangible == true) return;
 
     // if we were in the middle of an action, cancel it
-    cancel_active_action();
+    cancel_action();
 
     //--------------------------------------------------------//
 
-    // knockback formula: https://www.ssbwiki.com/Knockback#Melee_onward
-    // freezetime formula: https://www.ssbwiki.com/Hitlag#Formula
-    // knockback and weight values are the same arbitary units as in smash bros
-    // hitstun should always end before launch speed completely decays
-    // non-launching attacks can not cause tumbling
+    // todo: investigate how stacking works when we were hit previously
+    //       currently we just replace any existing freeze/stun/knockback
 
-    const bool shielding = status.state == State::Shield || (status.state == State::Freeze && mFrozenState == State::Shield) ||
-                           status.state == State::ShieldStun || (status.state == State::Freeze && mFrozenState == State::ShieldStun);
+    const bool shielding = activeState->name.starts_with("Shield");
 
-    const float facing = hit.facing == BlobFacing::Relative ? hit.action->fighter.status.position.x < status.position.x ? +1.f : -1.f
-                         : hit.facing == BlobFacing::Forward ? float(hit.action->fighter.status.facing)
-                         : -float(hit.action->fighter.status.facing); // BlobFacing::Reverse
+    // https://www.ssbwiki.com/Hitlag#Formula
+    const uint freezeTime = [&]() {
+        const float shield = shielding ? 0.75f : 1.f;
+        const float time = (hit.damage * 0.5f + 4.f) * hit.freezeMult * shield;
+        return maths::min(uint(time), 32u);
+    }();
 
-    const uint freezeTime = uint((hit.damage * 0.4f + 4.f) * hit.freezeFactor);
+    // https://www.ssbwiki.com/Angle#Angle_flipper
+    const float facing = [&]() {
+        if (hit.facingMode == BlobFacingMode::Forward) return +float(otherVars.facing);
+        if (hit.facingMode == BlobFacingMode::Reverse) return -float(otherVars.facing);
+        return otherVars.position.x < vars.position.x ? +1.f : -1.f; // Relative
+    }();
+
+    //--------------------------------------------------------//
+
+    vars.freezeTime = freezeTime;
+    otherVars.freezeTime = freezeTime;
+
+    // always start jittering with an even index
+    mJitterCounter = mJitterCounter & 254u;
+
+    // todo: add self to a list of somethings
+    hit.action->set_hit_something();
+
+    hit.action->wren_play_sound(hit.sound);
 
     //--------------------------------------------------------//
 
     if (shielding == true)
     {
-        status.shield -= hit.damage;
-
-        if (status.shield > 0.f)
+        if ((vars.shield -= hit.damage) > 0.f)
         {
-            status.velocity.x += facing * (SHIELD_PUSH_HURT_BASE + hit.damage * SHIELD_PUSH_HURT_FACTOR);
-            hit.action->fighter.status.velocity.x -= facing * (SHIELD_PUSH_HIT_BASE + hit.damage * SHIELD_PUSH_HIT_FACTOR);
+            vars.velocity.x += facing * (SHIELD_PUSH_HURT_BASE + hit.damage * SHIELD_PUSH_HURT_FACTOR);
+            otherVars.velocity.x -= facing * (SHIELD_PUSH_HIT_BASE + hit.damage * SHIELD_PUSH_HIT_FACTOR);
 
-            mHitStunTime = uint(SHIELD_STUN_BASE + SHIELD_STUN_FACTOR * hit.damage);
-            mFrozenState = State::ShieldStun;
+            vars.stunTime = uint8_t(SHIELD_STUN_BASE + SHIELD_STUN_FACTOR * hit.damage);
+
+            change_state(mStates.at("ShieldStun"));
         }
         else apply_shield_break(); // todo
+
+        return;
     }
 
     //--------------------------------------------------------//
 
-    else // not shielding
-    {
-        const bool airborne = status.state == State::JumpFall || (status.state == State::Freeze && mFrozenState == State::JumpFall) ||
-                              status.state == State::TumbleFall || (status.state == State::Freeze && mFrozenState == State::TumbleFall) ||
-                              status.state == State::AirStun || (status.state == State::Freeze && mFrozenState == State::AirStun) ||
-                              status.state == State::AirAction || (status.state == State::Freeze && mFrozenState == State::AirAction);
+    // https://www.ssbwiki.com/Knockback#Melee_onward
+    // knockback and weight values are the same arbitary units as in smash bros
+    // hitstun should always end before launch speed completely decays
+    // non-launching attacks can not cause tumbling
 
-        status.damage += hit.damage;
+    vars.damage += hit.damage;
 
-        const float damageFactor = status.damage / 10.f + (status.damage * hit.damage) / 20.f;
-        const float weightFactor = 200.f / (attributes.weight + 100.f);
+    // https://www.ssbwiki.com/Knockback#Melee_onward
 
-        const float knockbackNormal = hit.knockBase + (damageFactor * weightFactor * 1.4f + 18.f) * hit.knockScale * 0.01f;
-        const float knockbackFixed = (1.f + 10.f * hit.knockBase / 20.f) * weightFactor * 1.4f + 18.f;
-        const float knockback = hit.useFixedKnockback ? knockbackFixed : knockbackNormal;
+    // todo: for ignore weight, set gravity and fall speed as in https://www.ssbwiki.com/Knockback#Ultimate
 
-        const float launchSpeed = knockback * 0.003f;
-        const uint hitStunTime = uint(knockback * 0.4f);
+    const float knockback = [&]() {
+        const float b = hit.ignoreDamage ? 0.f : hit.knockBase;
+        const float d = hit.ignoreDamage ? hit.knockBase : hit.damage;
+        const float p = hit.ignoreDamage ? 10.f : vars.damage;
+        const float w = hit.ignoreWeight ? 100.f : attrs.weight;
+        const float s = hit.knockScale;
+        return (((p / 10.f + p * d / 20.f) * 200.f / (w + 100.f) * 1.4f + 18.f) * s * 0.01f + b);
+    }();
 
-        const float angleNormal = maths::radians(hit.knockAngle / 360.f);
-        const float angleSakurai = maths::radians((airborne ? 45.f : hitStunTime > 16u ? 40.f : 0.f) / 360.f);
-        const float angle = hit.useSakuraiAngle ? angleSakurai : angleNormal;
-
-        const Vec2F knockDir = { std::cos(angle) * facing, std::sin(angle) };
-
-        sq::log_debug_multiline("fighter {} hit by fighter {}:"
-                                "\nknockback:   {}" "\nfreezeTime:  {}" "\nhitStun:     {}"
-                                "\nknockDir:    {}" "\nlaunchSpeed: {}" "\ndecayFrames: {}"
-                                "\nhitKey:      {}" "\nhurtKey:     {}" "\nhurtRegion:  {}",
-                                index, hit.action->fighter.index,
-                                knockback, freezeTime, hitStunTime,
-                                knockDir, launchSpeed, uint(launchSpeed / KNOCKBACK_DECAY),
-                                hit.get_key(), hurt.get_key(), hurt.region);
-
-        SQASSERT(hitStunTime < uint(launchSpeed / KNOCKBACK_DECAY), "something is broken");
-
-        mHitStunTime = hitStunTime;
-
-        status.velocity = maths::normalize(knockDir) * launchSpeed;
-        status.facing = -int8_t(facing);
-
-        const auto& anims = mAnimations;
-
-        if (airborne == true || angle != 0.f)
+    const float angle = [&]() {
+        // https://www.ssbwiki.com/Sakurai_angle
+        if (hit.angleMode == BlobAngleMode::Sakurai)
         {
-            if (mHitStunTime >= MIN_HITSTUN_TUMBLE)
-            {
-                mFrozenState = State::TumbleStun;
+            if (vars.onGround == false) return maths::radians(45.f / 360.f);
+            if (knockback < 60.f) return 0.f;
+            const float blend = std::clamp((knockback - 60.f) / 30.f, 0.f, 1.f);
+            return maths::radians(maths::mix(10.f, 40.f, blend) / 360.f);
+        }
+        // https://www.ssbwiki.com/Autolink_angle
+        if (hit.angleMode == BlobAngleMode::AutoLink)
+        {
+            // todo
+            return maths::radians(hit.knockAngle / 360.f);
+        }
+        return maths::radians(hit.knockAngle / 360.f);
+    }();
 
-                if (hurt.region == BlobRegion::Middle)
-                    state_transition(State::Freeze, 0u, &anims.HurtMiddleTumble, 0u, &anims.TumbleLoop);
-                else if (hurt.region == BlobRegion::Lower)
-                    state_transition(State::Freeze, 0u, &anims.HurtLowerTumble, 0u, &anims.TumbleLoop);
-                else if (hurt.region == BlobRegion::Upper)
-                    state_transition(State::Freeze, 0u, &anims.HurtUpperTumble, 0u, &anims.TumbleLoop);
-            }
-            else
-            {
-                mFrozenState = State::AirStun;
+    const float launchSpeed = knockback * 0.003f;
+    const uint hitStunTime = uint(knockback * 0.4f);
 
-                if (mHitStunTime >= MIN_HITSTUN_HEAVY)
-                    state_transition(State::Freeze, 0u, &anims.HurtAirHeavy, 0u, &anims.FallingLoop);
-                else
-                    state_transition(State::Freeze, 0u, &anims.HurtAirLight, 0u, &anims.FallingLoop);
-            }
+    const Vec2F knockDir = { std::cos(angle) * facing, std::sin(angle) };
+
+    sq::log_debug_multiline("fighter {} hit by fighter {}:"
+                            "\nknockback:   {}" "\nfreezeTime:  {}" "\nhitStun:     {}"
+                            "\nknockDir:    {}" "\nlaunchSpeed: {}" "\ndecayFrames: {}"
+                            "\nhitKey:      {}" "\nhurtKey:     {}" "\nhurtRegion:  {}",
+                            index, hit.action->fighter.index,
+                            knockback, freezeTime, hitStunTime,
+                            knockDir, launchSpeed, uint(launchSpeed / KNOCKBACK_DECAY),
+                            hit.get_key(), hurt.get_key(), hurt.region);
+
+    SQASSERT(hitStunTime < uint(launchSpeed / KNOCKBACK_DECAY), "something is broken");
+
+    vars.stunTime = hitStunTime;
+
+    vars.velocity = maths::normalize(knockDir) * launchSpeed;
+
+    vars.launchSpeed = launchSpeed;
+
+    // rotate towards the camera over the duration of hitstun
+    if (vars.facing == int8_t(facing))
+        wren_reverse_facing_slow(vars.facing == 1, hitStunTime);
+
+    const bool heavy = vars.stunTime >= MIN_HITSTUN_HEAVY;
+
+    SmallString state, animNow, animAfter;
+
+    if (vars.onGround == false || angle != 0.f)
+    {
+        if (vars.stunTime >= MIN_HITSTUN_TUMBLE)
+        {
+            state = "TumbleStun";
+            if (hurt.region == BlobRegion::Middle) animNow = "HurtMiddleTumble";
+            else if (hurt.region == BlobRegion::Lower) animNow = "HurtLowerTumble";
+            else if (hurt.region == BlobRegion::Upper) animNow = "HurtUpperTumble";
+            else SQEE_UNREACHABLE();
+            animAfter = "TumbleLoop";
         }
         else
         {
-            mFrozenState = State::Stun;
-
-            if (mHitStunTime >= MIN_HITSTUN_HEAVY)
-            {
-                if (hurt.region == BlobRegion::Middle)
-                    state_transition(State::Freeze, 0u, &anims.HurtMiddleHeavy, 0u, &anims.NeutralLoop);
-                else if (hurt.region == BlobRegion::Lower)
-                    state_transition(State::Freeze, 0u, &anims.HurtLowerHeavy, 0u, &anims.NeutralLoop);
-                else if (hurt.region == BlobRegion::Upper)
-                    state_transition(State::Freeze, 0u, &anims.HurtUpperHeavy, 0u, &anims.NeutralLoop);
-            }
-            else
-            {
-                if (hurt.region == BlobRegion::Middle)
-                    state_transition(State::Freeze, 0u, &anims.HurtMiddleLight, 0u, &anims.NeutralLoop);
-                else if (hurt.region == BlobRegion::Lower)
-                    state_transition(State::Freeze, 0u, &anims.HurtLowerLight, 0u, &anims.NeutralLoop);
-                else if (hurt.region == BlobRegion::Upper)
-                    state_transition(State::Freeze, 0u, &anims.HurtUpperLight, 0u, &anims.NeutralLoop);
-            }
+            state = "FallStun";
+            animNow = heavy ? "HurtAirHeavy" : "HurtAirLight";
+            animAfter = "FallLoop";
         }
     }
-
-
-    //--------------------------------------------------------//
-
-    mFreezeTime = freezeTime;
-    mFrozenProgress = 0u;
-
-    hit.action->set_flag(ActionFlag::HitCollide, true);
-
-    // happens when fighters hit each other at the same time, or if a fighter hits multiple others
-    if (hit.action->fighter.status.state != State::Freeze)
+    else
     {
-        hit.action->fighter.mFreezeTime = freezeTime;
-        hit.action->fighter.mFrozenProgress = hit.action->fighter.mStateProgress;
-        hit.action->fighter.mFrozenState = hit.action->fighter.status.state;
-
-        hit.action->fighter.state_transition(State::Freeze, 0u, nullptr, 0u, nullptr);
+        state = "NeutralStun";
+        if (hurt.region == BlobRegion::Middle) animNow = heavy ? "HurtMiddleHeavy" : "HurtMiddleLight";
+        else if (hurt.region == BlobRegion::Lower) animNow = heavy ? "HurtLowerHeavy" : "HurtLowerLight";
+        else if (hurt.region == BlobRegion::Upper) animNow = heavy ? "HurtUpperHeavy" : "HurtUpperLight";
+        else SQEE_UNREACHABLE();
+        animAfter = "NeutralLoop";
     }
 
-    // feels wrong to call a wren_ method here, but Action::mSounds is private
-    hit.action->wren_play_sound(hit.sound);
+    change_state(mStates.at(state));
+    play_animation(mAnimations.at(animNow), 0u, true);
+    set_next_animation(mAnimations.at(animAfter), 0u);
+
+    update_animation();
+
+    mModelMatrix = maths::transform(current.translation, current.rotation);
+    //mArmature.compute_ubo_data(current.pose, mBoneMatrices.data(), uint(mBoneMatrices.size()));
 }
 
 //============================================================================//
@@ -496,8 +418,11 @@ void Fighter::apply_shield_break()
 
 void Fighter::pass_boundary()
 {
-    status = Status();
-    state_transition(State::Neutral, 0u, &mAnimations.NeutralLoop, 0u, nullptr);
+    // todo: this should be its own action
+    reset_everything();
+    activeState = &mStates.at("Neutral");
+    activeState->call_do_enter();
+    play_animation(mAnimations.at("NeutralLoop"), 0u, true);
 }
 
 //============================================================================//
@@ -506,33 +431,101 @@ Mat4F Fighter::get_bone_matrix(int8_t bone) const
 {
     SQASSERT(bone < int8_t(mArmature.get_bone_count()), "invalid bone");
     if (bone < 0) return mModelMatrix;
+
+    // todo: in smash, it seems that scale and translation are ignored for the leaf bone
+    // rukai data seems to ignore them for ALL bones in the chain, but that seems really wrong to me
+    // see https://github.com/rukai/brawllib_rs/blob/main/src/high_level_fighter.rs#L537
     return mModelMatrix * maths::transpose(Mat4F(mBoneMatrices[bone]));
 }
 
 //============================================================================//
 
-Action* Fighter::get_action(ActionType type)
+void Fighter::start_action(FighterAction& action)
 {
-    if (type == ActionType::None) return nullptr;
-    return mActions[int8_t(type)].get();
+    if (editorErrorCause != &action)
+    {
+        activeAction = &action;
+        activeAction->call_do_start();
+    }
+    else activeAction = nullptr;
+}
+
+void Fighter::cancel_action()
+{
+    if (activeAction == nullptr) return;
+
+    if (editorErrorCause != activeAction)
+        activeAction->call_do_cancel();
+
+    activeAction = nullptr;
+}
+
+void Fighter::change_state(FighterState& state)
+{
+    // todo: deal with errors from states
+
+    // will be null if the fighter was just created or reset
+    if (activeState != nullptr)
+        activeState->call_do_exit();
+
+    activeState = &state;
+    activeState->call_do_enter();
 }
 
 //============================================================================//
 
-void Fighter::integrate(float blend)
+void Fighter::play_animation(const Animation& animation, uint fade, bool fromStart)
 {
-    const Vec3F translation = maths::mix(previous.translation, current.translation, blend);
-    const QuatF rotation = maths::slerp(previous.rotation, current.rotation, blend);
-    mInterpModelMatrix = maths::transform(translation, rotation);
+    mAnimation = &animation;
+    mNextAnimation = nullptr;
 
-    const sq::Armature::Pose pose = mArmature.blend_poses(previous.pose, current.pose, blend);
+    if (bool(mRotateMode & RotateMode::Animation))
+    {
+        // end rotation if play_animation gets called twice
+        if (bool(mRotateMode & RotateMode::Playing)) mRotateMode = RotateMode::Auto;
+        else mRotateMode = mRotateMode | RotateMode::Playing;
+    }
 
-    mDescriptorSet.swap();
-    auto& block = *reinterpret_cast<SkellyBlock*>(mSkellyUbo.swap_map());
+    mFadeFrames = fade;
+    mNextFadeFrames = 0u;
+    mFadeProgress = 0u;
 
-    block.matrix = mInterpModelMatrix;
-    //block.normMat = Mat34F(maths::normal_matrix(camera.viewMat * mInterpModelMatrix));
-    block.normMat = Mat34F(maths::normal_matrix(mInterpModelMatrix));
+    // don't set fade rotation if doing a slow or animated rotation
+    if (mRotateMode == RotateMode::Auto) mFadeStartRotation = current.rotation;
+    mFadeStartPose = current.pose;
 
-    mArmature.compute_ubo_data(pose, block.bones, 80u);
+    if (fromStart == true)
+    {
+        mAnimTimeDiscrete = 0u;
+        mAnimTimeContinuous = 0.f;
+        mRootMotionPreviousOffset = Vec3F();
+    }
+}
+
+void Fighter::set_next_animation(const Animation& animation, uint fade)
+{
+    if (mAnimation != nullptr)
+    {
+        mNextAnimation = &animation;
+        mNextFadeFrames = fade;
+    }
+    else play_animation(animation, fade, true);
+}
+
+//============================================================================//
+
+void Fighter::reset_everything()
+{
+    if (activeAction) { activeAction->call_do_cancel(); activeAction = nullptr; }
+    if (activeState) { activeState->call_do_exit(); activeState = nullptr; }
+    variables = Variables();
+    previous.translation = current.translation = Vec3F();
+    previous.rotation = current.rotation = QuatF();
+    previous.pose = current.pose = mArmature.get_rest_pose();
+    mRootMotionPreviousOffset = Vec3F();
+    mRootMotionTranslate = Vec2F();
+    mRotateMode = RotateMode::Auto;
+    editorErrorCause = nullptr;
+    editorErrorMessage = "";
+    editorStartAction = nullptr;
 }

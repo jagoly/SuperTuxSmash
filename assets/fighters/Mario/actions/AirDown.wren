@@ -1,49 +1,45 @@
-import "sts" for ScriptBase
+import "actions/AirDown" for Script as Base
 
-class Script is ScriptBase {
-  construct new(a, f) { super(a, f) }
+class Script is Base {
+  construct new(a) { super(a) }
 
   execute() {
+    default_begin()
 
     wait_until(4)
-    fighter.set_autocancel(false)
     action.play_sound("Spin")
-    action.enable_hitblobs("A")
+    action.enable_hitblobs("ABCDE")
+    state.doLand = "LandAirDown"
 
     wait_until(5)
-    action.disable_hitblobs()
-    fighter.reset_collisions()
+    action.disable_hitblobs(true)
 
     wait_until(6)
-    action.enable_hitblobs("B")
+    action.enable_hitblobs("ABCDE")
 
     wait_until(7)
     action.play_sound("Spin")
-    action.disable_hitblobs()
-    fighter.reset_collisions()
+    action.disable_hitblobs(true)
 
     wait_until(8)
-    action.enable_hitblobs("C")
+    action.enable_hitblobs("ABCDE")
 
     wait_until(9)
-    action.disable_hitblobs()
-    fighter.reset_collisions()
+    action.disable_hitblobs(true)
 
     wait_until(10)
     action.play_sound("Spin")
-    action.enable_hitblobs("D")
+    action.enable_hitblobs("ABCDE")
 
     wait_until(11)
-    action.disable_hitblobs()
-    fighter.reset_collisions()
+    action.disable_hitblobs(true)
 
     wait_until(12)
-    action.enable_hitblobs("E")
+    action.enable_hitblobs("ABCDE")
 
     wait_until(13)
     action.play_sound("Spin")
-    action.disable_hitblobs()
-    fighter.reset_collisions()
+    action.disable_hitblobs(true)
 
     wait_until(16)
     action.play_sound("Spin")
@@ -53,20 +49,15 @@ class Script is ScriptBase {
 
     wait_until(24)
     action.play_sound("SpinLoud")
-    action.enable_hitblobs("FINAL")
+    action.enable_hitblobs("Z")
 
     wait_until(26)
-    action.disable_hitblobs()
+    action.disable_hitblobs(true)
 
     wait_until(32)
-    fighter.set_autocancel(true)
+    state.doLand = "MiscLand"
 
     wait_until(37) // 45
-    action.allow_interrupt()
-  }
-
-  cancel() {
-    fighter.set_autocancel(true)
-    action.disable_hitblobs()
+    default_end()
   }
 }

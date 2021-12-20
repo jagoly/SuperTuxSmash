@@ -31,8 +31,18 @@ file(GLOB_RECURSE GLSL_HEADERS "${PROJECT_SOURCE_DIR}/shaders/*.glsl")
 
 target_add_shaders(sts-game ${VERT_SHADERS} ${GEOM_SHADERS} ${FRAG_SHADERS})
 
+file(GLOB_RECURSE JSON_FILES "${PROJECT_SOURCE_DIR}/*.json")
+file(GLOB_RECURSE WREN_FILES "${PROJECT_SOURCE_DIR}/*.wren")
+
 target_sources(sts-game PRIVATE ${VERT_SHADERS} ${GEOM_SHADERS} ${FRAG_SHADERS} ${GLSL_HEADERS})
-source_group("GLSL" FILES ${VERT_SHADERS} ${GEOM_SHADERS} ${FRAG_SHADERS} ${GLSL_HEADERS})
+target_sources(sts-game PRIVATE ${JSON_FILES})
+target_sources(sts-game PRIVATE ${WREN_FILES})
+
+source_group("0 Headers" FILES ${HEADERS})
+source_group("1 Sources" FILES ${SOURCES})
+source_group("2 GLSL" FILES ${VERT_SHADERS} ${GEOM_SHADERS} ${FRAG_SHADERS} ${GLSL_HEADERS})
+source_group("3 JSON" FILES ${JSON_FILES})
+source_group("4 Wren" FILES ${WREN_FILES})
 
 target_include_directories(sts-game PRIVATE "${PROJECT_SOURCE_DIR}/src")
 

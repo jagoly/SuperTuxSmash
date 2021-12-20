@@ -1,7 +1,7 @@
 #include "game/Stage.hpp"
 
 #include "game/FightWorld.hpp"
-#include "game/Fighter.hpp"
+#include "game/Physics.hpp"
 
 #include "render/Renderer.hpp"
 #include "render/UniformBlocks.hpp"
@@ -23,41 +23,41 @@ Stage::Stage(FightWorld& world, StageEnum type)
     const JsonValue json = sq::parse_json_from_file(path + "/Stage.json");
 
     const JsonValue& render = json.at("render");
-    mSkyboxPath = render.at("skybox");
-    mLightDirection = render.at("light.direction");
-    mLightColour = render.at("light.colour");
-    world.renderer.tonemap.exposure = render.at("tonemap.exposure");
-    world.renderer.tonemap.contrast = render.at("tonemap.contrast");
-    world.renderer.tonemap.black = render.at("tonemap.black");
+    render.at("skybox").get_to(mSkyboxPath);
+    render.at("light.direction").get_to(mLightDirection);
+    render.at("light.colour").get_to(mLightColour);
+    render.at("tonemap.exposure").get_to(world.renderer.tonemap.exposure);
+    render.at("tonemap.contrast").get_to(world.renderer.tonemap.contrast);
+    render.at("tonemap.black").get_to(world.renderer.tonemap.black);
 
     const JsonValue& general = json.at("general");
-    mInnerBoundary.min = general.at("inner_boundary_min");
-    mInnerBoundary.max = general.at("inner_boundary_max");
-    mOuterBoundary.min = general.at("outer_boundary_min");
-    mOuterBoundary.max = general.at("outer_boundary_max");
-    mShadowCasters.min = general.at("shadow_casters_min");
-    mShadowCasters.max = general.at("shadow_casters_max");
+    general.at("inner_boundary_min").get_to(mInnerBoundary.min);
+    general.at("inner_boundary_max").get_to(mInnerBoundary.max);
+    general.at("outer_boundary_min").get_to(mOuterBoundary.min);
+    general.at("outer_boundary_max").get_to(mOuterBoundary.max);
+    general.at("shadow_casters_min").get_to(mShadowCasters.min);
+    general.at("shadow_casters_max").get_to(mShadowCasters.max);
 
     for (const JsonValue& jblock : json.at("blocks"))
     {
         AlignedBlock& block = mAlignedBlocks.emplace_back();
-        block.minimum = jblock.at("minimum");
-        block.maximum = jblock.at("maximum");
+        jblock.at("minimum").get_to(block.minimum);
+        jblock.at("maximum").get_to(block.maximum);
     }
 
     for (const JsonValue& jledge : json.at("ledges"))
     {
         Ledge& ledge = mLedges.emplace_back();
-        ledge.position = jledge.at("position");
-        ledge.direction = jledge.at("direction");
+        jledge.at("position").get_to(ledge.position);
+        jledge.at("direction").get_to(ledge.direction);
     }
 
     for (const JsonValue& jplatform : json.at("platforms"))
     {
         Platform& platform = mPlatforms.emplace_back();
-        platform.originY = jplatform.at("originY");
-        platform.minX = jplatform.at("minX");
-        platform.maxX = jplatform.at("maxX");
+        jplatform.at("originY").get_to(platform.originY);
+        jplatform.at("minX").get_to(platform.minX);
+        jplatform.at("maxX").get_to(platform.maxX);
     }
 
     const auto& ctx = sq::VulkanContext::get();
@@ -111,32 +111,17 @@ void Stage::integrate(float /*blend*/)
 
     environmentBlock.viewMatrix = maths::look_at_LH(Vec3F(), environmentBlock.lightDirection, Vec3F(0.f, 0.f, 1.f));
 
-    Vec3F minimum = mShadowCasters.min;
-    Vec3F maximum = mShadowCasters.max;
-
-    for (const Fighter* fighter : world.get_fighters())
-    {
-        if (fighter == nullptr) continue;
-
-        // todo: better estimates for fighter model size
-        minimum.x = maths::min(minimum.x, fighter->status.position.x + fighter->get_diamond().min().x - 1.f);
-        minimum.y = maths::min(minimum.y, fighter->status.position.y + fighter->get_diamond().min().y - 0.5f);
-        maximum.x = maths::max(maximum.x, fighter->status.position.x + fighter->get_diamond().max().x + 1.f);
-        maximum.y = maths::max(maximum.y, fighter->status.position.y + fighter->get_diamond().max().y + 0.5f);
-    }
+    const MinMax<Vec2F> fighters = world.compute_fighter_bounds();
+    const Vec3F minimum = maths::min(mShadowCasters.min, Vec3F(fighters.min, +INFINITY));
+    const Vec3F maximum = maths::max(mShadowCasters.max, Vec3F(fighters.max, -INFINITY));
 
     environmentBlock.projViewMatrix = world.renderer.get_camera().compute_light_matrix(environmentBlock.viewMatrix, minimum, maximum);
 }
 
 //============================================================================//
 
-MoveAttempt Stage::attempt_move(const LocalDiamond& diamond, Vec2F current, Vec2F target, bool edgeStop)
+MoveAttempt Stage::attempt_move(const LocalDiamond& diamond, Vec2F current, Vec2F target, bool edgeStop, bool ignorePlatforms)
 {
-//    const WorldDiamond targetDiamond = diamond.translate(translation);
-//    const Vec2F target = targetDiamond.origin();
-
-    //--------------------------------------------------------//
-
     MoveAttempt attempt;
 
     attempt.result = target;
@@ -167,7 +152,7 @@ MoveAttempt Stage::attempt_move(const LocalDiamond& diamond, Vec2F current, Vec2
 
         if (edgeStop == true)
         {
-            if (current.y >= block.maximum.y && target.y < block.maximum.y)
+            if (current.y >= block.maximum.y && target.y <= block.maximum.y)
             {
                 if (current.x >= block.minimum.x && target.x <= block.minimum.x) // check for left edge
                 {
@@ -175,7 +160,6 @@ MoveAttempt Stage::attempt_move(const LocalDiamond& diamond, Vec2F current, Vec2
                     attempt.edge = -1;
                     attempt.collideFloor = true;
                 }
-
                 if (current.x <= block.maximum.x && target.x >= block.maximum.x) // check for right edge
                 {
                     attempt.result = { block.maximum.x, block.maximum.y };
@@ -285,39 +269,42 @@ MoveAttempt Stage::attempt_move(const LocalDiamond& diamond, Vec2F current, Vec2
 
     //--------------------------------------------------------//
 
-    for (const auto& platform : mPlatforms)
+    if (ignorePlatforms == false)
     {
-        const float currentMinY = current.y + diamond.min().y;
-        const Vec2F currentCross = current + diamond.cross();
-
-        const float targetMinY = target.y + diamond.min().y;
-        const Vec2F targetCross = target + diamond.cross();
-
-        if (currentMinY >= platform.originY && targetMinY < platform.originY)
+        for (const auto& platform : mPlatforms)
         {
-            if (edgeStop == true)
-            {
-                if (currentCross.x >= platform.minX && targetCross.x <= platform.minX)
-                {
-                    attempt.result = { platform.minX, platform.originY };
-                    attempt.type = MoveAttempt::Type::EdgeStop;
-                    attempt.edge = -1;
-                    attempt.collideFloor = true; // fighter allowed to ignore this
-                }
-                if (currentCross.x <= platform.maxX && targetCross.x >= platform.maxX)
-                {
-                    attempt.result = { platform.maxX, platform.originY };
-                    attempt.type = MoveAttempt::Type::EdgeStop;
-                    attempt.edge = +1;
-                    attempt.collideFloor = true; // fighter allowed to ignore this
-                }
-            }
+            const float currentMinY = current.y + diamond.min().y;
+            const Vec2F currentCross = current + diamond.cross();
 
-            if (targetCross.x >= platform.minX && targetCross.x <= platform.maxX)
+            const float targetMinY = target.y + diamond.min().y;
+            const Vec2F targetCross = target + diamond.cross();
+
+            if (currentMinY >= platform.originY && targetMinY <= platform.originY)
             {
-                // todo: convey that this is a platform that can be dropped through
-                attempt.result.y = maths::max(attempt.result.y, target.y, platform.originY);
-                attempt.collideFloor = true;
+                if (edgeStop == true)
+                {
+                    if (currentCross.x >= platform.minX && targetCross.x <= platform.minX)
+                    {
+                        attempt.result = { platform.minX, platform.originY };
+                        attempt.edge = -1;
+                        attempt.collideFloor = true;
+                        attempt.onPlatform = true;
+                    }
+                    if (currentCross.x <= platform.maxX && targetCross.x >= platform.maxX)
+                    {
+                        attempt.result = { platform.maxX, platform.originY };
+                        attempt.edge = +1;
+                        attempt.collideFloor = true;
+                        attempt.onPlatform = true;
+                    }
+                }
+
+                if (targetCross.x >= platform.minX && targetCross.x <= platform.maxX)
+                {
+                    attempt.result.y = maths::max(attempt.result.y, target.y, platform.originY);
+                    attempt.collideFloor = true;
+                    attempt.onPlatform = true;
+                }
             }
         }
     }
@@ -329,27 +316,35 @@ MoveAttempt Stage::attempt_move(const LocalDiamond& diamond, Vec2F current, Vec2
 
 //============================================================================//
 
-Ledge* Stage::find_ledge(Vec2F position, int8_t direction)
+Ledge* Stage::find_ledge(const LocalDiamond& diamond, Vec2F origin, int8_t facing, int8_t inputX)
 {
-    constexpr const float GRAB_DISTANCE = 1.2f;
+    // todo: smash uses boxes that vary in size depending on character and action
+    constexpr float REACH_FRONT = 0.9f;
+    constexpr float REACH_BACK = 0.5f;
 
-    for (auto& ledge : mLedges)
+    for (Ledge& ledge : mLedges)
     {
-        if (ledge.direction == direction)
-            continue;
-        if (position.y >= ledge.position.y)
-            continue;
-
-        if (maths::distance_squared(position, ledge.position) > GRAB_DISTANCE * GRAB_DISTANCE)
+        // input is pushed away from the ledge
+        if (ledge.direction * inputX > 0)
             continue;
 
-        if (direction > 0)
-            if (position.x < ledge.position.x)
-                return &ledge;
+        // fighter is above the ledge
+        if (ledge.position.y <= origin.y)
+            continue;
 
-        if (direction < 0)
-            if (position.x > ledge.position.x)
-                return &ledge;
+        // fighter is on the inside of the ledge
+        if (float(ledge.direction) * (origin.x - ledge.position.x) <= 0.f)
+            continue;
+
+        // todo: replace with an intersection test
+        const Vec2F nearest = origin + Vec2F(float(-ledge.direction) * diamond.halfWidth, diamond.offsetCross);
+        const float reach = ledge.direction == facing ? REACH_BACK : REACH_FRONT;
+
+        // fighter can't reach the ledge
+        if (maths::distance_squared(nearest, ledge.position) > reach * reach)
+            continue;
+
+        return &ledge;
     }
 
     return nullptr;
@@ -357,13 +352,8 @@ Ledge* Stage::find_ledge(Vec2F position, int8_t direction)
 
 //============================================================================//
 
-void Stage::check_boundary(Fighter& fighter)
+bool Stage::check_point_out_of_bounds(Vec2F point)
 {
-    const Vec2F centre = fighter.status.position + fighter.get_diamond().cross();
-
-    if ( centre.x < mOuterBoundary.min.x || centre.x > mOuterBoundary.max.x ||
-         centre.y < mOuterBoundary.min.y || centre.y > mOuterBoundary.max.y )
-    {
-        fighter.pass_boundary();
-    }
+    return ( point.x < mOuterBoundary.min.x || point.x > mOuterBoundary.max.x ||
+             point.y < mOuterBoundary.min.y || point.y > mOuterBoundary.max.y );
 }

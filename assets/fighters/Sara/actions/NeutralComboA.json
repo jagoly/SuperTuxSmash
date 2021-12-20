@@ -1,0 +1,51 @@
+{
+  "blobs": {
+    "0_SpineA": {
+      "angleMode": "Sakurai",
+      "bone": "SpineA",
+      "canHitAir": true,
+      "canHitGround": true,
+      "clangMode": "Ground",
+      "damage": 3.0,
+      "facingMode": "Forward",
+      "flavour": "Tangy",
+      "freezeDiMult": 1.0,
+      "freezeMult": 1.0,
+      "handler": "Normal",
+      "ignoreDamage": true,
+      "ignoreWeight": false,
+      "index": 0,
+      "knockAngle": 0.0,
+      "knockBase": 15.0,
+      "knockScale": 100.0,
+      "origin": [ 0.0, 0.95289314, 0.18570268 ],
+      "radius": 0.4,
+      "sound": "PunchWeak"
+    },
+    "1_ArmB.L": {
+      "angleMode": "Normal",
+      "bone": "ArmB.L",
+      "canHitAir": true,
+      "canHitGround": true,
+      "clangMode": "Ground",
+      "damage": 3.0,
+      "facingMode": "Forward",
+      "flavour": "Tangy",
+      "freezeDiMult": 1.0,
+      "freezeMult": 1.0,
+      "handler": "Normal",
+      "ignoreDamage": true,
+      "ignoreWeight": false,
+      "index": 0,
+      "knockAngle": 75.0,
+      "knockBase": 15.0,
+      "knockScale": 100.0,
+      "origin": [ -0.8987322, 1.1963449, -0.0015648119 ],
+      "radius": 0.4,
+      "sound": "PunchWeak"
+    }
+  },
+  "effects": {},
+  "emitters": {},
+  "sounds": {}
+}

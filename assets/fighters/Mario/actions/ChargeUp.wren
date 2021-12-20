@@ -1,17 +1,19 @@
-import "sts" for ScriptBase
+import "actions/ChargeUp" for Script as Base
 
-class Script is ScriptBase {
-  construct new(a, f) { super(a, f) }
+class Script is Base {
+  construct new(a) { super(a) }
 
   execute() {
+    default_begin()
 
     wait_until(6)
-    action.set_flag_AllowNext()
+    allowNext = true
 
     wait_until(7)
     action.play_sound("SmashStart")
 
-    wait_until(66)
+    wait_until(67) // 67
+    return "SmashUp"
   }
 
   cancel() {

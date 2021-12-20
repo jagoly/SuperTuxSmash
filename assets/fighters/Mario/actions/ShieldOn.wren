@@ -1,14 +1,12 @@
-import "sts" for ScriptBase
+import "actions/ShieldOn" for Script as Base
 
-class Script is ScriptBase {
-  construct new(a, f) { super(a, f) }
+class Script is Base {
+  construct new(a) { super(a) }
 
   execute() {
-    wait_until(1)
-    action.play_sound("ShieldOn")
-  }
+    default_begin()
 
-  cancel() {
-    action.cancel_sound("ShieldOn")
+    wait_until(1) // 8
+    action.play_sound("ShieldOn")
   }
 }

@@ -3,7 +3,6 @@
 #include "main/Options.hpp"
 
 #include "game/FightWorld.hpp"
-#include "game/Fighter.hpp"
 #include "game/Stage.hpp"
 
 #include "render/Renderer.hpp"
@@ -22,17 +21,7 @@ void StandardCamera::update_from_world(const FightWorld& world)
     mPreviousView = mCurrentView;
     mPreviousBounds = mCurrentBounds;
 
-    mCurrentView = { Vec2F(+INFINITY), Vec2F(-INFINITY) };
-
-    for (const Fighter* fighter : world.get_fighters())
-    {
-        if (fighter == nullptr) continue;
-
-        const Vec2F centre = fighter->status.position + fighter->get_diamond().cross();
-
-        mCurrentView.min = maths::min(mCurrentView.min, centre);
-        mCurrentView.max = maths::max(mCurrentView.max, centre);
-    }
+    mCurrentView = world.compute_fighter_bounds();
 
     mCurrentView.min -= border;
     mCurrentView.max += border;
@@ -49,7 +38,7 @@ void StandardCamera::update_from_world(const FightWorld& world)
     mCurrentView.max = maths::min(mCurrentView.max, mCurrentBounds.max);
     mCurrentView.max = maths::max(mCurrentView.max, mCurrentBounds.min + border + border);
 
-    MinMax averageView = mCurrentView;
+    MinMax<Vec2F> averageView = mCurrentView;
 
     for (uint i = 0u; i < 15u; ++i)
     {

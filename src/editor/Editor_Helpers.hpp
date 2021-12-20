@@ -3,16 +3,15 @@
 #include "editor/EditorScene.hpp"
 
 #include <sqee/app/GuiWidgets.hpp>
+#include <sqee/debug/Assert.hpp>
 
 namespace sts {
 
 //============================================================================//
 
-template <class Map, class FuncInit, class FuncEdit>
-inline void EditorScene::helper_edit_objects(Map& objects, FuncInit funcInit, FuncEdit funcEdit)
+template <class Object, class FuncInit, class FuncEdit>
+inline void EditorScene::helper_edit_objects(std::map<TinyString, Object>& objects, FuncInit funcInit, FuncEdit funcEdit)
 {
-    using Object = typename Map::mapped_type;
-
     if (ImGui::Button("New...")) ImGui::OpenPopup("popup_new");
 
     ImGui::SameLine();
@@ -37,21 +36,23 @@ inline void EditorScene::helper_edit_objects(Map& objects, FuncInit funcInit, Fu
 
     //--------------------------------------------------------//
 
-    std::optional<TinyString> toDelete;
-    std::optional<std::pair<TinyString, TinyString>> toRename;
-    std::optional<std::pair<TinyString, TinyString>> toCopy;
+    using Iterator = typename std::map<TinyString, Object>::iterator;
+
+    std::optional<Iterator> toDelete;
+    std::optional<std::pair<Iterator, TinyString>> toRename;
+    std::optional<std::pair<Iterator, TinyString>> toCopy;
 
     //--------------------------------------------------------//
 
-    for (std::pair<const TinyString, Object>& item : objects)
+    for (Iterator iter = objects.begin(); iter != objects.end(); ++iter)
     {
-        const TinyString& key = item.first;
-        Object& object = item.second;
+        const TinyString& key = iter->first;
+        Object& object = iter->second;
 
-        const ImPlus::ScopeID soundIdScope = { key.c_str() };
+        const ImPlus::ScopeID keyIdScope = key.c_str();
 
         if (collapseAll) ImGui::SetNextItemOpen(false);
-        const bool sectionOpen = ImGui::CollapsingHeader(key);
+        const bool sectionOpen = ImGui::CollapsingHeader(key.c_str());
 
         //--------------------------------------------------------//
 
@@ -75,7 +76,7 @@ inline void EditorScene::helper_edit_objects(Map& objects, FuncInit funcInit, Fu
             ImPlus::Text("Delete '{}'?"_format(key));
             if (ImGui::Button("Confirm"))
             {
-                toDelete = key;
+                toDelete = iter;
                 ImGui::CloseCurrentPopup();
             }
         });
@@ -87,7 +88,7 @@ inline void EditorScene::helper_edit_objects(Map& objects, FuncInit funcInit, Fu
             if (ImGui::InputText("", newKey.data(), newKey.buffer_size(), ImGuiInputTextFlags_EnterReturnsTrue))
             {
                 // todo: check if newKey already exists
-                toRename.emplace(key, newKey);
+                toRename.emplace(iter, newKey);
                 ImGui::CloseCurrentPopup();
             }
             if (ImGui::IsWindowAppearing()) ImGui::SetKeyboardFocusHere();
@@ -100,7 +101,7 @@ inline void EditorScene::helper_edit_objects(Map& objects, FuncInit funcInit, Fu
             if (ImGui::InputText("", newKey.data(), newKey.buffer_size(), ImGuiInputTextFlags_EnterReturnsTrue))
             {
                 // todo: check if newKey already exists
-                toCopy.emplace(key, newKey);
+                toCopy.emplace(iter, newKey);
                 ImGui::CloseCurrentPopup();
             }
             if (ImGui::IsWindowAppearing()) ImGui::SetKeyboardFocusHere();
@@ -113,33 +114,21 @@ inline void EditorScene::helper_edit_objects(Map& objects, FuncInit funcInit, Fu
 
     //--------------------------------------------------------//
 
-    if (toDelete != std::nullopt)
-    {
-        const auto iter = objects.find(*toDelete);
-        SQASSERT(iter != objects.end(), "");
-        objects.erase(iter);
-    }
+    if (toDelete.has_value() == true)
+        objects.erase(*toDelete);
 
-    if (toRename != std::nullopt)
+    if (toRename.has_value() == true)
     {
-        const auto iter = objects.find(toRename->first);
-        SQASSERT(iter != objects.end(), "");
-        //SQASSERT(objects.find(toRename->second) == objects.end(), "");
         if (objects.find(toRename->second) == objects.end())
         {
-            auto node = objects.extract(iter);
+            auto node = objects.extract(toRename->first);
             node.key() = toRename->second;
             objects.insert(std::move(node));
         }
     }
 
-    if (toCopy != std::nullopt)
-    {
-        const auto iter = objects.find(toCopy->first);
-        SQASSERT(iter != objects.end(), "");
-        //SQASSERT(objects.find(toCopy->second) == objects.end(), "");
-        objects.try_emplace(toCopy->second, iter->second);
-    }
+    if (toCopy.has_value() == true)
+        objects.try_emplace(toCopy->second, toCopy->first->second);
 }
 
 //============================================================================//

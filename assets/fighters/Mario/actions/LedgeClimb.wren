@@ -1,19 +1,15 @@
-import "sts" for ScriptBase
+import "actions/LedgeClimb" for Script as Base
 
-class Script is ScriptBase {
-  construct new(a, f) { super(a, f) }
+class Script is Base {
+  construct new(a) { super(a) }
 
   execute() {
-    fighter.set_intangible(true)
+    default_begin()
 
     wait_until(30)
-    fighter.set_intangible(false)
+    vars.intangible = false
 
-    wait_until(34)
-    action.allow_interrupt()
-  }
-
-  cancel() {
-    fighter.set_intangible(false)
+    wait_until(35) // 35
+    default_end()
   }
 }

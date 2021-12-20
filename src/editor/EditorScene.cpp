@@ -4,11 +4,13 @@
 #include "main/Options.hpp"
 #include "main/SmashApp.hpp"
 
-#include "game/Action.hpp"
+#include "game/Controller.hpp"
 #include "game/EffectSystem.hpp"
 #include "game/Emitter.hpp"
 #include "game/FightWorld.hpp"
 #include "game/Fighter.hpp"
+#include "game/FighterAction.hpp"
+#include "game/FighterState.hpp"
 #include "game/HitBlob.hpp"
 #include "game/HurtBlob.hpp"
 #include "game/ParticleSystem.hpp"
@@ -57,6 +59,8 @@ EditorScene::EditorScene(SmashApp& smashApp)
     window.set_title("SuperTuxSmash - Editor");
     window.set_key_repeat(true);
 
+    mController = std::make_unique<Controller>(mSmashApp.get_input_devices(), "config/player1.json");
+
     //--------------------------------------------------------//
 
     const auto& ctx = sq::VulkanContext::get();
@@ -68,6 +72,31 @@ EditorScene::EditorScene(SmashApp& smashApp)
     mImageProcessPipelineLayout = ctx.create_pipeline_layout (
         mImageProcessSetLayout, vk::PushConstantRange(vk::ShaderStageFlagBits::eVertex, 0u, sizeof(Vec2F))
     );
+
+    //--------------------------------------------------------//
+
+    for (const auto& entry : sq::parse_json_from_file("assets/FighterAnimations.json"))
+        mFighterInfoCommon.animations.emplace_back(entry[0].get_ref<const String&>());
+
+    for (const auto& entry : sq::parse_json_from_file("assets/FighterActions.json"))
+        mFighterInfoCommon.actions.emplace_back(entry.get_ref<const String&>());
+
+    for (const auto& entry : sq::parse_json_from_file("assets/FighterStates.json"))
+        mFighterInfoCommon.states.emplace_back(entry.get_ref<const String&>());
+
+    for (int8_t i = 0; i < sq::enum_count_v<FighterEnum>; ++i)
+    {
+        FighterInfo& info = mFighterInfos[i];
+
+        for (const auto& entry : sq::parse_json_from_file("assets/fighters/{}/Animations.json"_format(FighterEnum(i))))
+            info.animations.emplace_back(entry[0].get_ref<const String&>());
+
+        for (const auto& entry : sq::parse_json_from_file("assets/fighters/{}/Actions.json"_format(FighterEnum(i))))
+            info.actions.emplace_back(entry.get_ref<const String&>());
+
+        for (const auto& entry : sq::parse_json_from_file("assets/fighters/{}/States.json"_format(FighterEnum(i))))
+            info.states.emplace_back(entry.get_ref<const String&>());
+    }
 }
 
 EditorScene::~EditorScene()
@@ -128,12 +157,12 @@ void EditorScene::handle_event(sq::Event event)
         }
     }
 
-    if (event.type == sq::Event::Type::Mouse_Scroll)
+    if (event.type == sq::Event::Type::Mouse_Scroll && event.data.scroll.delta.y != 0.f)
     {
         if (mActiveContext != nullptr)
         {
             auto& camera = static_cast<EditorCamera&>(mActiveContext->renderer->get_camera());
-            camera.update_from_scroll(event.data.scroll.delta);
+            camera.update_from_scroll(event.data.scroll.delta.y);
         }
     }
 }
@@ -213,6 +242,9 @@ void EditorScene::integrate(double /*elapsed*/, float blend)
 
     ctx.renderer->integrate_particles(blend, ctx.world->get_particle_system());
     ctx.renderer->integrate_debug(blend, *ctx.world);
+
+    //if (mPreviewMode != PreviewMode::Pause)
+    //    mController->integrate();
 }
 
 //============================================================================//
@@ -311,7 +343,7 @@ void EditorScene::impl_show_widget_toolbar()
 
             if (ImPlus::MenuItem("Reload Animations", nullptr, false, true))
             {
-                fighter.initialise_armature(sq::build_string("assets/fighters/", sq::enum_to_string(fighter.type)));
+                fighter.initialise_animations();
                 mActiveActionContext->timelineLength = get_default_timeline_length(*mActiveActionContext);
                 scrub_to_frame_current(*mActiveActionContext);
             }
@@ -361,7 +393,7 @@ void EditorScene::impl_show_widget_toolbar()
         ImGui::Separator();
 
         ImGui::SetNextItemWidth(50.f);
-        ImPlus::DragValue("##blend", mBlendValue, 0.f, 1.f, 0.01f, "%.2f");
+        ImPlus::DragValue("##blend", mBlendValue, 0.01f, 0.f, 1.f, "%.2f");
         ImPlus::HoverTooltip("blend value to use when paused");
 
         if (ImPlus::RadioButton("Pause", mPreviewMode, PreviewMode::Pause)) {}
@@ -433,51 +465,63 @@ void EditorScene::impl_show_widget_navigator()
 
     //--------------------------------------------------------//
 
+    const auto action_list_entry = [&](StringView fighterName, ActionKey key)
+    {
+        const auto iter = mActionContexts.find(key);
+
+        const bool loaded = iter != mActionContexts.end();
+        const bool modified = loaded && iter->second.modified;
+        const bool active = loaded && &iter->second == mActiveContext;
+
+        const String label = sq::build_string(fighterName, '/', key.name, modified ? " *" : "");
+        const bool highlight = ImPlus::IsPopupOpen(label);
+
+        if (loaded) ImPlus::PushFont(ImPlus::FONT_BOLD);
+        if (ImPlus::Selectable(label, active || highlight) && !active)
+        {
+            activate_action_context(key);
+        }
+        if (loaded) ImGui::PopFont();
+
+        ImPlus::if_PopupContextItem(nullptr, ImPlus::MOUSE_RIGHT, [&]()
+        {
+            if (ImGui::MenuItem("Close", nullptr, false, loaded))
+            {
+                if (modified) mConfirmCloseActionCtx = &iter->second;
+                else do_close_action(iter->second);
+            }
+            if (ImGui::MenuItem("Save", nullptr, false, modified))
+                save_changes(iter->second);
+        });
+    };
+
+    //--------------------------------------------------------//
+
     ImPlus::if_TabBar("tabbar", ImGuiTabBarFlags_FittingPolicyScroll, [&]()
     {
         ImPlus::if_TabItemChild("Actions", 0, [&]()
         {
             for (int8_t i = 0; i < sq::enum_count_v<FighterEnum>; ++i)
             {
-                const char* const fighterName = sq::to_c_string(FighterEnum(i));
+                const FighterInfo& info = mFighterInfos[i];
+                const StringView fighterName = sq::enum_to_string(FighterEnum(i));
 
-                const auto numLoaded = std::count_if(mActionContexts.begin(), mActionContexts.end(),
-                    [&](const auto& item) { return item.second.key.fighter == FighterEnum(i); });
-                const auto numTotal = sq::enum_count_v<ActionType>;
+                const size_t numLoaded = algo::count_if (
+                    mActionContexts, [i](const auto& item) { return item.first.fighter == FighterEnum(i); }
+                );
+                const size_t numTotal = mFighterInfoCommon.actions.size() + info.actions.size();
 
-                if (!ImPlus::CollapsingHeader("{} ({}/{})###{}"_format(fighterName, numLoaded, numTotal, fighterName)))
-                    continue;
-
-                for (int8_t j = 0; j < sq::enum_count_v<ActionType>; ++j)
+                if (ImPlus::CollapsingHeader("{} ({}/{})###{}"_format(fighterName, numLoaded, numTotal, fighterName)))
                 {
-                    const char* const actionName = sq::to_c_string(ActionType(j));
-                    const ActionKey key = { FighterEnum(i), ActionType(j) };
+                    const ImPlus::ScopeFont font = ImPlus::FONT_MONO;
 
-                    const auto iter = mActionContexts.find(key);
+                    for (const auto& actionName : mFighterInfoCommon.actions)
+                        action_list_entry(fighterName, {FighterEnum(i), actionName});
 
-                    const bool loaded = iter != mActionContexts.end();
-                    const bool modified = loaded && iter->second.modified;
-                    const bool active = loaded && &iter->second == mActiveContext;
+                    ImGui::Separator();
 
-                    const String label = sq::build_string(fighterName, '/', actionName, modified ? " *" : "");
-                    const bool highlight = ImPlus::IsPopupOpen(label);
-                    if (loaded) ImPlus::PushFont(ImPlus::FONT_BOLD);
-                    if (ImPlus::Selectable(label, active || highlight) && !active)
-                    {
-                        activate_action_context(key);
-                    }
-                    if (loaded) ImGui::PopFont();
-
-                    ImPlus::if_PopupContextItem(nullptr, ImPlus::MOUSE_RIGHT, [&]()
-                    {
-                        if (ImGui::MenuItem("Close", nullptr, false, loaded))
-                        {
-                            if (modified) mConfirmCloseActionCtx = &iter->second;
-                            else do_close_action(iter->second);
-                        }
-                        if (ImGui::MenuItem("Save", nullptr, false, modified))
-                            save_changes(iter->second);
-                    });
+                    for (const auto& actionName : info.actions)
+                        action_list_entry(fighterName, {FighterEnum(i), actionName});
                 }
             }
         });
@@ -486,7 +530,6 @@ void EditorScene::impl_show_widget_navigator()
         {
             for (int8_t i = 0; i < sq::enum_count_v<FighterEnum>; ++i)
             {
-                const char* const fighterName = sq::to_c_string(FighterEnum(i));
                 const FighterEnum key = FighterEnum(i);
 
                 const auto iter = mHurtblobsContexts.find(key);
@@ -495,7 +538,7 @@ void EditorScene::impl_show_widget_navigator()
                 const bool modified = loaded && iter->second.modified;
                 const bool active = loaded && &iter->second == mActiveContext;
 
-                const String label = sq::build_string(fighterName, modified ? " *" : "");
+                const String label = sq::build_string(sq::enum_to_string(key), modified ? " *" : "");
                 const bool highlight = ImPlus::IsPopupOpen(label);
 
                 if (loaded) ImPlus::PushFont(ImPlus::FONT_BOLD);
@@ -528,7 +571,6 @@ void EditorScene::impl_show_widget_navigator()
         {
             for (int8_t i = 0; i < sq::enum_count_v<StageEnum>; ++i)
             {
-                const char* const stageName = sq::to_c_string(StageEnum(i));
                 const StageEnum key = StageEnum(i);
 
                 const auto iter = mStageContexts.find(key);
@@ -537,7 +579,7 @@ void EditorScene::impl_show_widget_navigator()
                 const bool modified = loaded && iter->second.modified;
                 const bool active = loaded && &iter->second == mActiveContext;
 
-                const String label = sq::build_string(stageName, modified ? " *" : "");
+                const String label = sq::build_string(sq::enum_to_string(key), modified ? " *" : "");
                 const bool highlight = ImPlus::IsPopupOpen(label);
 
                 if (loaded) ImPlus::PushFont(ImPlus::FONT_BOLD);
@@ -662,77 +704,24 @@ void EditorScene::show_imgui_widgets()
 
 uint EditorScene::get_default_timeline_length(const ActionContext& ctx)
 {
-    const Fighter::Animations& anims = ctx.fighter->mAnimations;
+    // todo: jsonify all of this so it can properly support extra actions
+
+    const auto anim_length = [&ctx](const SmallString& name)
+    {
+        const auto iter = ctx.fighter->mAnimations.find(name);
+        if (iter == ctx.fighter->mAnimations.end())
+        {
+            sq::log_warning("could not find animation '{}'", name);
+            return 80u; // too short for some actions, but annoyingly long for others
+        }
+        return iter->second.anim.frameCount;
+    };
 
     uint result = 1u; // extra time before looping
 
-    SWITCH (ctx.key.action) {
-
-    CASE (NeutralFirst)  result += anims.NeutralFirst.anim.frameCount;
-    CASE (NeutralSecond) result += anims.NeutralSecond.anim.frameCount;
-    CASE (NeutralThird)  result += anims.NeutralThird.anim.frameCount;
-
-    CASE (DashAttack) result += anims.DashAttack.anim.frameCount;
-
-    CASE (TiltDown)    result += anims.TiltDown.anim.frameCount;
-    CASE (TiltForward) result += anims.TiltForward.anim.frameCount;
-    CASE (TiltUp)      result += anims.TiltUp.anim.frameCount;
-
-    CASE (EvadeBack)    result += anims.EvadeBack.anim.frameCount;
-    CASE (EvadeForward) result += anims.EvadeForward.anim.frameCount;
-    CASE (Dodge)        result += anims.Dodge.anim.frameCount;
-
-    CASE (ProneAttack)  result += anims.ProneAttack.anim.frameCount;
-    CASE (ProneBack)    result += anims.ProneBack.anim.frameCount;
-    CASE (ProneForward) result += anims.ProneForward.anim.frameCount;;
-    CASE (ProneStand)   result += anims.ProneStand.anim.frameCount;;
-
-    CASE (LedgeClimb) result += anims.LedgeClimb.anim.frameCount;
-
-    CASE (ChargeDown)    result += anims.SmashDownStart.anim.frameCount + anims.SmashDownCharge.anim.frameCount;
-    CASE (ChargeForward) result += anims.SmashForwardStart.anim.frameCount + anims.SmashForwardCharge.anim.frameCount;
-    CASE (ChargeUp)      result += anims.SmashUpStart.anim.frameCount + anims.SmashUpCharge.anim.frameCount;
-
-    CASE (SmashDown)    result += anims.SmashDownAttack.anim.frameCount;
-    CASE (SmashForward) result += anims.SmashForwardAttack.anim.frameCount;
-    CASE (SmashUp)      result += anims.SmashUpAttack.anim.frameCount;
-
-    CASE (AirBack)    result += anims.AirBack.anim.frameCount;
-    CASE (AirDown)    result += anims.AirDown.anim.frameCount;
-    CASE (AirForward) result += anims.AirForward.anim.frameCount;
-    CASE (AirNeutral) result += anims.AirNeutral.anim.frameCount;
-    CASE (AirUp)      result += anims.AirUp.anim.frameCount;
-    CASE (AirDodge)   result += anims.AirDodge.anim.frameCount;
-
-    CASE (LandLight)  result += anims.LandLight.anim.frameCount;
-    CASE (LandHeavy)  result += anims.LandHeavy.anim.frameCount;
-    CASE (LandTumble) result += anims.LandTumble.anim.frameCount;
-
-    CASE (LandAirBack)    result += anims.LandAirBack.anim.frameCount;
-    CASE (LandAirDown)    result += anims.LandAirDown.anim.frameCount;
-    CASE (LandAirForward) result += anims.LandAirForward.anim.frameCount;
-    CASE (LandAirNeutral) result += anims.LandAirNeutral.anim.frameCount;
-    CASE (LandAirUp)      result += anims.LandAirUp.anim.frameCount;
-
-    CASE (SpecialDown)    result += 32u;
-    CASE (SpecialForward) result += 32u;
-    CASE (SpecialNeutral) result += 32u;
-    CASE (SpecialUp)      result += 32u;
-
-    CASE (ShieldOn)  result += anims.ShieldOn.anim.frameCount;
-    CASE (ShieldOff) result += anims.ShieldOff.anim.frameCount;
-
-    CASE (HopBack, JumpBack)       result += anims.JumpBack.anim.frameCount;
-    CASE (HopForward, JumpForward) result += anims.JumpForward.anim.frameCount;
-    CASE (AirHopBack)              result += anims.AirHopBack.anim.frameCount;
-    CASE (AirHopForward)           result += anims.AirHopForward.anim.frameCount;
-
-    CASE (DashStart) result += anims.DashStart.anim.frameCount;
-    CASE (DashBrake) result += anims.Brake.anim.frameCount;
-
-    CASE (None) SQASSERT(false, "can't edit nothing");
-
-    } SWITCH_END;
+    if      (ctx.key.name == "HopBack")    result += anim_length("JumpBack");
+    else if (ctx.key.name == "HopForward") result += anim_length("JumpForward");
+    else                                   result += anim_length(ctx.key.name);
 
     return result;
 }
@@ -757,7 +746,7 @@ void EditorScene::initialise_base_context(BaseContext& ctx)
 
 void EditorScene::activate_action_context(ActionKey key)
 {
-    mSmashApp.get_window().set_title("SuperTuxSmash - Editor - {}/{}"_format(key.fighter, key.action));
+    mSmashApp.get_window().set_title("SuperTuxSmash - Editor - {}/{}"_format(key.fighter, key.name));
 
     mActiveHurtblobsContext = nullptr;
     mActiveStageContext = nullptr;
@@ -775,14 +764,16 @@ void EditorScene::activate_action_context(ActionKey key)
 
     ctx.world->set_stage(std::make_unique<Stage>(*ctx.world, StageEnum::TestZone));
     ctx.world->add_fighter(std::make_unique<Fighter>(*ctx.world, key.fighter, 0u));
+    ctx.world->get_fighter(0u).controller = mController.get();
 
     ctx.key = key;
-    ctx.fighter = ctx.world->get_fighter(0u);
+    ctx.fighter = &ctx.world->get_fighter(0u);
+    ctx.action = &ctx.fighter->mActions.at(ctx.key.name);
 
     scrub_to_frame_current(ctx);
 
-    ctx.savedData = ctx.fighter->get_action(key.action)->clone();
-    ctx.undoStack.push_back(ctx.fighter->get_action(key.action)->clone());
+    ctx.savedData = ctx.action->clone();
+    ctx.undoStack.push_back(ctx.action->clone());
 
     ctx.timelineLength = get_default_timeline_length(ctx);
 
@@ -803,9 +794,10 @@ EditorScene::HurtblobsContext& EditorScene::get_hurtblobs_context(FighterEnum ke
     ctx.world->add_fighter(std::make_unique<Fighter>(*ctx.world, key, 0u));
 
     ctx.key = key;
-    ctx.fighter = ctx.world->get_fighter(0u);
+    ctx.fighter = &ctx.world->get_fighter(0u);
 
-    ctx.fighter->state_transition(FighterState::EditorPreview, 0u, nullptr, 0u, nullptr);
+    //ctx.fighter->change_state(FighterState::EditorPreview, true);
+    sq::log_error("todo: fix hurtblob editor");
     ctx.world->tick();
 
     ctx.savedData = std::make_unique<decltype(Fighter::mHurtBlobs)>(ctx.fighter->mHurtBlobs);
@@ -848,9 +840,9 @@ EditorScene::StageContext& EditorScene::get_stage_context(StageEnum key)
 
 void EditorScene::apply_working_changes(ActionContext& ctx)
 {
-    Action& action = *ctx.fighter->get_action(ctx.key.action);
+    FighterAction& action = *ctx.action;
 
-    if (action.has_changes(*ctx.undoStack[ctx.undoIndex]))
+    if (action.has_changes(*ctx.undoStack[ctx.undoIndex]) == true)
     {
         ctx.world->editor_clear_hitblobs();
 
@@ -909,7 +901,7 @@ void EditorScene::do_undo_redo(ActionContext& ctx, bool redo)
     {
         ctx.world->editor_clear_hitblobs();
 
-        Action& action = *ctx.fighter->get_action(ctx.key.action);
+        FighterAction& action = *ctx.action;
         action.apply_changes(*ctx.undoStack[ctx.undoIndex]);
         action.load_wren_from_string();
 
@@ -944,7 +936,8 @@ void EditorScene::do_undo_redo(HurtblobsContext& ctx, bool redo)
 
 void EditorScene::save_changes(ActionContext& ctx)
 {
-    const Action& action = *ctx.fighter->get_action(ctx.key.action);
+    const Fighter& fighter = *ctx.fighter;
+    const FighterAction& action = *ctx.action;
 
     JsonValue json;
 
@@ -965,8 +958,8 @@ void EditorScene::save_changes(ActionContext& ctx)
     for (const auto& [key, sound] : action.mSounds)
         sound.to_json(sounds[key.c_str()]);
 
-    sq::write_text_to_file(action.build_path(".json"), json.dump(2));
-    sq::write_text_to_file(action.build_path(".wren"), action.mWrenSource);
+    sq::write_text_to_file("assets/fighters/{}/actions/{}.json"_format(fighter.name, action.name), json.dump(2));
+    sq::write_text_to_file("assets/fighters/{}/actions/{}.wren"_format(fighter.name, action.name), action.mWrenSource);
 
     ctx.savedData = action.clone();
     ctx.modified = false;
@@ -974,25 +967,21 @@ void EditorScene::save_changes(ActionContext& ctx)
 
 void EditorScene::save_changes(HurtblobsContext& ctx)
 {
+    const Fighter& fighter = *ctx.fighter;
+
     JsonValue json;
-    for (const auto& [key, blob] : ctx.fighter->mHurtBlobs)
+
+    for (const auto& [key, blob] : fighter.mHurtBlobs)
         blob.to_json(json[key.c_str()]);
 
-    sq::write_text_to_file("assets/fighters/{}/HurtBlobs.json"_format(ctx.fighter->type), json.dump(2));
+    sq::write_text_to_file("assets/fighters/{}/HurtBlobs.json"_format(fighter.name), json.dump(2));
 
-    *ctx.savedData = ctx.fighter->mHurtBlobs;
+    *ctx.savedData = fighter.mHurtBlobs;
     ctx.modified = false;
 }
 
 void EditorScene::save_changes(StageContext& ctx)
 {
-//    JsonValue json;
-//    for (const auto& [key, blob] : ctx.fighter->mHurtBlobs)
-//        blob.to_json(json[key.c_str()]);
-
-//    sq::write_text_to_file("assets/fighters/{}/HurtBlobs.json"_format(ctx.fighter->type), json.dump(2));
-
-//    *ctx.savedData = ctx.fighter->mHurtBlobs;
     ctx.modified = false;
 }
 
@@ -1005,6 +994,8 @@ void EditorScene::scrub_to_frame(ActionContext& ctx, int frame)
 
     // now we can reset everything
 
+    //mController->wren_clear_history();
+
     ctx.world->get_particle_system().reset_random_seed(mRandomSeed);
     ctx.world->get_particle_system().clear();
 
@@ -1012,46 +1003,62 @@ void EditorScene::scrub_to_frame(ActionContext& ctx, int frame)
 
     Fighter& fighter = *ctx.fighter;
 
-    if (fighter.mActiveAction != nullptr)
-    {
-        fighter.mActiveAction->do_cancel();
-        fighter.mActiveAction = nullptr;
-    }
+    fighter.reset_everything();
 
-    fighter.previous = fighter.current = Fighter::InterpolationData();
-    fighter.current.pose = fighter.mArmature.get_rest_pose();
-    fighter.status = Fighter::Status();
-    fighter.mForceSwitchAction = ActionType::None;
-    fighter.mTranslate = Vec2F();
+    auto& attrs = fighter.attributes;
+    auto& vars = fighter.variables;
+
+    //--------------------------------------------------------//
 
     // some actions have different starting state
-    SWITCH (ctx.key.action) {
+    // todo: this should be moved into wren so you can add new action types
+    // todo: manipulate input to have the action start naturally
 
-    CASE (AirBack, AirDown, AirForward, AirNeutral, AirUp, AirDodge)
+    if (ctx.key.name == "Brake" || ctx.key.name == "BrakeTurn")
     {
-        fighter.attributes.gravity = 0.f;
-        fighter.status.position = Vec2F(0.f, 1.f);
-        fighter.state_transition(FighterState::JumpFall, 0u, &fighter.mAnimations.FallingLoop, 0u, nullptr);
+        //fighter.change_state(fighter.mStates.at("Dash"));
+        fighter.change_state(fighter.mStates.at("Neutral"));
+        fighter.play_animation(fighter.mAnimations.at("DashLoop"), 0u, true);
+        vars.velocity.x = attrs.dashSpeed + attrs.traction;
     }
 
-    CASE (DashStart, DashBrake)
+    else if (ctx.key.name == "HopBack" || ctx.key.name == "HopForward")
     {
-        fighter.status.velocity.x = fighter.attributes.dash_speed + fighter.attributes.traction;
-        fighter.state_transition(FighterState::Neutral, 0u, &fighter.mAnimations.NeutralLoop, 0u, nullptr);
+        fighter.change_state(fighter.mStates.at("JumpSquat"));
+        fighter.play_animation(fighter.mAnimations.at("JumpSquat"), 0u, true);
+        vars.velocity.y = std::sqrt(2.f * attrs.hopHeight * attrs.gravity) + attrs.gravity * 0.5f;
     }
 
-    CASE_DEFAULT
+    else if (ctx.key.name == "JumpBack" || ctx.key.name == "JumpForward")
     {
-        fighter.state_transition(FighterState::Neutral, 0u, &fighter.mAnimations.NeutralLoop, 0u, nullptr);
+        fighter.change_state(fighter.mStates.at("JumpSquat"));
+        fighter.play_animation(fighter.mAnimations.at("JumpSquat"), 0u, true);
+        vars.velocity.y = std::sqrt(2.f * attrs.jumpHeight * attrs.gravity) + attrs.gravity * 0.5f;
     }
 
-    } SWITCH_END;
+    else if (ctx.key.name.starts_with("Air") || ctx.key.name.starts_with("SpecialAir"))
+    {
+        fighter.change_state(fighter.mStates.at("Fall"));
+        fighter.play_animation(fighter.mAnimations.at("FallLoop"), 0u, true);
+        attrs.gravity = 0.f;
+        vars.position = Vec2F(0.f, 1.f);
+    }
+
+    else
+    {
+        fighter.change_state(fighter.mStates.at("Neutral"));
+        fighter.play_animation(fighter.mAnimations.at("NeutralLoop"), 0u, true);
+    }
+
+    //--------------------------------------------------------//
 
     // tick once to apply neutral/falling animation
     ctx.world->tick();
+    ctx.fighter->previous = ctx.fighter->current;
+    ctx.fighter->debugPreviousPoseInfo = ctx.fighter->debugCurrentPoseInfo;
 
-    // start the action on the next tick
-    fighter.mForceSwitchAction = ctx.key.action;
+    // will activate the action when ctx.currentFrame >= 0
+    fighter.editorStartAction = ctx.action;
 
     // finally, scrub to the desired frame
     mSmashApp.get_audio_context().set_groups_ignored(sq::SoundGroup::Sfx, true);
@@ -1059,11 +1066,15 @@ void EditorScene::scrub_to_frame(ActionContext& ctx, int frame)
         tick_action_context(ctx);
     mSmashApp.get_audio_context().set_groups_ignored(sq::SoundGroup::Sfx, false);
 
-    if (fighter.mActiveAction != nullptr && ctx.currentFrame >= 0)
+    // this would be an assertion, but we want to avoid crashing the editor
+    #ifdef SQEE_DEBUG
+    if (fighter.activeAction != nullptr && ctx.currentFrame >= 0 && fighter.editorErrorCause == nullptr)
     {
-        const int actionFrame = int(fighter.mActiveAction->mCurrentFrame) - 1;
-        SQASSERT(ctx.currentFrame == actionFrame, "out of sync: timeline = {}, action = {}"_format(ctx.currentFrame, actionFrame));
+        const int actionFrame = int(fighter.activeAction->mCurrentFrame) - 1;
+        if (ctx.currentFrame != actionFrame)
+            sq::log_warning("out of sync: timeline = {}, action = {}", ctx.currentFrame, actionFrame);
     }
+    #endif
 }
 
 void EditorScene::scrub_to_frame_current(ActionContext& ctx)
@@ -1081,7 +1092,11 @@ void EditorScene::tick_action_context(ActionContext& ctx)
         if (mIncrementSeed) ++mRandomSeed;
         scrub_to_frame(ctx, -1);
     }
-    else ctx.world->tick();
+    else
+    {
+        //mController->tick();
+        ctx.world->tick();
+    }
 }
 
 void EditorScene::scrub_to_frame_previous(ActionContext& ctx)
@@ -1116,6 +1131,18 @@ void EditorScene::populate_command_buffer(vk::CommandBuffer cmdbuf, vk::Framebuf
     mSmashApp.get_gui_system().render_gui(cmdbuf);
 
     cmdbuf.endRenderPass();
+}
+
+//============================================================================//
+
+const void* EditorScene::ActionKey::hash() const
+{
+    // terrible hash combine, but ok for this
+    const size_t nameHash = std::hash<SmallString>()(name);
+    const size_t comboHash = nameHash + size_t(fighter);
+
+    // cast to a type that imgui can hash
+    return reinterpret_cast<const void*>(comboHash);
 }
 
 //============================================================================//

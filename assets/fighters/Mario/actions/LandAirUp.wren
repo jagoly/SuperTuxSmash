@@ -1,17 +1,16 @@
-import "sts" for ScriptBase
+import "actions/LandAirUp" for Script as Base
 
-class Script is ScriptBase {
-  construct new(a, f) { super(a, f) }
+class Script is Base {
+  construct new(a) { super(a) }
 
   execute() {
+    default_begin()
 
     wait_until(2)
     action.emit_particles("Ring")
 
-    wait_until(10)
+    wait_until(10) // 31
     action.play_sound("LandHeavy")
-    action.allow_interrupt()
+    default_end()
   }
-
-  cancel() {}
 }

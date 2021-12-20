@@ -1,16 +1,15 @@
-import "sts" for ScriptBase
+import "actions/LandTumble" for Script as Base
 
-class Script is ScriptBase {
-  construct new(a, f) { super(a, f) }
+class Script is Base {
+  construct new(a) { super(a) }
 
   execute() {
+    default_begin()
 
     wait_until(4)
     action.play_sound("LandTumble")
 
-    wait_until(32)
-    action.allow_interrupt()
+    wait_until(32) // 40
+    default_end()
   }
-
-  cancel() {}
 }

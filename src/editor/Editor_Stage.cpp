@@ -69,8 +69,8 @@ void EditorScene::impl_show_widget_cubemaps()
     constexpr auto faceNames = std::array { "Right", "Left", "Down", "Up", "Forward", "Back" };
     const float size = std::floor((ImGui::GetWindowContentRegionWidth() - 5.f * style.ItemSpacing.x) / 6.f);
 
-    // ordered so that you get a panorama for the first four faces
-    const uint faceMap[] = { 4, 0, 5, 1, 2, 3 };
+    // ordered to show a panorama for the first four faces
+    constexpr auto faceOrder = std::array { 4u, 0u, 5u, 1u, 2u, 3u };
 
     //--------------------------------------------------------//
 
@@ -86,8 +86,8 @@ void EditorScene::impl_show_widget_cubemaps()
 
         for (uint face = 0u; face < 6u; ++face)
         {
-            ImGui::Image(&ctx.skybox.descriptorSets[faceMap[face]], {size, size}, {0,1}, {1,0});
-            ImPlus::HoverTooltip(faceNames[faceMap[face]]);
+            ImGui::Image(&ctx.skybox.descriptorSets[faceOrder[face]], {size, size}, {0,1}, {1,0});
+            ImPlus::HoverTooltip(faceNames[faceOrder[face]]);
             if (face < 5u) ImGui::SameLine();
         }
     }
@@ -96,7 +96,7 @@ void EditorScene::impl_show_widget_cubemaps()
 
     if (ImGui::CollapsingHeader(ctx.irradianceModified ? "Irradiance*###Irradiance" : "Irradiance###Irradiance"))
     {
-        const ImPlus::ScopeID idScope = {"irradiance"};
+        const ImPlus::ScopeID idScope = "irradiance";
 
         if (ImGui::Button("Generate"))
         {
@@ -114,8 +114,8 @@ void EditorScene::impl_show_widget_cubemaps()
 
         for (uint face = 0u; face < 6u; ++face)
         {
-            ImGui::Image(&ctx.irradiance.descriptorSets[faceMap[face]], {size, size}, {0,1}, {1,0});
-            ImPlus::HoverTooltip(faceNames[faceMap[face]]);
+            ImGui::Image(&ctx.irradiance.descriptorSets[faceOrder[face]], {size, size}, {0,1}, {1,0});
+            ImPlus::HoverTooltip(faceNames[faceOrder[face]]);
             if (face < 5u) ImGui::SameLine();
         }
     }
@@ -124,7 +124,7 @@ void EditorScene::impl_show_widget_cubemaps()
 
     if (ImGui::CollapsingHeader(ctx.radianceModified ? "Radiance*###Radiance" : "Radiance###Radiance"))
     {
-        const ImPlus::ScopeID idScope = {"radiance"};
+        const ImPlus::ScopeID idScope = "radiance";
 
         if (ImGui::Button("Generate"))
         {
@@ -144,8 +144,8 @@ void EditorScene::impl_show_widget_cubemaps()
         {
             for (uint face = 0u; face < 6u; ++face)
             {
-                ImGui::Image(&ctx.radiance[level].descriptorSets[faceMap[face]], {size, size}, {0,1}, {1,0});
-                ImPlus::HoverTooltip("{} ({:.0f}%)"_format(faceNames[faceMap[face]], float(level * 100u) / float(RADIANCE_LEVELS - 1u)));
+                ImGui::Image(&ctx.radiance[level].descriptorSets[faceOrder[face]], {size, size}, {0,1}, {1,0});
+                ImPlus::HoverTooltip("{} ({:.0f}%)"_format(faceNames[faceOrder[face]], float(level * 100u) / float(RADIANCE_LEVELS - 1u)));
                 if (face < 5u) ImGui::SameLine();
             }
         }

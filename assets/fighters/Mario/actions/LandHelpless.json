@@ -1,0 +1,32 @@
+{
+  "blobs": {},
+  "effects": {},
+  "emitters": {
+    "Ring": {
+      "ballOffset": [ 0.0, 0.0 ],
+      "ballSpeed": [ 0.0, 0.0 ],
+      "baseOpacity": 0.3,
+      "baseRadius": [ 0.3, 0.4 ],
+      "bone": null,
+      "colour": [
+        [ 1.0, 0.95686275, 0.87058824 ]
+      ],
+      "count": 16,
+      "discIncline": [ 0.03, 0.05 ],
+      "discOffset": [ 0.3, 0.5 ],
+      "discSpeed": [ 0.13, 0.15 ],
+      "endOpacity": 0.0,
+      "endScale": 1.5,
+      "lifetime": [ 16, 24 ],
+      "origin": [ 0.0, 0.0, 0.0 ],
+      "sprite": "Smoke",
+      "velocity": [ 0.0, 0.0, 0.0 ]
+    }
+  },
+  "sounds": {
+    "LandHeavy": {
+      "path": "fighters/Mario/sounds/LandHeavy",
+      "volume": 0.3
+    }
+  }
+}

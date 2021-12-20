@@ -51,7 +51,7 @@ std::vector<DrawItemDef> DrawItemDef::load_from_json(const String& path, Resourc
     {
         DrawItemDef& def = result.emplace_back();
 
-        if (auto& condition = jobj.at("condition"); !condition.is_null())
+        if (const auto& condition = jobj.at("condition"); !condition.is_null())
         {
             StringView sv = condition.get_ref<const String&>();
             def.invertCondition = (!sv.empty() && sv.front() == '!');
@@ -59,16 +59,16 @@ std::vector<DrawItemDef> DrawItemDef::load_from_json(const String& path, Resourc
             def.condition = sv;
         }
 
-        const String& materialName = jobj.at("material");
+        const String& materialName = jobj.at("material").get_ref<const String&>();
         const JsonValue& materialKey = jsonMaterials.at(materialName);
         def.material = caches.materials.acquire(materialKey);
 
-        const String& meshName = jobj.at("mesh");
-        const String& meshKey = jsonMeshes.at(meshName);
+        const String& meshName = jobj.at("mesh").get_ref<const String&>();
+        const String& meshKey = jsonMeshes.at(meshName).get_ref<const String&>();
         def.mesh =  caches.meshes.acquire(meshKey);
 
-        if (auto& submesh = jobj.at("submesh"); !submesh.is_null())
-            def.subMesh = submesh;
+        if (const auto& submesh = jobj.at("submesh"); !submesh.is_null())
+            submesh.get_to(def.subMesh);
     }
 
     //--------------------------------------------------------//

@@ -4,7 +4,6 @@
 
 #include "main/Resources.hpp"
 
-#include <sqee/app/AudioContext.hpp>
 #include <sqee/app/WrenPlus.hpp>
 
 namespace sts {
@@ -34,11 +33,13 @@ public: //====================================================//
     wren::WrenPlusVM vm;
 
     struct {
-        WrenHandle* script_new = nullptr;
-        WrenHandle* script_reset = nullptr;
-        WrenHandle* script_cancel = nullptr;
-        WrenHandle* fiber_call = nullptr;
-        WrenHandle* fiber_isDone = nullptr;
+        WrenHandle* new_1 = nullptr;
+        WrenHandle* action_do_start = nullptr;
+        WrenHandle* action_do_updates = nullptr;
+        WrenHandle* action_do_cancel = nullptr;
+        WrenHandle* state_do_enter = nullptr;
+        WrenHandle* state_do_updates = nullptr;
+        WrenHandle* state_do_exit = nullptr;
     } handles;
 
     //--------------------------------------------------------//
@@ -67,7 +68,7 @@ public: //====================================================//
     void disable_hitblob(HitBlob* blob);
 
     /// Disable an action's hitblobs.
-    void disable_hitblobs(const Action& action);
+    void disable_hitblobs(const FighterAction& action);
 
     /// Disable all hitblobs.
     void editor_clear_hitblobs();
@@ -91,6 +92,9 @@ public: //====================================================//
     /// Reset a fighter's collisions.
     void reset_collisions(uint8_t fighter);
 
+    /// Compute a bounding box around all fighters.
+    MinMax<Vec2F> compute_fighter_bounds() const;
+
     //--------------------------------------------------------//
 
     /// Access the stage.
@@ -99,22 +103,18 @@ public: //====================================================//
     /// Access the stage (const).
     const Stage& get_stage() const { return *mStage; }
 
-    /// Access a fighter by index, might be null.
-    Fighter* get_fighter(uint8_t index) { return mFighters[index].get(); }
+    /// Access a fighter by index.
+    Fighter& get_fighter(uint8_t index) { return *mFighters[index]; }
 
-    /// Access a fighter by index, might be null (const).
-    const Fighter* get_fighter(uint8_t index) const { return mFighters[index].get(); }
-
-    /// Acquire an iterable of all added fighters.
-    StackVector<Fighter*, MAX_FIGHTERS> get_fighters() { return { mFighterRefs.begin(), mFighterRefs.end() }; }
-
-    /// Acquire an iterable of all added fighters (const).
-    StackVector<const Fighter*, MAX_FIGHTERS> get_fighters() const { return { mFighterRefs.begin(), mFighterRefs.end() }; }
+    /// Access a fighter by index (const).
+    const Fighter& get_fighter(uint8_t index) const { return *mFighters[index]; }
 
     //--------------------------------------------------------//
 
-    /// Access the polymorphic memory resource.
-    std::pmr::memory_resource* get_memory_resource();
+    // todo: in c++20 can use ranges to not expose the (unique) pointers
+
+    /// Access an iterable of all fighters.
+    const StackVector<std::unique_ptr<Fighter>, MAX_FIGHTERS>& get_fighters() const { return mFighters; }
 
     /// Access the enabled HurtBlobs.
     const std::vector<HurtBlob*>& get_hurt_blobs() const { return mEnabledHurtBlobs; };
@@ -132,14 +132,6 @@ public: //====================================================//
 
 private: //===================================================//
 
-    // undo stack in the editor can cause us to run out of slots, so we reserve more space
-    // todo: for the editor, use big pools shared between all contexts
-
-    std::unique_ptr<std::byte[]> mMemoryBuffer;
-    std::unique_ptr<std::pmr::monotonic_buffer_resource> mMemoryResource;
-
-    //--------------------------------------------------------//
-
     void impl_update_collisions();
 
     //--------------------------------------------------------//
@@ -150,8 +142,7 @@ private: //===================================================//
 
     std::unique_ptr<Stage> mStage;
 
-    std::array<std::unique_ptr<Fighter>, MAX_FIGHTERS> mFighters;
-    StackVector<Fighter*, MAX_FIGHTERS> mFighterRefs;
+    StackVector<std::unique_ptr<Fighter>, MAX_FIGHTERS> mFighters;
 
     std::vector<HitBlob*> mEnabledHitBlobs;
     std::vector<HurtBlob*> mEnabledHurtBlobs;
@@ -163,10 +154,6 @@ private: //===================================================//
     std::array<std::array<bool, MAX_FIGHTERS>, MAX_FIGHTERS> mIgnoreCollisions {};
 
     std::array<std::vector<Collision>, MAX_FIGHTERS> mCollisions;
-
-public: //== debug and editor interfaces =====================//
-
-    void debug_reload_actions();
 };
 
 //============================================================================//

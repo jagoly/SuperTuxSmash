@@ -1,22 +1,23 @@
-import "sts" for ScriptBase
+import "actions/LandAirDown" for Script as Base
 
-class Script is ScriptBase {
-  construct new(a, f) { super(a, f) }
+class Script is Base {
+  construct new(a) { super(a) }
 
   execute() {
+    default_begin()
     action.enable_hitblobs("")
 
     wait_until(3)
-    action.disable_hitblobs()
+    action.disable_hitblobs(true)
 
     wait_until(10)
     action.play_sound("LandHeavy")
 
     wait_until(19) // 31
-    action.allow_interrupt()
+    default_end()
   }
-  
+
   cancel() {
-    action.disable_hitblobs()
+    action.disable_hitblobs(true)
   }
 }

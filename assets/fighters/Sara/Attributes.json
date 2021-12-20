@@ -2,33 +2,29 @@
 
 "comment": "not based on anything, just things that seemed ok",
 
-"walk_speed":     0.1,
-"dash_speed":     0.15,
-"air_speed":      0.1,
-"traction":       0.006,
-"air_mobility":   0.008,
-"air_friction":   0.002,
-"hop_height":     1.6,
-"jump_height":    3.6,
-"airhop_height":  3.6,
-"gravity":        0.01,
-"fall_speed":     0.14,
-"fastfall_speed": 0.22,
-"weight":         95.0,
+"walkSpeed":   0.1,
+"dashSpeed":   0.15,
+"airSpeed":    0.1,
+"traction":    0.006,
+"airMobility": 0.008,
+"airFriction": 0.002,
 
-"extra_jumps": 1,
+"hopHeight":     1.6,
+"jumpHeight":    3.6,
+"airHopHeight":  3.6,
+"gravity":       0.01,
+"fallSpeed":     0.14,
+"fastFallSpeed": 0.22,
+"weight":        95.0,
 
-"land_heavy_fall_time": 4,
+"walkAnimStride": 1.8,
+"dashAnimStride": 2.2,
 
-"dash_start_time":  11,
-"dash_brake_time":  12,
-"dash_turn_time":   14,
+"extraJumps":    1,
+"lightLandTime": 5,
 
-"anim_walk_stride": 1.8,
-"anim_dash_stride": 2.2,
-
-"diamond_half_width": 0.3,
-"diamond_offset_top": 1.4,
-"diamond_offset_cross": 0.8
+"diamondHalfWidth":   0.3,
+"diamondOffsetTop":   1.7,
+"diamondOffsetCross": 0.9
 
 }

@@ -1,37 +1,33 @@
-import "sts" for ScriptBase
+import "actions/AirForward" for Script as Base
 
-class Script is ScriptBase {
-  construct new(a, f) { super(a, f) }
+class Script is Base {
+  construct new(a) { super(a) }
 
   execute() {
+    default_begin()
 
     wait_until(2)
-    fighter.set_autocancel(false)
+    state.doLand = "LandAirForward"
 
     wait_until(15)
     action.play_sound("SwingSmall")
     action.enable_hitblobs("EARLY")
 
     wait_until(16)
-    action.disable_hitblobs()
+    action.disable_hitblobs(false)
     action.enable_hitblobs("CLEAN")
 
     wait_until(19)
-    action.disable_hitblobs()
+    action.disable_hitblobs(false)
     action.enable_hitblobs("LATE")
 
     wait_until(21)
-    action.disable_hitblobs()
+    action.disable_hitblobs(true)
 
     wait_until(42)
-    fighter.set_autocancel(true)
+    state.doLand = "MiscLand"
 
     wait_until(59) // 75
-    action.allow_interrupt()
-  }
-  
-  cancel() {
-    fighter.set_autocancel(true)
-    action.disable_hitblobs()
+    default_end()
   }
 }

@@ -1,0 +1,27 @@
+{
+  "blobs": {},
+  "effects": {
+    "DashStart": {
+      "anchored": false,
+      "origin": [ 0.0, 0.0, 0.0 ],
+      "path": "fighters/Mario/effects/DashStart",
+      "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+      "scale": [ 0.9, 0.9, 0.9 ]
+    }
+  },
+  "emitters": {},
+  "sounds": {
+    "Dash": {
+      "path": "fighters/Mario/sounds/Dash",
+      "volume": 0.4
+    },
+    "StepLeftM": {
+      "path": "fighters/Mario/sounds/StepLeftM",
+      "volume": 0.2
+    },
+    "StepRightM": {
+      "path": "fighters/Mario/sounds/StepRightM",
+      "volume": 0.2
+    }
+  }
+}

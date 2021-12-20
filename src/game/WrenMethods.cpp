@@ -1,8 +1,11 @@
-#include "game/Action.hpp"
 #include "game/Fighter.hpp"
+#include "game/FighterAction.hpp"
+#include "game/FighterState.hpp"
+#include "game/Stage.hpp"
 
 #include "main/Options.hpp"
 
+#include "game/Controller.hpp"
 #include "game/EffectSystem.hpp"
 #include "game/Emitter.hpp"
 #include "game/FightWorld.hpp"
@@ -13,77 +16,225 @@
 #include "game/VisualEffect.hpp"
 
 #include <sqee/app/AudioContext.hpp>
-#include <sqee/debug/Assert.hpp>
 #include <sqee/debug/Logging.hpp>
 
 using namespace sts;
 
 //============================================================================//
 
-template <class... Args>
-inline void log_call(const Action& action, StringView str, const Args&... args)
+void Fighter::wren_log(StringView message)
 {
-    const Fighter& fighter = action.fighter;
-
-    if (action.world.options.log_script == true)
-        sq::log_debug(sq::build_string("{}/{} {:3d} | Action::", str), fighter.type, action.type, action.get_current_frame(), args...);
+    if (world.options.log_script == true)
+        sq::log_debug("Fighter {}: {}", index, message);
 }
 
-template <class... Args>
-inline void log_call(const Fighter& fighter, StringView str, const Args&... args)
-{
-    const Action& action = *fighter.get_active_action();
+//----------------------------------------------------------------------------//
 
-    if (fighter.world.options.log_script == true)\
-        sq::log_debug(sq::build_string("{}/{} {:3d} | Fighter::", str), fighter.type, action.type, action.get_current_frame(), args...);
+void Fighter::wren_cxx_assign_action(SmallString key)
+{
+    const auto iter = mActions.find(key);
+    if (iter == mActions.end())
+        throw wren::Exception("invalid action '{}'", key);
+
+    activeAction = &iter->second;
+}
+
+void Fighter::wren_cxx_assign_state(SmallString key)
+{
+    const auto iter = mStates.find(key);
+    if (iter == mStates.end())
+        throw wren::Exception("invalid state '{}'", key);
+
+    activeState = &iter->second;
+}
+
+//----------------------------------------------------------------------------//
+
+void Fighter::wren_reverse_facing_auto()
+{
+    variables.facing = -variables.facing;
+
+    for (InputFrame& frame : controller->history.frames)
+        frame.set_relative_x(variables.facing);
+
+    mRotateMode = RotateMode::Auto;
+}
+
+void Fighter::wren_reverse_facing_instant()
+{
+    wren_reverse_facing_auto();
+
+    previous.rotation = QuatF(0.f, 0.25f * float(variables.facing), 0.f);
+    current.rotation = previous.rotation;
+}
+
+void Fighter::wren_reverse_facing_slow(bool clockwise, uint8_t time)
+{
+    wren_reverse_facing_auto();
+
+    if (clockwise == false) mRotateMode = RotateMode::Slow;
+    else mRotateMode = RotateMode::Slow | RotateMode::Clockwise;
+
+    mRotateSlowTime = time;
+    mRotateSlowProgress = 0u;
+}
+
+void Fighter::wren_reverse_facing_animated(bool clockwise)
+{
+    wren_reverse_facing_auto();
+
+    if (clockwise == false) mRotateMode = RotateMode::Animation;
+    else mRotateMode = RotateMode::Animation | RotateMode::Clockwise;
+
+    mFadeStartRotation = QuatF(0.f, -0.25f * float(variables.facing), 0.f);
+}
+
+//----------------------------------------------------------------------------//
+
+bool Fighter::wren_attempt_ledge_catch()
+{
+    if (variables.ledge != nullptr)
+        throw wren::Exception("already have a ledge");
+
+    if (variables.noCatchTime != 0u || variables.velocity.y > 0.f)
+        return false;
+
+    variables.ledge = world.get_stage().find_ledge (
+        localDiamond, variables.position, variables.facing, controller->history.frames.front().intX
+    );
+
+    return variables.ledge != nullptr;
+}
+
+//----------------------------------------------------------------------------//
+
+void Fighter::wren_play_animation(SmallString key, uint fade, bool fromStart)
+{
+    const auto iter = mAnimations.find(key);
+    if (iter == mAnimations.end())
+        throw wren::Exception("invalid animation '{}'", key);
+
+    if (fromStart == false && iter->second.anim.frameCount <= mAnimTimeDiscrete)
+        throw wren::Exception("current frame is {}, but animation only has {}", mAnimTimeDiscrete, iter->second.anim.frameCount);
+
+    play_animation(iter->second, fade, fromStart);
+}
+
+void Fighter::wren_set_next_animation(SmallString key, uint fade)
+{
+    const auto iter = mAnimations.find(key);
+    if (iter == mAnimations.end())
+        throw wren::Exception("invalid animation '{}'", key);
+
+    if (mAnimation != nullptr && mAnimation->is_looping() == true)
+        throw wren::Exception("already playing a loop animation, '{}'", mAnimation->get_key());
+
+    if (mAnimation == &iter->second)
+        throw wren::Exception("specified animation already playing");
+
+    set_next_animation(iter->second, fade);
+}
+
+//----------------------------------------------------------------------------//
+
+void Fighter::wren_reset_collisions()
+{
+    world.reset_collisions(index);
+}
+
+void Fighter::wren_enable_hurtblob(TinyString key)
+{
+    const auto iter = mHurtBlobs.find(key);
+    if (iter == mHurtBlobs.end())
+        throw wren::Exception("invalid hurt blob '{}'", key);
+
+    world.enable_hurtblob(&iter->second);
+}
+
+void Fighter::wren_disable_hurtblob(TinyString key)
+{
+    const auto iter = mHurtBlobs.find(key);
+    if (iter == mHurtBlobs.end())
+        throw wren::Exception("invalid hurt blob '{}'", key);
+
+    world.disable_hurtblob(&iter->second);
 }
 
 //============================================================================//
 
-void Action::wren_set_wait_until(uint frame)
+void FighterAction::wren_log_with_prefix(StringView message)
 {
-    log_call(*this, "set_wait_until({})", frame);
-
-    if (frame <= mCurrentFrame)
-        throw wren::Exception("can't wait for {} on {}", frame, mCurrentFrame);
-
-    mWaitingUntil = frame;
+    if (world.options.log_script == true)
+        sq::log_debug("Fighter {} Action {:<19}| {}"_format(fighter.index, name, message));
 }
 
-void Action::wren_allow_interrupt()
+void FighterAction::wren_cxx_before_start()
 {
-    log_call(*this, "allow_interrupt()");
+//    if (world.options.log_script == true)
+//        wren_log_with_prefix("start");
 
-    if (ActionTraits::get(type).needInterrupt == false)
-        throw wren::Exception("can't interrupt this action type");
+    mCurrentFrame = mWaitUntil = 0u;
 
-    else mStatus = ActionStatus::AllowInterrupt;
+    mHitSomething = false;
+
+    // don't need to set to null because do_start will assign a new fiber anyway
+    if (mFiberHandle) wrenReleaseHandle(world.vm, mFiberHandle);
 }
 
-void Action::wren_enable_hitblobs(TinyString prefix)
+void FighterAction::wren_cxx_wait_until(uint frame)
 {
-    log_call(*this, "enable_hitblobs('{}')", prefix);
+    if (frame < mCurrentFrame)
+        throw wren::Exception("frame {} has already happened", frame);
+
+    mWaitUntil = frame;
+}
+
+void FighterAction::wren_cxx_wait_for(uint frames)
+{
+    if (frames == 0u)
+        throw wren::Exception("can't wait for zero frames");
+
+    mWaitUntil = mCurrentFrame + frames;
+}
+
+bool FighterAction::wren_cxx_next_frame()
+{
+    return ++mCurrentFrame > mWaitUntil;
+}
+
+void FighterAction::wren_cxx_before_cancel()
+{
+//    if (world.options.log_script == true)
+//        wren_log_with_prefix("cancel");
+}
+
+//----------------------------------------------------------------------------//
+
+void FighterAction::wren_enable_hitblobs(StringView prefix)
+{
+    if (prefix.length() > TinyString::capacity())
+        throw wren::Exception("hitblob prefix too long");
 
     bool found = false;
+
     for (auto& [key, blob] : mBlobs)
-        if (prefix == StringView(key.c_str(), prefix.length()))
+        if (key.starts_with(prefix) == true)
             world.enable_hitblob(&blob), found = true;
 
     if (found == false)
         throw wren::Exception("no hitblobs matching '{}*'", prefix);
 }
 
-void Action::wren_disable_hitblobs()
+void FighterAction::wren_disable_hitblobs(bool resetCollisions)
 {
-    log_call(*this, "disable_hitblobs()");
-
     world.disable_hitblobs(*this);
+
+    if (resetCollisions == true)
+        world.reset_collisions(fighter.index);
 }
 
-void Action::wren_play_effect(TinyString key)
+void FighterAction::wren_play_effect(TinyString key)
 {
-    log_call(*this, "play_effect('{}')", key);
-
     const auto iter = mEffects.find(key);
     if (iter == mEffects.end())
         throw wren::Exception("invalid effect '{}'", key);
@@ -96,10 +247,8 @@ void Action::wren_play_effect(TinyString key)
     world.get_effect_system().play_effect(effect);
 }
 
-void Action::wren_emit_particles(TinyString key)
+void FighterAction::wren_emit_particles(TinyString key)
 {
-    log_call(*this, "emit_particles('{}')", key);
-
     const auto iter = mEmitters.find(key);
     if (iter == mEmitters.end())
         throw wren::Exception("invalid emitter '{}'", key);
@@ -109,10 +258,8 @@ void Action::wren_emit_particles(TinyString key)
     world.get_particle_system().generate(emitter);
 }
 
-void Action::wren_play_sound(TinyString key)
+void FighterAction::wren_play_sound(TinyString key)
 {
-    log_call(*this, "play_sound('{}')", key);
-
     const auto iter = mSounds.find(key);
     if (iter == mSounds.end())
         throw wren::Exception("invalid sound '{}'", key);
@@ -125,10 +272,8 @@ void Action::wren_play_sound(TinyString key)
     sound.id = world.audio.play_sound(sound.handle.get(), sq::SoundGroup::Sfx, sound.volume, false);
 }
 
-void Action::wren_cancel_sound(TinyString key)
+void FighterAction::wren_cancel_sound(TinyString key)
 {
-    log_call(*this, "cancel_sound('{}')", key);
-
     const auto iter = mSounds.find(key);
     if (iter == mSounds.end())
         throw wren::Exception("invalid sound '{}'", key);
@@ -139,82 +284,20 @@ void Action::wren_cancel_sound(TinyString key)
 
 //============================================================================//
 
-void Action::wren_set_flag_AllowNext()
+void FighterState::wren_log_with_prefix(StringView message)
 {
-    log_call(*this, "set_flag_AllowNext()");
-
-    set_flag(ActionFlag::AllowNext, true);
+    if (world.options.log_script == true)
+        sq::log_debug("Fighter {} State  {:<19}| {}"_format(fighter.index, name, message));
 }
 
-void Action::wren_set_flag_AutoJab()
+void FighterState::wren_cxx_before_enter()
 {
-    log_call(*this, "set_flag_AutoJab()");
-
-    set_flag(ActionFlag::AutoJab, true);
+//    if (world.options.log_script == true)
+//        wren_log_with_prefix("enter");
 }
 
-bool Action::wren_check_flag_AttackHeld() const
+void FighterState::wren_cxx_before_exit()
 {
-    log_call(*this, "check_flag_AttackHeld()");
-
-    return check_flag(ActionFlag::AttackHeld);
-}
-
-bool Action::wren_check_flag_HitCollide() const
-{
-    log_call(*this, "check_flag_HitCollide()");
-
-    return check_flag(ActionFlag::HitCollide);
-}
-
-//============================================================================//
-
-void Fighter::wren_reset_collisions()
-{
-    log_call(*this, "reset_collisions()");
-
-    world.reset_collisions(index);
-}
-
-void Fighter::wren_set_intangible(bool value)
-{
-    log_call(*this, "set_intangible({})", value);
-
-    status.intangible = value;
-}
-
-void Fighter::wren_enable_hurtblob(TinyString key)
-{
-    log_call(*this, "enable_hurtblob({})", key);
-
-    const auto iter = mHurtBlobs.find(key);
-    if (iter == mHurtBlobs.end())
-        throw wren::Exception("invalid hurt blob '{}'", key);
-
-    world.enable_hurtblob(&iter->second);
-}
-
-void Fighter::wren_disable_hurtblob(TinyString key)
-{
-    log_call(*this, "disable_hurtblob({})", key);
-
-    const auto iter = mHurtBlobs.find(key);
-    if (iter == mHurtBlobs.end())
-        throw wren::Exception("invalid hurt blob '{}'", key);
-
-    world.disable_hurtblob(&iter->second);
-}
-
-void Fighter::wren_set_velocity_x(float value)
-{
-    log_call(*this, "set_velocity_x({})", value);
-
-    status.velocity.x = value;
-}
-
-void Fighter::wren_set_autocancel(bool value)
-{
-    log_call(*this, "set_autocancel({})", value);
-
-    status.autocancel = value;
+//    if (world.options.log_script == true)
+//        wren_log_with_prefix("exit");
 }

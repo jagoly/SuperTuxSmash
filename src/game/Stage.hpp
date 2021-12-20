@@ -1,16 +1,12 @@
 #pragma once
 
-#include "setup.hpp" // IWYU pragma: export
+#include "setup.hpp"
 
 #include "main/MainEnums.hpp"
 
 #include <sqee/vk/SwapBuffer.hpp>
 
-//============================================================================//
-
 namespace sts {
-
-struct LocalDiamond;
 
 //============================================================================//
 
@@ -28,29 +24,14 @@ struct AlignedBlock
 
 struct Ledge
 {
+    /// The point that fighters will grab on to.
     Vec2F position;
+
+    /// Left = -1, Right = +1 (will be opposite of grabber facing)
     int8_t direction;
 
+    /// The fighter currently hanging from the ledge.
     Fighter* grabber = nullptr;
-};
-
-//============================================================================//
-
-struct MoveAttempt
-{
-    enum class Type { Simple, Slope, EdgeStop };
-
-    // todo: I made a FlagSet class at some point, why not use it?
-    bool collideFloor = false;
-    bool collideWall = false;
-    bool collideCeiling = false;
-    bool collideCorner = false;
-
-    Type type = Type::Simple;
-    Vec2F result;
-
-    // non-zero if platform edge reached
-    int8_t edge = 0;
 };
 
 //============================================================================//
@@ -75,25 +56,25 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    MoveAttempt attempt_move(const LocalDiamond& diamond, Vec2F current, Vec2F target, bool edgeStop);
+    MoveAttempt attempt_move(const LocalDiamond& diamond, Vec2F current, Vec2F target, bool edgeStop, bool ignorePlatforms);
 
-    Ledge* find_ledge(Vec2F position, int8_t direction);
+    Ledge* find_ledge(const LocalDiamond& diamond, Vec2F origin, int8_t facing, int8_t inputX);
 
-    void check_boundary(Fighter& fighter);
+    bool check_point_out_of_bounds(Vec2F point);
 
     //--------------------------------------------------------//
 
     const String& get_skybox_path() const { return mSkyboxPath; }
 
-    const auto& get_inner_boundary() const { return mInnerBoundary; }
-    const auto& get_outer_boundary() const { return mOuterBoundary; }
-    const auto& get_shadow_casters() const { return mShadowCasters; }
+    const MinMax<Vec2F>& get_inner_boundary() const { return mInnerBoundary; }
+    const MinMax<Vec2F>& get_outer_boundary() const { return mOuterBoundary; }
+    const MinMax<Vec3F>& get_shadow_casters() const { return mShadowCasters; }
 
 protected: //=================================================//
 
-    struct { Vec2F min, max; } mInnerBoundary;
-    struct { Vec2F min, max; } mOuterBoundary;
-    struct { Vec3F min, max; } mShadowCasters;
+    MinMax<Vec2F> mInnerBoundary;
+    MinMax<Vec2F> mOuterBoundary;
+    MinMax<Vec3F> mShadowCasters;
 
     //--------------------------------------------------------//
 
@@ -123,6 +104,5 @@ protected: //=================================================//
 
 } // namespace sts
 
-//============================================================================//
-
-SQEE_ENUM_HELPER(sts::MoveAttempt::Type, Simple, Slope, EdgeStop)
+WRENPLUS_TRAITS_HEADER(sts::Ledge)
+WRENPLUS_TRAITS_HEADER(sts::Stage)

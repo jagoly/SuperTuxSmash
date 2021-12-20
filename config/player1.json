@@ -1,17 +1,19 @@
 {
 
 "gamepad_port":   0,
-"axis_move_x":    0,
-"axis_move_y":    1,
-"button_attack":  0,
-"button_jump":    5,
-"button_shield":  4,
-"key_left":       68,
-"key_up":         69,
-"key_right":      70,
-"key_down":       71,
-"key_attack":     33,
-"key_jump":       35,
-"key_shield":     12
+"axis_move_x":    "LeftX",
+"axis_move_y":    "LeftY",
+"button_attack":  "B",
+"button_special": "A",
+"button_jump":    "RightBump",
+"button_shield":  "LeftBump",
+"key_left":       "Arrow_Left",
+"key_up":         "Arrow_Up",
+"key_right":      "Arrow_Right",
+"key_down":       "Arrow_Down",
+"key_attack":     "C",
+"key_special":    "X",
+"key_jump":       "Z",
+"key_shield":     "V"
 
 }

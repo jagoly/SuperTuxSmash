@@ -52,48 +52,69 @@ void MenuScene::integrate(double /*elapsed*/, float /*blend*/)
 
 void MenuScene::show_imgui_widgets()
 {
-    const auto flags = ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove;
-    ImGui::SetNextWindowSizeConstraints({400, 0}, {400, -40});
     ImGui::SetNextWindowPos({20, 20});
 
-    const auto window = ImPlus::ScopeWindow("Welcome to SuperTuxSmash", flags);
+    const auto window = ImPlus::ScopeWindow (
+        " Welcome to SuperTuxSmash",
+        ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse
+    );
     if (window.show == false) return;
 
     //--------------------------------------------------------//
 
+    if (ImGui::Button("Add Player") && mSetup.players.size() < MAX_FIGHTERS)
+        mSetup.players.emplace_back();
+
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(160.f);
     ImPlus::ComboEnum("Stage", mSetup.stage);
 
-    for (uint index = 0u; index < 4u; ++index)
-    {
-        auto& player = mSetup.players[index];
+    ImGui::Separator();
 
-        if (ImPlus::CollapsingHeader("Player {}"_format(index+1)))
-        {
-            ImPlus::ComboEnum("Fighter##{}"_format(index), player.fighter);
-            player.enabled = (player.fighter != FighterEnum::Null);
-        }
+    for (auto iter = mSetup.players.begin(); iter != mSetup.players.end(); ++iter)
+    {
+        const auto index = uint8_t(iter - mSetup.players.begin());
+
+        const bool erase = ImPlus::Button("X##{}"_format(index));
+
+        ImGui::SameLine();
+        ImGui::AlignTextToFramePadding();
+        ImPlus::Text("Player {}"_format(index + 1));
+
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth(160.f);
+        ImPlus::ComboEnum("Fighter##{}"_format(index), iter->fighter);
+
+        if (erase) iter = mSetup.players.erase(iter) - 1;
     }
+
+    if (mSetup.players.empty() == false)
+        ImGui::Separator();
 
     //--------------------------------------------------------//
 
+    ImGui::Indent(50.f);
     if (ImPlus::Button("Start Game"))
     {
-        const auto predicate = [](const auto& player) { return player.enabled; };
-        const bool any = algo::any_of(mSetup.players, predicate);
+        if (mSetup.players.empty() == true && mSetup.stage == StageEnum::Null)
+            mSmashApp.start_game(GameSetup::get_defaults());
 
-        mSmashApp.start_game(any ? mSetup : GameSetup::get_defaults());
+        bool valid = (mSetup.stage != StageEnum::Null);
+        for (auto& player : mSetup.players)
+            valid &= (player.fighter != FighterEnum::Null);
+
+        if (valid == true)
+             mSmashApp.start_game(mSetup);
     }
     ImPlus::HoverTooltip("WARNING: Sara and Tux are usually broken, if you want a mostly working fighter use Mario (Quick Start)");
 
     ImGui::SameLine();
-
     if (ImPlus::Button("Start Editor"))
     {
         mSmashApp.start_editor();
     }
 
     ImGui::SameLine();
-
     if (ImPlus::Button("Quick Start"))
     {
         mSmashApp.start_game(GameSetup::get_quickstart());

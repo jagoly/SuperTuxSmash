@@ -134,7 +134,7 @@ void EffectSystem::integrate(float blend)
             continue;
 
         // todo: allow anchoring to specific bones, like with hitblobs, emitters, etc
-        const Mat4F modelMatrix = effect.anchored ? fighter.get_interpolated_model_matrix() * effect.localMatrix
+        const Mat4F modelMatrix = effect.anchored ? fighter.get_blended_model_matrix() * effect.localMatrix
                                                   : instance.worldMatrix;
 
         const sq::Armature::Pose pose = asset.armature.blend_poses(instance.previous.pose, instance.current.pose, blend);

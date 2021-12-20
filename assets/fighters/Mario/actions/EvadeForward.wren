@@ -1,12 +1,13 @@
-import "sts" for ScriptBase
+import "actions/EvadeForward" for Script as Base
 
-class Script is ScriptBase {
-  construct new(a, f) { super(a, f) }
+class Script is Base {
+  construct new(a) { super(a) }
 
   execute() {
+    default_begin()
 
     wait_until(3)
-    fighter.set_intangible(true)
+    vars.intangible = true
 
     wait_until(4)
     action.play_sound("Evade")
@@ -15,16 +16,12 @@ class Script is ScriptBase {
     action.play_sound("StepRightM")
 
     wait_until(19)
-    fighter.set_intangible(false)
+    vars.intangible = false
 
     wait_until(20)
     action.play_sound("StepLeftM")
 
-    wait_until(32) // 34
-    action.allow_interrupt()
-  }
-
-  cancel() {
-    fighter.set_intangible(false)
+    wait_until(32) // 36
+    default_end()
   }
 }

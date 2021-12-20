@@ -1,22 +1,18 @@
-import "sts" for ScriptBase
+import "actions/ProneStand" for Script as Base
 
-class Script is ScriptBase {
-  construct new(a, f) { super(a, f) }
+class Script is Base {
+  construct new(a) { super(a) }
 
   execute() {
-    fighter.set_intangible(true)
+    default_begin()
 
     wait_until(2)
     action.play_sound("Stand")
 
     wait_until(22)
-    fighter.set_intangible(false)
+    vars.intangible = false
 
-    wait_until(28)
-    action.allow_interrupt()
-  }
-
-  cancel() {
-    fighter.set_intangible(false)
+    wait_until(30) // 30
+    default_end()
   }
 }

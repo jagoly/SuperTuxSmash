@@ -1,32 +1,27 @@
-import "sts" for ScriptBase
+import "actions/ProneAttack" for Script as Base
 
-class Script is ScriptBase {
-  construct new(a, f) { super(a, f) }
+class Script is Base {
+  construct new(a) { super(a) }
 
   execute() {
-    fighter.set_intangible(true)
+    default_begin()
 
     wait_until(18)
     action.play_sound("SwingLarge")
-    action.enable_hitblob_group(0)
+    action.enable_hitblobs("A")
 
     wait_until(20)
-    action.disable_hitblob_group(0)
+    action.disable_hitblobs(true)
 
     wait_until(24)
     action.play_sound("SwingLarge")
-    action.enable_hitblob_group(1)
+    action.enable_hitblobs("B")
 
     wait_until(26)
-    fighter.set_intangible(false)
-    action.disable_hitblob_group(1)
+    action.disable_hitblobs(true)
+    vars.intangible = false
 
-    wait_until(48)
-    action.allow_interrupt()
-  }
-
-  cancel() {
-    fighter.set_intangible(false)
-    action.disable_hitblobs()
+    wait_until(50) // 50
+    default_end()
   }
 }

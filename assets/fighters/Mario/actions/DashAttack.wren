@@ -1,10 +1,10 @@
-import "sts" for ScriptBase
+import "actions/DashAttack" for Script as Base
 
-class Script is ScriptBase {
-  construct new(a, f) { super(a, f) }
+class Script is Base {
+  construct new(a) { super(a) }
 
   execute() {
-    fighter.set_velocity_x(0.0)
+    default_begin()
 
     wait_until(5)
     action.enable_hitblobs("CLEAN")
@@ -13,17 +13,13 @@ class Script is ScriptBase {
     action.play_sound("SwingMedium")
 
     wait_until(9)
-    action.disable_hitblobs()
+    action.disable_hitblobs(false)
     action.enable_hitblobs("LATE")
 
     wait_until(25)
-    action.disable_hitblobs()
+    action.disable_hitblobs(true)
 
     wait_until(37) // 54
-    action.allow_interrupt()
-  }
-
-  cancel() {
-    action.disable_hitblobs()
+    default_end()
   }
 }

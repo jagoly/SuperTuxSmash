@@ -57,12 +57,8 @@ GameScene::GameScene(SmashApp& smashApp, GameSetup setup)
 
     String title = "SuperTuxSmash - {}"_format(setup.stage);
 
-    if (setup.players[0].enabled == true)
-        title += " - {}"_format(setup.players[0].fighter);
-
-    for (uint8_t index = 1u; index < MAX_FIGHTERS; ++index)
-        if (setup.players[index].enabled)
-            title += " vs. {}"_format(setup.players[index].fighter);
+    for (uint8_t index = 0u; index < setup.players.size(); ++index)
+        sq::format_append(title, index == 0u ? " - {}" : " vs. {}", setup.players[index].fighter);
 
     window.set_title(std::move(title));
 
@@ -84,13 +80,10 @@ GameScene::GameScene(SmashApp& smashApp, GameSetup setup)
 
     //--------------------------------------------------------//
 
-    for (uint8_t index = 0u; index < MAX_FIGHTERS; ++index)
+    for (uint8_t index = 0u; index < setup.players.size(); ++index)
     {
-        if (setup.players[index].enabled == false) continue;
-
         auto fighter = std::make_unique<Fighter>(*mFightWorld, setup.players[index].fighter, index);
-
-        fighter->set_controller(mControllers[index].get());
+        fighter->controller = mControllers[index].get();
 
         mFightWorld->add_fighter(std::move(fighter));
     }
@@ -132,8 +125,14 @@ void GameScene::handle_event(sq::Event event)
         {
             if (mGamePaused == true)
             {
-                // todo: tell audio context to play one tick's worth of sound
+                for (auto& controller : mControllers)
+                    if (controller != nullptr)
+                        controller->integrate(), controller->tick();
+
+                // advance by a single frame
                 mFightWorld->tick();
+
+                // todo: tell audio context to play one tick's worth of sound
             }
             return;
         }
@@ -145,22 +144,20 @@ void GameScene::handle_event(sq::Event event)
             return;
         }
     }
-
-    for (auto& controller : mControllers)
-    {
-        if (controller != nullptr)
-        {
-            if (mGamePaused == false)
-                controller->handle_event(event);
-        }
-    }
 }
 
 //============================================================================//
 
 void GameScene::update()
 {
-    if (mGamePaused == false) mFightWorld->tick();
+    if (mGamePaused == false)
+    {
+        for (auto& controller : mControllers)
+            if (controller != nullptr)
+                controller->tick();
+
+        mFightWorld->tick();
+    }
 
     auto& camera = static_cast<StandardCamera&>(mRenderer->get_camera());
     camera.update_from_world(*mFightWorld);
@@ -176,52 +173,26 @@ void GameScene::integrate(double /*elapsed*/, float blend)
     mRenderer->integrate_particles(blend, mFightWorld->get_particle_system());
     mRenderer->integrate_debug(blend, *mFightWorld);
 
-    for (auto& controller : mControllers)
-    {
-        if (controller != nullptr)
-        {
-            if (mGamePaused == false)
+    if (mGamePaused == false)
+        for (auto& controller : mControllers)
+            if (controller != nullptr)
                 controller->integrate();
-        }
-    }
 
     mSmashApp.get_debug_overlay().update_sub_timers(mRenderer->get_frame_timings().data());
 }
 
 //============================================================================//
 
-void GameScene::render(double /*elapsed*/)
-{
-    /*mRenderer->render_particles(mFightWorld->get_particle_system(), blend);
-
-    String damageString; damageString.reserve(47u);
-
-    for (const Fighter* fighter : mFightWorld->get_fighters())
-    {
-        const int damage = int(std::round(fighter->status.damage));
-        damageString.clear();
-        damageString += "P{}: {}%  "_format(fighter->index + 1u, damage);
-        if (damage < 100) damageString += ' ';
-        if (damage < 10) damageString += ' ';
-        for (size_t i = mFightWorld->get_fighters().size() - 1u; i > fighter->index; --i) damageString += "           ";
-        Vec4F damageColour = { 1.f, 1.f, 1.f, 1.f };
-        if (damage >= 25) damageColour = { 1.f, 1.f, 0.6f, 1.f };
-        if (damage >= 55) damageColour = { 1.f, 0.9f, 0.3f, 1.f };
-        if (damage >= 90) damageColour = { 1.f, 0.3f, 0.3f, 1.f };
-        sq::render_text_basic(damageString, {+1, +1}, {+1, -1}, {28.f, 40.f}, damageColour, true);
-    }*/
-}
-
-//============================================================================//
-
 void GameScene::impl_show_general_window()
 {
-    const auto flags = ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize |
-                       ImGuiWindowFlags_NoMove | ImGuiWindowFlags_MenuBar;
-    ImGui::SetNextWindowSizeConstraints({300, 0}, {300, 200});
+    ImGui::SetNextWindowSizeConstraints({300, -1}, {300, -1});
     ImGui::SetNextWindowPos({20, 20});
 
-    const ImPlus::ScopeWindow window = { "General Debug", flags };
+    const auto window = ImPlus::ScopeWindow {
+        "General Debug",
+        ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize |
+        ImGuiWindowFlags_NoMove | ImGuiWindowFlags_MenuBar
+    };
     if (window.show == false) return;
 
     //--------------------------------------------------------//
@@ -230,13 +201,13 @@ void GameScene::impl_show_general_window()
 
     if (ImGui::Button("swap control"))
     {
-        if (auto fighters = mFightWorld->get_fighters(); fighters.size() >= 2u)
+        if (auto& fighters = mFightWorld->get_fighters(); fighters.size() >= 2u)
         {
-            auto controllerLast = fighters.back()->get_controller();
-            if (fighters.size() == 4u) fighters[3]->set_controller(fighters[2]->get_controller());
-            if (fighters.size() >= 3u) fighters[2]->set_controller(fighters[1]->get_controller());
-            fighters[1]->set_controller(fighters[0]->get_controller());
-            fighters[0]->set_controller(controllerLast);
+            Controller* last = fighters.back()->controller;
+            if (fighters.size() == 4u) fighters[3]->controller = fighters[2]->controller;
+            if (fighters.size() >= 3u) fighters[2]->controller = fighters[1]->controller;
+            fighters[1]->controller = fighters[0]->controller;
+            fighters[0]->controller = last;
         }
     }
     ImPlus::HoverTooltip("cycle the controllers");
@@ -262,7 +233,7 @@ void GameScene::impl_show_general_window()
 
         ImPlus::if_Menu("speed...", true, [&]()
         {
-            ImPlus::RadioButton("0.03125×", mTickTime, 1.0 / 1.5);
+            ImPlus::RadioButton("1fps", mTickTime, 1.0);
             ImPlus::RadioButton("0.125×", mTickTime, 1.0 / 6.0);
             ImPlus::RadioButton("0.25×", mTickTime, 1.0 / 12.0);
             ImPlus::RadioButton("0.5×", mTickTime, 1.0 / 24.0);
@@ -286,21 +257,22 @@ void GameScene::impl_show_general_window()
 
 //============================================================================//
 
-void GameScene::impl_show_fighters_window()
+void GameScene::impl_show_objects_window()
 {
-    const auto flags = ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize |
-                       ImGuiWindowFlags_NoMove;
     ImGui::SetNextWindowSizeConstraints({360, 0}, {360, ImPlus::FromScreenBottom(20+20)});
     ImGui::SetNextWindowPos({ImPlus::FromScreenRight(360+20), 20});
 
-    const ImPlus::ScopeWindow window = { "Fighter Debug", flags };
+    const auto window = ImPlus::ScopeWindow {
+        "Objects Debug",
+        ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove
+    };
     if (window.show == false) return;
 
     //--------------------------------------------------------//
 
     DebugGui::show_widget_stage(mFightWorld->get_stage());
 
-    for (Fighter* fighter : mFightWorld->get_fighters())
+    for (auto& fighter : mFightWorld->get_fighters())
         DebugGui::show_widget_fighter(*fighter);
 }
 
@@ -309,7 +281,7 @@ void GameScene::impl_show_fighters_window()
 void GameScene::show_imgui_widgets()
 {
     impl_show_general_window();
-    impl_show_fighters_window();
+    impl_show_objects_window();
 }
 
 //============================================================================//

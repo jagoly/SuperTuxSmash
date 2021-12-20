@@ -1,9 +1,10 @@
-import "sts" for ScriptBase
+import "actions/LandHeavy" for Script as Base
 
-class Script is ScriptBase {
-  construct new(a, f) { super(a, f) }
+class Script is Base {
+  construct new(a) { super(a) }
 
   execute() {
+    default_begin()
 
     wait_until(1)
     action.play_effect("LandHeavy")
@@ -14,9 +15,7 @@ class Script is ScriptBase {
     wait_until(5)
     action.emit_particles("Ring")
 
-    wait_until(8)
-    action.allow_interrupt()
+    wait_until(8) // 31
+    default_end()
   }
-
-  cancel() {}
 }

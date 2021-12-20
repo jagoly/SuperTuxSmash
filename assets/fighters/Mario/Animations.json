@@ -1,0 +1,18 @@
+[
+  [ "NeutralComboB", "Basic" ],
+  [ "NeutralComboC", "Basic" ],
+  [ "SpecialAirDownHeavy", "Basic" ],
+  [ "SpecialAirDownLight", "Basic" ],
+  [ "SpecialAirDownLoop", "Loop" ],
+  [ "SpecialAirDownStart", "Basic" ],
+  [ "SpecialAirForward", "Basic" ],
+  [ "SpecialAirNeutral", "Basic" ],
+  [ "SpecialAirUp", "Motion" ],
+  [ "SpecialDownHeavy", "Basic" ],
+  [ "SpecialDownLight", "Basic" ],
+  [ "SpecialDownLoop", "Loop" ],
+  [ "SpecialDownStart", "Basic" ],
+  [ "SpecialForward", "Basic" ],
+  [ "SpecialNeutral", "Basic" ],
+  [ "SpecialUp", "Motion" ]
+]

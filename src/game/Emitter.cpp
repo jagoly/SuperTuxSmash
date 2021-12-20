@@ -16,7 +16,7 @@ void Emitter::from_json(const JsonValue& json)
 {
     if (auto& jb = json.at("bone"); jb.is_null() == false)
     {
-        bone = fighter->get_armature().get_bone_index(jb);
+        bone = fighter->get_armature().get_bone_index(TinyString(jb));
         if (bone == -1) SQEE_THROW("invalid bone '{}'", jb);
     }
     else bone = -1;

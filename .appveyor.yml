@@ -30,10 +30,10 @@ build_script:
 
 after_build:
 
-  - cd c:/projects/SuperTuxSmash/build
-  - 7z a sts-windows-debug.zip Debug/*
+  - cd c:/projects/SuperTuxSmash/build/Debug
+  - 7z a sts-windows-debug.zip *
 
 artifacts:
 
-  - path: build/sts-windows-debug.zip
+  - path: build/Debug/sts-windows-debug.zip
     name: sts-windows-debug

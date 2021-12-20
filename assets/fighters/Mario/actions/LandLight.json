@@ -2,7 +2,7 @@
   "blobs": {},
   "effects": {
     "LandLight": {
-      "anchored": true,
+      "anchored": false,
       "origin": [ 0.0, 0.0, 0.0 ],
       "path": "fighters/Mario/effects/LandLight",
       "rotation": [ 0.0, 0.0, 0.0, 1.0 ],

@@ -1,12 +1,12 @@
-import "sts" for ScriptBase
+import "actions/HopBack" for Script as Base
 
-class Script is ScriptBase {
-  construct new(a, f) { super(a, f) }
+class Script is Base {
+  construct new(a) { super(a) }
 
   execute() {
+    default_begin()
+
     wait_until(2)
     action.play_sound("Hop")
   }
-
-  cancel() {}
 }

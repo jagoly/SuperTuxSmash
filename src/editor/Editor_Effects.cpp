@@ -1,9 +1,9 @@
 #include "editor/EditorScene.hpp" // IWYU pragma: associated
 #include "editor/Editor_Helpers.hpp"
 
-#include "game/Action.hpp"
 #include "game/FightWorld.hpp"
 #include "game/Fighter.hpp"
+#include "game/FighterAction.hpp"
 #include "game/VisualEffect.hpp"
 
 #include <sqee/app/GuiWidgets.hpp>
@@ -25,7 +25,7 @@ void EditorScene::impl_show_widget_effects()
     if (window.show == false) return;
 
     ActionContext& ctx = *mActiveActionContext;
-    Action& action = *ctx.fighter->get_action(ctx.key.action);
+    FighterAction& action = *ctx.action;
 
     //--------------------------------------------------------//
 
@@ -34,7 +34,7 @@ void EditorScene::impl_show_widget_effects()
         effect.cache = &ctx.world->caches.effects;
         effect.fighter = ctx.fighter;
 
-        effect.path = fmt::format("fighters/{}/effects/{}", ctx.fighter->type, effect.get_key());
+        effect.path = "fighters/{}/effects/{}"_format(ctx.fighter->name, effect.get_key());
         effect.handle = effect.cache->try_acquire(effect.path.c_str(), true);
 
         effect.origin = { 0.f, 0.f, 0.f };

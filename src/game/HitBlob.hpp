@@ -8,80 +8,78 @@ namespace sts {
 
 //============================================================================//
 
-// - the group value is equivilant to the Part value in smash bros
-// - origin is always relative to the fighter, even when the blob is attached to a bone
-// - BlobFacing::Reverse needs to exist for backwards sakurai hits, otherwise just use an angle > 90
-
-//============================================================================//
+/// special knockback angle calculation modes
+enum class BlobAngleMode : int8_t { Normal, Sakurai, AutoLink };
 
 /// how to choose the facing of the knockback
-enum class BlobFacing : int8_t { Relative, Forward, Reverse };
+enum class BlobFacingMode : int8_t { Relative, Forward, Reverse };
+
+/// what happens when the blob hits another hitblob
+enum class BlobClangMode : int8_t { Ignore, Ground, Air, Cancel };
 
 /// doesn't do anything except pick the debug colour
 enum class BlobFlavour : int8_t { Sour, Tangy, Sweet };
 
 //============================================================================//
 
-struct alignas(16) HitBlob final
+struct HitBlob final
 {
-    Action* action = nullptr; ///< Action that owns this blob.
+    FighterAction* action = nullptr; ///< Action that owns this blob.
 
     maths::Sphere sphere; ///< Blob sphere after transform.
 
     //--------------------------------------------------------//
 
-    Vec3F origin; ///< Local origin of the blob sphere.
-    float radius; ///< Local radius of the blob sphere.
+    Vec3F origin; ///< Model space origin of the blob sphere.
+    float radius; ///< Model space radius of the blob sphere.
 
     int8_t bone; ///< Index of the bone to attach to.
 
-    // todo: compute index based on ordering of hitblob keys, should be less error prone
     uint8_t index; ///< Used to choose from blobs from the same group.
 
     float damage;       ///< How much damage the blob will do when hit.
-    float freezeFactor; ///< Multiplier for the amount of freeze frames caused.
-    float knockAngle;   ///< Angle of knockback in degrees (0 = forward, 90 = up).
+    float freezeMult;   ///< Multiplier for https://www.ssbwiki.com/Hitlag
+    float freezeDiMult; ///< Multiplier for https://www.ssbwiki.com/Smash_directional_influence
+
+    float knockAngle;   ///< Knockback angle in degrees (0 = forward, 90 = up).
     float knockBase;    ///< Base knockback to apply on collision.
     float knockScale;   ///< Scale the knockback based on current fighter damage.
 
-    BlobFacing  facing;  ///< https://www.ssbwiki.com/Angle#Angle_flipper
-    BlobFlavour flavour; ///< Flavour of blob from sour (worst) to sweet (best).
+    BlobAngleMode  angleMode;  ///< https://www.ssbwiki.com/Angle#Special_angles
+    BlobFacingMode facingMode; ///< https://www.ssbwiki.com/Angle#Angle_flipper
+    BlobClangMode  clangMode;  ///< https://www.ssbwiki.com/Priority
+    BlobFlavour    flavour;    ///< Flavour of blob from sour (worst) to sweet (best).
 
-    bool useFixedKnockback; ///< https://www.ssbwiki.com/Knockback#Set_knockback
-    bool useSakuraiAngle;   ///< https://www.ssbwiki.com/Sakurai_angle
+    bool ignoreDamage; ///< https://www.ssbwiki.com/Knockback#Set_knockback
+    bool ignoreWeight; ///< https://www.ssbwiki.com/Knockback#Weight-independent_knockback
 
-    TinyString sound; ///< Sound to play on collision.
+    bool canHitGround; ///< Can the blob hit targets on the ground.
+    bool canHitAir;    ///< Can the blob hit targets in the air.
 
-    //-- debug / editor methods ------------------------------//
+    TinyString handler; ///< Handler to use after collision.
+    TinyString sound;   ///< Sound to play after collision.
+
+    //--------------------------------------------------------//
+
+    void from_json(const JsonValue& json);
+
+    void to_json(JsonValue& json) const;
+
+    Vec3F get_debug_colour() const;
+
+    bool operator==(const HitBlob& other) const;
 
     const TinyString& get_key() const
     {
         return *std::prev(reinterpret_cast<const TinyString*>(this));
     }
-
-    Vec3F get_debug_colour() const
-    {
-        SWITCH (flavour) {
-        CASE (Sour)  return { 0.6f, 0.6f, 0.0f };
-        CASE (Tangy) return { 0.2f, 1.0f, 0.0f };
-        CASE (Sweet) return { 1.0f, 0.1f, 0.1f };
-        CASE_DEFAULT std::abort();
-        } SWITCH_END;
-    }
-
-    //-- serialisation methods -------------------------------//
-
-    void from_json(const JsonValue& json);
-    void to_json(JsonValue& json) const;
 };
-
-//============================================================================//
-
-bool operator==(const HitBlob& a, const HitBlob& b);
 
 //============================================================================//
 
 } // namespace sts
 
-SQEE_ENUM_HELPER(sts::BlobFacing, Relative, Forward, Reverse)
+SQEE_ENUM_HELPER(sts::BlobAngleMode, Normal, Sakurai, AutoLink)
+SQEE_ENUM_HELPER(sts::BlobFacingMode, Relative, Forward, Reverse)
+SQEE_ENUM_HELPER(sts::BlobClangMode, Ignore, Ground, Air, Cancel)
 SQEE_ENUM_HELPER(sts::BlobFlavour, Sour, Tangy, Sweet)

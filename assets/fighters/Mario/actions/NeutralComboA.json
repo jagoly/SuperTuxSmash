@@ -1,0 +1,82 @@
+{
+  "blobs": {
+    "0_ShoulderL": {
+      "angleMode": "Sakurai",
+      "bone": "LShoulderJ",
+      "canHitAir": true,
+      "canHitGround": true,
+      "clangMode": "Ground",
+      "damage": 3.0,
+      "facingMode": "Forward",
+      "flavour": "Tangy",
+      "freezeDiMult": 1.0,
+      "freezeMult": 1.0,
+      "handler": "Normal",
+      "ignoreDamage": true,
+      "ignoreWeight": false,
+      "index": 0,
+      "knockAngle": 0.0,
+      "knockBase": 15.0,
+      "knockScale": 100.0,
+      "origin": [ -0.30785006, 0.87159014, -0.021440106 ],
+      "radius": 0.3,
+      "sound": "PunchWeak"
+    },
+    "1_Bust": {
+      "angleMode": "Sakurai",
+      "bone": "BustN",
+      "canHitAir": true,
+      "canHitGround": true,
+      "clangMode": "Ground",
+      "damage": 3.0,
+      "facingMode": "Forward",
+      "flavour": "Tangy",
+      "freezeDiMult": 1.0,
+      "freezeMult": 1.0,
+      "handler": "Normal",
+      "ignoreDamage": true,
+      "ignoreWeight": false,
+      "index": 1,
+      "knockAngle": 0.0,
+      "knockBase": 10.0,
+      "knockScale": 100.0,
+      "origin": [ 0.0, 0.78461015, 0.002949907 ],
+      "radius": 0.28,
+      "sound": "PunchWeak"
+    },
+    "2_ArmL": {
+      "angleMode": "Normal",
+      "bone": "LArmJ",
+      "canHitAir": true,
+      "canHitGround": true,
+      "clangMode": "Ground",
+      "damage": 3.0,
+      "facingMode": "Forward",
+      "flavour": "Tangy",
+      "freezeDiMult": 1.0,
+      "freezeMult": 1.0,
+      "handler": "Normal",
+      "ignoreDamage": true,
+      "ignoreWeight": false,
+      "index": 2,
+      "knockAngle": 80.0,
+      "knockBase": 15.0,
+      "knockScale": 100.0,
+      "origin": [ -0.6931302, 0.8716201, -0.021440106 ],
+      "radius": 0.4,
+      "sound": "PunchWeak"
+    }
+  },
+  "effects": {},
+  "emitters": {},
+  "sounds": {
+    "PunchWeak": {
+      "path": "fighters/Mario/sounds/PunchWeak",
+      "volume": 0.5
+    },
+    "SwingSmall": {
+      "path": "fighters/Mario/sounds/SwingSmall",
+      "volume": 0.5
+    }
+  }
+}

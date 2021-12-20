@@ -145,7 +145,7 @@ void SmashApp::handle_event(sq::Event event)
 
     //--------------------------------------------------------//
 
-    if (type == Type::Keyboard_Press)
+    if (type == Type::Keyboard_Press && data.keyboard.ctrl == true)
     {
         if (data.keyboard.key == Key::V)
         {

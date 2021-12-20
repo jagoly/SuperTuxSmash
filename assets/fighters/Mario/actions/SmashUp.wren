@@ -1,9 +1,10 @@
-import "sts" for ScriptBase
+import "actions/SmashUp" for Script as Base
 
-class Script is ScriptBase {
-  construct new(a, f) { super(a, f) }
+class Script is Base {
+  construct new(a) { super(a) }
 
   execute() {
+    default_begin()
 
     wait_until(2)
     fighter.disable_hurtblob("HeadN")
@@ -13,14 +14,14 @@ class Script is ScriptBase {
 
     wait_until(8)
     fighter.enable_hurtblob("HeadN")
-    action.disable_hitblobs()
+    action.disable_hitblobs(true)
 
-    wait_until(33) // 34
-    action.allow_interrupt()
+    wait_until(34) // 34
+    default_end()
   }
 
   cancel() {
     fighter.enable_hurtblob("HeadN")
-    action.disable_hitblobs()
+    action.disable_hitblobs(true)
   }
 }

@@ -1,31 +1,27 @@
-import "sts" for ScriptBase
+import "actions/AirBack" for Script as Base
 
-class Script is ScriptBase {
-  construct new(a, f) { super(a, f) }
+class Script is Base {
+  construct new(a) { super(a) }
 
   execute() {
+    default_begin()
 
     wait_until(5)
-    fighter.set_autocancel(false)
     action.play_sound("SwingSmall")
     action.enable_hitblobs("CLEAN")
+    state.doLand = "LandAirBack"
 
     wait_until(8)
-    action.disable_hitblobs()
+    action.disable_hitblobs(false)
     action.enable_hitblobs("LATE")
 
     wait_until(13)
-    action.disable_hitblobs()
+    action.disable_hitblobs(true)
 
     wait_until(18)
-    fighter.set_autocancel(true)
+    state.doLand = "MiscLand"
 
     wait_until(33) // 46
-    action.allow_interrupt()
-  }
-  
-  cancel() {
-    fighter.set_autocancel(true)
-    action.disable_hitblobs()
+    default_end()
   }
 }

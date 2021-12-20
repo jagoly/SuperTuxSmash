@@ -1,9 +1,9 @@
 #include "editor/EditorScene.hpp" // IWYU pragma: associated
 #include "editor/Editor_Helpers.hpp"
 
-#include "game/Action.hpp"
 #include "game/Emitter.hpp"
 #include "game/Fighter.hpp"
+#include "game/FighterAction.hpp"
 
 #include <sqee/app/GuiWidgets.hpp>
 
@@ -20,7 +20,7 @@ void EditorScene::impl_show_widget_emitters()
     if (window.show == false) return;
 
     ActionContext& ctx = *mActiveActionContext;
-    Action& action = *ctx.fighter->get_action(ctx.key.action);
+    FighterAction& action = *ctx.action;
     const sq::Armature& armature = ctx.fighter->get_armature();
 
     //--------------------------------------------------------//
@@ -62,15 +62,15 @@ void EditorScene::impl_show_widget_emitters()
         ImPlus::SliderValue(" EndOpacity", emitter.endOpacity, 0.f, 5.f, "%.3f");
         ImPlus::SliderValue(" EndScale", emitter.endScale, 0.f, 5.f, "%.3f");
 
-        ImPlus::DragValueRange2(" Lifetime", emitter.lifetime.min, emitter.lifetime.max, 4u, 240u, 1.f/8, "%d");
-        ImPlus::DragValueRange2(" BaseRadius", emitter.baseRadius.min, emitter.baseRadius.max, 0.05f, 1.f, 1.f/320, "%.3f");
+        ImPlus::DragValueRange2(" Lifetime", emitter.lifetime.min, emitter.lifetime.max, 1.f/8, 4u, 240u, "%d");
+        ImPlus::DragValueRange2(" BaseRadius", emitter.baseRadius.min, emitter.baseRadius.max, 1.f/320, 0.05f, 1.f, "%.3f");
 
-        ImPlus::DragValueRange2(" BallOffset", emitter.ballOffset.min, emitter.ballOffset.max, 0.f, 2.f, 1.f/80, "%.3f");
-        ImPlus::DragValueRange2(" BallSpeed", emitter.ballSpeed.min, emitter.ballSpeed.max, 0.f, 10.f, 1.f/80, "%.3f");
+        ImPlus::DragValueRange2(" BallOffset", emitter.ballOffset.min, emitter.ballOffset.max, 1.f/80, 0.f, 2.f, "%.3f");
+        ImPlus::DragValueRange2(" BallSpeed", emitter.ballSpeed.min, emitter.ballSpeed.max, 1.f/80, 0.f, 10.f, "%.3f");
 
-        ImPlus::DragValueRange2(" DiscIncline", emitter.discIncline.min, emitter.discIncline.max, -0.25f, 0.25f, 1.f/320, "%.3f");
-        ImPlus::DragValueRange2(" DiscOffset", emitter.discOffset.min, emitter.discOffset.max, 0.f, 2.f, 1.f/80, "%.3f");
-        ImPlus::DragValueRange2(" DiscSpeed", emitter.discSpeed.min, emitter.discSpeed.max, 0.f, 10.f, 1.f/80, "%.3f");
+        ImPlus::DragValueRange2(" DiscIncline", emitter.discIncline.min, emitter.discIncline.max, 1.f/320, -0.25f, 0.25f, "%.3f");
+        ImPlus::DragValueRange2(" DiscOffset", emitter.discOffset.min, emitter.discOffset.max, 1.f/80, 0.f, 2.f, "%.3f");
+        ImPlus::DragValueRange2(" DiscSpeed", emitter.discSpeed.min, emitter.discSpeed.max, 1.f/80, 0.f, 10.f, "%.3f");
     };
 
     //--------------------------------------------------------//

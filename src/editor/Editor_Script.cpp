@@ -1,7 +1,8 @@
 #include "editor/EditorScene.hpp" // IWYU pragma: associated
 
-#include "game/Action.hpp"
 #include "game/Fighter.hpp"
+#include "game/FighterAction.hpp"
+#include "game/FighterState.hpp"
 
 #include <sqee/app/GuiWidgets.hpp>
 
@@ -18,22 +19,23 @@ void EditorScene::impl_show_widget_script()
     if (mDoResetDockScript) ImGui::SetNextWindowDockID(mDockRightId);
     mDoResetDockScript = false;
 
-    const ImPlus::ScopeWindow window { "Script", 0 };
+    const ImPlus::ScopeWindow window = { "Script", 0 };
     if (window.show == false) return;
 
     ActionContext& ctx = *mActiveActionContext;
-    Action& action = *ctx.fighter->get_action(ctx.key.action);
+    FighterAction& action = *ctx.action;
 
     //--------------------------------------------------------//
 
-    const ImPlus::ScopeFont font { ImPlus::FONT_MONO };
+    const ImPlus::ScopeFont font = ImPlus::FONT_MONO;
 
     const ImVec2 contentRegion = ImGui::GetContentRegionAvail();
     const ImVec2 inputSize = { contentRegion.x, contentRegion.y - MAX_HEIGHT_ERRORS };
 
     ImPlus::InputStringMultiline("##Script", action.mWrenSource, inputSize, ImGuiInputTextFlags_NoUndoRedo);
 
-    ImPlus::TextWrapped(action.mErrorMessage);
+    if (ctx.fighter->editorErrorMessage.empty() == false)
+        ImPlus::TextWrapped(ctx.fighter->editorErrorMessage);
 }
 
 //============================================================================//

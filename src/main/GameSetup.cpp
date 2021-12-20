@@ -8,11 +8,8 @@ GameSetup GameSetup::get_defaults()
 {
     GameSetup result;
 
-    result.players[0].enabled = true;
-    result.players[0].fighter = FighterEnum::Sara;
-
-    result.players[1].enabled = true;
-    result.players[1].fighter = FighterEnum::Tux;
+    result.players.push_back({FighterEnum::Sara});
+    result.players.push_back({FighterEnum::Tux});
 
     result.stage = StageEnum::TestZone;
 
@@ -27,17 +24,10 @@ GameSetup GameSetup::get_quickstart()
 
     GameSetup result;
 
-    result.players[0].enabled = true;
-    result.players[0].fighter = FighterEnum::Mario;
-
-    result.players[1].enabled = true;
-    result.players[1].fighter = FighterEnum::Mario;
-
-    result.players[2].enabled = true;
-    result.players[2].fighter = FighterEnum::Mario;
-
-    result.players[3].enabled = true;
-    result.players[3].fighter = FighterEnum::Mario;
+    result.players.push_back({FighterEnum::Mario});
+    result.players.push_back({FighterEnum::Mario});
+    result.players.push_back({FighterEnum::Mario});
+    result.players.push_back({FighterEnum::Mario});
 
     result.stage = StageEnum::TestZone;
 

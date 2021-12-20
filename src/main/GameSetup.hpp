@@ -12,11 +12,10 @@ struct GameSetup
 {
     struct Player
     {
-        bool enabled = false;
         FighterEnum fighter {-1};
     };
 
-    std::array<Player, 4> players;
+    StackVector<Player, MAX_FIGHTERS> players;
 
     StageEnum stage {-1};
 
