@@ -10,7 +10,7 @@ class Script is Base {
     action.enable_hitblobs("CLEAN")
 
     wait_until(6)
-    action.play_sound("SwingMedium")
+    action.play_sound("Swing2")
 
     wait_until(9)
     action.disable_hitblobs(false)

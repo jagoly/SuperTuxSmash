@@ -17,16 +17,6 @@ void HitBlob::from_json(const JsonValue& json)
     json.at("origin").get_to(origin);
     json.at("radius").get_to(radius);
 
-    if (auto& jb = json.at("bone"); jb.is_null() == false)
-    {
-        const auto& key = jb.get_ref<const String&>();
-        bone = action->fighter.get_armature().get_bone_index(key);
-        if (bone == -1) SQEE_THROW("invalid bone '{}'", key);
-    }
-    else bone = -1;
-
-    json.at("index").get_to(index);
-
     json.at("damage").get_to(damage);
     json.at("freezeMult").get_to(freezeMult);
     json.at("freezeDiMult").get_to(freezeDiMult);
@@ -34,6 +24,10 @@ void HitBlob::from_json(const JsonValue& json)
     json.at("knockAngle").get_to(knockAngle);
     json.at("knockBase").get_to(knockBase);
     json.at("knockScale").get_to(knockScale);
+
+    bone = action->fighter.bone_from_json(json.at("bone"));
+
+    json.at("index").get_to(index);
 
     json.at("angleMode").get_to(angleMode);
     json.at("facingMode").get_to(facingMode);
@@ -59,11 +53,6 @@ void HitBlob::to_json(JsonValue& json) const
     json["origin"] = origin;
     json["radius"] = radius;
 
-    if (bone == -1) json["bone"] = nullptr;
-    else json["bone"] = action->fighter.get_armature().get_bone_name(bone);
-
-    json["index"] = index;
-
     json["damage"] = damage;
     json["freezeMult"] = freezeMult;
     json["freezeDiMult"] = freezeDiMult;
@@ -71,6 +60,10 @@ void HitBlob::to_json(JsonValue& json) const
     json["knockAngle"] = knockAngle;
     json["knockBase"] = knockBase;
     json["knockScale"] = knockScale;
+
+    json["bone"] = action->fighter.bone_to_json(bone);
+
+    json["index"] = index;
 
     json["angleMode"] = angleMode;
     json["facingMode"] = facingMode;
@@ -89,30 +82,20 @@ void HitBlob::to_json(JsonValue& json) const
 
 //============================================================================//
 
-Vec3F HitBlob::get_debug_colour() const
-{
-    if (flavour == BlobFlavour::Sour)  return { 0.6f, 0.6f, 0.0f };
-    if (flavour == BlobFlavour::Tangy) return { 0.2f, 1.0f, 0.0f };
-    if (flavour == BlobFlavour::Sweet) return { 1.0f, 0.1f, 0.1f };
-    SQEE_UNREACHABLE();
-}
-
-//============================================================================//
-
 DISABLE_WARNING_FLOAT_EQUALITY()
 
 bool HitBlob::operator==(const HitBlob& other) const
 {
     return origin == other.origin &&
            radius == other.radius &&
-           bone == other.bone &&
-           index == other.index &&
            damage == other.damage &&
            freezeMult == other.freezeMult &&
            freezeDiMult == other.freezeDiMult &&
            knockAngle == other.knockAngle &&
            knockBase == other.knockBase &&
            knockScale == other.knockScale &&
+           bone == other.bone &&
+           index == other.index &&
            angleMode == other.angleMode &&
            facingMode == other.facingMode &&
            clangMode == other.clangMode &&
@@ -126,3 +109,13 @@ bool HitBlob::operator==(const HitBlob& other) const
 }
 
 ENABLE_WARNING_FLOAT_EQUALITY()
+
+//============================================================================//
+
+Vec3F HitBlob::get_debug_colour() const
+{
+    if (flavour == BlobFlavour::Sour)  return { 0.6f, 0.6f, 0.0f };
+    if (flavour == BlobFlavour::Tangy) return { 0.2f, 1.0f, 0.0f };
+    if (flavour == BlobFlavour::Sweet) return { 1.0f, 0.1f, 0.1f };
+    SQEE_UNREACHABLE();
+}

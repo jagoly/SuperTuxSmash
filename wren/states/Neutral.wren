@@ -61,6 +61,9 @@ class Script is FighterStateScript {
       if (frame.relIntX >= 1) break
       if (frame.relIntX <= -1) return "Turn"
     }
+
+    // vertigo
+    if (vars.edge == vars.facing) return "Vertigo"
   }
 
   exit() {}

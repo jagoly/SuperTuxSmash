@@ -8,7 +8,7 @@ class Script is Base {
     _allowNext = false
 
     wait_until(3)
-    //action.play_sound("SwingSmall")
+    //action.play_sound("Swing1")
     action.enable_hitblobs("")
 
     wait_until(5)

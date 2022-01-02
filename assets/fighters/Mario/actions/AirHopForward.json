@@ -6,6 +6,18 @@
     "AirHop": {
       "path": "fighters/Mario/sounds/AirHop",
       "volume": 0.5
+    },
+    "VoiceAirHop": {
+      "path": "fighters/Mario/sounds/VoiceAirHop",
+      "volume": 0.5
+    },
+    "Whoosh2": {
+      "path": "fighters/Mario/sounds/Whoosh2",
+      "volume": 0.4
+    },
+    "Whoosh3": {
+      "path": "fighters/Mario/sounds/Whoosh3",
+      "volume": 0.4
     }
   }
 }

@@ -5,13 +5,15 @@ class Script is Base {
 
   execute() {
     default_begin()
-    position_frame_0()
 
-    wait_until(1)
-    position_frame_1()
+    //wait_until(1)
+    // play effect
 
     wait_until(2)
-    position_frame_2()
+    action.play_sound("LedgeCatch")
+
+    wait_until(4)
+    action.play_sound("VoiceLedgeCatch")
 
     wait_until(21) // 21
     default_end()

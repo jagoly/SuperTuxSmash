@@ -7,6 +7,7 @@ class Script is FighterStateScript {
     vars.edgeStop = "Input"
     vars.moveMobility = attrs.traction * 2.0
     vars.moveSpeed = attrs.walkSpeed
+    vars.velocity.x = (vars.velocity.x + vars.moveMobility * vars.facing)
   }
 
   update() {
@@ -43,7 +44,7 @@ class Script is FighterStateScript {
     if (ctrl.input.relIntX <= -1) return "Turn"
 
     // stop walking
-    if (ctrl.input.relIntX == 0) return "WalkStop"
+    if (ctrl.input.relIntX == 0) return "MiscNeutral"
   }
 
   exit() {}

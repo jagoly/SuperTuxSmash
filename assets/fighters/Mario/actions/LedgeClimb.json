@@ -2,5 +2,18 @@
   "blobs": {},
   "effects": {},
   "emitters": {},
-  "sounds": {}
+  "sounds": {
+    "DashStart": {
+      "path": "fighters/Mario/sounds/DashStart",
+      "volume": 0.4
+    },
+    "StepLeftHard": {
+      "path": "fighters/Mario/sounds/StepLeftHard",
+      "volume": 0.2
+    },
+    "StepRightHard": {
+      "path": "fighters/Mario/sounds/StepRightHard",
+      "volume": 0.2
+    }
+  }
 }

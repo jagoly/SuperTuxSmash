@@ -4,7 +4,6 @@
 
 #include "main/MainEnums.hpp"
 
-#include "game/FighterEnums.hpp"
 #include "game/Physics.hpp"
 
 #include <sqee/objects/Armature.hpp>
@@ -18,8 +17,13 @@ class Fighter final : sq::NonCopyable
 {
 public: //====================================================//
 
-    using AnimMode = FighterAnimMode;
-    using EdgeStopMode = FighterEdgeStopMode;
+    /// Describes when to stop at the edge of a platform.
+    enum class EdgeStopMode : uint8_t
+    {
+        Never,  ///< Never stop at edges.
+        Always, ///< Always stop at edges
+        Input,  ///< Stop if axis not pushed.
+    };
 
     //--------------------------------------------------------//
 
@@ -27,19 +31,14 @@ public: //====================================================//
     struct Animation
     {
         sq::Armature::Animation anim;
-        AnimMode mode;
 
-        /// Will the animation repeat when reaching the end.
-        bool is_looping() const
-        {
-            return mode == AnimMode::Loop || mode == AnimMode::WalkLoop || mode == AnimMode::DashLoop;
-        }
-
-        /// Is the animation just a T-Pose because it failed to load.
-        bool is_fallback() const
-        {
-            return anim.frameCount == 1u;
-        }
+        bool loop{};     ///< Repeat the animation when reaching the end.
+        bool motion{};   ///< Extract offset from bone0 and use it to try to move.
+        bool turn{};     ///< Extract rotation from bone2 and apply it to the model matrix.
+        bool attach{};   ///< Extract offset from bone0 and move relative to attachPoint.
+        bool walk{};     ///< Update the animation based on velocity.x and walkAnimStride.
+        bool dash{};     ///< Update the animation based on velocity.x and dashAnimStride.
+        bool fallback{}; ///< The animation failed to load and will T-Pose instead.
 
         const SmallString& get_key() const
         {
@@ -52,8 +51,6 @@ public: //====================================================//
     /// Stats that generally don't change during a game.
     struct Attributes
     {
-        // todo: change to camelCase for consistency
-
         float walkSpeed   = 0.1f;
         float dashSpeed   = 0.15f;
         float airSpeed    = 0.1f;
@@ -99,9 +96,11 @@ public: //====================================================//
         bool applyGravity = true;
         bool applyFriction = true;
         bool flinch = false;
-        bool vertigo = false;
+
         bool onGround = true;
         bool onPlatform = false;
+
+        int8_t edge = 0;
 
         float moveMobility = 0.f;
         float moveSpeed = 0.f;
@@ -109,6 +108,8 @@ public: //====================================================//
         float damage = 0.f;
         float shield = SHIELD_MAX_HP;
         float launchSpeed = 0.f;
+
+        Vec2F attachPoint = { 0.f, 0.f };
 
         Ledge* ledge = nullptr;
     };
@@ -180,20 +181,16 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    /// Call the appropriate function based on current state.
-    void apply_hit_generic(const HitBlob& hit, const HurtBlob& hurt);
+    /// Deserialise a bone name from json.
+    int8_t bone_from_json(const JsonValue& json) const;
 
-    /// Called when hit while on the ground.
-    //void apply_hit_ground(const HitBlob& hit, const HurtBlob& hurt);
+    /// Serialise a bone name to json.
+    JsonValue bone_to_json(int8_t bone) const;
 
-    /// Called when hit while in the air.
-    //void apply_hit_air(const HitBlob& hit, const HurtBlob& hurt);
+    //--------------------------------------------------------//
 
-    /// Called when hit while shield is active.
-    //void apply_hit_shield(const HitBlob& hit, const HurtBlob& hurt);
-
-    /// Called when shield is broken by attack or decay.
-    void apply_shield_break();
+    /// Called when a HitBlob hits one of our HurtBlobs.
+    void apply_hit(const HitBlob& hit, const HurtBlob& hurt);
 
     /// Called when passing the stage boundary.
     void pass_boundary();
@@ -211,6 +208,9 @@ public: //====================================================//
 
     /// Compute current matrix for a bone. If bone is -1, returns model matrix.
     Mat4F get_bone_matrix(int8_t bone) const;
+
+    /// Compute blended matrix for a bone. If bone is -1, returns model matrix.
+    Mat4F get_blended_bone_matrix(int8_t bone) const;
 
     //-- wren methods ----------------------------------------//
 
@@ -249,12 +249,12 @@ private: //===================================================//
     /// Used for making sure facing changes look good.
     enum class RotateMode : uint8_t
     {
-        Auto       = 0,
-        Clockwise  = 1 << 0,
-        Slow       = 1 << 1,
-        Animation  = 1 << 2,
-        Playing    = 1 << 3,
-        Done       = 1 << 4
+        Auto       = 0,      ///< Not doing anything special.
+        Clockwise  = 1 << 0, ///< Should guided lerp go clockwise or anticlockwise.
+        Slow       = 1 << 1, ///< Rotating over a number of frames.
+        Animation  = 1 << 2, ///< Fading a turn animation, using guided lerp.
+        Playing    = 1 << 3, ///< Already playing a turn animation.
+        Done       = 1 << 4, ///< Done, but keep guiding until next tick.
     };
 
     friend RotateMode operator|(RotateMode a, RotateMode b) { return RotateMode(uint8_t(a) | uint8_t(b)); }
@@ -291,6 +291,8 @@ private: //===================================================//
     //-- update methods, called each tick --------------------//
 
     void update_movement();
+
+    void update_misc();
 
     void update_action();
 
@@ -329,6 +331,7 @@ private: //===================================================//
     Vec3F mRootMotionPreviousOffset;
     Vec2F mRootMotionTranslate;
 
+    Vec2F mFadeStartPosition;
     QuatF mFadeStartRotation;
     sq::Armature::Pose mFadeStartPose;
 
@@ -362,6 +365,12 @@ private: //===================================================//
 //============================================================================//
 
 } // namespace sts
+
+SQEE_ENUM_HELPER
+(
+    sts::Fighter::EdgeStopMode,
+    Never, Always, Input
+)
 
 WRENPLUS_TRAITS_HEADER(sts::Fighter::Attributes)
 WRENPLUS_TRAITS_HEADER(sts::Fighter::Variables)

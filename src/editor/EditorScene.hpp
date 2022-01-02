@@ -37,22 +37,12 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    // only public so we can use SQEE_ENUM_HELPER
-    enum class PreviewMode { Pause, Normal, Slow, Slower };
-
-private: //===================================================//
-
-    void update() override;
-
-    void integrate(double elapsed, float blend) override;
-
-    std::unique_ptr<Controller> mController;
-
-    SmashApp& mSmashApp;
-
-    //--------------------------------------------------------//
-
-    struct ShrunkCubeMap;
+    struct FighterInfo
+    {
+        std::vector<SmallString> animations;
+        std::vector<SmallString> actions;
+        std::vector<SmallString> states;
+    };
 
     struct ActionKey
     {
@@ -62,6 +52,12 @@ private: //===================================================//
         const void* hash() const;
     };
 
+    struct ShrunkCubeMap
+    {
+        sq::ImageStuff image;
+        vk::DescriptorSet descriptorSet;
+    };
+
     struct CubeMapView
     {
         void initialise(EditorScene& editor, uint level, vk::Image image, vk::Sampler sampler);
@@ -69,134 +65,63 @@ private: //===================================================//
         std::array<vk::DescriptorSet, 6u> descriptorSets;
     };
 
-    //--------------------------------------------------------//
-
     struct BaseContext
     {
+        BaseContext(EditorScene& editor, StageEnum stage);
+
+        virtual ~BaseContext();
+
+        virtual void apply_working_changes() = 0;
+        virtual void do_undo_redo(bool redo) = 0;
+        virtual void save_changes() = 0;
+        virtual void show_menu_items() {};
+        virtual void show_widgets() = 0;
+
+        EditorScene& editor;
+
         std::unique_ptr<Renderer> renderer;
+        std::unique_ptr<EditorCamera> camera;
         std::unique_ptr<FightWorld> world;
 
         bool modified = false;
         size_t undoIndex = 0u;
+
+        String ctxTypeString, ctxKeyString;
     };
 
-    struct ActionContext : public BaseContext
-    {
-        ActionKey key;
-        Fighter* fighter;
-        FighterAction* action;
+    struct ActionContext; friend ActionContext;
+    struct HurtBlobsContext; friend HurtBlobsContext;
+    struct StageContext; friend StageContext;
 
-        std::unique_ptr<FighterAction> savedData;
-        std::vector<std::unique_ptr<FighterAction>> undoStack;
+    enum class PreviewMode { Pause, Normal, Slow, Slower };
 
-        int timelineLength = 0, currentFrame = -1;
-    };
+private: //===================================================//
 
-    struct HurtblobsContext : public BaseContext
-    {
-        FighterEnum key; Fighter* fighter;
+    void update() override;
 
-        std::unique_ptr<std::map<TinyString, HurtBlob>> savedData;
-        std::vector<std::unique_ptr<std::map<TinyString, HurtBlob>>> undoStack;
-    };
-
-    struct StageContext : public BaseContext
-    {
-        StageEnum key; Stage* stage;
-
-        CubeMapView skybox;
-        CubeMapView irradiance;
-        std::array<CubeMapView, RADIANCE_LEVELS> radiance;
-
-        bool irradianceModified = false;
-        bool radianceModified = false;
-
-        ~StageContext();
-    };
+    void integrate(double elapsed, float blend) override;
 
     //--------------------------------------------------------//
 
-    struct FighterInfo
-    {
-        std::vector<SmallString> animations;
-        std::vector<SmallString> actions;
-        std::vector<SmallString> states;
-    };
+    void impl_confirm_quit_unsaved(bool returnToMenu);
+
+    void impl_show_widget_toolbar();
+    void impl_show_widget_navigator();
+
+    //--------------------------------------------------------//
+
+    SmashApp& mSmashApp;
+
+    std::unique_ptr<Controller> mController;
 
     std::array<FighterInfo, sq::enum_count_v<FighterEnum>> mFighterInfos;
     FighterInfo mFighterInfoCommon;
 
     std::map<ActionKey, ActionContext> mActionContexts;
-    std::map<FighterEnum, HurtblobsContext> mHurtblobsContexts;
+    std::map<FighterEnum, HurtBlobsContext> mHurtBlobsContexts;
     std::map<StageEnum, StageContext> mStageContexts;
 
     BaseContext* mActiveContext = nullptr;
-
-    ActionContext* mActiveActionContext = nullptr;
-    HurtblobsContext* mActiveHurtblobsContext = nullptr;
-    StageContext* mActiveStageContext = nullptr;
-
-    //--------------------------------------------------------//
-
-    void impl_show_widget_toolbar();
-    void impl_show_widget_navigator();
-
-    void impl_show_widget_hitblobs();
-    void impl_show_widget_effects();
-    void impl_show_widget_emitters();
-    void impl_show_widget_sounds();
-    void impl_show_widget_script();
-    void impl_show_widget_timeline();
-    void impl_show_widget_hurtblobs();
-    void impl_show_widget_stage();
-    void impl_show_widget_cubemaps();
-
-    void impl_show_widget_fighter();
-
-    //--------------------------------------------------------//
-
-    static uint get_default_timeline_length(const ActionContext& ctx);
-
-    //--------------------------------------------------------//
-
-    void initialise_base_context(BaseContext& ctx);
-
-    void activate_action_context(ActionKey key);
-
-    HurtblobsContext& get_hurtblobs_context(FighterEnum key);
-
-    StageContext& get_stage_context(StageEnum key);
-
-    //--------------------------------------------------------//
-
-    void apply_working_changes(ActionContext& ctx);
-    void apply_working_changes(HurtblobsContext& ctx);
-    void apply_working_changes(StageContext& ctx);
-
-    void do_undo_redo(ActionContext& ctx, bool redo);
-    void do_undo_redo(HurtblobsContext& ctx, bool redo);
-    void do_undo_redo(StageContext& ctx, bool redo);
-
-    void save_changes(ActionContext& ctx);
-    void save_changes(HurtblobsContext& ctx);
-    void save_changes(StageContext& ctx);
-
-    //--------------------------------------------------------//
-
-    void scrub_to_frame(ActionContext& ctx, int frame);
-    void scrub_to_frame_current(ActionContext& ctx);
-
-    void tick_action_context(ActionContext& ctx);
-    void scrub_to_frame_previous(ActionContext& ctx);
-
-    //--------------------------------------------------------//
-
-    ShrunkCubeMap shrink_cube_map_skybox(vk::ImageLayout layout, uint outputSize) const;
-
-    void generate_cube_map_irradiance();
-    void generate_cube_map_radiance();
-
-    void update_cube_map_texture(sq::ImageStuff source, uint size, uint levels, sq::Texture& texture);
 
     //--------------------------------------------------------//
 
@@ -206,10 +131,9 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
-    ActionContext* mConfirmCloseActionCtx = nullptr;
-    HurtblobsContext* mConfirmCloseHurtblobsCtx = nullptr;
-    StageContext* mConfirmCloseStageCtx = nullptr;
-    uint mConfirmQuitNumUnsaved = 0u;
+    BaseContext* mConfirmCloseContext = nullptr;
+    String mConfirmQuitUnsaved = "";
+    bool mConfirmQuitReturnToMenu = false;
 
     PreviewMode mPreviewMode = PreviewMode::Pause;
 
@@ -222,12 +146,13 @@ private: //===================================================//
 
     ImGuiID mDockMainId = 0u;
 
-    ImGuiID mDockNotRightId = 0u, mDockRightId = 0u;
-    ImGuiID mDockNotDownId = 0u, mDockDownId = 0u;
-    ImGuiID mDockNotLeftId = 0u, mDockLeftId = 0u;
+    ImGuiID mDockDownId = 0u, mDockNotDownId = 0u;
+    ImGuiID mDockLeftId = 0u, mDockNotLeftId = 0u;
+    ImGuiID mDockRightId = 0u, mDockNotRightId = 0u;
 
     bool mWantResetDocks = true;
 
+    // todo: surely there's a better way to reset layout?
     bool mDoResetDockNavigator = false;
     bool mDoResetDockHitblobs = false;
     bool mDoResetDockEffects = false;
@@ -238,9 +163,7 @@ private: //===================================================//
     bool mDoResetDockHurtblobs = false;
     bool mDoResetDockStage = false;
     bool mDoResetDockCubemaps = false;
-    bool mDoResetDockFighter = false;
-
-    bool mDoRestartAction = false;
+    bool mDoResetDockDebug = false;
 
     //--------------------------------------------------------//
 
@@ -248,6 +171,10 @@ private: //===================================================//
 
     template <class Object, class FuncInit, class FuncEdit>
     void helper_edit_objects(std::map<TinyString, Object>& objects, FuncInit funcInit, FuncEdit funcEdit);
+
+    void helper_edit_origin(const char* label, Fighter& fighter, int8_t bone, Vec3F& origin);
+
+    void helper_show_widget_debug(Stage* stage, Fighter* fighter);
 };
 
 //============================================================================//

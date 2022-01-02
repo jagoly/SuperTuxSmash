@@ -89,7 +89,7 @@ void FighterAction::load_json_from_file()
     const auto root = sq::try_parse_json_from_file(path);
     if (root.has_value() == false)
     {
-        sq::log_warning("missing json   '{}'", path);
+        sq::log_warning("action '{}/{}': missing json", fighter.name, name);
         return;
     }
 
@@ -145,7 +145,7 @@ void FighterAction::load_json_from_file()
     CATCH (const std::exception& ex) { errors += '\n'; errors += ex.what(); }
 
     if (errors.empty() == false)
-        sq::log_warning_multiline("errors in '{}'{}", path, errors);
+        sq::log_warning_multiline("action '{}/{}': errors in json{}", fighter.name, name, errors);
 }
 
 //============================================================================//
@@ -158,7 +158,7 @@ void FighterAction::load_wren_from_file()
     auto source = sq::try_read_text_from_file(path);
     if (source.has_value() == false)
     {
-        sq::log_warning("missing script '{}'", path);
+        sq::log_warning("action '{}/{}': missing script", fighter.name, name);
         source = sq::try_read_text_from_file("wren/actions/{}.wren"_format(name));
         if (source.has_value() == false) source = FALLBACK_SOURCE;
     }

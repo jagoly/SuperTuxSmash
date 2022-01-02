@@ -43,7 +43,7 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    void set_camera(std::unique_ptr<Camera> camera);
+    void set_camera(Camera& camera) { mCamera = &camera; };
 
     Camera& get_camera() { return *mCamera; }
 
@@ -54,7 +54,7 @@ public: //====================================================//
     /// Create some DrawItems from a vector of definitions.
     int64_t create_draw_items(const std::vector<DrawItemDef>& defs,
                               const sq::Swapper<vk::DescriptorSet>& descriptorSet,
-                              std::map<TinyString, const bool*> conditions);
+                              const std::map<TinyString, const bool*>& conditions);
 
     /// Delete all DrawItems with the given group id.
     void delete_draw_items(int64_t groupId);
@@ -239,7 +239,7 @@ private: //===================================================//
 
     std::vector<DepthMipGenStuff> mDepthMipGenStuff;
 
-    std::unique_ptr<Camera> mCamera;
+    Camera* mCamera = nullptr;
 
     std::unique_ptr<DebugRenderer> mDebugRenderer;
     std::unique_ptr<ParticleRenderer> mParticleRenderer;

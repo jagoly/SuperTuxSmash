@@ -14,7 +14,7 @@ class Script is FighterStateScript {
     }
   }
 
-  // set horizontal velocity and get action name
+  // set horizontal velocity and return action name
   last_frame() {
     lib.assign_jump_velocity_x()
     if (_shortHop) {

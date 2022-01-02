@@ -48,7 +48,7 @@ Controller::Controller(const sq::InputDevices& devices, const String& configPath
 
 //============================================================================//
 
-void Controller::integrate()
+void Controller::refresh()
 {
     // don't handle input while playing back a recording
     if (mPlaybackIndex >= 0)
@@ -114,7 +114,7 @@ void Controller::tick()
 {
     // make sure we have polled at least once
     if (mPolledSinceLastTick == false)
-        integrate();
+        refresh();
 
     mPolledSinceLastTick = false;
 

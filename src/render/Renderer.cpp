@@ -1109,16 +1109,9 @@ void Renderer::refresh_options_create()
 
 //============================================================================//
 
-void Renderer::set_camera(std::unique_ptr<Camera> camera)
-{
-    mCamera = std::move(camera);
-}
-
-//============================================================================//
-
 int64_t Renderer::create_draw_items(const std::vector<DrawItemDef>& defs,
                                     const sq::Swapper<vk::DescriptorSet>& descriptorSet,
-                                    std::map<TinyString, const bool*> conditions)
+                                    const std::map<TinyString, const bool*>& conditions)
 {
     const int64_t groupId = ++mCurrentGroupId;
 
@@ -1195,7 +1188,7 @@ void Renderer::update_cubemap_descriptor_sets()
 
 void Renderer::integrate_camera(float blend)
 {
-    mCamera->intergrate(blend);
+    mCamera->integrate(blend);
 
     auto& cameraBlock = *reinterpret_cast<CameraBlock*>(ubos.camera.swap_map());
     cameraBlock = mCamera->get_block();

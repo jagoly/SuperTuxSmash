@@ -20,7 +20,7 @@
       "knockScale": 100.0,
       "origin": [ -0.3631301, 0.8716201, -0.021440106 ],
       "radius": 0.2,
-      "sound": "PunchStrong"
+      "sound": "HitPunch3"
     },
     "1_ShoulderR": {
       "angleMode": "Sakurai",
@@ -42,7 +42,7 @@
       "knockScale": 100.0,
       "origin": [ 0.094350025, 0.8725301, -0.020240106 ],
       "radius": 0.25,
-      "sound": "PunchStrong"
+      "sound": "HitPunch3"
     },
     "2_HandL": {
       "angleMode": "Sakurai",
@@ -64,12 +64,13 @@
       "knockScale": 90.0,
       "origin": [ -0.9964802, 0.87283015, -0.018350106 ],
       "radius": 0.5,
-      "sound": "BurnStrong"
+      "sound": "HitBurn3"
     }
   },
   "effects": {
     "HorizSmokeA": {
       "anchored": true,
+      "bone": null,
       "origin": [ 0.0, 0.0, 0.0 ],
       "path": "fighters/Mario/effects/HorizSmokeA",
       "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
@@ -145,20 +146,20 @@
     }
   },
   "sounds": {
-    "BurnStrong": {
-      "path": "fighters/Mario/sounds/BurnStrong",
+    "HitBurn3": {
+      "path": "fighters/Mario/sounds/HitBurn3",
       "volume": 0.5
     },
-    "PunchStrong": {
-      "path": "fighters/Mario/sounds/PunchStrong",
+    "HitPunch3": {
+      "path": "fighters/Mario/sounds/HitPunch3",
       "volume": 0.5
     },
     "SwingExtra": {
       "path": "fighters/Mario/sounds/SwingExtra",
       "volume": 0.4
     },
-    "SwingFire": {
-      "path": "fighters/Mario/sounds/SwingFire",
+    "SwingSmashFwd": {
+      "path": "fighters/Mario/sounds/SwingSmashFwd",
       "volume": 0.6
     }
   }

@@ -10,8 +10,9 @@ using namespace sts;
 //============================================================================//
 
 MenuScene::MenuScene(SmashApp& smashApp)
-    : Scene(1.0 / 60.0), mSmashApp(smashApp)
+    : Scene(1.0 / 48.0), mSmashApp(smashApp)
 {
+    mSmashApp.get_window().set_title("SuperTuxSmash - Main Menu");
     mSmashApp.get_window().set_key_repeat(false);
 
     mSmashApp.get_debug_overlay().set_sub_timers({});
@@ -31,8 +32,10 @@ void MenuScene::refresh_options_create()
 
 //============================================================================//
 
-void MenuScene::handle_event(sq::Event /*event*/)
+void MenuScene::handle_event(sq::Event event)
 {
+    if (event.type == sq::Event::Type::Window_Close)
+        mSmashApp.quit();
 }
 
 //============================================================================//

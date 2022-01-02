@@ -3,25 +3,16 @@ import "FighterState" for FighterStateScript
 class Script is FighterStateScript {
   construct new(s) { super(s) }
 
-  // allow jumping, climbing, and dropping
+  // allow starting new actions
   finish_catch() {
     _catchFinished = true
-  }
-
-  // prevent adjusting position upon state exit
-  disable_exit_drop() {
-    _exitDrop = false
   }
 
   enter() {
     vars.velocity.x = 0.0
     vars.velocity.y = 0.0
     vars.extraJumps = attrs.extraJumps
-    vars.applyGravity = false
-    vars.applyFriction = false
-    vars.moveMobility = 0.0
     _catchFinished = false
-    _exitDrop = true
 
     // steal the ledge from someone else
     if (vars.ledge.grabber) {
@@ -33,6 +24,10 @@ class Script is FighterStateScript {
     if (vars.facing == vars.ledge.direction) {
       fighter.reverse_facing_slow(true, 2)
     }
+
+    // set attachment point
+    vars.attachPoint.x = vars.ledge.position.x
+    vars.attachPoint.y = vars.ledge.position.y
   }
 
   update() {
@@ -40,8 +35,18 @@ class Script is FighterStateScript {
     // action finished or ledge stolen
     if (!fighter.action) return "LedgeDrop"
 
-    // must wait before being able to jump/climb/drop
+    // must wait before being able to start new actions
     if (!_catchFinished) return
+
+    // evade
+    for (frame in ctrl.history) {
+      if (frame.pressShield) return "LedgeEvade"
+    }
+
+    // attack
+    for (frame in ctrl.history) {
+      if (frame.pressAttack) return "LedgeAttack"
+    }
 
     // jump
     for (frame in ctrl.history) {
@@ -50,8 +55,7 @@ class Script is FighterStateScript {
 
     // climb
     for (frame in ctrl.history) {
-      if (frame.modY == 1) return "LedgeClimb"
-      if (frame.relModX == 1) return "LedgeClimb"
+      if (frame.relModX == 1 || frame.modY == 1) return "LedgeClimb"
     }
 
     // drop
@@ -61,14 +65,6 @@ class Script is FighterStateScript {
   }
 
   exit() {
-
-    // change position to match visual position
-    if (_exitDrop) {
-      vars.position.x =
-        vars.ledge.position.x + vars.ledge.direction * diamond.halfWidth
-      vars.position.y =
-        vars.ledge.position.y - 0.75 * diamond.offsetTop
-    }
 
     // clear the ledge, unless someone stole it
     if (vars.ledge.grabber == fighter) {

@@ -30,12 +30,10 @@ void SoundEffect::to_json(JsonValue& json) const
 
 DISABLE_WARNING_FLOAT_EQUALITY()
 
-bool sts::operator==(const SoundEffect& a, const SoundEffect& b)
+bool SoundEffect::operator==(const SoundEffect& other) const
 {
-    if (a.path != b.path) return false;
-    if (a.volume != b.volume) return false;
-
-    return true;
+    return path == other.path &&
+           volume == other.volume;
 }
 
 ENABLE_WARNING_FLOAT_EQUALITY()

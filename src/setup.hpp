@@ -43,6 +43,7 @@ struct VisualEffect;
 
 class Camera;
 class Controller;
+class EditorCamera;
 class EditorScene;
 class EffectSystem;
 class FightWorld;
@@ -54,6 +55,7 @@ class Renderer;
 class ResourceCaches;
 class SmashApp;
 class Stage;
+class StandardCamera;
 
 //============================================================================//
 
@@ -71,6 +73,9 @@ constexpr const size_t CMD_BUFFER_SIZE = 9u;
 
 /// Maximum number of bones in a visual effect.
 constexpr const size_t MAX_EFFECT_BONES = 8u;
+
+/// Maximum number of visual effects that can be active at once.
+constexpr const size_t MAX_ACTIVE_EFFECTS = 16u;
 
 /// Minimum amount of hitstun required to cause heavy flinch animations.
 constexpr const uint8_t MIN_HITSTUN_HEAVY = 16u;

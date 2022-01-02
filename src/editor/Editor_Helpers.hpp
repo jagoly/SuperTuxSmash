@@ -3,7 +3,6 @@
 #include "editor/EditorScene.hpp"
 
 #include <sqee/app/GuiWidgets.hpp>
-#include <sqee/debug/Assert.hpp>
 
 namespace sts {
 
@@ -16,8 +15,6 @@ inline void EditorScene::helper_edit_objects(std::map<TinyString, Object>& objec
 
     ImGui::SameLine();
     const bool collapseAll = ImGui::Button("Collapse All");
-
-    //--------------------------------------------------------//
 
     ImPlus::if_Popup("popup_new", 0, [&]()
     {
@@ -33,8 +30,6 @@ inline void EditorScene::helper_edit_objects(std::map<TinyString, Object>& objec
         }
         if (ImGui::IsWindowAppearing()) ImGui::SetKeyboardFocusHere();
     });
-
-    //--------------------------------------------------------//
 
     using Iterator = typename std::map<TinyString, Object>::iterator;
 
@@ -54,8 +49,6 @@ inline void EditorScene::helper_edit_objects(std::map<TinyString, Object>& objec
         if (collapseAll) ImGui::SetNextItemOpen(false);
         const bool sectionOpen = ImGui::CollapsingHeader(key.c_str());
 
-        //--------------------------------------------------------//
-
         enum class Choice { None, Delete, Rename, Copy } choice {};
 
         ImPlus::if_PopupContextItem(nullptr, ImPlus::MOUSE_RIGHT, [&]()
@@ -68,8 +61,6 @@ inline void EditorScene::helper_edit_objects(std::map<TinyString, Object>& objec
         if (choice == Choice::Delete) ImGui::OpenPopup("popup_delete");
         if (choice == Choice::Rename) ImGui::OpenPopup("popup_rename");
         if (choice == Choice::Copy) ImGui::OpenPopup("popup_copy");
-
-        //--------------------------------------------------------//
 
         ImPlus::if_Popup("popup_delete", 0, [&]()
         {
@@ -87,7 +78,6 @@ inline void EditorScene::helper_edit_objects(std::map<TinyString, Object>& objec
             TinyString newKey = key;
             if (ImGui::InputText("", newKey.data(), newKey.buffer_size(), ImGuiInputTextFlags_EnterReturnsTrue))
             {
-                // todo: check if newKey already exists
                 toRename.emplace(iter, newKey);
                 ImGui::CloseCurrentPopup();
             }
@@ -100,14 +90,11 @@ inline void EditorScene::helper_edit_objects(std::map<TinyString, Object>& objec
             TinyString newKey = key;
             if (ImGui::InputText("", newKey.data(), newKey.buffer_size(), ImGuiInputTextFlags_EnterReturnsTrue))
             {
-                // todo: check if newKey already exists
                 toCopy.emplace(iter, newKey);
                 ImGui::CloseCurrentPopup();
             }
             if (ImGui::IsWindowAppearing()) ImGui::SetKeyboardFocusHere();
         });
-
-        //--------------------------------------------------------//
 
         if (sectionOpen == true) funcEdit(object);
     }

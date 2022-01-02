@@ -20,7 +20,7 @@
       "knockScale": 95.0,
       "origin": [ 0.12462003, -0.21025008, -0.0009300407 ],
       "radius": 0.5,
-      "sound": "KickMedium"
+      "sound": "HitKick2"
     },
     "1_KneeR": {
       "angleMode": "Sakurai",
@@ -42,7 +42,7 @@
       "knockScale": 95.0,
       "origin": [ 0.12462003, 0.23974997, -0.0009300407 ],
       "radius": 0.25,
-      "sound": "KickMedium"
+      "sound": "HitKick2"
     },
     "2_HipR": {
       "angleMode": "Sakurai",
@@ -64,18 +64,18 @@
       "knockScale": 95.0,
       "origin": [ 0.12462003, 0.48975003, -0.0009300407 ],
       "radius": 0.25,
-      "sound": "KickMedium"
+      "sound": "HitKick2"
     }
   },
   "effects": {},
   "emitters": {},
   "sounds": {
-    "KickMedium": {
-      "path": "fighters/Mario/sounds/KickMedium",
+    "HitKick2": {
+      "path": "fighters/Mario/sounds/HitKick2",
       "volume": 0.5
     },
-    "SwingLarge": {
-      "path": "fighters/Mario/sounds/SwingLarge",
+    "Swing3": {
+      "path": "fighters/Mario/sounds/Swing3",
       "volume": 0.5
     }
   }

@@ -2,5 +2,14 @@
   "blobs": {},
   "effects": {},
   "emitters": {},
-  "sounds": {}
+  "sounds": {
+    "DashStart": {
+      "path": "fighters/Mario/sounds/DashStart",
+      "volume": 0.4
+    },
+    "Whoosh2": {
+      "path": "fighters/Mario/sounds/Whoosh2",
+      "volume": 0.5
+    }
+  }
 }

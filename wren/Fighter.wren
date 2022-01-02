@@ -38,8 +38,10 @@ foreign class Variables {
   foreign stunTime=(value)
   foreign freezeTime
   foreign freezeTime=(value)
+
   foreign edgeStop
   foreign edgeStop=(value)
+
   foreign intangible
   foreign intangible=(value)
   foreign fastFall
@@ -50,14 +52,22 @@ foreign class Variables {
   foreign applyFriction=(value)
   foreign flinch
   foreign flinch=(value)
+
+  foreign onGround
+  foreign onPlatform
+
+  foreign edge
+
   foreign moveMobility
   foreign moveMobility=(value)
   foreign moveSpeed
   foreign moveSpeed=(value)
 
-  foreign vertigo
-  foreign onGround
-  foreign onPlatform
+  foreign damage
+  foreign shield
+  foreign launchSpeed
+
+  foreign attachPoint
 
   foreign ledge
   foreign ledge=(value)

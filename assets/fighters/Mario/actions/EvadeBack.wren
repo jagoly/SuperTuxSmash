@@ -13,13 +13,13 @@ class Script is Base {
     action.play_sound("Evade")
 
     wait_until(12)
-    action.play_sound("StepRightM")
+    action.play_sound("StepRightHard")
 
     wait_until(19)
     vars.intangible = false
 
     wait_until(20)
-    action.play_sound("StepLeftM")
+    action.play_sound("StepLeftHard")
 
     wait_until(32) // 34
     default_end()

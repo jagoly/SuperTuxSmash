@@ -17,18 +17,18 @@ class Script is Base {
     state.disable_early_actions()
 
     wait_until(8)
-    action.play_sound("Dash")
+    action.play_sound("DashStart")
 
     wait_until(10)
     state.enable_late_actions()
 
     wait_until(13)
-    action.play_sound("StepRightM")
+    action.play_sound("StepRightHard")
 
     wait_until(14)
     default_end()
 
     wait_until(18)
-    action.play_sound("StepLeftM")
+    action.play_sound("StepLeftHard")
   }
 }

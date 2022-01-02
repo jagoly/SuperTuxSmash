@@ -126,7 +126,7 @@ void Fighter::wren_set_next_animation(SmallString key, uint fade)
     if (iter == mAnimations.end())
         throw wren::Exception("invalid animation '{}'", key);
 
-    if (mAnimation != nullptr && mAnimation->is_looping() == true)
+    if (mAnimation != nullptr && mAnimation->loop == true)
         throw wren::Exception("already playing a loop animation, '{}'", mAnimation->get_key());
 
     if (mAnimation == &iter->second)

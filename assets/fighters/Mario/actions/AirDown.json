@@ -20,7 +20,7 @@
       "knockScale": 100.0,
       "origin": [ 0.0, -0.05, 0.0 ],
       "radius": 0.5,
-      "sound": "KickWeak"
+      "sound": "HitKick1"
     },
     "ABCDE_1_Upper": {
       "angleMode": "Normal",
@@ -42,7 +42,7 @@
       "knockScale": 100.0,
       "origin": [ 0.0, 0.6, 0.0 ],
       "radius": 0.7,
-      "sound": "KickWeak"
+      "sound": "HitKick1"
     },
     "Z_0_Final": {
       "angleMode": "Normal",
@@ -64,18 +64,18 @@
       "knockScale": 80.0,
       "origin": [ 0.0, 0.68, 0.0 ],
       "radius": 1.1,
-      "sound": "KickStrong"
+      "sound": "HitKick3"
     }
   },
   "effects": {},
   "emitters": {},
   "sounds": {
-    "KickStrong": {
-      "path": "fighters/Mario/sounds/KickStrong",
+    "HitKick3": {
+      "path": "fighters/Mario/sounds/HitKick3",
       "volume": 0.5
     },
-    "KickWeak": {
-      "path": "fighters/Mario/sounds/KickWeak",
+    "HitKick1": {
+      "path": "fighters/Mario/sounds/HitKick1",
       "volume": 0.5
     },
     "Spin": {

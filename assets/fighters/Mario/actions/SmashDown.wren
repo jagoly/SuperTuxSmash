@@ -6,17 +6,20 @@ class Script is Base {
   execute() {
     default_begin()
 
+    wait_until(1)
+    action.play_sound("VoiceSmashDown")
+
     wait_until(2)
+    action.play_sound("Swing3")
     action.play_sound("SwingExtra")
-    action.play_sound("SwingLarge")
     action.enable_hitblobs("A")
 
     wait_until(4)
     action.disable_hitblobs(true)
 
     wait_until(11)
+    action.play_sound("Swing1")
     action.play_sound("SwingExtra")
-    action.play_sound("SwingSmall")
     action.enable_hitblobs("B")
 
     wait_until(12)

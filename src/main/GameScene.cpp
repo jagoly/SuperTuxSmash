@@ -10,6 +10,7 @@
 #include "game/Fighter.hpp"
 #include "game/Stage.hpp"
 
+#include "editor/EditorCamera.hpp"
 #include "render/Renderer.hpp"
 #include "render/StandardCamera.hpp"
 
@@ -67,10 +68,10 @@ GameScene::GameScene(SmashApp& smashApp, GameSetup setup)
     mRenderer = std::make_unique<Renderer>(window, options, resourceCaches);
     mFightWorld = std::make_unique<FightWorld>(options, audioContext, resourceCaches, *mRenderer);
 
-    mRenderer->set_camera(std::make_unique<StandardCamera>(*mRenderer));
+    mStandardCamera = std::make_unique<StandardCamera>(*mRenderer);
+    mEditorCamera = std::make_unique<EditorCamera>(*mRenderer);
 
-    for (uint8_t index = 0u; index < MAX_FIGHTERS; ++index)
-        mControllers[index] = std::make_unique<Controller>(inputDevices, "config/player{}.json"_format(index+1u));
+    mRenderer->set_camera(*mStandardCamera);
 
     //--------------------------------------------------------//
 
@@ -82,8 +83,13 @@ GameScene::GameScene(SmashApp& smashApp, GameSetup setup)
 
     for (uint8_t index = 0u; index < setup.players.size(); ++index)
     {
+        // todo: controllers should be created by MenuScene and trasferred to GameSetup
+        auto& controller = mControllers.emplace_back (
+            std::make_unique<Controller>(inputDevices, "config/player{}.json"_format(index+1u))
+        );
+
         auto fighter = std::make_unique<Fighter>(*mFightWorld, setup.players[index].fighter, index);
-        fighter->controller = mControllers[index].get();
+        fighter->controller = controller.get();
 
         mFightWorld->add_fighter(std::move(fighter));
     }
@@ -112,36 +118,38 @@ void GameScene::refresh_options_create()
 
 void GameScene::handle_event(sq::Event event)
 {
-    if (event.type == sq::Event::Type::Keyboard_Press)
+    if (event.type == sq::Event::Type::Window_Close)
     {
-        if (event.data.keyboard.key == sq::Keyboard_Key::F1)
+        // todo: this should ask for confirmation
+        mSmashApp.quit();
+    }
+
+    else if (event.type == sq::Event::Type::Keyboard_Press)
+    {
+        if (event.data.keyboard.key == sq::Keyboard_Key::Escape)
+        {
+            // todo: this should open a pause menu
+            mSmashApp.return_to_main_menu();
+        }
+
+        else if (event.data.keyboard.key == sq::Keyboard_Key::F1)
         {
             mGamePaused = !mGamePaused;
             mSmashApp.get_audio_context().set_groups_paused(sq::SoundGroup::Sfx, mGamePaused);
-            return;
         }
 
-        if (event.data.keyboard.key == sq::Keyboard_Key::F2)
+        else if (event.data.keyboard.key == sq::Keyboard_Key::F2)
         {
             if (mGamePaused == true)
             {
                 for (auto& controller : mControllers)
-                    if (controller != nullptr)
-                        controller->integrate(), controller->tick();
+                    controller->refresh(), controller->tick();
 
                 // advance by a single frame
                 mFightWorld->tick();
 
                 // todo: tell audio context to play one tick's worth of sound
             }
-            return;
-        }
-
-        // todo: this should open a pause menu
-        if (event.data.keyboard.key == sq::Keyboard_Key::Escape)
-        {
-            mSmashApp.return_to_main_menu();
-            return;
         }
     }
 }
@@ -153,20 +161,21 @@ void GameScene::update()
     if (mGamePaused == false)
     {
         for (auto& controller : mControllers)
-            if (controller != nullptr)
-                controller->tick();
+            controller->tick();
 
         mFightWorld->tick();
     }
 
-    auto& camera = static_cast<StandardCamera&>(mRenderer->get_camera());
-    camera.update_from_world(*mFightWorld);
+    mRenderer->get_camera().update_from_world(*mFightWorld);
 }
 
 //============================================================================//
 
 void GameScene::integrate(double /*elapsed*/, float blend)
 {
+    // todo: pass the controller that paused the game
+    mRenderer->get_camera().update_from_controller(*mControllers.front());
+
     mRenderer->integrate_camera(blend);
     mFightWorld->integrate(blend);
 
@@ -175,8 +184,7 @@ void GameScene::integrate(double /*elapsed*/, float blend)
 
     if (mGamePaused == false)
         for (auto& controller : mControllers)
-            if (controller != nullptr)
-                controller->integrate();
+            controller->refresh();
 
     mSmashApp.get_debug_overlay().update_sub_timers(mRenderer->get_frame_timings().data());
 }
@@ -195,30 +203,9 @@ void GameScene::impl_show_general_window()
     };
     if (window.show == false) return;
 
-    //--------------------------------------------------------//
-
     auto& options = mSmashApp.get_options();
 
-    if (ImGui::Button("swap control"))
-    {
-        if (auto& fighters = mFightWorld->get_fighters(); fighters.size() >= 2u)
-        {
-            Controller* last = fighters.back()->controller;
-            if (fighters.size() == 4u) fighters[3]->controller = fighters[2]->controller;
-            if (fighters.size() >= 3u) fighters[2]->controller = fighters[1]->controller;
-            fighters[1]->controller = fighters[0]->controller;
-            fighters[0]->controller = last;
-        }
-    }
-    ImPlus::HoverTooltip("cycle the controllers");
-
-    ImGui::Checkbox("disable input", &options.input_disable);
-    ImPlus::HoverTooltip("disable game input completely");
-
-    ImGui::SameLine();
-
-    ImGui::Checkbox("smooth camera", &options.camera_smooth);
-    ImPlus::HoverTooltip("smooth camera movement");
+    //--------------------------------------------------------//
 
     ImPlus::if_MenuBar([&]()
     {
@@ -250,6 +237,38 @@ void GameScene::impl_show_general_window()
         ImPlus::HoverTooltip("change debug logging");
     });
 
+    //--------------------------------------------------------//
+
+    if (ImGui::Button("swap fighters"))
+    {
+        if (auto& fighters = mFightWorld->get_fighters(); fighters.size() >= 2u)
+        {
+            Controller* last = fighters.back()->controller;
+            if (fighters.size() == 4u) fighters[3]->controller = fighters[2]->controller;
+            if (fighters.size() >= 3u) fighters[2]->controller = fighters[1]->controller;
+            fighters[1]->controller = fighters[0]->controller;
+            fighters[0]->controller = last;
+        }
+    }
+    ImPlus::HoverTooltip("cycle the controllers");
+
+    ImGui::SameLine();
+
+    if (&mRenderer->get_camera() == mStandardCamera.get())
+    {
+        if (ImGui::Button("camera: standard")) mRenderer->set_camera(*mEditorCamera);
+        ImPlus::HoverTooltip("change to editor camera");
+    }
+    else if (&mRenderer->get_camera() == mEditorCamera.get())
+    {
+        if (ImGui::Button("camera: editor")) mRenderer->set_camera(*mStandardCamera);
+        ImPlus::HoverTooltip("change to standard camera");
+    }
+
+    // todo: give each camera a show_debug_widget method
+    ImGui::Checkbox("smooth", &options.camera_smooth);
+    ImPlus::HoverTooltip("smooth camera movement");
+    ImGui::SameLine();
     ImGui::SetNextItemWidth(-1.f);
     ImPlus::SliderValue("##zoom", options.camera_zoom_out, 0.5f, 2.f, "zoom out: %.2f");
     options.camera_zoom_out = std::round(options.camera_zoom_out * 4.f) * 0.25f;

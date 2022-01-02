@@ -20,7 +20,7 @@
       "knockScale": 100.0,
       "origin": [ 0.0, 0.95289314, 0.18570268 ],
       "radius": 0.4,
-      "sound": "PunchWeak"
+      "sound": "HitPunch1"
     },
     "1_ArmB.L": {
       "angleMode": "Normal",
@@ -42,7 +42,7 @@
       "knockScale": 100.0,
       "origin": [ -0.8987322, 1.1963449, -0.0015648119 ],
       "radius": 0.4,
-      "sound": "PunchWeak"
+      "sound": "HitPunch1"
     }
   },
   "effects": {},

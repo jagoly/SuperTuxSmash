@@ -20,7 +20,7 @@
       "knockScale": 100.0,
       "origin": [ 0.0, 0.32, 0.4 ],
       "radius": 0.43,
-      "sound": "KickStrong"
+      "sound": "HitKick3"
     },
     "1_Back": {
       "angleMode": "Sakurai",
@@ -42,14 +42,14 @@
       "knockScale": 100.0,
       "origin": [ 0.0, 0.32, -0.4 ],
       "radius": 0.43,
-      "sound": "KickStrong"
+      "sound": "HitKick3"
     }
   },
   "effects": {},
   "emitters": {},
   "sounds": {
-    "KickStrong": {
-      "path": "fighters/Mario/sounds/KickStrong",
+    "HitKick3": {
+      "path": "fighters/Mario/sounds/HitKick3",
       "volume": 0.5
     },
     "LandHeavy": {

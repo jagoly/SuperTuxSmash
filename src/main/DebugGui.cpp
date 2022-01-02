@@ -78,9 +78,7 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
 
     if (ImGui::CollapsingHeader("Edit Variables"))
     {
-        const ImPlus::ScopeItemWidth width = 180.f;
-
-        const ImPlus::Style_FramePadding padding = {style.FramePadding.x, style.FramePadding.y * 0.5f};
+        const ImPlus::ScopeItemWidth width = -120.f;
 
         ImPlus::DragVector("position", vars.position, 0.01f, "%+.4f");
         ImPlus::DragVector("velocity", vars.velocity, 0.01f, "%+.4f");
@@ -98,14 +96,17 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
 
         ImPlus::ComboEnum("edgeStop", vars.edgeStop);
 
-        ImPlus::Checkbox("intangible",    &vars.intangible);    ImGui::SameLine(140.f);
+        ImPlus::Checkbox("intangible",    &vars.intangible);    ImGui::SameLine(150.f);
         ImPlus::Checkbox("fastFall",      &vars.fastFall);
-        ImPlus::Checkbox("applyGravity",  &vars.applyGravity);  ImGui::SameLine(140.f);
+        ImPlus::Checkbox("applyGravity",  &vars.applyGravity);  ImGui::SameLine(150.f);
         ImPlus::Checkbox("applyFriction", &vars.applyFriction);
-        ImPlus::Checkbox("flinch",        &vars.flinch);        ImGui::SameLine(140.f);
-        ImPlus::Checkbox("vertigo",       &vars.vertigo);
-        ImPlus::Checkbox("onGround",      &vars.onGround);      ImGui::SameLine(140.f);
+        ImPlus::Checkbox("flinch",        &vars.flinch);        ImGui::SameLine(150.f);
+        ImPlus::Checkbox("onGround",      &vars.onGround);
         ImPlus::Checkbox("onPlatform",    &vars.onPlatform);
+
+        int8_t edgeTemp = vars.edge;
+        ImPlus::SliderValue("edge", edgeTemp, -1, +1, "%+d");
+        if (edgeTemp != 0) vars.edge = edgeTemp;
 
         ImPlus::DragValue("moveMobility", vars.moveMobility, 0.0001f, 0, 0, "%.4f");
         ImPlus::DragValue("moveSpeed",    vars.moveSpeed,    0.001f,  0, 0, "%.4f");
@@ -114,16 +115,16 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
         ImPlus::SliderValue("shield",      vars.shield,      0.f, SHIELD_MAX_HP, "%.2f");
         ImPlus::SliderValue("launchSpeed", vars.launchSpeed, 0.f, 100.f,         "%.4f");
 
-        ImPlus::LabelText("Ledge", "{}"_format(static_cast<void*>(vars.ledge)));
+        ImPlus::DragVector("attachPoint", vars.position, 0.01f, "%+.4f");
+
+        ImPlus::LabelText("ledge", "{}"_format(static_cast<void*>(vars.ledge)));
     }
 
     //--------------------------------------------------------//
 
     if (ImGui::CollapsingHeader("Edit Attributes"))
     {
-        const ImPlus::ScopeItemWidth width = 160.f;
-
-        const ImPlus::Style_FramePadding padding = {style.FramePadding.x, style.FramePadding.y * 0.5f};
+        const ImPlus::ScopeItemWidth width = -150.f;
 
         ImPlus::InputValue("walkSpeed",      attrs.walkSpeed,      0.1f, "%.4f");
         ImPlus::InputValue("dashSpeed",      attrs.dashSpeed,      0.1f, "%.4f");
@@ -167,12 +168,21 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
         if (ImGui::Button("Save..."))
             {} // todo
 
+        // todo: this is unintuitive, it would be better if the swap fighters button just didn't swap recordings
+        ImGui::SameLine();
+        ImGui::Button("Copy...");
+        ImPlus::if_PopupContextItem("copy_recording", ImGuiPopupFlags_MouseButtonLeft, [&]()
+        {
+            for (auto& other : fighter.world.get_fighters())
+            {
+                if (ImPlus::MenuItem("Fighter {}"_format(other->index), nullptr, false, other.get() != &fighter))
+                    other->controller->mRecordedInput = controller.mRecordedInput;
+            }
+        });
+
         ImGui::SameLine();
         if (ImGui::Button("Discard"))
             controller.mRecordedInput.clear();
-
-        ImGui::SameLine();
-        ImPlus::Text(" frames stored: {}"_format(controller.mRecordedInput.size()));
 
         if (ImGui::RadioButton("Store", controller.mPlaybackIndex == -2))
             controller.mPlaybackIndex = -2;
@@ -184,6 +194,9 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
         ImGui::SameLine();
         if (ImGui::RadioButton("Play", controller.mPlaybackIndex >= 0))
             controller.mPlaybackIndex = 0;
+
+        ImGui::SameLine();
+        ImPlus::Text(" frames: {}"_format(controller.mRecordedInput.size()));
 
         // todo: show current input state
     }

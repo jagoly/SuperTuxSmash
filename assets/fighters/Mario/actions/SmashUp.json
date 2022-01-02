@@ -20,7 +20,7 @@
       "knockScale": 90.0,
       "origin": [ -0.11000003, 1.2743402, -0.004770154 ],
       "radius": 0.5,
-      "sound": "PunchStrong"
+      "sound": "HitPunch3"
     },
     "1_Bust": {
       "angleMode": "Normal",
@@ -42,22 +42,26 @@
       "knockScale": 90.0,
       "origin": [ 0.0, 0.8846101, 0.0029498953 ],
       "radius": 0.4,
-      "sound": "PunchStrong"
+      "sound": "HitPunch3"
     }
   },
   "effects": {},
   "emitters": {},
   "sounds": {
-    "PunchStrong": {
-      "path": "fighters/Mario/sounds/PunchStrong",
+    "HitPunch3": {
+      "path": "fighters/Mario/sounds/HitPunch3",
+      "volume": 0.5
+    },
+    "Swing3": {
+      "path": "fighters/Mario/sounds/Swing3",
       "volume": 0.5
     },
     "SwingExtra": {
       "path": "fighters/Mario/sounds/SwingExtra",
       "volume": 0.4
     },
-    "SwingLarge": {
-      "path": "fighters/Mario/sounds/SwingLarge",
+    "VoiceSmashUp": {
+      "path": "fighters/Mario/sounds/VoiceSmashUp",
       "volume": 0.5
     }
   }

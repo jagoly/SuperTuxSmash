@@ -11,6 +11,7 @@ class Script is Base {
 
     wait_until(6)
     action.play_sound("SmashStart")
+    action.play_sound("VoiceChargeFwd")
 
     wait_until(66) // 66
     return "SmashForward"

@@ -33,14 +33,20 @@ private: //===================================================//
 
     Renderer& renderer;
 
+    struct BufferPoolEntry
+    {
+        sq::SwapBuffer ubo;
+        sq::Swapper<vk::DescriptorSet> descriptorSet;
+        bool used = false;
+    };
+
     struct ActiveEffect
     {
         const VisualEffect* effect;
-        sq::SwapBuffer ubo;
-        sq::Swapper<vk::DescriptorSet> descriptorSet;
-        uint frame;        
+        BufferPoolEntry* entry;
+        uint frame;
         int64_t renderGroupId;
-        Mat4F worldMatrix;
+        Mat4F modelMatrix;
 
         struct InterpolationData
         {
@@ -50,7 +56,10 @@ private: //===================================================//
         previous, current;
     };
 
-    std::vector<ActiveEffect> mActiveEffects;
+    std::array<BufferPoolEntry, MAX_ACTIVE_EFFECTS> mBufferPool;
+    std::array<BufferPoolEntry*, MAX_ACTIVE_EFFECTS> mBufferPoolSorted;
+
+    StackVector<ActiveEffect, MAX_ACTIVE_EFFECTS> mActiveEffects;
 };
 
 //============================================================================//

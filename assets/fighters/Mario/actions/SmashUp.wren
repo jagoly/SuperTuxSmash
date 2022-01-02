@@ -6,10 +6,13 @@ class Script is Base {
   execute() {
     default_begin()
 
+    wait_until(1)
+    action.play_sound("VoiceSmashUp")
+
     wait_until(2)
     fighter.disable_hurtblob("HeadN")
+    action.play_sound("Swing3")
     action.play_sound("SwingExtra")
-    action.play_sound("SwingLarge")
     action.enable_hitblobs("")
 
     wait_until(8)

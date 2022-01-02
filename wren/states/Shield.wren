@@ -10,6 +10,9 @@ class Script is FighterStateScript {
 
   update() {
 
+    // break
+    if (vars.shield == 0.0) return "ShieldBreak"
+
     // fall
     if (base_update_ground()) return "MiscFall"
 

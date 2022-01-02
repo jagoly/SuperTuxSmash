@@ -3,6 +3,7 @@
   "effects": {
     "LandLight": {
       "anchored": false,
+      "bone": null,
       "origin": [ 0.0, 0.0, 0.0 ],
       "path": "fighters/Mario/effects/LandLight",
       "rotation": [ 0.0, 0.0, 0.0, 1.0 ],

@@ -1,9 +1,9 @@
-#include "editor/EditorScene.hpp" // IWYU pragma: associated
-#include "editor/Editor_Helpers.hpp"
+#include "editor/Editor_Stage.hpp"
+
+#include "game/FightWorld.hpp"
+#include "game/Stage.hpp"
 
 #include "render/Renderer.hpp"
-
-#include "game/Stage.hpp"
 
 #include <sqee/app/GuiWidgets.hpp>
 #include <sqee/maths/Colours.hpp>
@@ -11,28 +11,102 @@
 #include <sqee/vk/VulkanContext.hpp>
 
 using namespace sts;
+using StageContext = EditorScene::StageContext;
 
 //============================================================================//
 
-void EditorScene::impl_show_widget_stage()
+StageContext::StageContext(EditorScene& _editor, StageEnum _key)
+    : BaseContext(_editor, _key), ctxKey(_key)
 {
-    if (mDoResetDockStage) ImGui::SetNextWindowDockID(mDockRightId);
-    mDoResetDockStage = false;
+    ctxTypeString = "Stage";
+    ctxKeyString = sq::enum_to_string(ctxKey);
+
+    stage = &world->get_stage();
+
+    skybox.initialise(editor, 0u, renderer->cubemaps.skybox.get_image(), renderer->samplers.linearClamp);
+    irradiance.initialise(editor, 0u, renderer->cubemaps.irradiance.get_image(), renderer->samplers.linearClamp);
+
+    for (uint level = 0u; level < radiance.size(); ++level)
+        radiance[level].initialise(editor, level, renderer->cubemaps.radiance.get_image(), renderer->samplers.linearClamp);
+}
+
+StageContext::~StageContext()
+{
+    const auto& ctx = sq::VulkanContext::get();
+
+    ctx.device.free(ctx.descriptorPool, skybox.descriptorSets);
+    for (auto& imageView : skybox.imageViews)
+        ctx.device.destroy(imageView);
+
+    ctx.device.free(ctx.descriptorPool, irradiance.descriptorSets);
+    for (auto& imageView : irradiance.imageViews)
+        ctx.device.destroy(imageView);
+
+    for (auto& radianceLevel : radiance)
+    {
+        ctx.device.free(ctx.descriptorPool, radianceLevel.descriptorSets);
+        for (auto& imageView : radianceLevel.imageViews)
+            ctx.device.destroy(imageView);
+    }
+}
+
+//============================================================================//
+
+void StageContext::apply_working_changes()
+{
+    // todo
+    world->tick();
+    modified = false;
+}
+
+//============================================================================//
+
+void StageContext::do_undo_redo(bool /*redo*/)
+{
+    // todo
+}
+
+//============================================================================//
+
+void StageContext::save_changes()
+{
+    // todo
+    modified = false;
+}
+
+//============================================================================//
+
+void StageContext::show_menu_items()
+{
+    // nothing here yet
+}
+
+void StageContext::show_widgets()
+{
+    show_widget_stage();
+    show_widget_cubemaps();
+    editor.helper_show_widget_debug(stage, nullptr);
+}
+
+//============================================================================//
+
+void StageContext::show_widget_stage()
+{
+    if (editor.mDoResetDockStage) ImGui::SetNextWindowDockID(editor.mDockRightId);
+    editor.mDoResetDockStage = false;
 
     const ImPlus::ScopeWindow window = { "Stage", 0 };
     if (window.show == false) return;
 
-    StageContext& ctx = *mActiveStageContext;
+    const ImPlus::ScopeID ctxKeyIdScope = int(ctxKey);
 
     //--------------------------------------------------------//
-
-    const ImPlus::ScopeID ctxKeyIdScope = int(ctx.key);
 
     if (ImGui::CollapsingHeader("Tone Mapping", ImGuiTreeNodeFlags_DefaultOpen))
     {
         const ImPlus::ScopeItemWidth width = -100.f;
 
-        auto& tonemap = ctx.renderer->tonemap;
+        auto& tonemap = renderer->tonemap;
 
         ImPlus::SliderValue("Exposure", tonemap.exposure, 0.25f, 4.f);
         ImPlus::SliderValue("Contrast", tonemap.contrast, 0.5f, 2.f);
@@ -43,26 +117,24 @@ void EditorScene::impl_show_widget_stage()
     {
         const ImPlus::ScopeItemWidth width = -100.f;
 
-        ImPlus::InputVector("Colour", ctx.stage->mLightColour, 0, "%.2f");
-        ImPlus::InputVector("Direction", ctx.stage->mLightDirection, 0, "%.2f");
+        ImPlus::InputVector("Colour", stage->mLightColour, 0, "%.2f");
+        ImPlus::InputVector("Direction", stage->mLightDirection, 0, "%.2f");
     }
 }
 
 //============================================================================//
 
-void EditorScene::impl_show_widget_cubemaps()
+void StageContext::show_widget_cubemaps()
 {
-    if (mDoResetDockCubemaps) ImGui::SetNextWindowDockID(mDockRightId);
-    mDoResetDockCubemaps = false;
+    if (editor.mDoResetDockCubemaps) ImGui::SetNextWindowDockID(editor.mDockRightId);
+    editor.mDoResetDockCubemaps = false;
 
     const ImPlus::ScopeWindow window = { "CubeMaps", 0 };
     if (window.show == false) return;
 
-    StageContext& ctx = *mActiveStageContext;
+    const ImPlus::ScopeID ctxKeyIdScope = int(ctxKey);
 
     //--------------------------------------------------------//
-
-    const ImPlus::ScopeID ctxKeyIdScope = int(ctx.key);
 
     const ImGuiStyle& style = ImGui::GetStyle();
 
@@ -78,15 +150,15 @@ void EditorScene::impl_show_widget_cubemaps()
     {
         if (ImGui::Button("Save"))
         {
-            ctx.renderer->cubemaps.skybox.save_as_compressed (
-                sq::build_string("assets/", ctx.stage->get_skybox_path(), "/Sky.lz4"),
+            renderer->cubemaps.skybox.save_as_compressed (
+                sq::build_string("assets/", stage->get_skybox_path(), "/Sky.lz4"),
                 vk::Format::eE5B9G9R9UfloatPack32, Vec3U(SKYBOX_SIZE, SKYBOX_SIZE, 6u), 1u
             );
         }
 
         for (uint face = 0u; face < 6u; ++face)
         {
-            ImGui::Image(&ctx.skybox.descriptorSets[faceOrder[face]], {size, size}, {0,1}, {1,0});
+            ImGui::Image(&skybox.descriptorSets[faceOrder[face]], {size, size}, {0,1}, {1,0});
             ImPlus::HoverTooltip(faceNames[faceOrder[face]]);
             if (face < 5u) ImGui::SameLine();
         }
@@ -94,7 +166,7 @@ void EditorScene::impl_show_widget_cubemaps()
 
     //--------------------------------------------------------//
 
-    if (ImGui::CollapsingHeader(ctx.irradianceModified ? "Irradiance*###Irradiance" : "Irradiance###Irradiance"))
+    if (ImGui::CollapsingHeader(irradianceModified ? "Irradiance*###Irradiance" : "Irradiance###Irradiance"))
     {
         const ImPlus::ScopeID idScope = "irradiance";
 
@@ -103,18 +175,18 @@ void EditorScene::impl_show_widget_cubemaps()
             generate_cube_map_irradiance();
         }
         ImGui::SameLine();
-        if (ImGui::Button("Save") && ctx.irradianceModified)
+        if (ImGui::Button("Save") && irradianceModified)
         {
-            ctx.renderer->cubemaps.irradiance.save_as_compressed (
-                sq::build_string("assets/", ctx.stage->get_skybox_path(), "/Irradiance.lz4"),
+            renderer->cubemaps.irradiance.save_as_compressed (
+                sq::build_string("assets/", stage->get_skybox_path(), "/Irradiance.lz4"),
                 vk::Format::eE5B9G9R9UfloatPack32, Vec3U(IRRADIANCE_SIZE, IRRADIANCE_SIZE, 6u), 1u
             );
-            ctx.irradianceModified = false;
+            irradianceModified = false;
         }
 
         for (uint face = 0u; face < 6u; ++face)
         {
-            ImGui::Image(&ctx.irradiance.descriptorSets[faceOrder[face]], {size, size}, {0,1}, {1,0});
+            ImGui::Image(&irradiance.descriptorSets[faceOrder[face]], {size, size}, {0,1}, {1,0});
             ImPlus::HoverTooltip(faceNames[faceOrder[face]]);
             if (face < 5u) ImGui::SameLine();
         }
@@ -122,7 +194,7 @@ void EditorScene::impl_show_widget_cubemaps()
 
     //--------------------------------------------------------//
 
-    if (ImGui::CollapsingHeader(ctx.radianceModified ? "Radiance*###Radiance" : "Radiance###Radiance"))
+    if (ImGui::CollapsingHeader(radianceModified ? "Radiance*###Radiance" : "Radiance###Radiance"))
     {
         const ImPlus::ScopeID idScope = "radiance";
 
@@ -131,20 +203,20 @@ void EditorScene::impl_show_widget_cubemaps()
             generate_cube_map_radiance();
         }
         ImGui::SameLine();
-        if (ImGui::Button("Save") && ctx.radianceModified)
+        if (ImGui::Button("Save") && radianceModified)
         {
-            ctx.renderer->cubemaps.radiance.save_as_compressed (
-                sq::build_string("assets/", ctx.stage->get_skybox_path(), "/Radiance.lz4"),
+            renderer->cubemaps.radiance.save_as_compressed (
+                sq::build_string("assets/", stage->get_skybox_path(), "/Radiance.lz4"),
                 vk::Format::eE5B9G9R9UfloatPack32, Vec3U(RADIANCE_SIZE, RADIANCE_SIZE, 6u), RADIANCE_LEVELS
             );
-            ctx.radianceModified = false;
+            radianceModified = false;
         }
 
         for (uint level = 0u; level < RADIANCE_LEVELS; ++level)
         {
             for (uint face = 0u; face < 6u; ++face)
             {
-                ImGui::Image(&ctx.radiance[level].descriptorSets[faceOrder[face]], {size, size}, {0,1}, {1,0});
+                ImGui::Image(&radiance[level].descriptorSets[faceOrder[face]], {size, size}, {0,1}, {1,0});
                 ImPlus::HoverTooltip("{} ({:.0f}%)"_format(faceNames[faceOrder[face]], float(level * 100u) / float(RADIANCE_LEVELS - 1u)));
                 if (face < 5u) ImGui::SameLine();
             }
@@ -154,13 +226,7 @@ void EditorScene::impl_show_widget_cubemaps()
 
 //============================================================================//
 
-struct EditorScene::ShrunkCubeMap
-{
-    sq::ImageStuff image;
-    vk::DescriptorSet descriptorSet;
-};
-
-EditorScene::ShrunkCubeMap EditorScene::shrink_cube_map_skybox(vk::ImageLayout layout, uint outputSize) const
+EditorScene::ShrunkCubeMap StageContext::shrink_cube_map_skybox(vk::ImageLayout layout, uint outputSize)
 {
     ShrunkCubeMap result;
 
@@ -171,7 +237,6 @@ EditorScene::ShrunkCubeMap EditorScene::shrink_cube_map_skybox(vk::ImageLayout l
         std::array<vk::Pipeline, 6u> pipelines;
     } stuff;
 
-    StageContext& ctx = *mActiveStageContext;
     const auto& vctx = sq::VulkanContext::get();
 
     // create result image and descriptor set
@@ -183,10 +248,10 @@ EditorScene::ShrunkCubeMap EditorScene::shrink_cube_map_skybox(vk::ImageLayout l
         );
 
         const auto imageInfo = vk::DescriptorImageInfo {
-            ctx.renderer->samplers.nearestClamp, result.image.view, vk::ImageLayout::eShaderReadOnlyOptimal
+            renderer->samplers.nearestClamp, result.image.view, vk::ImageLayout::eShaderReadOnlyOptimal
         };
 
-        result.descriptorSet = vctx.allocate_descriptor_set(vctx.descriptorPool, mImageProcessSetLayout);
+        result.descriptorSet = vctx.allocate_descriptor_set(vctx.descriptorPool, editor.mImageProcessSetLayout);
         sq::vk_update_descriptor_set(vctx, result.descriptorSet, sq::DescriptorImageSampler(0u, 0u, imageInfo));
     }
 
@@ -231,7 +296,7 @@ EditorScene::ShrunkCubeMap EditorScene::shrink_cube_map_skybox(vk::ImageLayout l
         );
 
         stuff.pipelines[face] = sq::vk_create_graphics_pipeline (
-            vctx, mImageProcessPipelineLayout, stuff.renderPass, 0u, shaderModules.stages, {},
+            vctx, editor.mImageProcessPipelineLayout, stuff.renderPass, 0u, shaderModules.stages, {},
             vk::PipelineInputAssemblyStateCreateInfo {
                 {}, vk::PrimitiveTopology::eTriangleList, false
             },
@@ -262,7 +327,7 @@ EditorScene::ShrunkCubeMap EditorScene::shrink_cube_map_skybox(vk::ImageLayout l
         for (uint face = 0u; face < 6u; ++face)
         {
             cmdbuf->bindPipeline(vk::PipelineBindPoint::eGraphics, stuff.pipelines[face]);
-            cmdbuf->bindDescriptorSets(vk::PipelineBindPoint::eGraphics, mImageProcessPipelineLayout, 0u, ctx.skybox.descriptorSets[face], {});
+            cmdbuf->bindDescriptorSets(vk::PipelineBindPoint::eGraphics, editor.mImageProcessPipelineLayout, 0u, skybox.descriptorSets[face], {});
 
             cmdbuf->beginRenderPass (
                 vk::RenderPassBeginInfo {
@@ -292,7 +357,7 @@ EditorScene::ShrunkCubeMap EditorScene::shrink_cube_map_skybox(vk::ImageLayout l
 
 //============================================================================//
 
-void EditorScene::generate_cube_map_irradiance()
+void StageContext::generate_cube_map_irradiance()
 {
     struct {
         sq::ImageStuff image;
@@ -302,7 +367,6 @@ void EditorScene::generate_cube_map_irradiance()
         std::array<vk::Pipeline, 6u> pipelines;
     } stuff;
 
-    StageContext& ctx = *mActiveStageContext;
     const auto& vctx = sq::VulkanContext::get();
 
     ShrunkCubeMap shrunk = shrink_cube_map_skybox(vk::ImageLayout::eShaderReadOnlyOptimal, RADIANCE_SIZE);
@@ -354,7 +418,7 @@ void EditorScene::generate_cube_map_irradiance()
         );
 
         stuff.pipelines[face] = sq::vk_create_graphics_pipeline (
-            vctx, mImageProcessPipelineLayout, stuff.renderPass, 0u, shaderModules.stages, {},
+            vctx, editor.mImageProcessPipelineLayout, stuff.renderPass, 0u, shaderModules.stages, {},
             vk::PipelineInputAssemblyStateCreateInfo {
                 {}, vk::PrimitiveTopology::eTriangleList, false
             },
@@ -385,7 +449,7 @@ void EditorScene::generate_cube_map_irradiance()
         for (uint face = 0u; face < 6u; ++face)
         {
             cmdbuf->bindPipeline(vk::PipelineBindPoint::eGraphics, stuff.pipelines[face]);
-            cmdbuf->bindDescriptorSets(vk::PipelineBindPoint::eGraphics, mImageProcessPipelineLayout, 0u, shrunk.descriptorSet, {});
+            cmdbuf->bindDescriptorSets(vk::PipelineBindPoint::eGraphics, editor.mImageProcessPipelineLayout, 0u, shrunk.descriptorSet, {});
 
             cmdbuf->beginRenderPass (
                 vk::RenderPassBeginInfo {
@@ -399,14 +463,14 @@ void EditorScene::generate_cube_map_irradiance()
 
     //--------------------------------------------------------//
 
-    update_cube_map_texture(stuff.image, IRRADIANCE_SIZE, 1u, ctx.renderer->cubemaps.irradiance);
+    update_cube_map_texture(stuff.image, IRRADIANCE_SIZE, 1u, renderer->cubemaps.irradiance);
 
-    ctx.irradiance.initialise(*this, 0u, ctx.renderer->cubemaps.irradiance.get_image(), ctx.renderer->samplers.linearClamp);
+    irradiance.initialise(editor, 0u, renderer->cubemaps.irradiance.get_image(), renderer->samplers.linearClamp);
 
-    ctx.renderer->refresh_options_destroy();
-    ctx.renderer->refresh_options_create();
+    renderer->refresh_options_destroy();
+    renderer->refresh_options_create();
 
-    ctx.irradianceModified = true;
+    irradianceModified = true;
 
     //--------------------------------------------------------//
 
@@ -428,7 +492,7 @@ void EditorScene::generate_cube_map_irradiance()
 
 //============================================================================//
 
-void EditorScene::generate_cube_map_radiance()
+void StageContext::generate_cube_map_radiance()
 {
     struct {
         sq::ImageStuff image;
@@ -440,7 +504,6 @@ void EditorScene::generate_cube_map_radiance()
 
     ShrunkCubeMap shrunk = shrink_cube_map_skybox(vk::ImageLayout::eTransferSrcOptimal, RADIANCE_SIZE);
 
-    StageContext& ctx = *mActiveStageContext;
     const auto& vctx = sq::VulkanContext::get();
 
     // create render targets
@@ -503,7 +566,7 @@ void EditorScene::generate_cube_map_radiance()
             );
 
             stuff.pipelines[index][face] = sq::vk_create_graphics_pipeline (
-                vctx, mImageProcessPipelineLayout, stuff.renderPass, 0u, shaderModules.stages, {},
+                vctx, editor.mImageProcessPipelineLayout, stuff.renderPass, 0u, shaderModules.stages, {},
                 vk::PipelineInputAssemblyStateCreateInfo {
                     {}, vk::PrimitiveTopology::eTriangleList, false
                 },
@@ -578,7 +641,7 @@ void EditorScene::generate_cube_map_radiance()
             for (uint face = 0u; face < 6u; ++face)
             {
                 cmdbuf->bindPipeline(vk::PipelineBindPoint::eGraphics, stuff.pipelines[index][face]);
-                cmdbuf->bindDescriptorSets(vk::PipelineBindPoint::eGraphics, mImageProcessPipelineLayout, 0u, shrunk.descriptorSet, {});
+                cmdbuf->bindDescriptorSets(vk::PipelineBindPoint::eGraphics, editor.mImageProcessPipelineLayout, 0u, shrunk.descriptorSet, {});
 
                 cmdbuf->beginRenderPass (
                     vk::RenderPassBeginInfo {
@@ -593,15 +656,15 @@ void EditorScene::generate_cube_map_radiance()
 
     //--------------------------------------------------------//
 
-    update_cube_map_texture(stuff.image, RADIANCE_SIZE, RADIANCE_LEVELS, ctx.renderer->cubemaps.radiance);
+    update_cube_map_texture(stuff.image, RADIANCE_SIZE, RADIANCE_LEVELS, renderer->cubemaps.radiance);
 
     for (uint level = 0u; level < RADIANCE_LEVELS; ++level)
-        ctx.radiance[level].initialise(*this, level, ctx.renderer->cubemaps.radiance.get_image(), ctx.renderer->samplers.linearClamp);
+        radiance[level].initialise(editor, level, renderer->cubemaps.radiance.get_image(), renderer->samplers.linearClamp);
 
-    ctx.renderer->refresh_options_destroy();
-    ctx.renderer->refresh_options_create();
+    renderer->refresh_options_destroy();
+    renderer->refresh_options_create();
 
-    ctx.radianceModified = true;
+    radianceModified = true;
 
     //--------------------------------------------------------//
 
@@ -626,7 +689,7 @@ void EditorScene::generate_cube_map_radiance()
 
 //============================================================================//
 
-void EditorScene::update_cube_map_texture(sq::ImageStuff source, uint size, uint levels, sq::Texture& texture)
+void StageContext::update_cube_map_texture(sq::ImageStuff source, uint size, uint levels, sq::Texture& texture)
 {
     const auto& ctx = sq::VulkanContext::get();
 

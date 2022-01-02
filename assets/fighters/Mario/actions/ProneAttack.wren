@@ -7,14 +7,14 @@ class Script is Base {
     default_begin()
 
     wait_until(18)
-    action.play_sound("SwingLarge")
+    action.play_sound("Swing3")
     action.enable_hitblobs("A")
 
     wait_until(20)
     action.disable_hitblobs(true)
 
     wait_until(24)
-    action.play_sound("SwingLarge")
+    action.play_sound("Swing3")
     action.enable_hitblobs("B")
 
     wait_until(26)

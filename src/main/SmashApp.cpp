@@ -120,19 +120,11 @@ void SmashApp::handle_event(sq::Event event)
 
     //--------------------------------------------------------//
 
-    if (type == Type::Window_Close)
-    {
-        mReturnCode = 0;
-        return;
-    }
-
     if (type == Type::Window_Resize)
     {
         refresh_options();
         return;
     }
-
-    //--------------------------------------------------------//
 
     if (type == Type::Keyboard_Press)
     {
@@ -144,6 +136,9 @@ void SmashApp::handle_event(sq::Event event)
     }
 
     //--------------------------------------------------------//
+
+    // todo: some of this conflicts with the editor
+    // the time has probably come to move this stuff to a menu
 
     if (type == Type::Keyboard_Press && data.keyboard.ctrl == true)
     {
@@ -259,7 +254,10 @@ void SmashApp::refresh_options()
     mWindow->create_swapchain_and_friends();
     mActiveScene->refresh_options_create();
 
+    // todo: why doesn't this have seperate destroy/create?
     mResourceCaches->refresh_options();
+
+    ctx.allocator.free_empty_blocks();
 
 //    sq::log_debug("vulkan memory usage | host = {:.1f}MiB | device = {:.1f}MiB",
 //                  float(ctx.allocator.get_memory_usage(true)) / 1048576.f,
@@ -270,19 +268,30 @@ void SmashApp::refresh_options()
 
 void SmashApp::start_game(GameSetup setup)
 {
-    mActiveScene = std::make_unique<GameScene>(*this, setup);
-    //refresh_options();
+    mCallNextFrame = [this, setup]()
+    {
+        sq::VulkanContext::get().device.waitIdle();
+        mActiveScene = std::make_unique<GameScene>(*this, setup);
+        refresh_options();
+    };
 }
 
 void SmashApp::start_editor()
 {
-    mActiveScene = std::make_unique<EditorScene>(*this);
-    //refresh_options();
+    mCallNextFrame = [this]()
+    {
+        sq::VulkanContext::get().device.waitIdle();
+        mActiveScene = std::make_unique<EditorScene>(*this);
+        refresh_options();
+    };
 }
 
 void SmashApp::return_to_main_menu()
 {
-    mActiveScene = std::make_unique<MenuScene>(*this);
-    mWindow->set_title("SuperTuxSmash - Main Menu");
-    refresh_options();
+    mCallNextFrame = [this]()
+    {
+        sq::VulkanContext::get().device.waitIdle();
+        mActiveScene = std::make_unique<MenuScene>(*this);
+        refresh_options();
+    };
 }

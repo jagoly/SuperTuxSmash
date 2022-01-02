@@ -6,6 +6,10 @@
     "SmashStart": {
       "path": "fighters/Mario/sounds/SmashStart",
       "volume": 0.5
+    },
+    "VoiceChargeFwd": {
+      "path": "fighters/Mario/sounds/VoiceChargeFwd",
+      "volume": 0.5
     }
   }
 }

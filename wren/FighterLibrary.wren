@@ -26,6 +26,12 @@ class FighterLibrary {
 
   define_pseudo_actions() {
 
+    // from Walk or Vertigo, return to Neutral
+    actions["MiscNeutral"] = Fn.new {
+      fighter.change_state("Neutral")
+      fighter.play_animation("NeutralLoop", 4, true)
+    }
+
     // from various ground states, change to Fall
     actions["MiscFall"] = Fn.new {
       fighter.change_state("Fall")
@@ -41,17 +47,7 @@ class FighterLibrary {
     // from Neutral, change to Walk
     actions["Walk"] = Fn.new {
       fighter.change_state("Walk")
-      if (vars.vertigo == false) {
-        fighter.play_animation("WalkLoop", 4, true)
-      }
-    }
-
-    // from Walk, return to Neutral
-    actions["WalkStop"] = Fn.new {
-      fighter.change_state("Neutral")
-      if (vars.vertigo == false) {
-        fighter.play_animation("NeutralLoop", 4, true)
-      }
+      fighter.play_animation("WalkLoop", 4, true)
     }
 
     // from Neutral, change to Crouch
@@ -87,8 +83,7 @@ class FighterLibrary {
     // from LedgeHang, drop from the ledge
     actions["LedgeDrop"] = Fn.new {
       fighter.change_state("Fall")
-      // todo: find a way to have some fade
-      fighter.play_animation("FallLoop", 0, true)
+      fighter.play_animation("FallLoop", 2, true)
     }
 
     // from DashStart, change to Dash
@@ -110,6 +105,11 @@ class FighterLibrary {
     actions["FastFall"] = Fn.new {
       // todo: make some sparkles
       vars.fastFall = true
+    }
+
+    // not implemented yet
+    actions["ShieldBreak"] = Fn.new {
+      fighter.start_action("LandTumble")
     }
   }
 

@@ -126,10 +126,10 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    /// Update gamepad or keyboard state.
-    void integrate();
+    /// Poll gamepad and/or keyboard state.
+    void refresh();
 
-    /// Refresh and access input data.
+    /// Build a new frame of input.
     void tick();
 
     //-- wren methods ----------------------------------------//

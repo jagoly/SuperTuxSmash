@@ -1,32 +1,23 @@
 #include "editor/EditorScene.hpp"
 
-#include "main/DebugGui.hpp"
 #include "main/Options.hpp"
 #include "main/SmashApp.hpp"
 
 #include "game/Controller.hpp"
-#include "game/EffectSystem.hpp"
-#include "game/Emitter.hpp"
 #include "game/FightWorld.hpp"
-#include "game/Fighter.hpp"
-#include "game/FighterAction.hpp"
-#include "game/FighterState.hpp"
-#include "game/HitBlob.hpp"
-#include "game/HurtBlob.hpp"
-#include "game/ParticleSystem.hpp"
-#include "game/SoundEffect.hpp"
 #include "game/Stage.hpp"
-#include "game/VisualEffect.hpp"
 
 #include "render/DebugRender.hpp"
 #include "render/Renderer.hpp"
 
 #include "editor/EditorCamera.hpp"
+#include "editor/Editor_Action.hpp"
+#include "editor/Editor_HurtBlobs.hpp"
+#include "editor/Editor_Stage.hpp"
 
 #include <sqee/app/Event.hpp>
 #include <sqee/app/GuiWidgets.hpp>
 #include <sqee/debug/Assert.hpp>
-#include <sqee/misc/Files.hpp>
 #include <sqee/misc/Json.hpp>
 #include <sqee/objects/Armature.hpp>
 #include <sqee/vk/Helpers.hpp>
@@ -36,9 +27,9 @@ using namespace sts;
 
 //============================================================================//
 
-constexpr const float WIDTH_EDITORS   = 540.f;
 constexpr const float HEIGHT_TIMELINE = 80.f;
 constexpr const float WIDTH_NAVIGATOR = 240.f;
+constexpr const float WIDTH_EDITORS = 480.f;
 
 //============================================================================//
 
@@ -112,58 +103,40 @@ EditorScene::~EditorScene()
 
 void EditorScene::handle_event(sq::Event event)
 {
-    if (event.type == sq::Event::Type::Keyboard_Press || event.type == sq::Event::Type::Keyboard_Repeat)
+    const bool press = event.type == sq::Event::Type::Keyboard_Press;
+    const bool repeat = event.type == sq::Event::Type::Keyboard_Repeat;
+    const auto& kb = event.data.keyboard;
+
+    if (event.type == sq::Event::Type::Window_Close)
     {
-        if (event.data.keyboard.key == sq::Keyboard_Key::Space)
-        {
-            if (mPreviewMode == PreviewMode::Pause)
-            {
-                if (mActiveActionContext != nullptr)
-                {
-                    if (event.data.keyboard.shift) scrub_to_frame_previous(*mActiveActionContext);
-                    else tick_action_context(*mActiveActionContext);
-                }
-            }
-            else mPreviewMode = PreviewMode::Pause;
-        }
-
-        if (event.data.keyboard.ctrl && event.data.keyboard.key == sq::Keyboard_Key::Z)
-        {
-            if (mActiveActionContext != nullptr)
-                do_undo_redo(*mActiveActionContext, event.data.keyboard.shift);
-
-            if (mActiveHurtblobsContext != nullptr)
-                do_undo_redo(*mActiveHurtblobsContext, event.data.keyboard.shift);
-        }
+        impl_confirm_quit_unsaved(false);
     }
 
-    if (event.type == sq::Event::Type::Keyboard_Press)
+    else if ((press || repeat) && kb.key == sq::Keyboard_Key::Space)
     {
-        if (event.data.keyboard.key == sq::Keyboard_Key::Escape)
+        if (mPreviewMode == PreviewMode::Pause)
         {
-            const auto predicate = [](const auto& item) { return item.second.modified; };
-            mConfirmQuitNumUnsaved = uint(algo::count_if(mActionContexts, predicate) + algo::count_if(mHurtblobsContexts, predicate));
-            if (mConfirmQuitNumUnsaved == 0u)
-                mSmashApp.return_to_main_menu();
+            if (auto ctx = dynamic_cast<ActionContext*>(mActiveContext))
+                ctx->advance_frame(kb.shift);
         }
-
-        if (event.data.keyboard.ctrl && event.data.keyboard.key == sq::Keyboard_Key::S)
-        {
-            if (mActiveActionContext && mActiveActionContext->modified)
-                save_changes(*mActiveActionContext);
-
-            if (mActiveHurtblobsContext && mActiveHurtblobsContext->modified)
-                save_changes(*mActiveHurtblobsContext);
-        }
+        else mPreviewMode = PreviewMode::Pause;
     }
 
-    if (event.type == sq::Event::Type::Mouse_Scroll && event.data.scroll.delta.y != 0.f)
+    else if ((press || repeat) && kb.ctrl && kb.key == sq::Keyboard_Key::Z)
     {
         if (mActiveContext != nullptr)
-        {
-            auto& camera = static_cast<EditorCamera&>(mActiveContext->renderer->get_camera());
-            camera.update_from_scroll(event.data.scroll.delta.y);
-        }
+            mActiveContext->do_undo_redo(kb.shift);
+    }
+
+    else if (press && kb.key == sq::Keyboard_Key::Escape)
+    {
+        impl_confirm_quit_unsaved(true);
+    }
+
+    else if (press && kb.ctrl && kb.key == sq::Keyboard_Key::S)
+    {
+        if (mActiveContext != nullptr && mActiveContext->modified == true)
+            mActiveContext->save_changes();
     }
 }
 
@@ -185,23 +158,13 @@ void EditorScene::refresh_options_create()
 
 void EditorScene::update()
 {
-    if (mActiveActionContext != nullptr)
+    if (mActiveContext != nullptr)
     {
-        apply_working_changes(*mActiveActionContext);
-
-        if (mDoRestartAction == true)
-        {
-            scrub_to_frame(*mActiveActionContext, -1);
-            mDoRestartAction = false;
-        }
+        mActiveContext->apply_working_changes();
 
         if (mPreviewMode != PreviewMode::Pause)
-            tick_action_context(*mActiveActionContext);
-    }
-
-    if (mActiveHurtblobsContext != nullptr)
-    {
-        apply_working_changes(*mActiveHurtblobsContext);
+            if (auto ctx = dynamic_cast<ActionContext*>(mActiveContext))
+                ctx->advance_frame(false);
     }
 }
 
@@ -217,25 +180,7 @@ void EditorScene::integrate(double /*elapsed*/, float blend)
 
     BaseContext& ctx = *mActiveContext;
 
-    //--------------------------------------------------------//
-
-    if (ImGui::GetIO().WantCaptureMouse == false)
-    {
-        const Vec2I position = mSmashApp.get_input_devices().get_cursor_location(true);
-        const Vec2I windowSize = Vec2I(mSmashApp.get_window().get_size());
-
-        if (position.x >= 0 && position.y >= 0 && position.x < windowSize.x && position.y < windowSize.y)
-        {
-            const bool leftPressed = mSmashApp.get_input_devices().is_pressed(sq::Mouse_Button::Left);
-            const bool rightPressed = mSmashApp.get_input_devices().is_pressed(sq::Mouse_Button::Right);
-
-            auto& camera = static_cast<EditorCamera&>(ctx.renderer->get_camera());
-
-            camera.update_from_mouse(leftPressed, rightPressed, Vec2F(position));
-        }
-    }
-
-    //--------------------------------------------------------//
+    ctx.renderer->get_camera().update_from_controller(*mController);
 
     ctx.renderer->integrate_camera(blend);
     ctx.world->integrate(blend);
@@ -245,6 +190,29 @@ void EditorScene::integrate(double /*elapsed*/, float blend)
 
     //if (mPreviewMode != PreviewMode::Pause)
     //    mController->integrate();
+}
+
+//============================================================================//
+
+void EditorScene::impl_confirm_quit_unsaved(bool returnToMenu)
+{
+    const auto append_unsaved_items = [this](const auto& ctxMap)
+    {
+        for (const auto& [key, ctx] : ctxMap)
+            if (ctx.modified == true)
+                sq::format_append(mConfirmQuitUnsaved, "  - {} ({})\n", ctx.ctxKeyString, ctx.ctxTypeString);
+    };
+
+    append_unsaved_items(mActionContexts);
+    append_unsaved_items(mHurtBlobsContexts);
+    append_unsaved_items(mStageContexts);
+
+    if (mConfirmQuitUnsaved.empty())
+    {
+        if (returnToMenu) mSmashApp.return_to_main_menu();
+        else mSmashApp.quit();
+    }
+    else mConfirmQuitReturnToMenu = returnToMenu;
 }
 
 //============================================================================//
@@ -276,7 +244,7 @@ void EditorScene::impl_show_widget_toolbar()
         mDoResetDockHurtblobs = true;
         mDoResetDockStage = true;
         mDoResetDockCubemaps = true;
-        mDoResetDockFighter = true;
+        mDoResetDockDebug = true;
 
         const auto viewSize = ImGui::GetWindowViewport()->Size;
 
@@ -284,19 +252,22 @@ void EditorScene::impl_show_widget_toolbar()
         ImGui::DockBuilderAddNode(mDockMainId, 1 << 10);
         ImGui::DockBuilderSetNodeSize(mDockMainId, viewSize);
 
-        ImGui::DockBuilderSplitNode(mDockMainId, ImGuiDir_Right, 0.2f, &mDockRightId, &mDockNotRightId);
-        ImGui::DockBuilderSplitNode(mDockNotRightId, ImGuiDir_Down, 0.2f, &mDockDownId, &mDockNotDownId);
+        ImGui::DockBuilderSplitNode(mDockMainId, ImGuiDir_Down, 0.2f, &mDockDownId, &mDockNotDownId);
         ImGui::DockBuilderSplitNode(mDockNotDownId, ImGuiDir_Left, 0.2f, &mDockLeftId, &mDockNotLeftId);
+        ImGui::DockBuilderSplitNode(mDockNotLeftId, ImGuiDir_Right, 0.2f, &mDockRightId, &mDockNotRightId);
 
-        ImGui::DockBuilderSetNodeSize(mDockRightId, {WIDTH_EDITORS, viewSize.y});
         ImGui::DockBuilderSetNodeSize(mDockDownId, {viewSize.x, HEIGHT_TIMELINE});
         ImGui::DockBuilderSetNodeSize(mDockLeftId, {WIDTH_NAVIGATOR, viewSize.y});
+        ImGui::DockBuilderSetNodeSize(mDockRightId, {WIDTH_EDITORS, viewSize.y});
 
         ImGui::DockBuilderFinish(mDockMainId);
     }
     mWantResetDocks = false;
 
-    ImGui::DockSpace(mDockMainId, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_PassthruCentralNode | ImGuiDockNodeFlags_NoDockingInCentralNode);
+    ImGui::DockSpace (
+        mDockMainId, ImVec2(0.0f, 0.0f),
+        ImGuiDockNodeFlags_PassthruCentralNode | ImGuiDockNodeFlags_NoDockingInCentralNode
+    );
 
     if (window.show == false) return;
 
@@ -308,16 +279,28 @@ void EditorScene::impl_show_widget_toolbar()
         {
             if (ImPlus::MenuItem("Reset Layout"))
                 mWantResetDocks = true;
-            ImPlus::HoverTooltip("Reset editor layout to default");
 
-            if (ImPlus::MenuItem("Save All", "Ctrl+Shift+S"))
+            if (ImPlus::MenuItem("Save", "Ctrl+S", false, mActiveContext && mActiveContext->modified))
+                mActiveContext->save_changes();
+
+            const size_t numModified =
+                algo::count_if(mActionContexts, [](const auto& item) { return item.second.modified; }) +
+                algo::count_if(mHurtBlobsContexts, [](const auto& item) { return item.second.modified; }) +
+                algo::count_if(mStageContexts, [](const auto& item) { return item.second.modified; });
+
+            if (ImPlus::MenuItem("Save All ({})"_format(numModified), "Ctrl+Shift+S", false, numModified != 0u))
             {
                 // todo: show a popup listing everything that has changed
-                for (auto& [key, ctx] : mActionContexts)
-                    if (ctx.modified)
-                        save_changes(ctx);
+                for (auto& [key, ctx] : mActionContexts) if (ctx.modified) ctx.save_changes();
+                for (auto& [key, ctx] : mHurtBlobsContexts) if (ctx.modified) ctx.save_changes();
+                for (auto& [key, ctx] : mStageContexts) if (ctx.modified) ctx.save_changes();
             }
-            ImPlus::HoverTooltip("Save changes to all modified actions");
+
+            if (mActiveContext != nullptr)
+            {
+                ImGui::Separator();
+                mActiveContext->show_menu_items();
+            }
         });
 
         //--------------------------------------------------------//
@@ -333,64 +316,9 @@ void EditorScene::impl_show_widget_toolbar()
 
         //--------------------------------------------------------//
 
-        ImPlus::if_Menu("Action", mActiveActionContext != nullptr, [&]()
-        {
-            if (ImPlus::MenuItem("Save", "Ctrl+S", false, mActiveActionContext->modified))
-                save_changes(*mActiveActionContext);
-            ImPlus::HoverTooltip("Save changes to the active action");
-
-            Fighter& fighter = *mActiveActionContext->fighter;
-
-            if (ImPlus::MenuItem("Reload Animations", nullptr, false, true))
-            {
-                fighter.initialise_animations();
-                mActiveActionContext->timelineLength = get_default_timeline_length(*mActiveActionContext);
-                scrub_to_frame_current(*mActiveActionContext);
-            }
-            ImPlus::HoverTooltip("Reload animations for the active action");
-        });
-
-        //--------------------------------------------------------//
-
-//        if (mEditorMode == EditorMode::Animation)
-//        {
-//            if (ImGui::BeginMenu("Animation"))
-//            {
-//                // nothing in here for now
-//                ImGui::EndMenu();
-//            }
-
-//            ImGui::PushItemWidth(160.f);
-//            if (ImGui::ComboEnum("##AnimationList", mPreviewAnimation.type, ImGuiComboFlags_HeightLargest))
-//            {
-//                auto transition = privateFighter->transitions.editor_preview;
-
-//                if (mPreviewAnimation.type != AnimationType::None)
-//                {
-//                    mPreviewAnimation = *fighter->get_animation(mPreviewAnimation.type);
-//                    if (mPreviewAnimation.anim.times.back() == 0u)
-//                    {
-//                        mPreviewAnimation.anim.poses.emplace_back(mPreviewAnimation.anim.poses.back());
-//                        mPreviewAnimation.anim.poses.emplace_back(mPreviewAnimation.anim.poses.front());
-
-//                        mPreviewAnimation.anim.times.back() = 24u;
-//                        mPreviewAnimation.anim.times.emplace_back(0u);
-//                        mPreviewAnimation.anim.times.emplace_back(24u);
-
-//                        mPreviewAnimation.anim.poseCount += 2u;
-//                        mPreviewAnimation.anim.frameCount += 48u;
-//                    }
-//                    transition.animation = &mPreviewAnimation;
-//                }
-
-//                privateFighter->state_transition(transition);
-//            }
-//            ImGui::PopItemWidth();
-//        }
-
-        //--------------------------------------------------------//
-
         ImGui::Separator();
+
+        // todo: move this stuff into ActionContext
 
         ImGui::SetNextItemWidth(50.f);
         ImPlus::DragValue("##blend", mBlendValue, 0.01f, 0.f, 1.f, "%.2f");
@@ -409,8 +337,8 @@ void EditorScene::impl_show_widget_toolbar()
 
         ImGui::SetNextItemWidth(120.f);
         if (ImPlus::InputValue("##seed", mRandomSeed, 1))
-            if (mActiveActionContext != nullptr)
-                scrub_to_frame_current(*mActiveActionContext);
+            if (auto ctx = dynamic_cast<ActionContext*>(mActiveContext))
+                ctx->scrub_to_frame(ctx->currentFrame);
         ImPlus::HoverTooltip("seed to use for random number generator");
 
         ImGui::Checkbox("RNG", &mIncrementSeed);
@@ -430,68 +358,67 @@ void EditorScene::impl_show_widget_navigator()
 
     //--------------------------------------------------------//
 
-    const auto do_close_action = [this](ActionContext& ctx)
+    const auto activate_context = [this](const auto& ctxKey, auto& ctxMap)
     {
-        if (mActiveContext == &ctx)
+        auto [iter, created] = ctxMap.try_emplace(ctxKey, *this, ctxKey);
+        mActiveContext = &iter->second;
+
+        if (created == false)
+        {
+            mActiveContext->renderer->refresh_options_destroy();
+            mActiveContext->renderer->refresh_options_create();
+        }
+
+        mSmashApp.get_window().set_title (
+            "SuperTuxSmash - Editor - {} ({})"_format(mActiveContext->ctxKeyString, mActiveContext->ctxTypeString)
+        );
+    };
+
+    const auto close_context = [this](BaseContext* baseCtx)
+    {
+        if (mActiveContext == baseCtx)
         {
             sq::VulkanContext::get().device.waitIdle();
             mSmashApp.get_window().set_title("SuperTuxSmash - Editor");
-            mActiveContext = mActiveActionContext = nullptr;
+            mActiveContext = nullptr;
         }
-        mActionContexts.erase(ctx.key);
+
+        if (auto ctx = dynamic_cast<ActionContext*>(baseCtx))
+            mActionContexts.erase(ctx->ctxKey);
+        else if (auto ctx = dynamic_cast<HurtBlobsContext*>(baseCtx))
+            mHurtBlobsContexts.erase(ctx->ctxKey);
+        else if (auto ctx = dynamic_cast<StageContext*>(baseCtx))
+            mStageContexts.erase(ctx->ctxKey);
+        else SQEE_UNREACHABLE();
+
+        mConfirmCloseContext = nullptr;
     };
 
-    const auto do_close_hurtblobs = [this](HurtblobsContext& ctx)
+    const auto context_list_entry = [&](const auto& ctxKey, auto& ctxMap, String label)
     {
-        if (mActiveContext == &ctx)
-        {
-            sq::VulkanContext::get().device.waitIdle();
-            mSmashApp.get_window().set_title("SuperTuxSmash - Editor");
-            mActiveContext = mActiveHurtblobsContext = nullptr;
-        }
-        mHurtblobsContexts.erase(ctx.key);
-    };
+        const auto iter = ctxMap.find(ctxKey);
 
-    const auto do_close_stage = [this](StageContext& ctx)
-    {
-        if (mActiveContext == &ctx)
-        {
-            sq::VulkanContext::get().device.waitIdle();
-            mSmashApp.get_window().set_title("SuperTuxSmash - Editor");
-            mActiveContext = mActiveStageContext = nullptr;
-        }
-        mStageContexts.erase(ctx.key);
-    };
-
-    //--------------------------------------------------------//
-
-    const auto action_list_entry = [&](StringView fighterName, ActionKey key)
-    {
-        const auto iter = mActionContexts.find(key);
-
-        const bool loaded = iter != mActionContexts.end();
+        const bool loaded = iter != ctxMap.end();
         const bool modified = loaded && iter->second.modified;
         const bool active = loaded && &iter->second == mActiveContext;
 
-        const String label = sq::build_string(fighterName, '/', key.name, modified ? " *" : "");
-        const bool highlight = ImPlus::IsPopupOpen(label);
+        if (modified) label.push_back('*');
+
+        const bool highlight = active || ImPlus::IsPopupOpen(label);
 
         if (loaded) ImPlus::PushFont(ImPlus::FONT_BOLD);
-        if (ImPlus::Selectable(label, active || highlight) && !active)
-        {
-            activate_action_context(key);
-        }
+        if (ImPlus::Selectable(label, highlight) && !active) activate_context(ctxKey, ctxMap);
         if (loaded) ImGui::PopFont();
 
-        ImPlus::if_PopupContextItem(nullptr, ImPlus::MOUSE_RIGHT, [&]()
+        ImPlus::if_PopupContextItem(nullptr, ImGuiPopupFlags_MouseButtonRight, [&]()
         {
             if (ImGui::MenuItem("Close", nullptr, false, loaded))
             {
-                if (modified) mConfirmCloseActionCtx = &iter->second;
-                else do_close_action(iter->second);
+                if (modified) mConfirmCloseContext = &iter->second;
+                else close_context(&iter->second);
             }
             if (ImGui::MenuItem("Save", nullptr, false, modified))
-                save_changes(iter->second);
+                iter->second.save_changes();
         });
     };
 
@@ -513,15 +440,17 @@ void EditorScene::impl_show_widget_navigator()
 
                 if (ImPlus::CollapsingHeader("{} ({}/{})###{}"_format(fighterName, numLoaded, numTotal, fighterName)))
                 {
-                    const ImPlus::ScopeFont font = ImPlus::FONT_MONO;
-
-                    for (const auto& actionName : mFighterInfoCommon.actions)
-                        action_list_entry(fighterName, {FighterEnum(i), actionName});
-
+                    for (const SmallString& name : mFighterInfoCommon.actions)
+                    {
+                        const ActionKey key = { FighterEnum(i), name };
+                        context_list_entry(key, mActionContexts, "{}/{}"_format(fighterName, name));
+                    }
                     ImGui::Separator();
-
-                    for (const auto& actionName : info.actions)
-                        action_list_entry(fighterName, {FighterEnum(i), actionName});
+                    for (const SmallString& name : info.actions)
+                    {
+                        const ActionKey key = { FighterEnum(i), name };
+                        context_list_entry(key, mActionContexts, "{}/{}"_format(fighterName, name));
+                    }
                 }
             }
         });
@@ -529,146 +458,46 @@ void EditorScene::impl_show_widget_navigator()
         ImPlus::if_TabItemChild("HurtBlobs", 0, [&]()
         {
             for (int8_t i = 0; i < sq::enum_count_v<FighterEnum>; ++i)
-            {
-                const FighterEnum key = FighterEnum(i);
-
-                const auto iter = mHurtblobsContexts.find(key);
-
-                const bool loaded = iter != mHurtblobsContexts.end();
-                const bool modified = loaded && iter->second.modified;
-                const bool active = loaded && &iter->second == mActiveContext;
-
-                const String label = sq::build_string(sq::enum_to_string(key), modified ? " *" : "");
-                const bool highlight = ImPlus::IsPopupOpen(label);
-
-                if (loaded) ImPlus::PushFont(ImPlus::FONT_BOLD);
-                if (ImPlus::Selectable(label, active || highlight) && !active)
-                {
-                    mSmashApp.get_window().set_title("SuperTuxSmash - Editor - {} (HurtBlobs)"_format(key));
-
-                    mActiveActionContext = nullptr;
-                    mActiveStageContext = nullptr;
-                    mActiveContext = mActiveHurtblobsContext = &get_hurtblobs_context(key);
-                    mActiveContext->renderer->refresh_options_destroy();
-                    mActiveContext->renderer->refresh_options_create();
-                }
-                if (loaded) ImGui::PopFont();
-
-                ImPlus::if_PopupContextItem(nullptr, ImPlus::MOUSE_RIGHT, [&]()
-                {
-                    if (ImGui::MenuItem("Close", nullptr, false, loaded))
-                    {
-                        if (modified) mConfirmCloseHurtblobsCtx = &iter->second;
-                        else do_close_hurtblobs(iter->second);
-                    }
-                    if (ImGui::MenuItem("Save", nullptr, false, modified))
-                        save_changes(iter->second);
-                });
-            }
+                context_list_entry(FighterEnum(i), mHurtBlobsContexts, sq::enum_to_string(FighterEnum(i)));
         });
 
         ImPlus::if_TabItemChild("Stages", 0, [&]()
         {
             for (int8_t i = 0; i < sq::enum_count_v<StageEnum>; ++i)
-            {
-                const StageEnum key = StageEnum(i);
-
-                const auto iter = mStageContexts.find(key);
-
-                const bool loaded = iter != mStageContexts.end();
-                const bool modified = loaded && iter->second.modified;
-                const bool active = loaded && &iter->second == mActiveContext;
-
-                const String label = sq::build_string(sq::enum_to_string(key), modified ? " *" : "");
-                const bool highlight = ImPlus::IsPopupOpen(label);
-
-                if (loaded) ImPlus::PushFont(ImPlus::FONT_BOLD);
-                if (ImPlus::Selectable(label, active || highlight) && !active)
-                {
-                    mSmashApp.get_window().set_title("SuperTuxSmash - Editor - {} (Stage)"_format(key));
-
-                    mActiveActionContext = nullptr;
-                    mActiveHurtblobsContext = nullptr;
-                    mActiveContext = mActiveStageContext = &get_stage_context(key);
-                    mActiveContext->renderer->refresh_options_destroy();
-                    mActiveContext->renderer->refresh_options_create();
-                }
-                if (loaded) ImGui::PopFont();
-
-                ImPlus::if_PopupContextItem(nullptr, ImPlus::MOUSE_RIGHT, [&]()
-                {
-                    if (ImGui::MenuItem("Close", nullptr, false, loaded))
-                    {
-                        if (modified) mConfirmCloseStageCtx = &iter->second;
-                        else do_close_stage(iter->second);
-                    }
-                    if (ImGui::MenuItem("Save", nullptr, false, modified))
-                        save_changes(iter->second);
-                });
-            }
+                context_list_entry(StageEnum(i), mStageContexts, sq::enum_to_string(StageEnum(i)));
         });
     });
 
     //--------------------------------------------------------//
 
-    if (mConfirmCloseActionCtx != nullptr)
+    if (mConfirmCloseContext != nullptr)
     {
-        const auto result = ImPlus::DialogConfirmation("Discard Changes", "Action has been modified, really discard changes?");
-        if (result == ImPlus::DialogResult::Confirm) do_close_action(*mConfirmCloseActionCtx);
-        if (result == ImPlus::DialogResult::Cancel) mConfirmCloseActionCtx = nullptr;
+        const auto result = ImPlus::DialogConfirmation (
+            "Discard Changes", "{} modified, really discard changes?"_format(mConfirmCloseContext->ctxTypeString)
+        );
+
+        if (result == ImPlus::DialogResult::Confirm)
+            close_context(mConfirmCloseContext);
+
+        if (result == ImPlus::DialogResult::Cancel)
+            mConfirmCloseContext = nullptr;
     }
 
-    if (mConfirmCloseHurtblobsCtx != nullptr)
+    if (mConfirmQuitUnsaved.empty() == false)
     {
-        const auto result = ImPlus::DialogConfirmation("Discard Changes", "HurtBlobs have been modified, really discard changes?");
-        if (result == ImPlus::DialogResult::Confirm) do_close_hurtblobs(*mConfirmCloseHurtblobsCtx);
-        if (result == ImPlus::DialogResult::Cancel) mConfirmCloseHurtblobsCtx = nullptr;
-    }
+        const auto result = ImPlus::DialogConfirmation (
+            "Discard Changes", "Some items have not been saved:\n{}Really quit without saving?"_format(mConfirmQuitUnsaved)
+        );
 
-    if (mConfirmCloseStageCtx != nullptr)
-    {
-        const auto result = ImPlus::DialogConfirmation("Discard Changes", "Stage has been modified, really discard changes?");
-        if (result == ImPlus::DialogResult::Confirm) do_close_stage(*mConfirmCloseStageCtx);
-        if (result == ImPlus::DialogResult::Cancel) mConfirmCloseStageCtx = nullptr;
-    }
-
-    //--------------------------------------------------------//
-
-    if (mConfirmQuitNumUnsaved != 0u)
-    {
-        const auto result = ImPlus::DialogConfirmation("Confirm Quit", mConfirmQuitNumUnsaved > 1u ?
-                                                       "{} objects have not been saved, really quit?"_format(mConfirmQuitNumUnsaved) :
-                                                       "1 object has not been saved, really quit?");
         if (result == ImPlus::DialogResult::Confirm)
         {
-            mActionContexts.clear();
-            mHurtblobsContexts.clear();
-            mStageContexts.clear();
-            mSmashApp.return_to_main_menu();
+            if (mConfirmQuitReturnToMenu) mSmashApp.return_to_main_menu();
+            else mSmashApp.quit();
         }
-        if (result == ImPlus::DialogResult::Cancel) mConfirmQuitNumUnsaved = 0u;
+
+        if (result == ImPlus::DialogResult::Cancel)
+            mConfirmQuitUnsaved.clear();
     }
-}
-
-//============================================================================//
-
-void EditorScene::impl_show_widget_fighter()
-{
-    // todo: make proper widget for editing and saving attributes, maybe merge with HurtBlobs editor?
-
-    Fighter* fighter = nullptr;
-    if (mActiveActionContext != nullptr) fighter = mActiveActionContext->fighter;
-    if (mActiveHurtblobsContext != nullptr) fighter = mActiveHurtblobsContext->fighter;
-    if (fighter == nullptr) return;
-
-    if (mDoResetDockFighter) ImGui::SetNextWindowDockID(mDockRightId);
-    mDoResetDockFighter = false;
-
-    const ImPlus::ScopeWindow window = { "Fighter", 0 };
-    if (window.show == false) return;
-
-    DebugGui::show_widget_stage(mActiveActionContext->world->get_stage());
-    DebugGui::show_widget_fighter(*fighter);
 }
 
 //============================================================================//
@@ -678,431 +507,8 @@ void EditorScene::show_imgui_widgets()
     impl_show_widget_toolbar();
     impl_show_widget_navigator();
 
-    if (mActiveActionContext != nullptr)
-    {
-        impl_show_widget_hitblobs();
-        impl_show_widget_emitters();
-        impl_show_widget_sounds();
-        impl_show_widget_effects();
-        impl_show_widget_script();
-        impl_show_widget_timeline();
-        impl_show_widget_fighter();
-    }
-    else if (mActiveHurtblobsContext != nullptr)
-    {
-        impl_show_widget_hurtblobs();
-        impl_show_widget_fighter();
-    }
-    else if (mActiveStageContext != nullptr)
-    {
-        impl_show_widget_stage();
-        impl_show_widget_cubemaps();
-    }
-}
-
-//============================================================================//
-
-uint EditorScene::get_default_timeline_length(const ActionContext& ctx)
-{
-    // todo: jsonify all of this so it can properly support extra actions
-
-    const auto anim_length = [&ctx](const SmallString& name)
-    {
-        const auto iter = ctx.fighter->mAnimations.find(name);
-        if (iter == ctx.fighter->mAnimations.end())
-        {
-            sq::log_warning("could not find animation '{}'", name);
-            return 80u; // too short for some actions, but annoyingly long for others
-        }
-        return iter->second.anim.frameCount;
-    };
-
-    uint result = 1u; // extra time before looping
-
-    if      (ctx.key.name == "HopBack")    result += anim_length("JumpBack");
-    else if (ctx.key.name == "HopForward") result += anim_length("JumpForward");
-    else                                   result += anim_length(ctx.key.name);
-
-    return result;
-}
-
-//============================================================================//
-
-void EditorScene::initialise_base_context(BaseContext& ctx)
-{
-    sq::Window& window = mSmashApp.get_window();
-    sq::AudioContext& audioContext = mSmashApp.get_audio_context();
-
-    Options& options = mSmashApp.get_options();
-    ResourceCaches& resourceCaches = mSmashApp.get_resource_caches();
-
-    ctx.renderer = std::make_unique<Renderer>(window, options, resourceCaches);
-    ctx.world = std::make_unique<FightWorld>(options, audioContext, resourceCaches, *ctx.renderer);
-
-    ctx.renderer->set_camera(std::make_unique<EditorCamera>(*ctx.renderer));
-}
-
-//----------------------------------------------------------------------------//
-
-void EditorScene::activate_action_context(ActionKey key)
-{
-    mSmashApp.get_window().set_title("SuperTuxSmash - Editor - {}/{}"_format(key.fighter, key.name));
-
-    mActiveHurtblobsContext = nullptr;
-    mActiveStageContext = nullptr;
-
-    if (auto iter = mActionContexts.find(key); iter != mActionContexts.end())
-    {
-        mActiveContext = mActiveActionContext = &iter->second;
-        mActiveContext->renderer->refresh_options_destroy();
-        mActiveContext->renderer->refresh_options_create();
-        return; // already loaded
-    }
-
-    ActionContext& ctx = mActionContexts[key];
-    initialise_base_context(ctx);
-
-    ctx.world->set_stage(std::make_unique<Stage>(*ctx.world, StageEnum::TestZone));
-    ctx.world->add_fighter(std::make_unique<Fighter>(*ctx.world, key.fighter, 0u));
-    ctx.world->get_fighter(0u).controller = mController.get();
-
-    ctx.key = key;
-    ctx.fighter = &ctx.world->get_fighter(0u);
-    ctx.action = &ctx.fighter->mActions.at(ctx.key.name);
-
-    scrub_to_frame_current(ctx);
-
-    ctx.savedData = ctx.action->clone();
-    ctx.undoStack.push_back(ctx.action->clone());
-
-    ctx.timelineLength = get_default_timeline_length(ctx);
-
-    mActiveContext = mActiveActionContext = &ctx;
-}
-
-//----------------------------------------------------------------------------//
-
-EditorScene::HurtblobsContext& EditorScene::get_hurtblobs_context(FighterEnum key)
-{
-    if (auto iter = mHurtblobsContexts.find(key); iter != mHurtblobsContexts.end())
-        return iter->second;
-
-    HurtblobsContext& ctx = mHurtblobsContexts[key];
-    initialise_base_context(ctx);
-
-    ctx.world->set_stage(std::make_unique<Stage>(*ctx.world, StageEnum::TestZone));
-    ctx.world->add_fighter(std::make_unique<Fighter>(*ctx.world, key, 0u));
-
-    ctx.key = key;
-    ctx.fighter = &ctx.world->get_fighter(0u);
-
-    //ctx.fighter->change_state(FighterState::EditorPreview, true);
-    sq::log_error("todo: fix hurtblob editor");
-    ctx.world->tick();
-
-    ctx.savedData = std::make_unique<decltype(Fighter::mHurtBlobs)>(ctx.fighter->mHurtBlobs);
-    ctx.undoStack.push_back(std::make_unique<decltype(Fighter::mHurtBlobs)>(ctx.fighter->mHurtBlobs));
-
-    return ctx;
-}
-
-//----------------------------------------------------------------------------//
-
-EditorScene::StageContext& EditorScene::get_stage_context(StageEnum key)
-{
-    if (auto iter = mStageContexts.find(key); iter != mStageContexts.end())
-        return iter->second;
-
-    StageContext& ctx = mStageContexts[key];
-    initialise_base_context(ctx);
-
-    ctx.world->set_stage(std::make_unique<Stage>(*ctx.world, key));
-
-    ctx.key = key;
-    ctx.stage = &ctx.world->get_stage();
-
-    ctx.skybox.initialise(*this, 0u, ctx.renderer->cubemaps.skybox.get_image(), ctx.renderer->samplers.linearClamp);
-    ctx.irradiance.initialise(*this, 0u, ctx.renderer->cubemaps.irradiance.get_image(), ctx.renderer->samplers.linearClamp);
-
-    for (uint level = 0u; level < ctx.radiance.size(); ++level)
-        ctx.radiance[level].initialise(*this, level, ctx.renderer->cubemaps.radiance.get_image(), ctx.renderer->samplers.linearClamp);
-
-    //ctx.savedData = std::make_unique<decltype(Fighter::mHurtBlobs)>(ctx.fighter->mHurtBlobs);
-    //ctx.undoStack.push_back(std::make_unique<decltype(Fighter::mHurtBlobs)>(ctx.fighter->mHurtBlobs));
-
-    return ctx;
-}
-
-//============================================================================//
-
-// TODO: should merge similar edits so that dragging a slider doesn't generate 50+ undo entries
-// probably need to make some "can_merge_edits" methods for editables and to store the time for each record
-
-void EditorScene::apply_working_changes(ActionContext& ctx)
-{
-    FighterAction& action = *ctx.action;
-
-    if (action.has_changes(*ctx.undoStack[ctx.undoIndex]) == true)
-    {
-        ctx.world->editor_clear_hitblobs();
-
-        // always reload script so that error message updates
-        action.load_wren_from_string();
-
-        scrub_to_frame_current(ctx);
-
-        ctx.undoStack.erase(ctx.undoStack.begin() + ++ctx.undoIndex, ctx.undoStack.end());
-        ctx.undoStack.emplace_back(action.clone());
-
-        ctx.modified = action.has_changes(*ctx.savedData);
-    }
-}
-
-void EditorScene::apply_working_changes(HurtblobsContext& ctx)
-{
-    if (ctx.fighter->mHurtBlobs != *ctx.undoStack[ctx.undoIndex])
-    {
-        ctx.world->editor_clear_hurtblobs();
-        for (auto& [key, blob] : ctx.fighter->mHurtBlobs)
-            ctx.world->enable_hurtblob(&blob);
-
-        ctx.world->tick();
-
-        ctx.undoStack.erase(ctx.undoStack.begin() + ++ctx.undoIndex, ctx.undoStack.end());
-        ctx.undoStack.push_back(std::make_unique<decltype(Fighter::mHurtBlobs)>(ctx.fighter->mHurtBlobs));
-
-        ctx.modified = ctx.fighter->mHurtBlobs != *ctx.savedData;
-    }
-}
-
-void EditorScene::apply_working_changes(StageContext& ctx)
-{
-    //if (ctx.fighter->mHurtBlobs != *ctx.undoStack[ctx.undoIndex])
-    {
-        ctx.world->tick();
-
-        //ctx.undoStack.erase(ctx.undoStack.begin() + ++ctx.undoIndex, ctx.undoStack.end());
-        //ctx.undoStack.push_back(std::make_unique<decltype(Fighter::mHurtBlobs)>(ctx.fighter->mHurtBlobs));
-
-        ctx.modified = true;//ctx.fighter->mHurtBlobs != *ctx.savedData;
-    }
-}
-
-//----------------------------------------------------------------------------//
-
-void EditorScene::do_undo_redo(ActionContext& ctx, bool redo)
-{
-    const size_t oldIndex = ctx.undoIndex;
-
-    if (!redo && ctx.undoIndex > 0u) --ctx.undoIndex;
-    if (redo && ctx.undoIndex < ctx.undoStack.size() - 1u) ++ctx.undoIndex;
-
-    if (ctx.undoIndex != oldIndex)
-    {
-        ctx.world->editor_clear_hitblobs();
-
-        FighterAction& action = *ctx.action;
-        action.apply_changes(*ctx.undoStack[ctx.undoIndex]);
-        action.load_wren_from_string();
-
-        scrub_to_frame_current(ctx);
-
-        ctx.modified = action.has_changes(*ctx.savedData);
-    }
-}
-
-void EditorScene::do_undo_redo(HurtblobsContext& ctx, bool redo)
-{
-    const size_t oldIndex = ctx.undoIndex;
-
-    if (!redo && ctx.undoIndex > 0u) --ctx.undoIndex;
-    if (redo && ctx.undoIndex < ctx.undoStack.size() - 1u) ++ctx.undoIndex;
-
-    if (ctx.undoIndex != oldIndex)
-    {
-        ctx.fighter->mHurtBlobs = *ctx.undoStack[ctx.undoIndex];
-
-        ctx.world->editor_clear_hurtblobs();
-        for (auto& [key, blob] : ctx.fighter->mHurtBlobs)
-            ctx.world->enable_hurtblob(&blob);
-
-        ctx.world->tick();
-
-        ctx.modified = ctx.fighter->mHurtBlobs != *ctx.savedData;
-    }
-}
-
-//----------------------------------------------------------------------------//
-
-void EditorScene::save_changes(ActionContext& ctx)
-{
-    const Fighter& fighter = *ctx.fighter;
-    const FighterAction& action = *ctx.action;
-
-    JsonValue json;
-
-    auto& blobs = json["blobs"] = JsonValue::object();
-    auto& effects = json["effects"] = JsonValue::object();
-    auto& emitters = json["emitters"] = JsonValue::object();
-    auto& sounds = json["sounds"] = JsonValue::object();
-
-    for (const auto& [key, blob] : action.mBlobs)
-        blob.to_json(blobs[key.c_str()]);
-
-    for (const auto& [key, effect] : action.mEffects)
-        effect.to_json(effects[key.c_str()]);
-
-    for (const auto& [key, emitter] : action.mEmitters)
-        emitter.to_json(emitters[key.c_str()]);
-
-    for (const auto& [key, sound] : action.mSounds)
-        sound.to_json(sounds[key.c_str()]);
-
-    sq::write_text_to_file("assets/fighters/{}/actions/{}.json"_format(fighter.name, action.name), json.dump(2));
-    sq::write_text_to_file("assets/fighters/{}/actions/{}.wren"_format(fighter.name, action.name), action.mWrenSource);
-
-    ctx.savedData = action.clone();
-    ctx.modified = false;
-}
-
-void EditorScene::save_changes(HurtblobsContext& ctx)
-{
-    const Fighter& fighter = *ctx.fighter;
-
-    JsonValue json;
-
-    for (const auto& [key, blob] : fighter.mHurtBlobs)
-        blob.to_json(json[key.c_str()]);
-
-    sq::write_text_to_file("assets/fighters/{}/HurtBlobs.json"_format(fighter.name), json.dump(2));
-
-    *ctx.savedData = fighter.mHurtBlobs;
-    ctx.modified = false;
-}
-
-void EditorScene::save_changes(StageContext& ctx)
-{
-    ctx.modified = false;
-}
-
-//============================================================================//
-
-void EditorScene::scrub_to_frame(ActionContext& ctx, int frame)
-{
-    // wait for all in progress rendering to finish
-    sq::VulkanContext::get().device.waitIdle();
-
-    // now we can reset everything
-
-    //mController->wren_clear_history();
-
-    ctx.world->get_particle_system().reset_random_seed(mRandomSeed);
-    ctx.world->get_particle_system().clear();
-
-    ctx.world->get_effect_system().clear();
-
-    Fighter& fighter = *ctx.fighter;
-
-    fighter.reset_everything();
-
-    auto& attrs = fighter.attributes;
-    auto& vars = fighter.variables;
-
-    //--------------------------------------------------------//
-
-    // some actions have different starting state
-    // todo: this should be moved into wren so you can add new action types
-    // todo: manipulate input to have the action start naturally
-
-    if (ctx.key.name == "Brake" || ctx.key.name == "BrakeTurn")
-    {
-        //fighter.change_state(fighter.mStates.at("Dash"));
-        fighter.change_state(fighter.mStates.at("Neutral"));
-        fighter.play_animation(fighter.mAnimations.at("DashLoop"), 0u, true);
-        vars.velocity.x = attrs.dashSpeed + attrs.traction;
-    }
-
-    else if (ctx.key.name == "HopBack" || ctx.key.name == "HopForward")
-    {
-        fighter.change_state(fighter.mStates.at("JumpSquat"));
-        fighter.play_animation(fighter.mAnimations.at("JumpSquat"), 0u, true);
-        vars.velocity.y = std::sqrt(2.f * attrs.hopHeight * attrs.gravity) + attrs.gravity * 0.5f;
-    }
-
-    else if (ctx.key.name == "JumpBack" || ctx.key.name == "JumpForward")
-    {
-        fighter.change_state(fighter.mStates.at("JumpSquat"));
-        fighter.play_animation(fighter.mAnimations.at("JumpSquat"), 0u, true);
-        vars.velocity.y = std::sqrt(2.f * attrs.jumpHeight * attrs.gravity) + attrs.gravity * 0.5f;
-    }
-
-    else if (ctx.key.name.starts_with("Air") || ctx.key.name.starts_with("SpecialAir"))
-    {
-        fighter.change_state(fighter.mStates.at("Fall"));
-        fighter.play_animation(fighter.mAnimations.at("FallLoop"), 0u, true);
-        attrs.gravity = 0.f;
-        vars.position = Vec2F(0.f, 1.f);
-    }
-
-    else
-    {
-        fighter.change_state(fighter.mStates.at("Neutral"));
-        fighter.play_animation(fighter.mAnimations.at("NeutralLoop"), 0u, true);
-    }
-
-    //--------------------------------------------------------//
-
-    // tick once to apply neutral/falling animation
-    ctx.world->tick();
-    ctx.fighter->previous = ctx.fighter->current;
-    ctx.fighter->debugPreviousPoseInfo = ctx.fighter->debugCurrentPoseInfo;
-
-    // will activate the action when ctx.currentFrame >= 0
-    fighter.editorStartAction = ctx.action;
-
-    // finally, scrub to the desired frame
-    mSmashApp.get_audio_context().set_groups_ignored(sq::SoundGroup::Sfx, true);
-    for (ctx.currentFrame = -1; ctx.currentFrame < frame;)
-        tick_action_context(ctx);
-    mSmashApp.get_audio_context().set_groups_ignored(sq::SoundGroup::Sfx, false);
-
-    // this would be an assertion, but we want to avoid crashing the editor
-    #ifdef SQEE_DEBUG
-    if (fighter.activeAction != nullptr && ctx.currentFrame >= 0 && fighter.editorErrorCause == nullptr)
-    {
-        const int actionFrame = int(fighter.activeAction->mCurrentFrame) - 1;
-        if (ctx.currentFrame != actionFrame)
-            sq::log_warning("out of sync: timeline = {}, action = {}", ctx.currentFrame, actionFrame);
-    }
-    #endif
-}
-
-void EditorScene::scrub_to_frame_current(ActionContext& ctx)
-{
-    // this function is called when some value is updated
-    scrub_to_frame(ctx, ctx.currentFrame);
-}
-
-void EditorScene::tick_action_context(ActionContext& ctx)
-{
-    ctx.currentFrame += 1;
-
-    if (ctx.currentFrame == ctx.timelineLength)
-    {
-        if (mIncrementSeed) ++mRandomSeed;
-        scrub_to_frame(ctx, -1);
-    }
-    else
-    {
-        //mController->tick();
-        ctx.world->tick();
-    }
-}
-
-void EditorScene::scrub_to_frame_previous(ActionContext& ctx)
-{
-    if (ctx.currentFrame == -1) scrub_to_frame(ctx, ctx.timelineLength - 1);
-    else scrub_to_frame(ctx, ctx.currentFrame - 1);
+    if (mActiveContext != nullptr)
+        mActiveContext->show_widgets();
 }
 
 //============================================================================//
@@ -1172,22 +578,23 @@ void EditorScene::CubeMapView::initialise(EditorScene& editor, uint level, vk::I
     }
 }
 
-EditorScene::StageContext::~StageContext()
+//============================================================================//
+
+EditorScene::BaseContext::BaseContext(EditorScene& editor, StageEnum stage)
+    : editor(editor)
 {
-    const auto& ctx = sq::VulkanContext::get();
+    sq::Window& window = editor.mSmashApp.get_window();
+    sq::AudioContext& audioContext = editor.mSmashApp.get_audio_context();
 
-    ctx.device.free(ctx.descriptorPool, skybox.descriptorSets);
-    for (auto& imageView : skybox.imageViews)
-        ctx.device.destroy(imageView);
+    Options& options = editor.mSmashApp.get_options();
+    ResourceCaches& resourceCaches = editor.mSmashApp.get_resource_caches();
 
-    ctx.device.free(ctx.descriptorPool, irradiance.descriptorSets);
-    for (auto& imageView : irradiance.imageViews)
-        ctx.device.destroy(imageView);
+    renderer = std::make_unique<Renderer>(window, options, resourceCaches);
+    camera = std::make_unique<EditorCamera>(*renderer);
+    renderer->set_camera(*camera);
 
-    for (auto& radianceLevel : radiance)
-    {
-        ctx.device.free(ctx.descriptorPool, radianceLevel.descriptorSets);
-        for (auto& imageView : radianceLevel.imageViews)
-            ctx.device.destroy(imageView);
-    }
+    world = std::make_unique<FightWorld>(options, audioContext, resourceCaches, *renderer);
+    world->set_stage(std::make_unique<Stage>(*world, stage));
 }
+
+EditorScene::BaseContext::~BaseContext() = default;

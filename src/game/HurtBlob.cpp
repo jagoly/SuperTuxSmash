@@ -17,13 +17,7 @@ void HurtBlob::from_json(const JsonValue& json)
     json.at("originB").get_to(originB);
     json.at("radius").get_to(radius);
 
-    if (auto& jb = json.at("bone"); jb.is_null() == false)
-    {
-        const auto& key = jb.get_ref<const String&>();
-        bone = fighter->get_armature().get_bone_index(key);
-        if (bone == -1) SQEE_THROW("invalid bone '{}'", key);
-    }
-    else bone = -1;
+    bone = fighter->bone_from_json(json.at("bone"));
 
     json.at("region").get_to(region);
 }
@@ -32,24 +26,15 @@ void HurtBlob::from_json(const JsonValue& json)
 
 void HurtBlob::to_json(JsonValue& json) const
 {
+    SQASSERT(fighter != nullptr, "");
+
     json["originA"] = originA;
     json["originB"] = originB;
     json["radius"] = radius;
 
-    if (bone == -1) json["bone"] = nullptr;
-    else json["bone"] = fighter->get_armature().get_bone_name(bone);
+    json["bone"] = fighter->bone_to_json(bone);
 
     json["region"] = region;
-}
-
-//============================================================================//
-
-Vec3F HurtBlob::get_debug_colour() const
-{
-    if (region == BlobRegion::Middle) return { 0.4f, 0.4f, 1.0f };
-    if (region == BlobRegion::Lower)  return { 0.8f, 0.0f, 1.0f };
-    if (region == BlobRegion::Upper)  return { 0.0f, 0.8f, 1.0f };
-    SQEE_UNREACHABLE();
 }
 
 //============================================================================//
@@ -66,3 +51,13 @@ bool HurtBlob::operator==(const HurtBlob& other) const
 }
 
 ENABLE_WARNING_FLOAT_EQUALITY()
+
+//============================================================================//
+
+Vec3F HurtBlob::get_debug_colour() const
+{
+    if (region == BlobRegion::Middle) return { 0.4f, 0.4f, 1.0f };
+    if (region == BlobRegion::Lower)  return { 0.8f, 0.0f, 1.0f };
+    if (region == BlobRegion::Upper)  return { 0.0f, 0.8f, 1.0f };
+    SQEE_UNREACHABLE();
+}

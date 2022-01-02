@@ -44,6 +44,10 @@ void Fighter::update_state()
 
 void Fighter::update_movement()
 {
+    // attach anim handles movement on its own
+    if (mAnimation != nullptr && mAnimation->attach == true)
+        return;
+
     const Attributes& attrs = attributes;
     Variables& vars = variables;
     const InputFrame& input = controller->history.frames.front();
@@ -130,7 +134,7 @@ void Fighter::update_movement()
 
     const bool edgeStop = vars.onGround == false ? false :
                           vars.edgeStop == EdgeStopMode::Never ? false : vars.edgeStop == EdgeStopMode::Always ? true :
-                          !(input.intX <= -3 && translation.x < -0.0f) && !(input.intX >= +3 && translation.x > +0.0f);
+                          !(input.intX <= -3 && translation.x < -0.f) && !(input.intX >= +3 && translation.x > +0.f);
 
     // todo: move this to a variable for states to set from wren
     const bool ignorePlatforms = input.intY <= -3 &&
@@ -140,13 +144,14 @@ void Fighter::update_movement()
 
     vars.position = moveAttempt.result;
     vars.onPlatform = moveAttempt.onPlatform;
+    vars.edge = moveAttempt.edge;
 
     // todo: teching, bouncing (when launched)
 
     if (moveAttempt.collideFloor == true)
     {
-        // prevent getting caught when move up over corners
-        if ((vars.onGround |= vars.velocity.y <= 0.f))
+        // prevent getting caught moving up over corners
+        if ((vars.onGround |= vars.velocity.y <= 0.f) == true)
             vars.velocity.y = 0.f;
     }
     else vars.onGround = false;
@@ -157,32 +162,21 @@ void Fighter::update_movement()
     // todo: I have a feeling smash doesn't let you accelerate into a wall
     //if (moveAttempt.collideWall == true)
     //    vars.velocity.x = 0.f;
+}
 
-    //-- activate vertigo animation --------------------------//
+//============================================================================//
 
-    // todo: make this a state + action
-
-    if (stateName == "Neutral" || stateName == "Walk")
-    {
-        if (vars.vertigo == false && moveAttempt.edge == vars.facing)
-        {
-            wren_play_animation("VertigoStart", 2u, true);
-            wren_set_next_animation("VertigoLoop", 0u);
-            vars.vertigo = true;
-        }
-    }
-    else vars.vertigo = false;
+void Fighter::update_misc()
+{
+    Variables& vars = variables;
+    const TinyString& stateName = activeState->name;
 
     //-- decay or regenerate our shield ----------------------//
 
-    // todo: move to wren
+    // todo: this stuff should be wren, but I still need a good way to do constants
 
     if (stateName == "Shield")
-    {
-        vars.shield -= SHIELD_DECAY;
-        if (vars.shield <= 0.f)
-            apply_shield_break(); // todo
-    }
+        vars.shield = maths::max(vars.shield - SHIELD_DECAY, 0.f);
 
     else if (stateName != "ShieldStun")
         vars.shield = maths::min(vars.shield + SHIELD_REGEN, SHIELD_MAX_HP);
@@ -224,175 +218,100 @@ void Fighter::update_animation()
             debugCurrentPoseInfo = "null";
             return;
         }
+
         mAnimation = mNextAnimation;
         mNextAnimation = nullptr;
     }
 
-    //--------------------------------------------------------//
-
-    // used for turn animations
-    const QuatF restRotate = QuatF(0.f, 0.5f, 0.f) * QuatF(-0.25f, 0.f, 0.f);
-    const QuatF invRestRotate = QuatF(+0.25f, 0.f, 0.f);
-
-    // called when a non-looping animation reaches the end
-    const auto finish_animation = [&]()
-    {
-        if (mNextAnimation == nullptr)
-        {
-            mAnimation = nullptr;
-            mFadeProgress = mFadeFrames = 0u;
-        }
-        else play_animation(*mNextAnimation, mNextFadeFrames, true);
-    };
+    debugPreviousPoseInfo = std::move(debugCurrentPoseInfo);
 
     //--------------------------------------------------------//
 
-    const auto set_current_pose_discrete = [this](const Animation& anim, uint time)
+    const auto fade = mFadeProgress != mFadeFrames ?
+        std::optional(float(++mFadeProgress) / float(mFadeFrames + 1u)) : std::nullopt;
+
+    if (mAnimation->walk == true || mAnimation->dash == true)
     {
-        current.pose = mArmature.compute_pose_discrete(anim.anim, time);
+        current.pose = mArmature.compute_pose_continuous(mAnimation->anim, mAnimTimeContinuous);
+        debugCurrentPoseInfo = "{} ({:.1f})"_format(mAnimation->get_key(), mAnimTimeContinuous);
 
-        if (world.options.log_animation == true)
-            sq::log_debug("pose: {} - {}", anim.get_key(), time);
+        // locomotion anims usually contain root motion, but we don't need it
+        current.pose[0].offset = Vec3F();
 
-        debugPreviousPoseInfo = std::move(debugCurrentPoseInfo);
-        debugCurrentPoseInfo = "{} ({} / {})"_format(anim.get_key(), time, anim.anim.frameCount);
-    };
-
-    const auto set_current_pose_continuous = [this](const Animation& anim, float time)
+        if (variables.freezeTime == 0u)
+            mAnimTimeContinuous +=
+                std::abs(variables.velocity.x) * float(mAnimation->anim.frameCount) /
+                (mAnimation->walk ? attributes.walkAnimStride : attributes.dashAnimStride);
+    }
+    else
     {
-        current.pose = mArmature.compute_pose_continuous(anim.anim, time);
+        current.pose = mArmature.compute_pose_discrete(mAnimation->anim, mAnimTimeDiscrete);
+        debugCurrentPoseInfo = "{} ({} / {})"_format(mAnimation->get_key(), mAnimTimeDiscrete, mAnimation->anim.frameCount);
 
-        if (world.options.log_animation == true)
-            sq::log_debug("pose: {} - {}", anim.get_key(), time);
+        if (mAnimation->motion == true)
+        {
+            const Vec3F offsetDiff = current.pose[0].offset - mRootMotionPreviousOffset;
+            mRootMotionPreviousOffset = current.pose[0].offset;
+            current.pose[0].offset = Vec3F();
 
-        debugPreviousPoseInfo = std::move(debugCurrentPoseInfo);
-        debugCurrentPoseInfo = "{} ({:.1f})"_format(anim.get_key(), time);
-    };
+            // used next frame by update_movement to actually update position
+            mRootMotionTranslate = Vec2F(offsetDiff.z * float(variables.facing), offsetDiff.y);
+            if (mAnimation->turn) mRootMotionTranslate.x *= -1.f;
+
+            // apply to visual transform immediately
+            current.translation += Vec3F(mRootMotionTranslate, 0.f);
+        }
+
+        if (mAnimation->turn == true)
+        {
+            constexpr QuatF restRotate = { 0.f, 0.70710677f, 0.70710677f, 0.f };
+            constexpr QuatF invRestRotate = { 0.70710677f, 0.f, 0.f, 0.70710677f };
+
+            // rotation fade is the same as for non-turn anims
+            current.rotation = restRotate * current.pose[2].rotation * invRestRotate * current.rotation;
+            current.pose[2].rotation = QuatF();
+        }
+
+        if (mAnimation->attach == true)
+        {
+            // we can just set position right away, unlike motion anims
+            variables.position = variables.attachPoint +
+                Vec2F(current.pose[0].offset.z * float(variables.facing), current.pose[0].offset.y);
+
+            current.pose[0].offset = Vec3F();
+
+            // fading position for attach anims is good, unlike motion anims
+            if (fade.has_value() == true)
+                variables.position = maths::mix(mFadeStartPosition, variables.position, *fade);
+
+            current.translation = Vec3F(variables.position, 0.f);
+        }
+
+        if (variables.freezeTime == 0u && ++mAnimTimeDiscrete == mAnimation->anim.frameCount)
+        {
+            if (mAnimation->loop == false)
+            {
+                if (mNextAnimation == nullptr) mAnimation = nullptr;
+                else play_animation(*mNextAnimation, mNextFadeFrames, true);
+            }
+            else mAnimTimeDiscrete = 0u;
+        }
+    }
 
     //--------------------------------------------------------//
 
-    SWITCH (mAnimation->mode) {
-
-    CASE (Basic)
+    if (fade.has_value() == true)
     {
-        set_current_pose_discrete(*mAnimation, mAnimTimeDiscrete);
-
-        if (variables.freezeTime == 0u)
-            if (++mAnimTimeDiscrete == mAnimation->anim.frameCount)
-                finish_animation();
-    }
-
-    CASE (Loop)
-    {
-        SQASSERT(mNextAnimation == nullptr, "");
-
-        set_current_pose_discrete(*mAnimation, mAnimTimeDiscrete);
-
-        if (variables.freezeTime == 0u)
-            if (++mAnimTimeDiscrete == mAnimation->anim.frameCount)
-                mAnimTimeDiscrete = 0u;
-    }
-
-    CASE (WalkLoop)
-    {
-        SQASSERT(mNextAnimation == nullptr, "");
-
-        set_current_pose_continuous(*mAnimation, mAnimTimeContinuous);
-
-        current.pose[0].offset = Vec3F();
-
-        if (variables.freezeTime == 0u)
-        {
-            const float moveSpeed = std::abs(variables.velocity.x);
-            const float animSpeed = attributes.walkAnimStride / float(mAnimation->anim.frameCount);
-            mAnimTimeContinuous += moveSpeed / animSpeed;
-        }
-    }
-
-    CASE (DashLoop)
-    {
-        SQASSERT(mNextAnimation == nullptr, "");
-
-        set_current_pose_continuous(*mAnimation, mAnimTimeContinuous);
-
-        current.pose[0].offset = Vec3F();
-
-        if (variables.freezeTime == 0u)
-        {
-            const float moveSpeed = std::abs(variables.velocity.x);
-            const float animSpeed = attributes.dashAnimStride / float(mAnimation->anim.frameCount);
-            mAnimTimeContinuous += moveSpeed / animSpeed;
-        }
-    }
-
-    CASE (Motion)
-    {
-        set_current_pose_discrete(*mAnimation, mAnimTimeDiscrete);
-
-        const Vec3F offsetLocal = current.pose[0].offset - mRootMotionPreviousOffset;
-        mRootMotionPreviousOffset = current.pose[0].offset;
-        current.pose[0].offset = Vec3F();
-
-        mRootMotionTranslate = { offsetLocal.z * float(variables.facing), offsetLocal.y };
-        current.translation += Vec3F(mRootMotionTranslate, 0.f);
-
-        if (variables.freezeTime == 0u)
-            if (++mAnimTimeDiscrete == mAnimation->anim.frameCount)
-                finish_animation();
-    }
-
-    CASE (Turn)
-    {
-        set_current_pose_discrete(*mAnimation, mAnimTimeDiscrete);
-
-        current.rotation = restRotate * current.pose[2].rotation * invRestRotate * current.rotation;
-        current.pose[2].rotation = QuatF();
-
-        if (variables.freezeTime == 0u)
-            if (++mAnimTimeDiscrete == mAnimation->anim.frameCount)
-                finish_animation();
-    }
-
-    CASE (MotionTurn)
-    {
-        set_current_pose_discrete(*mAnimation, mAnimTimeDiscrete);
-
-        const Vec3F offsetLocal = current.pose[0].offset - mRootMotionPreviousOffset;
-        mRootMotionPreviousOffset = current.pose[0].offset;
-        current.pose[0].offset = Vec3F();
-
-        mRootMotionTranslate = { offsetLocal.z * float(variables.facing) * -1.f, offsetLocal.y };
-        current.translation += Vec3F(mRootMotionTranslate, 0.f);
-
-        current.rotation = restRotate * current.pose[2].rotation * invRestRotate * current.rotation;
-        current.pose[2].rotation = QuatF();
-
-        if (variables.freezeTime == 0u)
-            if (++mAnimTimeDiscrete == mAnimation->anim.frameCount)
-                finish_animation();
-    }
-
-    } SWITCH_END;
-
-    //-- blend from fade pose for smooth transitions ---------//
-
-    if (mFadeProgress != mFadeFrames)
-    {
-        const float blend = float(++mFadeProgress) / float(mFadeFrames + 1u);
-
-        if (mRotateMode != RotateMode::Auto)
+        if (bool(mRotateMode & RotateMode::Animation))
         {
             const float angleDiff = bool(mRotateMode & RotateMode::Clockwise) ? +0.5f : -0.5f;
             const QuatF guide = mFadeStartRotation * QuatF(0.f, angleDiff, 0.f);
-            current.rotation = maths::lerp_guided(mFadeStartRotation, current.rotation, blend, guide);
+            current.rotation = maths::lerp_guided(mFadeStartRotation, current.rotation, *fade, guide);
         }
-        else current.rotation = maths::lerp_shortest(mFadeStartRotation, current.rotation, blend);
+        else if (mRotateMode == RotateMode::Auto)
+            current.rotation = maths::lerp_shortest(mFadeStartRotation, current.rotation, *fade);
 
-        current.pose = mArmature.blend_poses(mFadeStartPose, current.pose, blend);
-
-        if (world.options.log_animation == true)
-            sq::log_debug("blend - {} / {} - {}", mFadeProgress, mFadeFrames, blend);
-
+        current.pose = mArmature.blend_poses(mFadeStartPose, current.pose, *fade);
         debugAnimationFadeInfo = "{} / {}"_format(mFadeProgress, mFadeFrames + 1u);
     }
     else
@@ -400,7 +319,6 @@ void Fighter::update_animation()
         mFadeProgress = mFadeFrames = 0u;
         debugAnimationFadeInfo = "No Fade";
 
-        // once fade finishes we can disable animated rotation
         if (bool(mRotateMode & RotateMode::Playing))
             mRotateMode = mRotateMode | RotateMode::Done;
     }
@@ -412,7 +330,7 @@ void Fighter::update_frozen()
 {
     debugPreviousPoseInfo = debugCurrentPoseInfo;
 
-    if (variables.flinch == true)
+    if (variables.flinch == true && activeState->name != "ShieldStun")
     {
         constexpr auto jitterValues = std::array
         {
@@ -457,13 +375,12 @@ void Fighter::tick()
     if (variables.freezeTime == 0u)
     {
         update_movement();
+        update_misc();
         update_action();
         update_state();
         update_animation();
     }
     else update_frozen();
-
-    //if (activeState->name == "EditorPreview") current.rotation = QuatF(0.f, 0.5f, 0.f);
 
     // compute updated matrices
     mModelMatrix = maths::transform(current.translation, current.rotation);

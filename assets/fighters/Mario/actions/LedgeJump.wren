@@ -6,11 +6,20 @@ class Script is Base {
   execute() {
     default_begin()
 
-    wait_until(14)
+    wait_until(2)
+    action.play_sound("DashStart")
+
+    wait_until(15)
     set_vertical_velocity()
 
-    wait_until(15) // 15
+    wait_until(16) // 16
     set_horizontal_velocity()
     default_end()
+
+    wait_until(17)
+    action.play_sound("DashStart")
+
+    wait_until(33)
+    action.play_sound("Whoosh2")
   }
 }

@@ -10,6 +10,7 @@
 #include "game/HurtBlob.hpp"
 
 #include "render/Renderer.hpp"
+#include "render/UniformBlocks.hpp"
 
 #include <sqee/debug/Assert.hpp>
 #include <sqee/debug/Logging.hpp>
@@ -143,40 +144,46 @@ void Fighter::initialise_hurtblobs()
 
 void Fighter::initialise_animations()
 {
-    const auto load_animation = [this](const String& key, const String& mode)
+    const auto load_animation = [this](const std::vector<JsonValue>& entry)
     {
+        const String& key = entry.front().get_ref<const String&>();
+
         if (auto [iter, ok] = mAnimations.try_emplace(key); ok)
         {
             try {
                 const String path = "assets/fighters/{}/anims/{}"_format(name, key);
                 iter->second.anim = mArmature.load_animation_from_file(path);
-                iter->second.mode = sq::enum_from_string<AnimMode>(mode);
             }
             catch (const std::exception& ex) {
-                sq::log_warning("failed to load animation '{}/{}': {}", name, key, ex.what());
+                sq::log_warning("animation '{}/{}': {}", name, key, ex.what());
                 iter->second.anim = mArmature.make_null_animation(1u);
-                iter->second.mode = sq::enum_from_string_safe<AnimMode>(mode).value_or(AnimMode::Basic);
+                iter->second.fallback = true;
             }
 
-            // todo: add the mode into the .sqa files
-            // something simple like 'Config [some string]' in the Header
-            // then the json mode will only be used for fallback animations
+            for (auto flagIter = std::next(entry.begin()); flagIter != entry.end(); ++flagIter)
+            {
+                const String& str = flagIter->get_ref<const String&>();
+                if      (str == "Loop")   iter->second.loop   = true;
+                else if (str == "Motion") iter->second.motion = true;
+                else if (str == "Turn")   iter->second.turn   = true;
+                else if (str == "Attach") iter->second.attach = true;
+                else if (str == "Walk")   iter->second.walk   = true;
+                else if (str == "Dash")   iter->second.dash   = true;
+                else sq::log_warning("animation '{}/{}': invalid flag '{}'", name, key, str);
+            }
 
             // animation doesn't have any motion
             if (iter->second.anim.bones[0][0].track.size() == sizeof(Vec3F))
-            {
-                if (iter->second.mode == AnimMode::Motion) iter->second.mode = AnimMode::Basic;
-                if (iter->second.mode == AnimMode::MotionTurn) iter->second.mode = AnimMode::Turn;
-            }
+                iter->second.motion = false;
         }
-        else sq::log_warning("already loaded animation '{}/{}'", name, key);
+        else sq::log_warning("animation '{}/{}': already loaded", name, key);
     };
 
     for (const auto& entry : sq::parse_json_from_file("assets/FighterAnimations.json"))
-        load_animation(entry.at(0).get_ref<const String&>(), entry.at(1).get_ref<const String&>());
+        load_animation(entry.get_ref<const std::vector<JsonValue>&>());
 
     for (const auto& entry : sq::parse_json_from_file("assets/fighters/{}/Animations.json"_format(name)))
-        load_animation(entry.at(0).get_ref<const String&>(), entry.at(1).get_ref<const String&>());
+        load_animation(entry.get_ref<const std::vector<JsonValue>&>());
 }
 
 //============================================================================//
@@ -192,10 +199,10 @@ void Fighter::initialise_actions()
                 iter->second.load_wren_from_file();
             }
             catch (const std::exception& ex) {
-                sq::log_warning("failed to load action '{}/{}': {}", name, key, ex.what());
+                sq::log_warning("action '{}/{}': {}", name, key, ex.what());
             }
         }
-        else sq::log_warning("already loaded action '{}/{}'", name, key);
+        else sq::log_warning("action '{}/{}': already loaded", name, key);
     };
 
     for (const auto& entry : sq::parse_json_from_file("assets/FighterActions.json"))
@@ -217,10 +224,10 @@ void Fighter::initialise_states()
                 iter->second.load_wren_from_file();
             }
             catch (const std::exception& ex) {
-                sq::log_warning("failed to load state '{}/{}': {}", name, key, ex.what());
+                sq::log_warning("state '{}/{}': {}", name, key, ex.what());
             }
         }
-        else sq::log_warning("already loaded state '{}/{}'", name, key);
+        else sq::log_warning("state '{}/{}': already loaded", name, key);
     };
 
     for (const auto& entry : sq::parse_json_from_file("assets/FighterStates.json"))
@@ -232,7 +239,26 @@ void Fighter::initialise_states()
 
 //============================================================================//
 
-void Fighter::apply_hit_generic(const HitBlob& hit, const HurtBlob& hurt)
+int8_t Fighter::bone_from_json(const JsonValue& json) const
+{
+    if (json.is_null() == true) return -1;
+    const auto& key = json.get_ref<const String&>();
+    int8_t result = mArmature.get_bone_index(key);
+    if (result == -1) SQEE_THROW("invalid bone '{}'", key);
+    return result;
+}
+
+JsonValue Fighter::bone_to_json(int8_t bone) const
+{
+    if (bone == -1) return nullptr;
+    TinyString result = mArmature.get_bone_name(bone);
+    if (result.empty()) SQEE_THROW("invalid index {}", bone);
+    return result.c_str();
+}
+
+//============================================================================//
+
+void Fighter::apply_hit(const HitBlob& hit, const HurtBlob& hurt)
 {
     SQASSERT(&hit.action->fighter != this, "invalid hitblob");
     SQASSERT(hurt.fighter == this, "invalid hurtblob");
@@ -251,7 +277,7 @@ void Fighter::apply_hit_generic(const HitBlob& hit, const HurtBlob& hurt)
     // todo: investigate how stacking works when we were hit previously
     //       currently we just replace any existing freeze/stun/knockback
 
-    const bool shielding = activeState->name.starts_with("Shield");
+    const bool shielding = activeState->name == "Shield" || activeState->name == "ShieldStun";
 
     // https://www.ssbwiki.com/Hitlag#Formula
     const uint freezeTime = [&]() {
@@ -272,9 +298,6 @@ void Fighter::apply_hit_generic(const HitBlob& hit, const HurtBlob& hurt)
     vars.freezeTime = freezeTime;
     otherVars.freezeTime = freezeTime;
 
-    // always start jittering with an even index
-    mJitterCounter = mJitterCounter & 254u;
-
     // todo: add self to a list of somethings
     hit.action->set_hit_something();
 
@@ -293,12 +316,18 @@ void Fighter::apply_hit_generic(const HitBlob& hit, const HurtBlob& hurt)
 
             change_state(mStates.at("ShieldStun"));
         }
-        else apply_shield_break(); // todo
+        // todo: make ShieldBreak a real action
+        //else start_action("ShieldBreak");
+
+        // todo: play shield hit sound
 
         return;
     }
 
     //--------------------------------------------------------//
+
+    // always start jittering with an even index
+    mJitterCounter = mJitterCounter & 254u;
 
     // https://www.ssbwiki.com/Knockback#Melee_onward
     // knockback and weight values are the same arbitary units as in smash bros
@@ -320,6 +349,9 @@ void Fighter::apply_hit_generic(const HitBlob& hit, const HurtBlob& hurt)
         return (((p / 10.f + p * d / 20.f) * 200.f / (w + 100.f) * 1.4f + 18.f) * s * 0.01f + b);
     }();
 
+    // todo:
+    // investigate changing angles to signed values in the range [-180, +180]
+    // possibly even [-90, +90], do any attacks use relative facing with reverse angles?
     const float angle = [&]() {
         // https://www.ssbwiki.com/Sakurai_angle
         if (hit.angleMode == BlobAngleMode::Sakurai)
@@ -338,55 +370,38 @@ void Fighter::apply_hit_generic(const HitBlob& hit, const HurtBlob& hurt)
         return maths::radians(hit.knockAngle / 360.f);
     }();
 
-    const float launchSpeed = knockback * 0.003f;
-    const uint hitStunTime = uint(knockback * 0.4f);
+    vars.stunTime = uint8_t(std::min(knockback * 0.4f, 255.f));
 
-    const Vec2F knockDir = { std::cos(angle) * facing, std::sin(angle) };
+    vars.launchSpeed = knockback * 0.003f;
+    vars.velocity = Vec2F(std::cos(angle) * facing, std::sin(angle)) * vars.launchSpeed;
 
     sq::log_debug_multiline("fighter {} hit by fighter {}:"
-                            "\nknockback:   {}" "\nfreezeTime:  {}" "\nhitStun:     {}"
-                            "\nknockDir:    {}" "\nlaunchSpeed: {}" "\ndecayFrames: {}"
+                            "\nknockback:   {}" "\nangle:       {}" "\nvelocity:    {}"
+                            "\nfreezeTime:  {}" "\nstunTime:    {}" "\ndecayFrames: {}"
                             "\nhitKey:      {}" "\nhurtKey:     {}" "\nhurtRegion:  {}",
                             index, hit.action->fighter.index,
-                            knockback, freezeTime, hitStunTime,
-                            knockDir, launchSpeed, uint(launchSpeed / KNOCKBACK_DECAY),
+                            knockback, angle, vars.velocity,
+                            vars.freezeTime, vars.stunTime, uint(vars.launchSpeed / KNOCKBACK_DECAY),
                             hit.get_key(), hurt.get_key(), hurt.region);
 
-    SQASSERT(hitStunTime < uint(launchSpeed / KNOCKBACK_DECAY), "something is broken");
-
-    vars.stunTime = hitStunTime;
-
-    vars.velocity = maths::normalize(knockDir) * launchSpeed;
-
-    vars.launchSpeed = launchSpeed;
+    SQASSERT(vars.stunTime < uint(vars.launchSpeed / KNOCKBACK_DECAY), "something is broken");
 
     // rotate towards the camera over the duration of hitstun
     if (vars.facing == int8_t(facing))
-        wren_reverse_facing_slow(vars.facing == 1, hitStunTime);
+        wren_reverse_facing_slow(vars.facing == 1, vars.stunTime);
 
     const bool heavy = vars.stunTime >= MIN_HITSTUN_HEAVY;
 
     SmallString state, animNow, animAfter;
 
-    if (vars.onGround == false || angle != 0.f)
+    const auto set_state_and_anims_fall = [&]()
     {
-        if (vars.stunTime >= MIN_HITSTUN_TUMBLE)
-        {
-            state = "TumbleStun";
-            if (hurt.region == BlobRegion::Middle) animNow = "HurtMiddleTumble";
-            else if (hurt.region == BlobRegion::Lower) animNow = "HurtLowerTumble";
-            else if (hurt.region == BlobRegion::Upper) animNow = "HurtUpperTumble";
-            else SQEE_UNREACHABLE();
-            animAfter = "TumbleLoop";
-        }
-        else
-        {
-            state = "FallStun";
-            animNow = heavy ? "HurtAirHeavy" : "HurtAirLight";
-            animAfter = "FallLoop";
-        }
-    }
-    else
+        state = "FallStun";
+        animNow = heavy ? "HurtAirHeavy" : "HurtAirLight";
+        animAfter = "FallLoop";
+    };
+
+    const auto set_state_and_anims_neutral = [&]()
     {
         state = "NeutralStun";
         if (hurt.region == BlobRegion::Middle) animNow = heavy ? "HurtMiddleHeavy" : "HurtMiddleLight";
@@ -394,7 +409,30 @@ void Fighter::apply_hit_generic(const HitBlob& hit, const HurtBlob& hurt)
         else if (hurt.region == BlobRegion::Upper) animNow = heavy ? "HurtUpperHeavy" : "HurtUpperLight";
         else SQEE_UNREACHABLE();
         animAfter = "NeutralLoop";
+
+    };
+
+    const auto set_state_and_anims_tumble = [&]()
+    {
+        state = "TumbleStun";
+        if (hurt.region == BlobRegion::Middle) animNow = "HurtMiddleTumble";
+        else if (hurt.region == BlobRegion::Lower) animNow = "HurtLowerTumble";
+        else if (hurt.region == BlobRegion::Upper) animNow = "HurtUpperTumble";
+        else SQEE_UNREACHABLE();
+        animAfter = "TumbleLoop";
+    };
+
+    if (vars.onGround == false || (angle != 0.f && angle < maths::radians(0.5f)))
+    {
+        if (vars.stunTime < MIN_HITSTUN_TUMBLE) set_state_and_anims_fall();
+        else set_state_and_anims_tumble();
     }
+    else if (angle > maths::radians(0.5f))
+    {
+        if (vars.stunTime < MIN_HITSTUN_TUMBLE) set_state_and_anims_neutral();
+        else set_state_and_anims_tumble();
+    }
+    else set_state_and_anims_neutral();
 
     change_state(mStates.at(state));
     play_animation(mAnimations.at(animNow), 0u, true);
@@ -404,14 +442,6 @@ void Fighter::apply_hit_generic(const HitBlob& hit, const HurtBlob& hurt)
 
     mModelMatrix = maths::transform(current.translation, current.rotation);
     //mArmature.compute_ubo_data(current.pose, mBoneMatrices.data(), uint(mBoneMatrices.size()));
-}
-
-//============================================================================//
-
-void Fighter::apply_shield_break()
-{
-    //mHitStunTime = 240u; // 5 seconds
-    //mFrozenState =
 }
 
 //============================================================================//
@@ -436,6 +466,15 @@ Mat4F Fighter::get_bone_matrix(int8_t bone) const
     // rukai data seems to ignore them for ALL bones in the chain, but that seems really wrong to me
     // see https://github.com/rukai/brawllib_rs/blob/main/src/high_level_fighter.rs#L537
     return mModelMatrix * maths::transpose(Mat4F(mBoneMatrices[bone]));
+}
+
+Mat4F Fighter::get_blended_bone_matrix(int8_t bone) const
+{
+    SQASSERT(bone < int8_t(mArmature.get_bone_count()), "invalid bone");
+    if (bone < 0) return mBlendedModelMatrix;
+
+    const auto& block = *reinterpret_cast<const SkellyBlock*>(mSkellyUbo.map_only());
+    return mBlendedModelMatrix * maths::transpose(Mat4F(block.bones[bone]));
 }
 
 //============================================================================//
@@ -490,9 +529,16 @@ void Fighter::play_animation(const Animation& animation, uint fade, bool fromSta
     mNextFadeFrames = 0u;
     mFadeProgress = 0u;
 
-    // don't set fade rotation if doing a slow or animated rotation
-    if (mRotateMode == RotateMode::Auto) mFadeStartRotation = current.rotation;
-    mFadeStartPose = current.pose;
+    if (fade != 0u)
+    {
+        if (animation.attach == true)
+            mFadeStartPosition = variables.position;
+
+        if (mRotateMode == RotateMode::Auto)
+            mFadeStartRotation = current.rotation;
+
+        mFadeStartPose = current.pose;
+    }
 
     if (fromStart == true)
     {

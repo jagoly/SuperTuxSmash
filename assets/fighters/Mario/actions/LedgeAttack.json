@@ -1,0 +1,108 @@
+{
+  "blobs": {
+    "0_RFootJ": {
+      "angleMode": "Normal",
+      "bone": "RFootJ",
+      "canHitAir": true,
+      "canHitGround": true,
+      "clangMode": "Ignore",
+      "damage": 8.0,
+      "facingMode": "Forward",
+      "flavour": "Tangy",
+      "freezeDiMult": 1.0,
+      "freezeMult": 1.0,
+      "handler": "Normal",
+      "ignoreDamage": true,
+      "ignoreWeight": false,
+      "index": 0,
+      "knockAngle": 45.0,
+      "knockBase": 110.0,
+      "knockScale": 100.0,
+      "origin": [ 0.12692998, 0.15574996, -0.00695999 ],
+      "radius": 0.58,
+      "sound": "HitKick2"
+    },
+    "1_LFootJ": {
+      "angleMode": "Normal",
+      "bone": "LFootJ",
+      "canHitAir": true,
+      "canHitGround": true,
+      "clangMode": "Ignore",
+      "damage": 8.0,
+      "facingMode": "Forward",
+      "flavour": "Tangy",
+      "freezeDiMult": 1.0,
+      "freezeMult": 1.0,
+      "handler": "Normal",
+      "ignoreDamage": true,
+      "ignoreWeight": false,
+      "index": 1,
+      "knockAngle": 45.0,
+      "knockBase": 110.0,
+      "knockScale": 100.0,
+      "origin": [ -0.12692998, 0.15574996, -0.00695999 ],
+      "radius": 0.58,
+      "sound": "HitKick2"
+    },
+    "2_HeadN": {
+      "angleMode": "Normal",
+      "bone": "HeadN",
+      "canHitAir": true,
+      "canHitGround": true,
+      "clangMode": "Ignore",
+      "damage": 6.0,
+      "facingMode": "Forward",
+      "flavour": "Sour",
+      "freezeDiMult": 1.0,
+      "freezeMult": 1.0,
+      "handler": "Normal",
+      "ignoreDamage": true,
+      "ignoreWeight": false,
+      "index": 2,
+      "knockAngle": 45.0,
+      "knockBase": 110.0,
+      "knockScale": 100.0,
+      "origin": [ 0.0, 0.7843398, -0.004769954 ],
+      "radius": 0.58,
+      "sound": "HitKick2"
+    },
+    "3_None": {
+      "angleMode": "Normal",
+      "bone": null,
+      "canHitAir": true,
+      "canHitGround": true,
+      "clangMode": "Ignore",
+      "damage": 6.0,
+      "facingMode": "Forward",
+      "flavour": "Sour",
+      "freezeDiMult": 1.0,
+      "freezeMult": 1.0,
+      "handler": "Normal",
+      "ignoreDamage": true,
+      "ignoreWeight": false,
+      "index": 3,
+      "knockAngle": 45.0,
+      "knockBase": 110.0,
+      "knockScale": 100.0,
+      "origin": [ 0.0, 0.4, 0.9 ],
+      "radius": 0.4,
+      "sound": "HitKick2"
+    }
+  },
+  "effects": {},
+  "emitters": {},
+  "sounds": {
+    "DashStart": {
+      "path": "fighters/Mario/sounds/DashStart",
+      "volume": 0.4
+    },
+    "HitKick2": {
+      "path": "fighters/Mario/sounds/HitKick2",
+      "volume": 0.5
+    },
+    "Swing3": {
+      "path": "fighters/Mario/sounds/Swing3",
+      "volume": 0.5
+    }
+  }
+}

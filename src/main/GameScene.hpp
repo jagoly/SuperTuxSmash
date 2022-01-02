@@ -41,7 +41,11 @@ private: //===================================================//
 
     std::unique_ptr<FightWorld> mFightWorld;
 
-    std::array<std::unique_ptr<Controller>, 4> mControllers;
+    sq::StackVector<std::unique_ptr<Controller>, MAX_FIGHTERS> mControllers;
+
+    std::unique_ptr<StandardCamera> mStandardCamera;
+
+    std::unique_ptr<EditorCamera> mEditorCamera;
 
     //--------------------------------------------------------//
 

@@ -20,7 +20,7 @@
       "knockScale": 73.0,
       "origin": [ 0.0, 0.36, 1.2 ],
       "radius": 0.48,
-      "sound": "KickStrong"
+      "sound": "HitKick3"
     },
     "A_1_Near": {
       "angleMode": "Sakurai",
@@ -42,7 +42,7 @@
       "knockScale": 73.0,
       "origin": [ 0.0, 0.36, 0.9 ],
       "radius": 0.384,
-      "sound": "KickStrong"
+      "sound": "HitKick3"
     },
     "B_0_Far": {
       "angleMode": "Sakurai",
@@ -64,7 +64,7 @@
       "knockScale": 75.0,
       "origin": [ 0.0, 0.36, -1.2 ],
       "radius": 0.48,
-      "sound": "KickMedium"
+      "sound": "HitKick2"
     },
     "B_1_Near": {
       "angleMode": "Sakurai",
@@ -86,30 +86,34 @@
       "knockScale": 75.0,
       "origin": [ 0.0, 0.36, -0.9 ],
       "radius": 0.384,
-      "sound": "KickMedium"
+      "sound": "HitKick2"
     }
   },
   "effects": {},
   "emitters": {},
   "sounds": {
-    "KickMedium": {
-      "path": "fighters/Mario/sounds/KickMedium",
+    "HitKick2": {
+      "path": "fighters/Mario/sounds/HitKick2",
       "volume": 0.5
     },
-    "KickStrong": {
-      "path": "fighters/Mario/sounds/KickStrong",
+    "HitKick3": {
+      "path": "fighters/Mario/sounds/HitKick3",
+      "volume": 0.5
+    },
+    "Swing1": {
+      "path": "fighters/Mario/sounds/Swing1",
+      "volume": 0.5
+    },
+    "Swing3": {
+      "path": "fighters/Mario/sounds/Swing3",
       "volume": 0.5
     },
     "SwingExtra": {
       "path": "fighters/Mario/sounds/SwingExtra",
       "volume": 0.4
     },
-    "SwingLarge": {
-      "path": "fighters/Mario/sounds/SwingLarge",
-      "volume": 0.5
-    },
-    "SwingSmall": {
-      "path": "fighters/Mario/sounds/SwingSmall",
+    "VoiceSmashDown": {
+      "path": "fighters/Mario/sounds/VoiceSmashDown",
       "volume": 0.5
     }
   }

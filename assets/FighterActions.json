@@ -32,11 +32,14 @@
   "LandHelpless",
   "LandLight",
   "LandTumble",
+  "LedgeAttack",
   "LedgeCatch",
   "LedgeClimb",
+  "LedgeEvade",
   "LedgeJump",
   "NeutralComboA",
   "ProneAttack",
+  "ProneBack",
   "ProneForward",
   "ProneStand",
   "ShieldOff",
@@ -47,5 +50,6 @@
   "TiltDown",
   "TiltForward",
   "TiltUp",
-  "Turn"
+  "Turn",
+  "Vertigo"
 ]

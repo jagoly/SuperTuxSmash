@@ -13,8 +13,8 @@ class Script is Base {
     action.play_effect("HorizSmokeA")
 
     wait_until(9)
+    action.play_sound("SwingSmashFwd")
     action.play_sound("SwingExtra")
-    action.play_sound("SwingFire")
     if (angle == 0) action.emit_particles("F_Fire")
     else if (angle == -1) action.emit_particles("D_Fire")
     else if (angle == 1) action.emit_particles("U_Fire")

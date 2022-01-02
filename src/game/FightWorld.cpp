@@ -42,6 +42,9 @@ WRENPLUS_TRAITS_DEFINITION(sts::Stage, "Stage", "Stage")
 FightWorld::FightWorld(const Options& options, sq::AudioContext& audio, ResourceCaches& caches, Renderer& renderer)
     : options(options), audio(audio), caches(caches), renderer(renderer)
 {
+    mEffectSystem = std::make_unique<EffectSystem>(renderer);
+    mParticleSystem = std::make_unique<ParticleSystem>();
+
     vm.set_module_import_dirs({"wren", "assets"});
 
     //--------------------------------------------------------//
@@ -126,11 +129,15 @@ FightWorld::FightWorld(const Options& options, sq::AudioContext& audio, Resource
     WRENPLUS_ADD_FIELD_RW(vm, Fighter::Variables, applyGravity, "applyGravity");
     WRENPLUS_ADD_FIELD_RW(vm, Fighter::Variables, applyFriction, "applyFriction");
     WRENPLUS_ADD_FIELD_RW(vm, Fighter::Variables, flinch, "flinch");
-    WRENPLUS_ADD_FIELD_RW(vm, Fighter::Variables, moveMobility, "moveMobility");
-    WRENPLUS_ADD_FIELD_RW(vm, Fighter::Variables, moveSpeed, "moveSpeed");
-    WRENPLUS_ADD_FIELD_R(vm, Fighter::Variables, vertigo, "vertigo");
     WRENPLUS_ADD_FIELD_R(vm, Fighter::Variables, onGround, "onGround");
     WRENPLUS_ADD_FIELD_R(vm, Fighter::Variables, onPlatform, "onPlatform");
+    WRENPLUS_ADD_FIELD_R(vm, Fighter::Variables, edge, "edge");
+    WRENPLUS_ADD_FIELD_RW(vm, Fighter::Variables, moveMobility, "moveMobility");
+    WRENPLUS_ADD_FIELD_RW(vm, Fighter::Variables, moveSpeed, "moveSpeed");
+    WRENPLUS_ADD_FIELD_R(vm, Fighter::Variables, damage, "damage");
+    WRENPLUS_ADD_FIELD_R(vm, Fighter::Variables, shield, "shield");
+    WRENPLUS_ADD_FIELD_R(vm, Fighter::Variables, launchSpeed, "launchSpeed");
+    WRENPLUS_ADD_FIELD_R(vm, Fighter::Variables, attachPoint, "attachPoint");
     WRENPLUS_ADD_FIELD_RW(vm, Fighter::Variables, ledge, "ledge");
 
     // Fighter
@@ -235,12 +242,6 @@ FightWorld::FightWorld(const Options& options, sq::AudioContext& audio, Resource
     handles.state_do_enter = wrenMakeCallHandle(vm, "do_enter()");
     handles.state_do_updates = wrenMakeCallHandle(vm, "do_updates()");
     handles.state_do_exit = wrenMakeCallHandle(vm, "do_exit()");
-
-    //--------------------------------------------------------//
-
-    mEffectSystem = std::make_unique<EffectSystem>(renderer);
-
-    mParticleSystem = std::make_unique<ParticleSystem>();
 }
 
 //============================================================================//
@@ -265,12 +266,11 @@ void FightWorld::tick()
     mStage->tick();
 
     for (auto& fighter : mFighters)
-        if (fighter != nullptr)
-            fighter->tick();
-
-    mEffectSystem->tick();
+        fighter->tick();
 
     impl_update_collisions();
+
+    mEffectSystem->tick();
 
     mParticleSystem->update_and_clean();
 }
@@ -282,8 +282,7 @@ void FightWorld::integrate(float blend)
     mStage->integrate(blend);
 
     for (auto& fighter : mFighters)
-        if (fighter != nullptr)
-            fighter->integrate(blend);
+        fighter->integrate(blend);
 
     mEffectSystem->integrate(blend);
 }
@@ -475,7 +474,7 @@ void FightWorld::impl_update_collisions()
     {
         if (champ == nullptr) continue;
         mIgnoreCollisions[champ->hit.action->fighter.index][champ->hurt.fighter->index] = true;
-        champ->hurt.fighter->apply_hit_generic(champ->hit, champ->hurt);
+        champ->hurt.fighter->apply_hit(champ->hit, champ->hurt);
     }
 
     // todo: maybe remove only the best collisions, leave others for next frame

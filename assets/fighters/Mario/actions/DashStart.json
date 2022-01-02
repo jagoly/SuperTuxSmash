@@ -3,6 +3,7 @@
   "effects": {
     "DashStart": {
       "anchored": false,
+      "bone": null,
       "origin": [ 0.0, 0.0, 0.0 ],
       "path": "fighters/Mario/effects/DashStart",
       "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
@@ -11,16 +12,16 @@
   },
   "emitters": {},
   "sounds": {
-    "Dash": {
-      "path": "fighters/Mario/sounds/Dash",
+    "DashStart": {
+      "path": "fighters/Mario/sounds/DashStart",
       "volume": 0.4
     },
-    "StepLeftM": {
-      "path": "fighters/Mario/sounds/StepLeftM",
+    "StepLeftHard": {
+      "path": "fighters/Mario/sounds/StepLeftHard",
       "volume": 0.2
     },
-    "StepRightM": {
-      "path": "fighters/Mario/sounds/StepRightM",
+    "StepRightHard": {
+      "path": "fighters/Mario/sounds/StepRightHard",
       "volume": 0.2
     }
   }

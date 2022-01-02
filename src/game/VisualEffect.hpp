@@ -32,43 +32,43 @@ struct VisualEffect final
     /// Must be set before calling from_json.
     EffectCache* cache = nullptr;
 
-    /// Optional fighter to anchor effect to.
+    /// Fighter that owns this effect.
     Fighter* fighter = nullptr;
 
     /// Handle to the loaded EffectAsset resource.
-    EffectHandle handle;
+    EffectHandle handle = nullptr;
 
     /// Computed origin/rotation/scale matrix.
-    Mat4F localMatrix;
+    Mat4F localMatrix = {};
 
     //--------------------------------------------------------//
 
     /// Path to the EffectAsset to use.
-    String path;
+    String path = {};
 
     Vec3F origin = { 0.f, 0.f, 0.f };
     QuatF rotation = { 0.f, 0.f, 0.f, 1.f };
     Vec3F scale = { 1.f, 1.f, 1.f };
 
+    /// Index of the bone to attach to.
+    int8_t bone = -1;
+
     /// Move the effect with the fighter.
     bool anchored = true;
 
-    //-- debug / editor methods ------------------------------//
+    //--------------------------------------------------------//
 
     const TinyString& get_key() const
     {
         return *std::prev(reinterpret_cast<const TinyString*>(this));
     }
 
-    //-- serialisation methods -------------------------------//
-
     void from_json(const JsonValue& json);
+
     void to_json(JsonValue& json) const;
+
+    bool operator==(const VisualEffect& other) const;
 };
-
-//============================================================================//
-
-bool operator==(const VisualEffect& a, const VisualEffect& b);
 
 //============================================================================//
 

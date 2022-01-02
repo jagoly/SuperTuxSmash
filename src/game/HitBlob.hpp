@@ -8,16 +8,16 @@ namespace sts {
 
 //============================================================================//
 
-/// special knockback angle calculation modes
+/// Special knockback angle calculation modes.
 enum class BlobAngleMode : int8_t { Normal, Sakurai, AutoLink };
 
-/// how to choose the facing of the knockback
+/// How to choose the facing of the knockback.
 enum class BlobFacingMode : int8_t { Relative, Forward, Reverse };
 
-/// what happens when the blob hits another hitblob
+/// What happens when the blob hits another hitblob.
 enum class BlobClangMode : int8_t { Ignore, Ground, Air, Cancel };
 
-/// doesn't do anything except pick the debug colour
+/// Doesn't affect anything except debug colour.
 enum class BlobFlavour : int8_t { Sour, Tangy, Sweet };
 
 //============================================================================//
@@ -26,53 +26,53 @@ struct HitBlob final
 {
     FighterAction* action = nullptr; ///< Action that owns this blob.
 
-    maths::Sphere sphere; ///< Blob sphere after transform.
+    maths::Sphere sphere = {}; ///< Blob sphere after transform.
 
     //--------------------------------------------------------//
 
-    Vec3F origin; ///< Model space origin of the blob sphere.
-    float radius; ///< Model space radius of the blob sphere.
+    Vec3F origin = {};  ///< Model space origin of the blob sphere.
+    float radius = 0.f; ///< Model space radius of the blob sphere.
 
-    int8_t bone; ///< Index of the bone to attach to.
+    float damage       = 0.f; ///< How much damage to do on collision.
+    float freezeMult   = 1.f; ///< https://www.ssbwiki.com/Hitlag
+    float freezeDiMult = 1.f; ///< https://www.ssbwiki.com/Smash_directional_influence
 
-    uint8_t index; ///< Used to choose from blobs from the same group.
+    float knockAngle = 0.f; ///< Knockback angle in degrees (0 = forward, 90 = up).
+    float knockBase  = 0.f; ///< Base knockback to apply on collision.
+    float knockScale = 0.f; ///< Scale the knockback based on current fighter damage.
 
-    float damage;       ///< How much damage the blob will do when hit.
-    float freezeMult;   ///< Multiplier for https://www.ssbwiki.com/Hitlag
-    float freezeDiMult; ///< Multiplier for https://www.ssbwiki.com/Smash_directional_influence
+    int8_t bone = -1; ///< Index of the bone to attach to.
 
-    float knockAngle;   ///< Knockback angle in degrees (0 = forward, 90 = up).
-    float knockBase;    ///< Base knockback to apply on collision.
-    float knockScale;   ///< Scale the knockback based on current fighter damage.
+    uint8_t index = 0u; ///< Used to choose from blobs from the same group.
 
-    BlobAngleMode  angleMode;  ///< https://www.ssbwiki.com/Angle#Special_angles
-    BlobFacingMode facingMode; ///< https://www.ssbwiki.com/Angle#Angle_flipper
-    BlobClangMode  clangMode;  ///< https://www.ssbwiki.com/Priority
-    BlobFlavour    flavour;    ///< Flavour of blob from sour (worst) to sweet (best).
+    BlobAngleMode  angleMode  = {}; ///< https://www.ssbwiki.com/Angle#Special_angles
+    BlobFacingMode facingMode = {}; ///< https://www.ssbwiki.com/Angle#Angle_flipper
+    BlobClangMode  clangMode  = {}; ///< https://www.ssbwiki.com/Priority
+    BlobFlavour    flavour    = {}; ///< Flavour of blob from sour (worst) to sweet (best).
 
-    bool ignoreDamage; ///< https://www.ssbwiki.com/Knockback#Set_knockback
-    bool ignoreWeight; ///< https://www.ssbwiki.com/Knockback#Weight-independent_knockback
+    bool ignoreDamage = false; ///< https://www.ssbwiki.com/Knockback#Set_knockback
+    bool ignoreWeight = false; ///< https://www.ssbwiki.com/Knockback#Weight-independent_knockback
 
-    bool canHitGround; ///< Can the blob hit targets on the ground.
-    bool canHitAir;    ///< Can the blob hit targets in the air.
+    bool canHitGround = true; ///< Can the blob hit targets on the ground.
+    bool canHitAir    = true; ///< Can the blob hit targets in the air.
 
-    TinyString handler; ///< Handler to use after collision.
-    TinyString sound;   ///< Sound to play after collision.
+    TinyString handler = {}; ///< Handler to run on collision.
+    TinyString sound   = {}; ///< Sound to play on collision.
 
     //--------------------------------------------------------//
-
-    void from_json(const JsonValue& json);
-
-    void to_json(JsonValue& json) const;
-
-    Vec3F get_debug_colour() const;
-
-    bool operator==(const HitBlob& other) const;
 
     const TinyString& get_key() const
     {
         return *std::prev(reinterpret_cast<const TinyString*>(this));
     }
+
+    void from_json(const JsonValue& json);
+
+    void to_json(JsonValue& json) const;
+
+    bool operator==(const HitBlob& other) const;
+
+    Vec3F get_debug_colour() const;
 };
 
 //============================================================================//

@@ -14,9 +14,11 @@ public: //====================================================//
 
     using Camera::Camera;
 
-    void update_from_world(const FightWorld& world);
+    void update_from_world(const FightWorld& world) override;
 
-    void intergrate(float blend) override;
+    void update_from_controller(const Controller& controller) override;
+
+    void integrate(float blend) override;
 
 private: //===================================================//
 

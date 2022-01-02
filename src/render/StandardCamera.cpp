@@ -58,7 +58,11 @@ void StandardCamera::update_from_world(const FightWorld& world)
 
 //============================================================================//
 
-void StandardCamera::intergrate(float blend)
+void StandardCamera::update_from_controller(const Controller& /*controller*/) {}
+
+//============================================================================//
+
+void StandardCamera::integrate(float blend)
 {
     const float aspect = float(renderer.window.get_size().x) / float(renderer.window.get_size().y);
 

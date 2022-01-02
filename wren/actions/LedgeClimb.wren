@@ -5,10 +5,9 @@ class Script is FighterActionScript {
 
   default_begin() {
     ctrl.clear_history()
-    state.disable_exit_drop()
     fighter.change_state("Action")
     fighter.play_animation("LedgeClimb", 1, true)
-    state.doFall = "MiscFall"
+    state.doFall = null
     vars.intangible = true
   }
 

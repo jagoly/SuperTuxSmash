@@ -9,7 +9,7 @@ class Script is Base {
     _autoJab = false
 
     wait_until(1)
-    action.play_sound("SwingMedium")
+    action.play_sound("Swing2")
     action.enable_hitblobs("")
 
     wait_until(3)

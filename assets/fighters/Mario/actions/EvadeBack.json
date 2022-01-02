@@ -7,12 +7,12 @@
       "path": "fighters/Mario/sounds/Evade",
       "volume": 0.6
     },
-    "StepLeftM": {
-      "path": "fighters/Mario/sounds/StepLeftM",
+    "StepLeftHard": {
+      "path": "fighters/Mario/sounds/StepLeftHard",
       "volume": 0.2
     },
-    "StepRightM": {
-      "path": "fighters/Mario/sounds/StepRightM",
+    "StepRightHard": {
+      "path": "fighters/Mario/sounds/StepRightHard",
       "volume": 0.2
     }
   }

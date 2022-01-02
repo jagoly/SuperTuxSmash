@@ -14,15 +14,13 @@ public: //====================================================//
 
     using Camera::Camera;
 
-    void update_from_scroll(float delta);
+    void update_from_world(const FightWorld& world) override;
 
-    void update_from_mouse(bool left, bool right, Vec2F position);
+    void update_from_controller(const Controller& controller) override;
 
-    void intergrate(float blend) override;
+    void integrate(float blend) override;
 
 private: //===================================================//
-
-    Vec2F mPrevMousePosition;
 
     float mYaw = 0.f;
     float mPitch = 0.f;

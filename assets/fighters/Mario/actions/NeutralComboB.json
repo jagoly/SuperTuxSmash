@@ -20,7 +20,7 @@
       "knockScale": 100.0,
       "origin": [ 0.32785007, 0.8715901, -0.021440106 ],
       "radius": 0.3,
-      "sound": "PunchWeak"
+      "sound": "HitPunch1"
     },
     "1_Chest": {
       "angleMode": "Sakurai",
@@ -42,7 +42,7 @@
       "knockScale": 100.0,
       "origin": [ 0.0, 0.7846101, 0.002949907 ],
       "radius": 0.25,
-      "sound": "PunchWeak"
+      "sound": "HitPunch1"
     },
     "2_ArmR": {
       "angleMode": "Normal",
@@ -64,18 +64,18 @@
       "knockScale": 100.0,
       "origin": [ 0.78313017, 0.87162006, -0.021440106 ],
       "radius": 0.4,
-      "sound": "PunchWeak"
+      "sound": "HitPunch1"
     }
   },
   "effects": {},
   "emitters": {},
   "sounds": {
-    "PunchWeak": {
-      "path": "fighters/Mario/sounds/PunchWeak",
+    "HitPunch1": {
+      "path": "fighters/Mario/sounds/HitPunch1",
       "volume": 0.5
     },
-    "SwingMedium": {
-      "path": "fighters/Mario/sounds/SwingMedium",
+    "Swing2": {
+      "path": "fighters/Mario/sounds/Swing2",
       "volume": 0.5
     }
   }
