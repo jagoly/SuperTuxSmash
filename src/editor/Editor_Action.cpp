@@ -108,8 +108,14 @@ void ActionContext::save_changes()
     for (const auto& [key, emitter] : action->mEmitters)
         emitter.to_json(emitters[key.c_str()]);
 
-    sq::write_text_to_file("assets/fighters/{}/actions/{}.json"_format(fighter->name, action->name), json.dump(2));
-    sq::write_text_to_file("assets/fighters/{}/actions/{}.wren"_format(fighter->name, action->name), action->mWrenSource);
+    sq::write_text_to_file (
+        "assets/fighters/{}/actions/{}.json"_format(fighter->name, action->name),
+        json.dump(2), true
+    );
+    sq::write_text_to_file (
+        "assets/fighters/{}/actions/{}.wren"_format(fighter->name, action->name),
+        action->mWrenSource, true
+    );
 
     savedData = action->clone();
     modified = false;

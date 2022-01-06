@@ -102,7 +102,10 @@ void FighterContext::save_changes()
         for (const auto& [key, blob] : fighter->mHurtBlobs)
             blob.to_json(json[key.c_str()]);
 
-        sq::write_text_to_file("assets/fighters/{}/HurtBlobs.json"_format(fighter->name), json.dump(2));
+        sq::write_text_to_file (
+            "assets/fighters/{}/HurtBlobs.json"_format(fighter->name),
+            json.dump(2), true
+        );
     }
 
     if (savedData->sounds != fighter->mSounds)
@@ -112,7 +115,10 @@ void FighterContext::save_changes()
         for (const auto& [key, sound] : fighter->mSounds)
             sound.to_json(json[key.c_str()]);
 
-        sq::write_text_to_file("assets/fighters/{}/Sounds.json"_format(fighter->name), json.dump(2));
+        sq::write_text_to_file (
+            "assets/fighters/{}/Sounds.json"_format(fighter->name),
+            json.dump(2), true
+        );
     }
 
     *savedData = { fighter->mHurtBlobs, fighter->mSounds };
