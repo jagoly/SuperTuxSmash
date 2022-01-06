@@ -46,15 +46,5 @@
     }
   },
   "effects": {},
-  "emitters": {},
-  "sounds": {
-    "HitKick3": {
-      "path": "fighters/Mario/sounds/HitKick3",
-      "volume": 0.5
-    },
-    "LandHeavy": {
-      "path": "fighters/Mario/sounds/LandHeavy",
-      "volume": 0.3
-    }
-  }
+  "emitters": {}
 }

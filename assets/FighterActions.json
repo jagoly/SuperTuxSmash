@@ -12,6 +12,8 @@
   "ChargeDown",
   "ChargeForward",
   "ChargeUp",
+  "CrouchOff",
+  "CrouchOn",
   "DashAttack",
   "DashStart",
   "DashStartTurn",

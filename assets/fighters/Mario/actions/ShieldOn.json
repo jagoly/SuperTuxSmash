@@ -1,11 +1,5 @@
 {
   "blobs": {},
   "effects": {},
-  "emitters": {},
-  "sounds": {
-    "ShieldOn": {
-      "path": "fighters/Mario/sounds/ShieldOn",
-      "volume": 0.5
-    }
-  }
+  "emitters": {}
 }

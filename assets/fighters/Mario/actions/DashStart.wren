@@ -13,18 +13,18 @@ class Script is Base {
     state.disable_early_actions()
 
     wait_until(7)
-    action.play_sound("DashStart")
+    fighter.play_sound("DashStart")
 
     wait_until(10)
     state.enable_late_actions()
 
     wait_until(13)
-    action.play_sound("StepRightHard")
+    fighter.play_sound("StepRightHard")
 
     wait_until(14)
     default_end()
 
     wait_until(18)
-    action.play_sound("StepLeftHard")
+    fighter.play_sound("StepLeftHard")
   }
 }

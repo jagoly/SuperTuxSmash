@@ -2,8 +2,8 @@
 
 #include "main/Options.hpp"
 
-#include "game/FightWorld.hpp"
 #include "game/Stage.hpp"
+#include "game/World.hpp"
 
 #include "render/Renderer.hpp"
 
@@ -14,7 +14,7 @@ using namespace sts;
 
 //============================================================================//
 
-void StandardCamera::update_from_world(const FightWorld& world)
+void StandardCamera::update_from_world(const World& world)
 {
     const float border = 3.f * renderer.options.camera_zoom_out;
 

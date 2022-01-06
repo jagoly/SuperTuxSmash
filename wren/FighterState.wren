@@ -5,6 +5,7 @@ foreign class FighterState {
 
   foreign name
   foreign fighter
+  foreign world
   foreign script
 
   foreign log_with_prefix(message)
@@ -44,6 +45,7 @@ class FighterStateScript {
 
   state { _state }
   fighter { _state.fighter }
+  world { _state.world }
 
   attrs { _state.fighter.attributes }
   diamond { _state.fighter.localDiamond }

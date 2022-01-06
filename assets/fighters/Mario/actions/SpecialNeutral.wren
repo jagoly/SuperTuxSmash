@@ -30,11 +30,11 @@ class Script is FighterActionScript {
     state.canReverse = false
 
     wait_until(11)
-    //action.play_sound("")
+    //fighter.play_sound("")
 
     wait_until(12)
     // visual effect
-    //action.play_sound("")
+    //fighter.play_sound("")
 
     wait_until(13)
     // generate article

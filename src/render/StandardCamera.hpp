@@ -14,7 +14,7 @@ public: //====================================================//
 
     using Camera::Camera;
 
-    void update_from_world(const FightWorld& world) override;
+    void update_from_world(const World& world) override;
 
     void update_from_controller(const Controller& controller) override;
 

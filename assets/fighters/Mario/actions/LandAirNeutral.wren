@@ -10,7 +10,7 @@ class Script is Base {
     action.emit_particles("Ring")
 
     wait_until(10) // 31
-    action.play_sound("LandHeavy")
+    fighter.play_sound("LandHeavy")
     default_end()
   }
 }

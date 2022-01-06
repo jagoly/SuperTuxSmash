@@ -7,7 +7,8 @@ class Script is Base {
     default_begin()
 
     wait_until(4)
-    action.play_sound("Swing2")
+    lib.play_random_voice_attack()
+    fighter.play_sound("Swing2")
     action.enable_hitblobs("")
 
     wait_until(7)

@@ -1,4 +1,4 @@
-#include "game/FightWorld.hpp"
+#include "game/World.hpp"
 
 #include "main/Options.hpp"
 
@@ -36,14 +36,15 @@ WRENPLUS_TRAITS_DEFINITION(sts::FighterState, "FighterState", "FighterState")
 WRENPLUS_TRAITS_DEFINITION(sts::LocalDiamond, "Physics", "LocalDiamond")
 WRENPLUS_TRAITS_DEFINITION(sts::Ledge, "Stage", "Ledge")
 WRENPLUS_TRAITS_DEFINITION(sts::Stage, "Stage", "Stage")
+WRENPLUS_TRAITS_DEFINITION(sts::World, "World", "World")
 
 //============================================================================//
 
-FightWorld::FightWorld(const Options& options, sq::AudioContext& audio, ResourceCaches& caches, Renderer& renderer)
-    : options(options), audio(audio), caches(caches), renderer(renderer)
+World::World(bool editor, const Options& options, sq::AudioContext& audio, ResourceCaches& caches, Renderer& renderer)
+    : editor(editor), options(options), audio(audio), caches(caches), renderer(renderer)
 {
     mEffectSystem = std::make_unique<EffectSystem>(renderer);
-    mParticleSystem = std::make_unique<ParticleSystem>();
+    mParticleSystem = std::make_unique<ParticleSystem>(*this);
 
     vm.set_module_import_dirs({"wren", "assets"});
 
@@ -149,6 +150,7 @@ FightWorld::FightWorld(const Options& options, sq::AudioContext& audio, Resource
     WRENPLUS_ADD_FIELD_R(vm, Fighter, controller, "controller");
     WRENPLUS_ADD_FIELD_R(vm, Fighter, activeAction, "action");
     WRENPLUS_ADD_FIELD_R(vm, Fighter, activeState, "state");
+    WRENPLUS_ADD_METHOD(vm, Fighter, wren_get_world, "world");
     WRENPLUS_ADD_METHOD(vm, Fighter, wren_get_library, "library");
     WRENPLUS_ADD_METHOD(vm, Fighter, wren_log, "log(_)");
     WRENPLUS_ADD_METHOD(vm, Fighter, wren_cxx_clear_action, "cxx_clear_action()");
@@ -164,6 +166,8 @@ FightWorld::FightWorld(const Options& options, sq::AudioContext& audio, Resource
     WRENPLUS_ADD_METHOD(vm, Fighter, wren_reset_collisions, "reset_collisions()");
     WRENPLUS_ADD_METHOD(vm, Fighter, wren_enable_hurtblob, "enable_hurtblob(_)");
     WRENPLUS_ADD_METHOD(vm, Fighter, wren_disable_hurtblob, "disable_hurtblob(_)");
+    WRENPLUS_ADD_METHOD(vm, Fighter, wren_play_sound, "play_sound(_)");
+    WRENPLUS_ADD_METHOD(vm, Fighter, wren_cancel_sound, "cancel_sound(_)");
     vm.register_pointer_comparison_operators<Fighter>();
 
     vm.load_module("Fighter");
@@ -174,6 +178,7 @@ FightWorld::FightWorld(const Options& options, sq::AudioContext& audio, Resource
     // FighterAction
     WRENPLUS_ADD_FIELD_R(vm, FighterAction, name, "name");
     WRENPLUS_ADD_METHOD(vm, FighterAction, wren_get_fighter, "fighter");
+    WRENPLUS_ADD_METHOD(vm, FighterAction, wren_get_world, "world");
     WRENPLUS_ADD_METHOD(vm, FighterAction, wren_get_script, "script");
     WRENPLUS_ADD_METHOD(vm, FighterAction, wren_get_fiber, "fiber");
     WRENPLUS_ADD_METHOD(vm, FighterAction, wren_set_fiber, "fiber=(_)");
@@ -188,8 +193,6 @@ FightWorld::FightWorld(const Options& options, sq::AudioContext& audio, Resource
     WRENPLUS_ADD_METHOD(vm, FighterAction, wren_disable_hitblobs, "disable_hitblobs(_)");
     WRENPLUS_ADD_METHOD(vm, FighterAction, wren_emit_particles, "emit_particles(_)");
     WRENPLUS_ADD_METHOD(vm, FighterAction, wren_play_effect, "play_effect(_)");
-    WRENPLUS_ADD_METHOD(vm, FighterAction, wren_play_sound, "play_sound(_)");
-    WRENPLUS_ADD_METHOD(vm, FighterAction, wren_cancel_sound, "cancel_sound(_)");
 
     vm.load_module("FighterAction");
     vm.cache_handles<FighterAction>();
@@ -199,6 +202,7 @@ FightWorld::FightWorld(const Options& options, sq::AudioContext& audio, Resource
     // FighterState
     WRENPLUS_ADD_FIELD_R(vm, FighterState, name, "name");
     WRENPLUS_ADD_METHOD(vm, FighterState, wren_get_fighter, "fighter");
+    WRENPLUS_ADD_METHOD(vm, FighterState, wren_get_world, "world");
     WRENPLUS_ADD_METHOD(vm, FighterState, wren_get_script, "script");
     WRENPLUS_ADD_METHOD(vm, FighterState, wren_log_with_prefix, "log_with_prefix(_)");
     WRENPLUS_ADD_METHOD(vm, FighterState, wren_cxx_before_enter, "cxx_before_enter()");
@@ -233,6 +237,15 @@ FightWorld::FightWorld(const Options& options, sq::AudioContext& audio, Resource
 
     //--------------------------------------------------------//
 
+    // World
+    WRENPLUS_ADD_METHOD(vm, World, wren_random_int, "random_int(_,_)");
+    WRENPLUS_ADD_METHOD(vm, World, wren_random_float, "random_float(_,_)");
+
+    vm.load_module("World");
+    vm.cache_handles<World>();
+
+    //--------------------------------------------------------//
+
     handles.new_1 = wrenMakeCallHandle(vm, "new(_)");
 
     handles.action_do_start = wrenMakeCallHandle(vm, "do_start()");
@@ -246,7 +259,7 @@ FightWorld::FightWorld(const Options& options, sq::AudioContext& audio, Resource
 
 //============================================================================//
 
-FightWorld::~FightWorld()
+World::~World()
 {
     wrenReleaseHandle(vm, handles.new_1);
 
@@ -261,7 +274,7 @@ FightWorld::~FightWorld()
 
 //============================================================================//
 
-void FightWorld::tick()
+void World::tick()
 {
     mStage->tick();
 
@@ -277,7 +290,7 @@ void FightWorld::tick()
 
 //============================================================================//
 
-void FightWorld::integrate(float blend)
+void World::integrate(float blend)
 {
     mStage->integrate(blend);
 
@@ -289,12 +302,12 @@ void FightWorld::integrate(float blend)
 
 //============================================================================//
 
-void FightWorld::set_stage(std::unique_ptr<Stage> stage)
+void World::set_stage(std::unique_ptr<Stage> stage)
 {
     mStage = std::move(stage);
 }
 
-void FightWorld::add_fighter(std::unique_ptr<Fighter> fighter)
+void World::add_fighter(std::unique_ptr<Fighter> fighter)
 {
     SQASSERT(fighter->index == mFighters.size(), "fighter has incorrect index");
     mFighters.emplace_back(std::move(fighter));
@@ -302,7 +315,7 @@ void FightWorld::add_fighter(std::unique_ptr<Fighter> fighter)
 
 //============================================================================//
 
-void FightWorld::finish_setup()
+void World::finish_setup()
 {
     if (mFighters.size() == 1u)
     {
@@ -333,7 +346,7 @@ void FightWorld::finish_setup()
 
 //============================================================================//
 
-void FightWorld::enable_hitblob(HitBlob* blob)
+void World::enable_hitblob(HitBlob* blob)
 {
     auto iter = mEnabledHitBlobs.end();
     while (iter != mEnabledHitBlobs.begin())
@@ -346,7 +359,7 @@ void FightWorld::enable_hitblob(HitBlob* blob)
     mEnabledHitBlobs.insert(iter, blob);
 }
 
-void FightWorld::disable_hitblob(HitBlob* blob)
+void World::disable_hitblob(HitBlob* blob)
 {
     const auto iter = algo::find(mEnabledHitBlobs, blob);
     if (iter == mEnabledHitBlobs.end()) return;
@@ -354,20 +367,20 @@ void FightWorld::disable_hitblob(HitBlob* blob)
     mEnabledHitBlobs.erase(iter);
 }
 
-void FightWorld::disable_hitblobs(const FighterAction& action)
+void World::disable_hitblobs(const FighterAction& action)
 {
     const auto predicate = [&](HitBlob* blob) { return blob->action == &action; };
     algo::erase_if(mEnabledHitBlobs, predicate);
 }
 
-void FightWorld::editor_clear_hitblobs()
+void World::editor_clear_hitblobs()
 {
     mEnabledHitBlobs.clear();
 }
 
 //============================================================================//
 
-void FightWorld::enable_hurtblob(HurtBlob* blob)
+void World::enable_hurtblob(HurtBlob* blob)
 {
     auto iter = mEnabledHurtBlobs.end();
     while (iter != mEnabledHurtBlobs.begin())
@@ -380,7 +393,7 @@ void FightWorld::enable_hurtblob(HurtBlob* blob)
     mEnabledHurtBlobs.insert(iter, blob);
 }
 
-void FightWorld::disable_hurtblob(HurtBlob* blob)
+void World::disable_hurtblob(HurtBlob* blob)
 {
     const auto iter = algo::find(mEnabledHurtBlobs, blob);
     if (iter == mEnabledHurtBlobs.end()) return;
@@ -388,20 +401,20 @@ void FightWorld::disable_hurtblob(HurtBlob* blob)
     mEnabledHurtBlobs.erase(iter);
 }
 
-void FightWorld::disable_hurtblobs(const Fighter& fighter)
+void World::disable_hurtblobs(const Fighter& fighter)
 {
     const auto predicate = [&](HurtBlob* blob) { return blob->fighter == &fighter; };
     algo::erase_if(mEnabledHurtBlobs, predicate);
 }
 
-void FightWorld::editor_clear_hurtblobs()
+void World::editor_clear_hurtblobs()
 {
     mEnabledHurtBlobs.clear();
 }
 
 //============================================================================//
 
-void FightWorld::impl_update_collisions()
+void World::impl_update_collisions()
 {
     //-- update world space shapes of hit and hurt blobs -----//
 
@@ -484,14 +497,14 @@ void FightWorld::impl_update_collisions()
 
 //============================================================================//
 
-void FightWorld::reset_collisions(uint8_t fighter)
+void World::reset_collisions(uint8_t fighter)
 {
     mIgnoreCollisions[fighter].fill(false);
 }
 
 //============================================================================//
 
-MinMax<Vec2F> FightWorld::compute_fighter_bounds() const
+MinMax<Vec2F> World::compute_fighter_bounds() const
 {
     MinMax<Vec2F> result;
 

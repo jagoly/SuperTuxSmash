@@ -20,7 +20,7 @@
       "knockScale": 100.0,
       "origin": [ 0.0, 0.6, 0.5 ],
       "radius": 0.7,
-      "sound": "Coin"
+      "sound": "HitCoin"
     },
     "A_1_Far": {
       "angleMode": "Normal",
@@ -42,7 +42,7 @@
       "knockScale": 100.0,
       "origin": [ 0.0, 0.6, 0.9 ],
       "radius": 0.6,
-      "sound": "Coin"
+      "sound": "HitCoin"
     },
     "BCD_0_Near": {
       "angleMode": "Normal",
@@ -64,7 +64,7 @@
       "knockScale": 100.0,
       "origin": [ 0.0, 0.7, 0.45 ],
       "radius": 0.6,
-      "sound": "Coin"
+      "sound": "HitCoin"
     },
     "BCD_1_Far": {
       "angleMode": "Normal",
@@ -86,7 +86,7 @@
       "knockScale": 100.0,
       "origin": [ 0.0, 0.7, 0.85 ],
       "radius": 0.5,
-      "sound": "Coin"
+      "sound": "HitCoin"
     },
     "EF_0_Near": {
       "angleMode": "AutoLink",
@@ -108,7 +108,7 @@
       "knockScale": 100.0,
       "origin": [ 0.0, 0.7, 0.45 ],
       "radius": 0.55,
-      "sound": "Coin"
+      "sound": "HitCoin"
     },
     "EF_1_Far": {
       "angleMode": "AutoLink",
@@ -130,7 +130,7 @@
       "knockScale": 100.0,
       "origin": [ 0.0, 0.7, 0.85 ],
       "radius": 0.42,
-      "sound": "Coin"
+      "sound": "HitCoin"
     },
     "Z_0_Near": {
       "angleMode": "Normal",
@@ -152,7 +152,7 @@
       "knockScale": 145.0,
       "origin": [ 0.0, 0.7, 0.45 ],
       "radius": 1.0,
-      "sound": "Coin"
+      "sound": "HitCoin"
     },
     "Z_1_Far": {
       "angleMode": "Normal",
@@ -174,19 +174,9 @@
       "knockScale": 145.0,
       "origin": [ 0.0, 0.7, 0.85 ],
       "radius": 1.0,
-      "sound": "Coin"
+      "sound": "HitCoin"
     }
   },
   "effects": {},
-  "emitters": {},
-  "sounds": {
-    "Coin": {
-      "path": "fighters/Mario/sounds/Coin",
-      "volume": 0.6
-    },
-    "SuperJump": {
-      "path": "fighters/Mario/sounds/SuperJump",
-      "volume": 0.4
-    }
-  }
+  "emitters": {}
 }

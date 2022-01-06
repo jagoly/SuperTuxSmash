@@ -126,13 +126,13 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    Fighter(FightWorld& world, FighterEnum type, uint8_t index);
+    Fighter(World& world, FighterEnum name, uint8_t index);
 
     ~Fighter();
 
     //--------------------------------------------------------//
 
-    FightWorld& world;
+    World& world;
 
     const FighterEnum name;
 
@@ -214,6 +214,8 @@ public: //====================================================//
 
     //-- wren methods ----------------------------------------//
 
+    World* wren_get_world() { return &world; }
+
     WrenHandle* wren_get_library() { return mLibraryHandle; }
 
     void wren_log(StringView message);
@@ -222,7 +224,7 @@ public: //====================================================//
 
     void wren_cxx_assign_action(SmallString key);
 
-    void wren_cxx_assign_state(SmallString key);
+    void wren_cxx_assign_state(TinyString key);
 
     void wren_reverse_facing_auto();
 
@@ -243,6 +245,10 @@ public: //====================================================//
     void wren_enable_hurtblob(TinyString key);
 
     void wren_disable_hurtblob(TinyString key);
+
+    void wren_play_sound(SmallString key);
+
+    void wren_cancel_sound(SmallString key);
 
 private: //===================================================//
 
@@ -267,6 +273,8 @@ private: //===================================================//
     void initialise_attributes();
 
     void initialise_hurtblobs();
+
+    void initialise_sounds();
 
     void initialise_animations();
 
@@ -310,9 +318,10 @@ private: //===================================================//
     sq::Swapper<vk::DescriptorSet> mDescriptorSet;
 
     std::map<TinyString, HurtBlob> mHurtBlobs;
+    std::map<SmallString, SoundEffect> mSounds;
     std::map<SmallString, Animation> mAnimations;
     std::map<SmallString, FighterAction> mActions;
-    std::map<SmallString, FighterState> mStates;
+    std::map<TinyString, FighterState> mStates;
 
     WrenHandle* mLibraryHandle = nullptr;
 

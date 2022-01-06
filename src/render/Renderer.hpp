@@ -67,7 +67,7 @@ public: //====================================================//
 
     void integrate_particles(float blend, const ParticleSystem& system);
 
-    void integrate_debug(float blend, const FightWorld& world);
+    void integrate_debug(float blend, const World& world);
 
     void populate_command_buffer(vk::CommandBuffer cmdbuf);
 

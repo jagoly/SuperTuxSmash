@@ -17,7 +17,7 @@ public: //====================================================//
     //--------------------------------------------------------//
 
     Fighter& fighter;
-    FightWorld& world;
+    World& world;
 
     const SmallString name;
 
@@ -44,6 +44,8 @@ public: //====================================================//
     //-- wren methods ----------------------------------------//
 
     Fighter* wren_get_fighter() { return &fighter; }
+
+    World* wren_get_world() { return &world; }
 
     WrenHandle* wren_get_script() { return mScriptHandle; }
 
@@ -73,10 +75,6 @@ public: //====================================================//
 
     void wren_emit_particles(TinyString key);
 
-    void wren_play_sound(TinyString key);
-
-    void wren_cancel_sound(TinyString key);
-
 private: //===================================================//
 
     uint mCurrentFrame = 0u;
@@ -91,7 +89,6 @@ private: //===================================================//
     std::map<TinyString, HitBlob> mBlobs;
     std::map<TinyString, VisualEffect> mEffects;
     std::map<TinyString, Emitter> mEmitters;
-    std::map<TinyString, SoundEffect> mSounds;
 
     // todo: find a way to move this to the editor
     String mWrenSource;

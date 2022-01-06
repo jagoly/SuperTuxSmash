@@ -13,6 +13,6 @@ class Script is FighterActionScript {
     default_begin()
 
     wait_until(1)
-    //action.play_sound("ShieldOn")
+    //fighter.play_sound("ShieldOn")
   }
 }

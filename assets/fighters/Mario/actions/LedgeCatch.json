@@ -1,15 +1,5 @@
 {
   "blobs": {},
   "effects": {},
-  "emitters": {},
-  "sounds": {
-    "LedgeCatch": {
-      "path": "fighters/Mario/sounds/LedgeCatch",
-      "volume": 0.5
-    },
-    "VoiceLedgeCatch": {
-      "path": "fighters/Mario/sounds/VoiceLedgeCatch",
-      "volume": 0.3
-    }
-  }
+  "emitters": {}
 }

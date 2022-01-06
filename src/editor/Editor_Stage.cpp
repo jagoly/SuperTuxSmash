@@ -1,7 +1,7 @@
 #include "editor/Editor_Stage.hpp"
 
-#include "game/FightWorld.hpp"
 #include "game/Stage.hpp"
+#include "game/World.hpp"
 
 #include "render/Renderer.hpp"
 

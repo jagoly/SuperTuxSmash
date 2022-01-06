@@ -2,11 +2,11 @@
 
 #include "main/Options.hpp"
 
-#include "game/FightWorld.hpp"
 #include "game/Fighter.hpp"
 #include "game/FighterAction.hpp"
 #include "game/HitBlob.hpp"
 #include "game/HurtBlob.hpp"
+#include "game/World.hpp"
 
 #include "render/Camera.hpp"
 #include "render/Renderer.hpp"
@@ -152,7 +152,7 @@ void DebugRenderer::refresh_options_create()
 
 //============================================================================//
 
-void DebugRenderer::integrate(float /*blend*/, const FightWorld& world)
+void DebugRenderer::integrate(float /*blend*/, const World& world)
 {
     if (renderer.options.render_hit_blobs == true)
         impl_integrate_hit_blobs(world.get_hit_blobs());

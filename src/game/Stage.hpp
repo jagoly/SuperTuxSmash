@@ -40,7 +40,7 @@ class Stage final : sq::NonCopyable
 {
 public: //====================================================//
 
-    Stage(FightWorld& world, StageEnum type);
+    Stage(World& world, StageEnum type);
 
     ~Stage();
 
@@ -50,7 +50,7 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    FightWorld& world;
+    World& world;
 
     const StageEnum type;
 

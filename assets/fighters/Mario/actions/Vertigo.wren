@@ -5,6 +5,6 @@ class Script is Base {
 
   execute() {
     default_begin()
-    action.play_sound("Vertigo")
+    fighter.play_sound("VoiceVertigo")
   }
 }

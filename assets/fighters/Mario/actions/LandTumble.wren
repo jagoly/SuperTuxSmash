@@ -7,7 +7,7 @@ class Script is Base {
     default_begin()
 
     wait_until(4)
-    action.play_sound("LandTumble")
+    fighter.play_sound("LandTumble")
 
     wait_until(32) // 40
     default_end()

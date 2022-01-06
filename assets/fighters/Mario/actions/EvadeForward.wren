@@ -10,16 +10,16 @@ class Script is Base {
     vars.intangible = true
 
     wait_until(4)
-    action.play_sound("Evade")
+    fighter.play_sound("Evade")
 
     wait_until(12)
-    action.play_sound("StepRightHard")
+    fighter.play_sound("StepRightHard")
 
     wait_until(19)
     vars.intangible = false
 
     wait_until(20)
-    action.play_sound("StepLeftHard")
+    fighter.play_sound("StepLeftHard")
 
     wait_until(32) // 36
     default_end()

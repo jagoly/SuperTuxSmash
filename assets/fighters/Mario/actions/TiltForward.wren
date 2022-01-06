@@ -10,7 +10,8 @@ class Script is Base {
     allowAngle = false
 
     wait_until(4)
-    action.play_sound("Swing2")
+    lib.play_random_voice_attack()
+    fighter.play_sound("Swing2")
     if (angle == -1) {
       action.enable_hitblobs("D")
     } else {

@@ -1,7 +1,7 @@
 #include "game/Stage.hpp"
 
-#include "game/FightWorld.hpp"
 #include "game/Physics.hpp"
+#include "game/World.hpp"
 
 #include "render/Renderer.hpp"
 #include "render/UniformBlocks.hpp"
@@ -16,7 +16,7 @@ using namespace sts;
 
 //============================================================================//
 
-Stage::Stage(FightWorld& world, StageEnum type)
+Stage::Stage(World& world, StageEnum type)
     : world(world), type(type)
 {
     const String path = sq::build_string("assets/stages/", sq::enum_to_string(type));

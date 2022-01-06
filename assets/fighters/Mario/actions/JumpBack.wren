@@ -7,6 +7,6 @@ class Script is Base {
     default_begin()
 
     wait_until(2)
-    action.play_sound("Jump")
+    fighter.play_sound("Jump")
   }
 }

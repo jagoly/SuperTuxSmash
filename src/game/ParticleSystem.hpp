@@ -2,8 +2,6 @@
 
 #include "setup.hpp"
 
-#include <random> // mt19937
-
 namespace sts {
 
 //============================================================================//
@@ -30,15 +28,12 @@ class ParticleSystem final : sq::NonCopyable
 {
 public: //====================================================//
 
-    ParticleSystem();
+    ParticleSystem(World& world);
 
     //--------------------------------------------------------//
 
     /// Destroy all particles.
     void clear() { mParticles.clear(); };
-
-    /// Reset the seed used for random number generation.
-    void reset_random_seed(uint_fast32_t seed) { mGenerator.seed(seed); };
 
     /// Access the particle data for this tick.
     const std::vector<ParticleData>& get_particles() const { return mParticles; }
@@ -47,8 +42,6 @@ public: //====================================================//
 
     /// Generate particles specified by an Emitter.
     void generate(const Emitter& emitter);
-
-    //--------------------------------------------------------//
 
     /// Simulate all particles, then destroy dead particles.
     void update_and_clean();
@@ -62,7 +55,7 @@ public: //====================================================//
 
 private: //===================================================//
 
-    std::mt19937 mGenerator;
+    World& world;
 
     std::vector<ParticleData> mParticles;
 };

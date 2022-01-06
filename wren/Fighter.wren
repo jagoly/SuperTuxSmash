@@ -82,6 +82,7 @@ foreign class Fighter {
 
   foreign name
   foreign index
+  foreign world
 
   foreign attributes
   foreign localDiamond
@@ -111,6 +112,9 @@ foreign class Fighter {
   foreign reset_collisions()
   foreign enable_hurtblob(key)
   foreign disable_hurtblob(key)
+
+  foreign play_sound(key)
+  foreign cancel_sound(key)
 
   // activate an action or call a pseudo action
   start_action(newAction) {

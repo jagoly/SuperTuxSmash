@@ -2,6 +2,7 @@
 
 #include "game/Emitter.hpp"
 #include "game/Fighter.hpp"
+#include "game/World.hpp"
 
 #include <sqee/debug/Assert.hpp>
 #include <sqee/maths/Functions.hpp>
@@ -11,7 +12,8 @@ using namespace sts;
 
 //============================================================================//
 
-ParticleSystem::ParticleSystem()
+ParticleSystem::ParticleSystem(World& world)
+    : world(world)
 {
     sprites =
     {
@@ -28,12 +30,13 @@ void ParticleSystem::generate(const Emitter& emitter)
 
     const auto& [spriteMin, spriteMax] = sprites[emitter.sprite];
 
-    maths::RandomRange<uint16_t> randSprite { spriteMin, spriteMax };
-    maths::RandomRange<uint16_t> randColour { 0u, uint16_t(emitter.colour.size() - 1u) };
-
-    maths::RandomRange<Vec3F> randNormal { Vec3F(-1.f), Vec3F(1.f) };
+    const maths::RandomRange<uint16_t> randSprite { spriteMin, spriteMax };
+    const maths::RandomRange<uint16_t> randColour { 0u, uint16_t(emitter.colour.size() - 1u) };
+    const maths::RandomRange<Vec3F> randNormal { Vec3F(-1.f), Vec3F(1.f) };
 
     const Mat4F boneMatrix = emitter.fighter ? emitter.fighter->get_bone_matrix(emitter.bone) : Mat4F();
+
+    std::mt19937& rng = world.get_rng();
 
     //--------------------------------------------------------//
 
@@ -50,11 +53,11 @@ void ParticleSystem::generate(const Emitter& emitter)
         p.endOpacity = emitter.endOpacity;
         p.endScale = emitter.endScale;
 
-        p.lifetime = emitter.lifetime(mGenerator);
-        p.baseRadius = emitter.baseRadius(mGenerator);
+        p.lifetime = emitter.lifetime(rng);
+        p.baseRadius = emitter.baseRadius(rng);
 
-        p.sprite = randSprite(mGenerator);
-        p.colour = emitter.colour[uint8_t(randColour(mGenerator))];
+        p.sprite = randSprite(rng);
+        p.colour = emitter.colour[uint8_t(randColour(rng))];
 
         p.friction = 0.1f;
 
@@ -64,16 +67,16 @@ void ParticleSystem::generate(const Emitter& emitter)
 
         // apply ball shape modifiers
         // todo: we want this to be evenly distributed, not random
-        const Vec3F ballDirection = maths::normalize(randNormal(mGenerator));
-        p.currentPos += ballDirection * emitter.ballOffset(mGenerator);
-        p.velocity += ballDirection * emitter.ballSpeed(mGenerator);
+        const Vec3F ballDirection = maths::normalize(randNormal(rng));
+        p.currentPos += ballDirection * emitter.ballOffset(rng);
+        p.velocity += ballDirection * emitter.ballSpeed(rng);
 
         // apply disc shape modifiers
-        const float discIncline = emitter.discIncline(mGenerator);
+        const float discIncline = emitter.discIncline(rng);
         const float discAngle = float(i) / float(emitter.count);
         const Vec3F discDirection = maths::rotate_y(maths::rotate_x(Vec3F(0, 0, -1), discIncline), discAngle);
-        p.currentPos += Mat3F(boneMatrix) * discDirection * emitter.discOffset(mGenerator);
-        p.velocity += Mat3F(boneMatrix) * discDirection * emitter.discSpeed(mGenerator);
+        p.currentPos += Mat3F(boneMatrix) * discDirection * emitter.discOffset(rng);
+        p.velocity += Mat3F(boneMatrix) * discDirection * emitter.discSpeed(rng);
     }
 }
 

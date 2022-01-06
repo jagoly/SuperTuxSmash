@@ -1212,7 +1212,7 @@ void Renderer::integrate_particles(float blend, const ParticleSystem& system)
 
 //============================================================================//
 
-void Renderer::integrate_debug(float blend, const FightWorld& world)
+void Renderer::integrate_debug(float blend, const World& world)
 {
     mDebugRenderer->integrate(blend, world);
 }

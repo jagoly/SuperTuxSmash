@@ -1,19 +1,5 @@
 {
   "blobs": {},
   "effects": {},
-  "emitters": {},
-  "sounds": {
-    "Evade": {
-      "path": "fighters/Mario/sounds/Evade",
-      "volume": 0.6
-    },
-    "StepLeftHard": {
-      "path": "fighters/Mario/sounds/StepLeftHard",
-      "volume": 0.2
-    },
-    "StepRightHard": {
-      "path": "fighters/Mario/sounds/StepRightHard",
-      "volume": 0.2
-    }
-  }
+  "emitters": {}
 }

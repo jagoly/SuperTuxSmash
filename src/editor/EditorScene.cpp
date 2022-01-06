@@ -4,15 +4,15 @@
 #include "main/SmashApp.hpp"
 
 #include "game/Controller.hpp"
-#include "game/FightWorld.hpp"
 #include "game/Stage.hpp"
+#include "game/World.hpp"
 
 #include "render/DebugRender.hpp"
 #include "render/Renderer.hpp"
 
 #include "editor/EditorCamera.hpp"
 #include "editor/Editor_Action.hpp"
-#include "editor/Editor_HurtBlobs.hpp"
+#include "editor/Editor_Fighter.hpp"
 #include "editor/Editor_Stage.hpp"
 
 #include <sqee/app/Event.hpp>
@@ -42,8 +42,6 @@ EditorScene::EditorScene(SmashApp& smashApp)
     options.render_hurt_blobs = true;
     options.render_diamonds = true;
     options.render_skeletons = true;
-
-    options.editor_mode = true;
 
     auto& window = mSmashApp.get_window();
 
@@ -204,7 +202,7 @@ void EditorScene::impl_confirm_quit_unsaved(bool returnToMenu)
     };
 
     append_unsaved_items(mActionContexts);
-    append_unsaved_items(mHurtBlobsContexts);
+    append_unsaved_items(mFighterContexts);
     append_unsaved_items(mStageContexts);
 
     if (mConfirmQuitUnsaved.empty())
@@ -238,10 +236,10 @@ void EditorScene::impl_show_widget_toolbar()
         mDoResetDockHitblobs = true;
         mDoResetDockEffects = true;
         mDoResetDockEmitters = true;
-        mDoResetDockSounds = true;
         mDoResetDockScript = true;
         mDoResetDockTimeline = true;
         mDoResetDockHurtblobs = true;
+        mDoResetDockSounds = true;
         mDoResetDockStage = true;
         mDoResetDockCubemaps = true;
         mDoResetDockDebug = true;
@@ -285,14 +283,14 @@ void EditorScene::impl_show_widget_toolbar()
 
             const size_t numModified =
                 algo::count_if(mActionContexts, [](const auto& item) { return item.second.modified; }) +
-                algo::count_if(mHurtBlobsContexts, [](const auto& item) { return item.second.modified; }) +
+                algo::count_if(mFighterContexts, [](const auto& item) { return item.second.modified; }) +
                 algo::count_if(mStageContexts, [](const auto& item) { return item.second.modified; });
 
             if (ImPlus::MenuItem("Save All ({})"_format(numModified), "Ctrl+Shift+S", false, numModified != 0u))
             {
                 // todo: show a popup listing everything that has changed
                 for (auto& [key, ctx] : mActionContexts) if (ctx.modified) ctx.save_changes();
-                for (auto& [key, ctx] : mHurtBlobsContexts) if (ctx.modified) ctx.save_changes();
+                for (auto& [key, ctx] : mFighterContexts) if (ctx.modified) ctx.save_changes();
                 for (auto& [key, ctx] : mStageContexts) if (ctx.modified) ctx.save_changes();
             }
 
@@ -385,8 +383,8 @@ void EditorScene::impl_show_widget_navigator()
 
         if (auto ctx = dynamic_cast<ActionContext*>(baseCtx))
             mActionContexts.erase(ctx->ctxKey);
-        else if (auto ctx = dynamic_cast<HurtBlobsContext*>(baseCtx))
-            mHurtBlobsContexts.erase(ctx->ctxKey);
+        else if (auto ctx = dynamic_cast<FighterContext*>(baseCtx))
+            mFighterContexts.erase(ctx->ctxKey);
         else if (auto ctx = dynamic_cast<StageContext*>(baseCtx))
             mStageContexts.erase(ctx->ctxKey);
         else SQEE_UNREACHABLE();
@@ -455,10 +453,10 @@ void EditorScene::impl_show_widget_navigator()
             }
         });
 
-        ImPlus::if_TabItemChild("HurtBlobs", 0, [&]()
+        ImPlus::if_TabItemChild("Fighters", 0, [&]()
         {
             for (int8_t i = 0; i < sq::enum_count_v<FighterEnum>; ++i)
-                context_list_entry(FighterEnum(i), mHurtBlobsContexts, sq::enum_to_string(FighterEnum(i)));
+                context_list_entry(FighterEnum(i), mFighterContexts, sq::enum_to_string(FighterEnum(i)));
         });
 
         ImPlus::if_TabItemChild("Stages", 0, [&]()
@@ -593,7 +591,8 @@ EditorScene::BaseContext::BaseContext(EditorScene& editor, StageEnum stage)
     camera = std::make_unique<EditorCamera>(*renderer);
     renderer->set_camera(*camera);
 
-    world = std::make_unique<FightWorld>(options, audioContext, resourceCaches, *renderer);
+    world = std::make_unique<World>(true, options, audioContext, resourceCaches, *renderer);
+    world->set_rng_seed(editor.mRandomSeed);
     world->set_stage(std::make_unique<Stage>(*world, stage));
 }
 

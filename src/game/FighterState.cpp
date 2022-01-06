@@ -1,9 +1,7 @@
 #include "game/FighterState.hpp"
 
-#include "main/Options.hpp"
-
-#include "game/FightWorld.hpp"
 #include "game/Fighter.hpp"
+#include "game/World.hpp"
 
 #include <sqee/debug/Logging.hpp>
 #include <sqee/misc/Files.hpp>
@@ -86,7 +84,7 @@ void FighterState::set_error_message(StringView method, StringView error)
 {
     String message = "State '{}/{}'\n{}\nC++ | {}()\n"_format(fighter.name, name, error, method);
 
-    if (world.options.editor_mode == false)
+    if (world.editor == false)
         sq::log_error_multiline(message);
 
     fighter.set_error_message(this, std::move(message));

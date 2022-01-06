@@ -29,9 +29,9 @@ struct SoundEffect final
 
     //--------------------------------------------------------//
 
-    const TinyString& get_key() const
+    const SmallString& get_key() const
     {
-        return *std::prev(reinterpret_cast<const TinyString*>(this));
+        return *std::prev(reinterpret_cast<const SmallString*>(this));
     }
 
     void from_json(const JsonValue& json);

@@ -6,11 +6,14 @@ class Script is Base {
   execute() {
     default_begin()
 
+    wait_until(1)
+    lib.play_random_voice_attack()
+
     wait_until(5)
     action.enable_hitblobs("CLEAN")
 
     wait_until(6)
-    action.play_sound("Swing2")
+    fighter.play_sound("Swing2")
 
     wait_until(9)
     action.disable_hitblobs(false)

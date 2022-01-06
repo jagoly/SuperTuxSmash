@@ -40,8 +40,6 @@ struct Options final : sq::NonCopyable
     bool log_animation = false;     ///< Enable logging of animation stuff
     bool log_script = true;         ///< Enable logging of script stuff
 
-    bool editor_mode = false;       ///< todo: not an option, move it to FightWorld
-
     bool debug_toggle_1 = false;    ///< Used for whatever, press 1
     bool debug_toggle_2 = false;    ///< Used for whatever, press 2
 

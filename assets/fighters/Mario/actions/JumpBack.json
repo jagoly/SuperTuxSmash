@@ -1,11 +1,5 @@
 {
   "blobs": {},
   "effects": {},
-  "emitters": {},
-  "sounds": {
-    "Jump": {
-      "path": "fighters/Mario/sounds/Jump",
-      "volume": 0.5
-    }
-  }
+  "emitters": {}
 }

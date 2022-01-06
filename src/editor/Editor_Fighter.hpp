@@ -8,11 +8,11 @@ namespace sts {
 
 //============================================================================//
 
-struct EditorScene::HurtBlobsContext : EditorScene::BaseContext
+struct EditorScene::FighterContext : EditorScene::BaseContext
 {
-    HurtBlobsContext(EditorScene& editor, FighterEnum key);
+    FighterContext(EditorScene& editor, FighterEnum key);
 
-    ~HurtBlobsContext() override;
+    ~FighterContext() override;
 
     //--------------------------------------------------------//
 
@@ -29,6 +29,7 @@ struct EditorScene::HurtBlobsContext : EditorScene::BaseContext
     //--------------------------------------------------------//
 
     void show_widget_hurtblobs();
+    void show_widget_sounds();
 
     //--------------------------------------------------------//
 
@@ -36,8 +37,16 @@ struct EditorScene::HurtBlobsContext : EditorScene::BaseContext
 
     Fighter* fighter;
 
-    std::unique_ptr<std::map<TinyString, HurtBlob>> savedData;
-    std::vector<std::unique_ptr<std::map<TinyString, HurtBlob>>> undoStack;
+    struct UndoEntry
+    {
+        std::map<TinyString, HurtBlob> hurtBlobs;
+        std::map<SmallString, SoundEffect> sounds;
+
+        bool has_changes(const Fighter& fighter) const;
+    };
+
+    std::unique_ptr<UndoEntry> savedData;
+    std::vector<std::unique_ptr<UndoEntry>> undoStack;
 };
 
 //============================================================================//

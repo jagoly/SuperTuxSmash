@@ -13,7 +13,7 @@ class Script is Base {
     state.disable_reverse_evade()
 
     wait_until(10)
-    action.play_sound("Brake")
+    fighter.play_sound("Brake")
     action.emit_particles("BrakeSmoke")
 
     wait_until(14)

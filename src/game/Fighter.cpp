@@ -1,13 +1,12 @@
 #include "game/Fighter.hpp"
 
-#include "main/Options.hpp"
-
 #include "game/Controller.hpp"
-#include "game/FightWorld.hpp"
 #include "game/FighterAction.hpp"
 #include "game/FighterState.hpp"
 #include "game/HitBlob.hpp"
 #include "game/HurtBlob.hpp"
+#include "game/SoundEffect.hpp"
+#include "game/World.hpp"
 
 #include "render/Renderer.hpp"
 #include "render/UniformBlocks.hpp"
@@ -23,12 +22,13 @@ using namespace sts;
 
 //============================================================================//
 
-Fighter::Fighter(FightWorld& world, FighterEnum name, uint8_t index)
+Fighter::Fighter(World& world, FighterEnum name, uint8_t index)
     : world(world), name(name), index(index)
 {
     initialise_attributes();
     initialise_armature();
     initialise_hurtblobs();
+    initialise_sounds();
 
     initialise_animations();
     initialise_actions();
@@ -126,6 +126,12 @@ void Fighter::initialise_attributes()
 
 void Fighter::initialise_hurtblobs()
 {
+    if (mHurtBlobs.empty() == false)
+    {
+        world.disable_hurtblobs(*this);
+        mHurtBlobs.clear();
+    }
+
     const String path = "assets/fighters/{}/HurtBlobs.json"_format(name);
     const JsonValue json = sq::parse_json_from_file(path);
 
@@ -133,10 +139,29 @@ void Fighter::initialise_hurtblobs()
     {
         HurtBlob& blob = mHurtBlobs[item.key()];
         blob.fighter = this;
-
         blob.from_json(item.value());
-
         world.enable_hurtblob(&blob);
+    }
+}
+
+//============================================================================//
+
+void Fighter::initialise_sounds()
+{
+    if (mSounds.empty() == false)
+    {
+        // todo: cancel playing sounds
+        mSounds.clear();
+    }
+
+    const String path = "assets/fighters/{}/Sounds.json"_format(name);
+    const JsonValue json = sq::parse_json_from_file(path);
+
+    for (const auto& item : json.items())
+    {
+        SoundEffect& sound = mSounds[item.key()];
+        sound.cache = &world.caches.sounds;
+        sound.from_json(item.value());
     }
 }
 
@@ -144,6 +169,13 @@ void Fighter::initialise_hurtblobs()
 
 void Fighter::initialise_animations()
 {
+    if (mAnimations.empty() == false)
+    {
+        mAnimation = nullptr;
+        mNextAnimation = nullptr;
+        mAnimations.clear();
+    }
+
     const auto load_animation = [this](const std::vector<JsonValue>& entry)
     {
         const String& key = entry.front().get_ref<const String&>();
@@ -301,7 +333,7 @@ void Fighter::apply_hit(const HitBlob& hit, const HurtBlob& hurt)
     // todo: add self to a list of somethings
     hit.action->set_hit_something();
 
-    hit.action->wren_play_sound(hit.sound);
+    hit.action->fighter.wren_play_sound(hit.sound);
 
     //--------------------------------------------------------//
 
@@ -392,7 +424,8 @@ void Fighter::apply_hit(const HitBlob& hit, const HurtBlob& hurt)
 
     const bool heavy = vars.stunTime >= MIN_HITSTUN_HEAVY;
 
-    SmallString state, animNow, animAfter;
+    TinyString state;
+    SmallString animNow, animAfter;
 
     const auto set_state_and_anims_fall = [&]()
     {

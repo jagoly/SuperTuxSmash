@@ -5,6 +5,7 @@ foreign class FighterAction {
 
   foreign name
   foreign fighter
+  foreign world
   foreign script
 
   foreign fiber
@@ -23,8 +24,6 @@ foreign class FighterAction {
   foreign disable_hitblobs(resetCollisions)
   foreign emit_particles(key)
   foreign play_effect(key)
-  foreign play_sound(key)
-  foreign cancel_sound(key)
 
   do_start() {
     cxx_before_start()
@@ -69,6 +68,7 @@ class FighterActionScript {
 
   action { _action }
   fighter { _action.fighter }
+  world { _action.world }
 
   attrs { _action.fighter.attributes }
   diamond { _action.fighter.localDiamond }

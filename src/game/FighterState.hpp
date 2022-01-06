@@ -17,7 +17,7 @@ public: //====================================================//
     //--------------------------------------------------------//
 
     Fighter& fighter;
-    FightWorld& world;
+    World& world;
 
     const TinyString name;
 
@@ -36,6 +36,8 @@ public: //====================================================//
     //-- wren methods ----------------------------------------//
 
     Fighter* wren_get_fighter() { return &fighter; }
+
+    World* wren_get_world() { return &world; }
 
     WrenHandle* wren_get_script() { return mScriptHandle; }
 

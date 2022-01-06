@@ -56,8 +56,8 @@ struct HitBlob final
     bool canHitGround = true; ///< Can the blob hit targets on the ground.
     bool canHitAir    = true; ///< Can the blob hit targets in the air.
 
-    TinyString handler = {}; ///< Handler to run on collision.
-    TinyString sound   = {}; ///< Sound to play on collision.
+    TinyString  handler = {}; ///< Handler to run on collision.
+    SmallString sound   = {}; ///< Sound to play on collision.
 
     //--------------------------------------------------------//
 

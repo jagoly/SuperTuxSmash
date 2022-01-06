@@ -1,11 +1,11 @@
 #include "main/DebugGui.hpp"
 
 #include "game/Controller.hpp"
-#include "game/FightWorld.hpp"
 #include "game/Fighter.hpp"
 #include "game/FighterAction.hpp"
 #include "game/FighterState.hpp"
 #include "game/Stage.hpp"
+#include "game/World.hpp"
 
 #include "render/Renderer.hpp"
 
@@ -21,11 +21,11 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
 
     const ImGuiStyle& style = ImGui::GetStyle();
     {
-        const ImPlus::ScopeUnindent indent = style.WindowPadding.x * 0.5f - 1.f;
+        ImGui::SetCursorPosX(style.WindowPadding.x * 0.5f + 1.f);
         if (ImGui::Button("RESET")) fighter.pass_boundary();
         ImPlus::HoverTooltip("reset the fighter");
     }
-    ImGui::SameLine(0.f, style.ItemSpacing.x + style.WindowPadding.x * 0.5f - 1.f);
+    ImGui::SameLine();
 
     const auto flags = fighter.index == 0 ? ImGuiTreeNodeFlags_DefaultOpen : 0;
     if (!ImPlus::CollapsingHeader("Fighter {} - {}"_format(fighter.index, fighter.name), flags))

@@ -1,11 +1,5 @@
 {
   "blobs": {},
   "effects": {},
-  "emitters": {},
-  "sounds": {
-    "LandTumble": {
-      "path": "fighters/Mario/sounds/LandTumble",
-      "volume": 0.5
-    }
-  }
+  "emitters": {}
 }

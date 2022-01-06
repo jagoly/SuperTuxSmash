@@ -1,0 +1,190 @@
+{
+  "AirHop": {
+    "path": "fighters/Mario/sounds/AirHop",
+    "volume": 0.49
+  },
+  "Brake": {
+    "path": "fighters/Mario/sounds/Brake",
+    "volume": 0.38
+  },
+  "CrouchOff": {
+    "path": "fighters/Mario/sounds/CrouchOff",
+    "volume": 0.56
+  },
+  "CrouchOn": {
+    "path": "fighters/Mario/sounds/CrouchOn",
+    "volume": 0.56
+  },
+  "DashStart": {
+    "path": "fighters/Mario/sounds/DashStart",
+    "volume": 0.38
+  },
+  "Evade": {
+    "path": "fighters/Mario/sounds/Evade",
+    "volume": 0.56
+  },
+  "HitBurn3": {
+    "path": "fighters/Mario/sounds/HitBurn3",
+    "volume": 0.46
+  },
+  "HitCoin": {
+    "path": "fighters/Mario/sounds/HitCoin",
+    "volume": 0.4
+  },
+  "HitKick1": {
+    "path": "fighters/Mario/sounds/HitKick1",
+    "volume": 0.46
+  },
+  "HitKick2": {
+    "path": "fighters/Mario/sounds/HitKick2",
+    "volume": 0.46
+  },
+  "HitKick3": {
+    "path": "fighters/Mario/sounds/HitKick3",
+    "volume": 0.46
+  },
+  "HitPunch1": {
+    "path": "fighters/Mario/sounds/HitPunch1",
+    "volume": 0.46
+  },
+  "HitPunch2": {
+    "path": "fighters/Mario/sounds/HitPunch2",
+    "volume": 0.46
+  },
+  "HitPunch3": {
+    "path": "fighters/Mario/sounds/HitPunch3",
+    "volume": 0.46
+  },
+  "Hop": {
+    "path": "fighters/Mario/sounds/Hop",
+    "volume": 0.56
+  },
+  "Jump": {
+    "path": "fighters/Mario/sounds/Jump",
+    "volume": 0.49
+  },
+  "LandHeavy": {
+    "path": "fighters/Mario/sounds/LandHeavy",
+    "volume": 0.25
+  },
+  "LandLight": {
+    "path": "fighters/Mario/sounds/LandLight",
+    "volume": 0.25
+  },
+  "LandTumble": {
+    "path": "fighters/Mario/sounds/LandTumble",
+    "volume": 0.35
+  },
+  "LedgeCatch": {
+    "path": "fighters/Mario/sounds/LedgeCatch",
+    "volume": 0.46
+  },
+  "ShieldOff": {
+    "path": "fighters/Mario/sounds/ShieldOff",
+    "volume": 0.2
+  },
+  "ShieldOn": {
+    "path": "fighters/Mario/sounds/ShieldOn",
+    "volume": 0.46
+  },
+  "SmashStart": {
+    "path": "fighters/Mario/sounds/SmashStart",
+    "volume": 0.46
+  },
+  "StepLeftHard": {
+    "path": "fighters/Mario/sounds/StepLeftHard",
+    "volume": 0.19
+  },
+  "StepRightHard": {
+    "path": "fighters/Mario/sounds/StepRightHard",
+    "volume": 0.19
+  },
+  "SuperJump": {
+    "path": "fighters/Mario/sounds/SuperJump",
+    "volume": 0.38
+  },
+  "Swing1": {
+    "path": "fighters/Mario/sounds/Swing1",
+    "volume": 0.46
+  },
+  "Swing2": {
+    "path": "fighters/Mario/sounds/Swing2",
+    "volume": 0.46
+  },
+  "Swing3": {
+    "path": "fighters/Mario/sounds/Swing3",
+    "volume": 0.46
+  },
+  "SwingAirDown1": {
+    "path": "fighters/Mario/sounds/SwingAirDown",
+    "volume": 0.39
+  },
+  "SwingAirDown2": {
+    "path": "fighters/Mario/sounds/SwingAirDown",
+    "volume": 0.78
+  },
+  "SwingExtra": {
+    "path": "fighters/Mario/sounds/SwingExtra",
+    "volume": 0.3
+  },
+  "SwingSmashForward": {
+    "path": "fighters/Mario/sounds/SwingSmashForward",
+    "volume": 0.56
+  },
+  "VoiceAirDown": {
+    "path": "fighters/Mario/sounds/VoiceAirDown",
+    "volume": 0.62
+  },
+  "VoiceAirForward": {
+    "path": "fighters/Mario/sounds/VoiceAirForward",
+    "volume": 0.46
+  },
+  "VoiceAirHop": {
+    "path": "fighters/Mario/sounds/VoiceAirHop",
+    "volume": 0.46
+  },
+  "VoiceAttackA": {
+    "path": "fighters/Mario/sounds/VoiceAttackA",
+    "volume": 0.46
+  },
+  "VoiceAttackB": {
+    "path": "fighters/Mario/sounds/VoiceAttackB",
+    "volume": 0.46
+  },
+  "VoiceAttackC": {
+    "path": "fighters/Mario/sounds/VoiceAttackC",
+    "volume": 0.46
+  },
+  "VoiceAttackD": {
+    "path": "fighters/Mario/sounds/VoiceAttackD",
+    "volume": 0.46
+  },
+  "VoiceChargeForward": {
+    "path": "fighters/Mario/sounds/VoiceChargeForward",
+    "volume": 0.46
+  },
+  "VoiceLedgeCatch": {
+    "path": "fighters/Mario/sounds/VoiceLedgeCatch",
+    "volume": 0.3
+  },
+  "VoiceSmashDown": {
+    "path": "fighters/Mario/sounds/VoiceSmashDown",
+    "volume": 0.46
+  },
+  "VoiceSmashUp": {
+    "path": "fighters/Mario/sounds/VoiceSmashUp",
+    "volume": 0.46
+  },
+  "VoiceVertigo": {
+    "path": "fighters/Mario/sounds/VoiceVertigo",
+    "volume": 0.3
+  },
+  "Whoosh2": {
+    "path": "fighters/Mario/sounds/Whoosh2",
+    "volume": 0.4
+  },
+  "Whoosh3": {
+    "path": "fighters/Mario/sounds/Whoosh3",
+    "volume": 0.4
+  }
+}

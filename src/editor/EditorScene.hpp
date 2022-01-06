@@ -81,7 +81,7 @@ public: //====================================================//
 
         std::unique_ptr<Renderer> renderer;
         std::unique_ptr<EditorCamera> camera;
-        std::unique_ptr<FightWorld> world;
+        std::unique_ptr<World> world;
 
         bool modified = false;
         size_t undoIndex = 0u;
@@ -90,7 +90,7 @@ public: //====================================================//
     };
 
     struct ActionContext; friend ActionContext;
-    struct HurtBlobsContext; friend HurtBlobsContext;
+    struct FighterContext; friend FighterContext;
     struct StageContext; friend StageContext;
 
     enum class PreviewMode { Pause, Normal, Slow, Slower };
@@ -118,7 +118,7 @@ private: //===================================================//
     FighterInfo mFighterInfoCommon;
 
     std::map<ActionKey, ActionContext> mActionContexts;
-    std::map<FighterEnum, HurtBlobsContext> mHurtBlobsContexts;
+    std::map<FighterEnum, FighterContext> mFighterContexts;
     std::map<StageEnum, StageContext> mStageContexts;
 
     BaseContext* mActiveContext = nullptr;
@@ -157,10 +157,10 @@ private: //===================================================//
     bool mDoResetDockHitblobs = false;
     bool mDoResetDockEffects = false;
     bool mDoResetDockEmitters = false;
-    bool mDoResetDockSounds = false;
     bool mDoResetDockScript = false;
     bool mDoResetDockTimeline = false;
     bool mDoResetDockHurtblobs = false;
+    bool mDoResetDockSounds = false;
     bool mDoResetDockStage = false;
     bool mDoResetDockCubemaps = false;
     bool mDoResetDockDebug = false;
@@ -169,8 +169,10 @@ private: //===================================================//
 
     // make sure any source file that uses these includes Editor_Helpers.hpp
 
-    template <class Object, class FuncInit, class FuncEdit>
-    void helper_edit_objects(std::map<TinyString, Object>& objects, FuncInit funcInit, FuncEdit funcEdit);
+    template <class Key, class Object, class FuncInit, class FuncEdit, class FuncBefore>
+    void helper_edit_objects (
+        std::map<Key, Object>& objects, FuncInit funcInit, FuncEdit funcEdit, FuncBefore funcBefore
+    );
 
     void helper_edit_origin(const char* label, Fighter& fighter, int8_t bone, Vec3F& origin);
 

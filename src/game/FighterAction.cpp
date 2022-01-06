@@ -1,13 +1,10 @@
 #include "game/FighterAction.hpp"
 
-#include "main/Options.hpp"
-
 #include "game/Emitter.hpp"
-#include "game/FightWorld.hpp"
 #include "game/Fighter.hpp"
 #include "game/HitBlob.hpp"
-#include "game/SoundEffect.hpp"
 #include "game/VisualEffect.hpp"
+#include "game/World.hpp"
 
 #include <sqee/debug/Logging.hpp>
 #include <sqee/misc/Files.hpp>
@@ -82,7 +79,6 @@ void FighterAction::load_json_from_file()
     mBlobs.clear();
     mEffects.clear();
     mEmitters.clear();
-    mSounds.clear();
 
     const String path = "assets/fighters/{}/actions/{}.json"_format(fighter.name, name);
 
@@ -128,18 +124,6 @@ void FighterAction::load_json_from_file()
         try { emitter.from_json(item.value()); }
         catch (const std::exception& ex) {
             sq::format_append(errors, "\nemitter '{}': {}", item.key(), ex.what());
-        }
-    }
-    CATCH (const std::exception& ex) { errors += '\n'; errors += ex.what(); }
-
-    TRY_FOR (const auto& item : root->at("sounds").items())
-    {
-        SoundEffect& sound = mSounds[item.key()];
-        sound.cache = &world.caches.sounds;
-
-        try { sound.from_json(item.value()); }
-        catch (const std::exception& ex) {
-            sq::format_append(errors, "\nsound '{}': {}", item.key(), ex.what());
         }
     }
     CATCH (const std::exception& ex) { errors += '\n'; errors += ex.what(); }
@@ -216,7 +200,7 @@ void FighterAction::load_wren_from_string()
     else mScriptHandle = safe.value;
 
     // don't need the string anymore, so free some memory
-    if (world.options.editor_mode == false)
+    if (world.editor == false)
     {
         mWrenSource.clear();
         mWrenSource.shrink_to_fit();
@@ -230,7 +214,6 @@ bool FighterAction::has_changes(const FighterAction& reference) const
     if (mBlobs != reference.mBlobs) return true;
     if (mEffects != reference.mEffects) return true;
     if (mEmitters != reference.mEmitters) return true;
-    if (mSounds != reference.mSounds) return true;
     if (mWrenSource != reference.mWrenSource) return true;
     return false;
 }
@@ -248,10 +231,6 @@ void FighterAction::apply_changes(const FighterAction& source)
     mEmitters.clear();
     for (const auto& [key, emitter] : source.mEmitters)
         mEmitters.try_emplace(key, emitter);
-
-    mSounds.clear();
-    for (const auto& [key, sound] : source.mSounds)
-        mSounds.try_emplace(key, sound);
 
     mWrenSource = source.mWrenSource;
 }
@@ -271,7 +250,7 @@ void FighterAction::set_error_message(StringView method, StringView error)
 {
     String message = "Action '{}/{}'\n{}\nC++ | {}()\n"_format(fighter.name, name, error, method);
 
-    if (world.options.editor_mode == false)
+    if (world.editor == false)
         sq::log_error_multiline(message);
 
     fighter.set_error_message(this, std::move(message));

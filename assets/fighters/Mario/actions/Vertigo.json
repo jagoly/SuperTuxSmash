@@ -1,11 +1,5 @@
 {
   "blobs": {},
   "effects": {},
-  "emitters": {},
-  "sounds": {
-    "Vertigo": {
-      "path": "fighters/Mario/sounds/VoiceVertigo",
-      "volume": 0.3
-    }
-  }
+  "emitters": {}
 }

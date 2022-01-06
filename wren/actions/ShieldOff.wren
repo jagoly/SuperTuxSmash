@@ -18,7 +18,7 @@ class Script is FighterActionScript {
     default_begin()
 
     wait_until(1)
-    //action.play_sound("ShieldOff")
+    //fighter.play_sound("ShieldOff")
 
     wait_until(12)
     default_end()

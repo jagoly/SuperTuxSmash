@@ -39,7 +39,7 @@ private: //===================================================//
 
     std::unique_ptr<Renderer> mRenderer;
 
-    std::unique_ptr<FightWorld> mFightWorld;
+    std::unique_ptr<World> mWorld;
 
     sq::StackVector<std::unique_ptr<Controller>, MAX_FIGHTERS> mControllers;
 

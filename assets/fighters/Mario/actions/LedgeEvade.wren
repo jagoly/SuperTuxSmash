@@ -7,7 +7,7 @@ class Script is Base {
     default_begin()
 
     wait_until(14)
-    action.play_sound("DashStart")
+    fighter.play_sound("DashStart")
 
     wait_until(20)
     // play effect 11
@@ -16,7 +16,7 @@ class Script is Base {
     // play effect 28
 
     wait_until(28)
-    action.play_sound("DashStart")
+    fighter.play_sound("DashStart")
 
     wait_until(30)
     vars.intangible = false
@@ -25,10 +25,10 @@ class Script is Base {
     // play effect 28
 
     wait_until(38)
-    action.play_sound("StepLeftHard")
+    fighter.play_sound("StepLeftHard")
 
     wait_until(44)
-    action.play_sound("StepRightHard")
+    fighter.play_sound("StepRightHard")
 
     wait_until(50) // 50
     default_end()

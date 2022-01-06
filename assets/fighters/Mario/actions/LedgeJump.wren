@@ -7,7 +7,7 @@ class Script is Base {
     default_begin()
 
     wait_until(2)
-    action.play_sound("DashStart")
+    fighter.play_sound("DashStart")
 
     wait_until(15)
     set_vertical_velocity()
@@ -17,9 +17,9 @@ class Script is Base {
     default_end()
 
     wait_until(17)
-    action.play_sound("DashStart")
+    fighter.play_sound("DashStart")
 
     wait_until(33)
-    action.play_sound("Whoosh2")
+    fighter.play_sound("Whoosh2")
   }
 }

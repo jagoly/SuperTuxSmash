@@ -6,19 +6,23 @@
 
 #include <sqee/app/WrenPlus.hpp>
 
+#include <random> // mt19937
+
 namespace sts {
 
 //============================================================================//
 
-class FightWorld final : sq::NonCopyable
+class World final : sq::NonCopyable
 {
 public: //====================================================//
 
-    FightWorld(const Options& options, sq::AudioContext& audio, ResourceCaches& caches, Renderer& renderer);
+    World(bool editor, const Options& options, sq::AudioContext& audio, ResourceCaches& caches, Renderer& renderer);
 
-    ~FightWorld();
+    ~World();
 
     //--------------------------------------------------------//
+
+    const bool editor;
 
     const Options& options;
 
@@ -124,17 +128,31 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    /// Access this world's EffectSystem.
+    /// Access the random number generator.
+    std::mt19937& get_rng() { return mRandNumGen; }
+
+    /// Reset the random number generator seed.
+    void set_rng_seed(uint_fast32_t seed) { mRandNumGen.seed(seed); }
+
+    /// Access the EffectSystem.
     EffectSystem& get_effect_system() { return *mEffectSystem; }
 
-    /// Access this world's ParticleSystem.
+    /// Access the ParticleSystem.
     ParticleSystem& get_particle_system() { return *mParticleSystem; }
+
+    //-- wren methods ----------------------------------------//
+
+    double wren_random_int(int min, int max);
+
+    double wren_random_float(float min, float max);
 
 private: //===================================================//
 
     void impl_update_collisions();
 
     //--------------------------------------------------------//
+
+    std::mt19937 mRandNumGen;
 
     std::unique_ptr<EffectSystem> mEffectSystem;
 
@@ -159,3 +177,5 @@ private: //===================================================//
 //============================================================================//
 
 } // namespace sts
+
+WRENPLUS_TRAITS_HEADER(sts::World)

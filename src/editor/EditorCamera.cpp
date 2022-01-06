@@ -1,6 +1,5 @@
 #include "editor/EditorCamera.hpp"
 
-#include "main/Options.hpp"
 #include "render/Renderer.hpp"
 
 #include <sqee/app/Window.hpp>
@@ -12,7 +11,7 @@ using namespace sts;
 
 //============================================================================//
 
-void EditorCamera::update_from_world(const FightWorld& /*world*/) {}
+void EditorCamera::update_from_world(const World& /*world*/) {}
 
 //============================================================================//
 

@@ -46,7 +46,6 @@ class Controller;
 class EditorCamera;
 class EditorScene;
 class EffectSystem;
-class FightWorld;
 class Fighter;
 class FighterAction;
 class FighterState;
@@ -56,6 +55,7 @@ class ResourceCaches;
 class SmashApp;
 class Stage;
 class StandardCamera;
+class World;
 
 //============================================================================//
 

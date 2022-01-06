@@ -10,7 +10,8 @@ class Script is Base {
     state.doLand = "LandAirForward"
 
     wait_until(15)
-    action.play_sound("Swing1")
+    fighter.play_sound("VoiceAirForward")
+    fighter.play_sound("Swing1")
     action.enable_hitblobs("EARLY")
 
     wait_until(16)

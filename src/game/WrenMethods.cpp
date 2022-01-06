@@ -2,13 +2,13 @@
 #include "game/FighterAction.hpp"
 #include "game/FighterState.hpp"
 #include "game/Stage.hpp"
+#include "game/World.hpp"
 
 #include "main/Options.hpp"
 
 #include "game/Controller.hpp"
 #include "game/EffectSystem.hpp"
 #include "game/Emitter.hpp"
-#include "game/FightWorld.hpp"
 #include "game/HitBlob.hpp"
 #include "game/HurtBlob.hpp"
 #include "game/ParticleSystem.hpp"
@@ -39,7 +39,7 @@ void Fighter::wren_cxx_assign_action(SmallString key)
     activeAction = &iter->second;
 }
 
-void Fighter::wren_cxx_assign_state(SmallString key)
+void Fighter::wren_cxx_assign_state(TinyString key)
 {
     const auto iter = mStates.find(key);
     if (iter == mStates.end())
@@ -160,6 +160,32 @@ void Fighter::wren_disable_hurtblob(TinyString key)
     world.disable_hurtblob(&iter->second);
 }
 
+//----------------------------------------------------------------------------//
+
+void Fighter::wren_play_sound(SmallString key)
+{
+    const auto iter = mSounds.find(key);
+    if (iter == mSounds.end())
+        throw wren::Exception("invalid sound '{}'", key);
+
+    SoundEffect& sound = iter->second;
+
+    if (sound.handle == nullptr)
+        throw wren::Exception("could not load sound '{}'", sound.get_key());
+
+    sound.id = world.audio.play_sound(sound.handle.get(), sq::SoundGroup::Sfx, sound.volume, false);
+}
+
+void Fighter::wren_cancel_sound(SmallString key)
+{
+    const auto iter = mSounds.find(key);
+    if (iter == mSounds.end())
+        throw wren::Exception("invalid sound '{}'", key);
+
+    if (iter->second.id != -1)
+        world.audio.stop_sound(iter->second.id);
+}
+
 //============================================================================//
 
 void FighterAction::wren_log_with_prefix(StringView message)
@@ -258,30 +284,6 @@ void FighterAction::wren_emit_particles(TinyString key)
     world.get_particle_system().generate(emitter);
 }
 
-void FighterAction::wren_play_sound(TinyString key)
-{
-    const auto iter = mSounds.find(key);
-    if (iter == mSounds.end())
-        throw wren::Exception("invalid sound '{}'", key);
-
-    SoundEffect& sound = iter->second;
-
-    if (sound.handle == nullptr)
-        throw wren::Exception("could not load sound '{}'", sound.get_key());
-
-    sound.id = world.audio.play_sound(sound.handle.get(), sq::SoundGroup::Sfx, sound.volume, false);
-}
-
-void FighterAction::wren_cancel_sound(TinyString key)
-{
-    const auto iter = mSounds.find(key);
-    if (iter == mSounds.end())
-        throw wren::Exception("invalid sound '{}'", key);
-
-    if (iter->second.id != -1)
-        world.audio.stop_sound(iter->second.id);
-}
-
 //============================================================================//
 
 void FighterState::wren_log_with_prefix(StringView message)
@@ -300,4 +302,16 @@ void FighterState::wren_cxx_before_exit()
 {
 //    if (world.options.log_script == true)
 //        wren_log_with_prefix("exit");
+}
+
+//============================================================================//
+
+double World::wren_random_int(int min, int max)
+{
+    return double(std::uniform_int_distribution(min, max)(mRandNumGen));
+}
+
+double World::wren_random_float(float min, float max)
+{
+    return double(std::uniform_real_distribution(min, max)(mRandNumGen));
 }

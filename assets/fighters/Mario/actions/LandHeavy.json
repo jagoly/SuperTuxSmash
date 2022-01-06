@@ -31,11 +31,5 @@
       "sprite": "Smoke",
       "velocity": [ 0.0, 0.0, 0.0 ]
     }
-  },
-  "sounds": {
-    "LandHeavy": {
-      "path": "fighters/Mario/sounds/LandHeavy",
-      "volume": 0.3
-    }
   }
 }

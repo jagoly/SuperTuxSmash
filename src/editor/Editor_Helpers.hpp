@@ -8,8 +8,10 @@ namespace sts {
 
 //============================================================================//
 
-template <class Object, class FuncInit, class FuncEdit>
-inline void EditorScene::helper_edit_objects(std::map<TinyString, Object>& objects, FuncInit funcInit, FuncEdit funcEdit)
+template <class Key, class Object, class FuncInit, class FuncEdit, class FuncBefore>
+inline void EditorScene::helper_edit_objects (
+    std::map<Key, Object>& objects, FuncInit funcInit, FuncEdit funcEdit, FuncBefore funcBefore
+)
 {
     if (ImGui::Button("New...")) ImGui::OpenPopup("popup_new");
 
@@ -19,7 +21,7 @@ inline void EditorScene::helper_edit_objects(std::map<TinyString, Object>& objec
     ImPlus::if_Popup("popup_new", 0, [&]()
     {
         ImPlus::Text("Create New Entry:");
-        TinyString newKey;
+        Key newKey;
         if (ImGui::InputText("", newKey.data(), newKey.buffer_size(), ImGuiInputTextFlags_EnterReturnsTrue))
         {
             if (auto [iter, ok] = objects.try_emplace(newKey); ok)
@@ -31,20 +33,23 @@ inline void EditorScene::helper_edit_objects(std::map<TinyString, Object>& objec
         if (ImGui::IsWindowAppearing()) ImGui::SetKeyboardFocusHere();
     });
 
-    using Iterator = typename std::map<TinyString, Object>::iterator;
+    using Iterator = typename std::map<Key, Object>::iterator;
 
     std::optional<Iterator> toDelete;
-    std::optional<std::pair<Iterator, TinyString>> toRename;
-    std::optional<std::pair<Iterator, TinyString>> toCopy;
+    std::optional<std::pair<Iterator, Key>> toRename;
+    std::optional<std::pair<Iterator, Key>> toCopy;
 
     //--------------------------------------------------------//
 
     for (Iterator iter = objects.begin(); iter != objects.end(); ++iter)
     {
-        const TinyString& key = iter->first;
+        const Key& key = iter->first;
         Object& object = iter->second;
 
         const ImPlus::ScopeID keyIdScope = key.c_str();
+
+        if constexpr (std::is_same_v<FuncBefore, std::nullptr_t> == false)
+            funcBefore(object);
 
         if (collapseAll) ImGui::SetNextItemOpen(false);
         const bool sectionOpen = ImGui::CollapsingHeader(key.c_str());
@@ -75,7 +80,7 @@ inline void EditorScene::helper_edit_objects(std::map<TinyString, Object>& objec
         ImPlus::if_Popup("popup_rename", 0, [&]()
         {
             ImPlus::Text("Rename '{}':"_format(key));
-            TinyString newKey = key;
+            Key newKey = key;
             if (ImGui::InputText("", newKey.data(), newKey.buffer_size(), ImGuiInputTextFlags_EnterReturnsTrue))
             {
                 toRename.emplace(iter, newKey);
@@ -87,7 +92,7 @@ inline void EditorScene::helper_edit_objects(std::map<TinyString, Object>& objec
         ImPlus::if_Popup("popup_copy", 0, [&]()
         {
             ImPlus::Text("Copy '{}':"_format(key));
-            TinyString newKey = key;
+            Key newKey = key;
             if (ImGui::InputText("", newKey.data(), newKey.buffer_size(), ImGuiInputTextFlags_EnterReturnsTrue))
             {
                 toCopy.emplace(iter, newKey);

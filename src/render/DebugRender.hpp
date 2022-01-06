@@ -21,7 +21,7 @@ public: //====================================================//
 
     void refresh_options_create();
 
-    void integrate(float blend, const FightWorld& world);
+    void integrate(float blend, const World& world);
 
     void populate_command_buffer(vk::CommandBuffer cmdbuf);
 

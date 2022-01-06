@@ -7,7 +7,8 @@ class Script is Base {
     default_begin()
 
     wait_until(4)
-    action.play_sound("Spin")
+    fighter.play_sound("VoiceAirDown")
+    fighter.play_sound("SwingAirDown1")
     action.enable_hitblobs("ABCDE")
     state.doLand = "LandAirDown"
 
@@ -18,7 +19,7 @@ class Script is Base {
     action.enable_hitblobs("ABCDE")
 
     wait_until(7)
-    action.play_sound("Spin")
+    fighter.play_sound("SwingAirDown1")
     action.disable_hitblobs(true)
 
     wait_until(8)
@@ -28,7 +29,7 @@ class Script is Base {
     action.disable_hitblobs(true)
 
     wait_until(10)
-    action.play_sound("Spin")
+    fighter.play_sound("SwingAirDown1")
     action.enable_hitblobs("ABCDE")
 
     wait_until(11)
@@ -38,17 +39,17 @@ class Script is Base {
     action.enable_hitblobs("ABCDE")
 
     wait_until(13)
-    action.play_sound("Spin")
+    fighter.play_sound("SwingAirDown1")
     action.disable_hitblobs(true)
 
     wait_until(16)
-    action.play_sound("Spin")
+    fighter.play_sound("SwingAirDown1")
 
     wait_until(19)
-    action.play_sound("Spin")
+    fighter.play_sound("SwingAirDown1")
 
     wait_until(24)
-    action.play_sound("SpinLoud")
+    fighter.play_sound("SwingAirDown2")
     action.enable_hitblobs("Z")
 
     wait_until(26)

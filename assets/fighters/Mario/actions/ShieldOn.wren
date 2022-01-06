@@ -7,6 +7,6 @@ class Script is Base {
     default_begin()
 
     wait_until(1) // 8
-    action.play_sound("ShieldOn")
+    fighter.play_sound("ShieldOn")
   }
 }

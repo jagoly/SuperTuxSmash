@@ -1,12 +1,10 @@
 #include "game/Fighter.hpp" // IWYU pragma: associated
 
-#include "main/Options.hpp"
-
 #include "game/Controller.hpp"
-#include "game/FightWorld.hpp"
 #include "game/FighterAction.hpp"
 #include "game/FighterState.hpp"
 #include "game/Stage.hpp"
+#include "game/World.hpp"
 
 #include "render/UniformBlocks.hpp"
 

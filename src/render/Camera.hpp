@@ -19,7 +19,7 @@ public: //====================================================//
     //--------------------------------------------------------//
 
     /// Update from the world, called each tick.
-    virtual void update_from_world(const FightWorld& world) = 0;
+    virtual void update_from_world(const World& world) = 0;
 
     /// Update from the controller, called each refresh.
     virtual void update_from_controller(const Controller& controller) = 0;

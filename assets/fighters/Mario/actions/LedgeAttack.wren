@@ -7,7 +7,7 @@ class Script is Base {
     default_begin()
 
     wait_until(14)
-    action.play_sound("DashStart")
+    fighter.play_sound("DashStart")
 
     wait_until(16)
     // graphic id 16, RToeN, trans 0,0,-3 anchor
@@ -17,7 +17,7 @@ class Script is Base {
 
     wait_until(23)
     action.enable_hitblobs("")
-    action.play_sound("Swing3")
+    fighter.play_sound("Swing3")
 
     wait_until(24)
     // graphic id 33

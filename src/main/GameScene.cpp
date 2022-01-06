@@ -6,16 +6,19 @@
 #include "main/SmashApp.hpp"
 
 #include "game/Controller.hpp"
-#include "game/FightWorld.hpp"
 #include "game/Fighter.hpp"
 #include "game/Stage.hpp"
+#include "game/World.hpp"
 
-#include "editor/EditorCamera.hpp"
 #include "render/Renderer.hpp"
 #include "render/StandardCamera.hpp"
 
+#include "editor/EditorCamera.hpp"
+
 #include <sqee/app/GuiWidgets.hpp>
 #include <sqee/vk/VulkanContext.hpp>
+
+#include <ctime> // rng seed
 
 using namespace sts;
 
@@ -50,8 +53,6 @@ GameScene::GameScene(SmashApp& smashApp, GameSetup setup)
     options.render_diamonds = false;
     options.render_skeletons = false;
 
-    options.editor_mode = false;
-
     //--------------------------------------------------------//
 
     window.set_key_repeat(false);
@@ -66,7 +67,8 @@ GameScene::GameScene(SmashApp& smashApp, GameSetup setup)
     //--------------------------------------------------------//
 
     mRenderer = std::make_unique<Renderer>(window, options, resourceCaches);
-    mFightWorld = std::make_unique<FightWorld>(options, audioContext, resourceCaches, *mRenderer);
+    mWorld = std::make_unique<World>(false, options, audioContext, resourceCaches, *mRenderer);
+    mWorld->set_rng_seed(uint_fast32_t(std::time(nullptr)));
 
     mStandardCamera = std::make_unique<StandardCamera>(*mRenderer);
     mEditorCamera = std::make_unique<EditorCamera>(*mRenderer);
@@ -75,9 +77,9 @@ GameScene::GameScene(SmashApp& smashApp, GameSetup setup)
 
     //--------------------------------------------------------//
 
-    auto stage = std::make_unique<Stage>(*mFightWorld, setup.stage);
+    auto stage = std::make_unique<Stage>(*mWorld, setup.stage);
 
-    mFightWorld->set_stage(std::move(stage));
+    mWorld->set_stage(std::move(stage));
 
     //--------------------------------------------------------//
 
@@ -88,13 +90,13 @@ GameScene::GameScene(SmashApp& smashApp, GameSetup setup)
             std::make_unique<Controller>(inputDevices, "config/player{}.json"_format(index+1u))
         );
 
-        auto fighter = std::make_unique<Fighter>(*mFightWorld, setup.players[index].fighter, index);
+        auto fighter = std::make_unique<Fighter>(*mWorld, setup.players[index].fighter, index);
         fighter->controller = controller.get();
 
-        mFightWorld->add_fighter(std::move(fighter));
+        mWorld->add_fighter(std::move(fighter));
     }
 
-    mFightWorld->finish_setup();
+    mWorld->finish_setup();
 }
 
 GameScene::~GameScene()
@@ -146,7 +148,7 @@ void GameScene::handle_event(sq::Event event)
                     controller->refresh(), controller->tick();
 
                 // advance by a single frame
-                mFightWorld->tick();
+                mWorld->tick();
 
                 // todo: tell audio context to play one tick's worth of sound
             }
@@ -163,10 +165,10 @@ void GameScene::update()
         for (auto& controller : mControllers)
             controller->tick();
 
-        mFightWorld->tick();
+        mWorld->tick();
     }
 
-    mRenderer->get_camera().update_from_world(*mFightWorld);
+    mRenderer->get_camera().update_from_world(*mWorld);
 }
 
 //============================================================================//
@@ -177,10 +179,10 @@ void GameScene::integrate(double /*elapsed*/, float blend)
     mRenderer->get_camera().update_from_controller(*mControllers.front());
 
     mRenderer->integrate_camera(blend);
-    mFightWorld->integrate(blend);
+    mWorld->integrate(blend);
 
-    mRenderer->integrate_particles(blend, mFightWorld->get_particle_system());
-    mRenderer->integrate_debug(blend, *mFightWorld);
+    mRenderer->integrate_particles(blend, mWorld->get_particle_system());
+    mRenderer->integrate_debug(blend, *mWorld);
 
     if (mGamePaused == false)
         for (auto& controller : mControllers)
@@ -241,7 +243,7 @@ void GameScene::impl_show_general_window()
 
     if (ImGui::Button("swap fighters"))
     {
-        if (auto& fighters = mFightWorld->get_fighters(); fighters.size() >= 2u)
+        if (auto& fighters = mWorld->get_fighters(); fighters.size() >= 2u)
         {
             Controller* last = fighters.back()->controller;
             if (fighters.size() == 4u) fighters[3]->controller = fighters[2]->controller;
@@ -289,9 +291,9 @@ void GameScene::impl_show_objects_window()
 
     //--------------------------------------------------------//
 
-    DebugGui::show_widget_stage(mFightWorld->get_stage());
+    DebugGui::show_widget_stage(mWorld->get_stage());
 
-    for (auto& fighter : mFightWorld->get_fighters())
+    for (auto& fighter : mWorld->get_fighters())
         DebugGui::show_widget_fighter(*fighter);
 }
 

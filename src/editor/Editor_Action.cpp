@@ -4,14 +4,13 @@
 
 #include "game/EffectSystem.hpp"
 #include "game/Emitter.hpp"
-#include "game/FightWorld.hpp"
 #include "game/Fighter.hpp"
 #include "game/FighterAction.hpp"
 #include "game/FighterState.hpp"
 #include "game/HitBlob.hpp"
 #include "game/ParticleSystem.hpp"
-#include "game/SoundEffect.hpp"
 #include "game/VisualEffect.hpp"
+#include "game/World.hpp"
 
 #include "editor/Editor_Helpers.hpp"
 
@@ -19,7 +18,6 @@
 #include <sqee/maths/Functions.hpp>
 #include <sqee/misc/Files.hpp>
 #include <sqee/misc/Json.hpp>
-#include <sqee/objects/Sound.hpp>
 #include <sqee/vk/VulkanContext.hpp>
 
 using namespace sts;
@@ -100,7 +98,6 @@ void ActionContext::save_changes()
     auto& blobs = json["blobs"] = JsonValue::object();
     auto& effects = json["effects"] = JsonValue::object();
     auto& emitters = json["emitters"] = JsonValue::object();
-    auto& sounds = json["sounds"] = JsonValue::object();
 
     for (const auto& [key, blob] : action->mBlobs)
         blob.to_json(blobs[key.c_str()]);
@@ -110,9 +107,6 @@ void ActionContext::save_changes()
 
     for (const auto& [key, emitter] : action->mEmitters)
         emitter.to_json(emitters[key.c_str()]);
-
-    for (const auto& [key, sound] : action->mSounds)
-        sound.to_json(sounds[key.c_str()]);
 
     sq::write_text_to_file("assets/fighters/{}/actions/{}.json"_format(fighter->name, action->name), json.dump(2));
     sq::write_text_to_file("assets/fighters/{}/actions/{}.wren"_format(fighter->name, action->name), action->mWrenSource);
@@ -125,11 +119,20 @@ void ActionContext::save_changes()
 
 void ActionContext::show_menu_items()
 {
-    if (ImPlus::MenuItem("Reload Animations"))
+    if (ImGui::MenuItem("Reload HurtBlobs"))
     {
-        fighter->mAnimation = nullptr;
-        fighter->mNextAnimation = nullptr;
-        fighter->mAnimations.clear();
+        fighter->initialise_hurtblobs();
+        scrub_to_frame(currentFrame);
+    }
+
+    if (ImGui::MenuItem("Reload Sounds"))
+    {
+        fighter->initialise_sounds();
+        scrub_to_frame(currentFrame);
+    }
+
+    if (ImGui::MenuItem("Reload Animations"))
+    {
         fighter->initialise_animations();
         reset_timeline_length();
         scrub_to_frame(currentFrame);
@@ -143,7 +146,6 @@ void ActionContext::show_widgets()
     show_widget_hitblobs();
     show_widget_effects();
     show_widget_emitters();
-    show_widget_sounds();
     show_widget_scripts();
     show_widget_timeline();
     editor.helper_show_widget_debug(&world->get_stage(), fighter);
@@ -208,7 +210,7 @@ void ActionContext::show_widget_hitblobs()
         ImGui::InputText("Sound", blob.sound.data(), blob.sound.buffer_size());
     };
 
-    editor.helper_edit_objects(action->mBlobs, funcInit, funcEdit);
+    editor.helper_edit_objects(action->mBlobs, funcInit, funcEdit, nullptr);
 }
 
 //============================================================================//
@@ -256,7 +258,7 @@ void ActionContext::show_widget_effects()
         ImPlus::Checkbox("Anchored", &effect.anchored);
     };
 
-    editor.helper_edit_objects(action->mEffects, funcInit, funcEdit);
+    editor.helper_edit_objects(action->mEffects, funcInit, funcEdit, nullptr);
 }
 
 //============================================================================//
@@ -328,45 +330,7 @@ void ActionContext::show_widget_emitters()
         ImGui::InputText("Sprite", emitter.sprite.data(), emitter.sprite.capacity());
     };
 
-    editor.helper_edit_objects(action->mEmitters, funcInit, funcEdit);
-}
-
-//============================================================================//
-
-void ActionContext::show_widget_sounds()
-{
-    if (editor.mDoResetDockSounds) ImGui::SetNextWindowDockID(editor.mDockRightId);
-    editor.mDoResetDockSounds = false;
-
-    const ImPlus::ScopeWindow window = { "Sounds", 0 };
-    if (window.show == false) return;
-
-    const ImPlus::ScopeID ctxKeyScope = ctxKey.hash();
-
-    //--------------------------------------------------------//
-
-    const auto funcInit = [&](SoundEffect& sound)
-    {
-        sound.cache = &world->caches.sounds;
-        sound.path = "fighters/{}/sounds/{}"_format(fighter->name, sound.get_key());
-        sound.handle = sound.cache->try_acquire(sound.path.c_str(), true);
-        sound.volume = 100.f; // very loud, in case you forget to set it
-    };
-
-    const auto funcEdit = [&](SoundEffect& sound)
-    {
-        const ImPlus::ScopeItemWidth widthScope = -100.f;
-
-        if (ImPlus::InputString("Path", sound.path))
-            sound.handle = sound.cache->try_acquire(sound.path.c_str(), true);
-
-        if (sound.handle == nullptr) ImPlus::LabelText("Resolved", "COULD NOT LOAD RESOURCE");
-        else ImPlus::LabelText("Resolved", "assets/{}.wav"_format(sound.path));
-
-        ImPlus::SliderValue("Volume", sound.volume, 0.2f, 1.f, "%.2f ×");
-    };
-
-    editor.helper_edit_objects(action->mSounds, funcInit, funcEdit);
+    editor.helper_edit_objects(action->mEmitters, funcInit, funcEdit, nullptr);
 }
 
 //============================================================================//
@@ -539,7 +503,7 @@ void ActionContext::scrub_to_frame(int frame)
 
     // clear and reset things
     //mController->wren_clear_history();
-    world->get_particle_system().reset_random_seed(editor.mRandomSeed);
+    world->set_rng_seed(editor.mRandomSeed);
     world->get_particle_system().clear();
     world->get_effect_system().clear();
     fighter->reset_everything();

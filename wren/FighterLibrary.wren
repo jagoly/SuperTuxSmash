@@ -12,6 +12,7 @@ class FighterLibrary {
   }
 
   fighter { _fighter }
+  world { _fighter.world }
 
   attrs { _fighter.attributes }
   diamond { _fighter.localDiamond }
@@ -48,20 +49,6 @@ class FighterLibrary {
     actions["Walk"] = Fn.new {
       fighter.change_state("Walk")
       fighter.play_animation("WalkLoop", 4, true)
-    }
-
-    // from Neutral, change to Crouch
-    actions["CrouchOn"] = Fn.new {
-      fighter.change_state("Crouch")
-      fighter.play_animation("CrouchOn", 2, true)
-      fighter.set_next_animation("CrouchLoop", 0)
-    }
-
-    // from Crouch, return to Neutral
-    actions["CrouchOff"] = Fn.new {
-      fighter.change_state("Neutral")
-      fighter.play_animation("CrouchOff", 2, true)
-      fighter.set_next_animation("NeutralLoop", 0)
     }
 
     // from BrakeTurn, return to Neutral

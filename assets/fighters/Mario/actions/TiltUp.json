@@ -68,15 +68,5 @@
     }
   },
   "effects": {},
-  "emitters": {},
-  "sounds": {
-    "HitPunch2": {
-      "path": "fighters/Mario/sounds/HitPunch2",
-      "volume": 0.5
-    },
-    "Swing2": {
-      "path": "fighters/Mario/sounds/Swing2",
-      "volume": 0.5
-    }
-  }
+  "emitters": {}
 }

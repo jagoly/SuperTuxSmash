@@ -144,23 +144,5 @@
       "sprite": "Smoke",
       "velocity": [ 0.0, 0.0, 0.035 ]
     }
-  },
-  "sounds": {
-    "HitBurn3": {
-      "path": "fighters/Mario/sounds/HitBurn3",
-      "volume": 0.5
-    },
-    "HitPunch3": {
-      "path": "fighters/Mario/sounds/HitPunch3",
-      "volume": 0.5
-    },
-    "SwingExtra": {
-      "path": "fighters/Mario/sounds/SwingExtra",
-      "volume": 0.4
-    },
-    "SwingSmashFwd": {
-      "path": "fighters/Mario/sounds/SwingSmashFwd",
-      "volume": 0.6
-    }
   }
 }

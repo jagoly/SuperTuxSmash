@@ -8,7 +8,7 @@ class Script is Base {
 
     wait_until(1)
     action.emit_particles("Ring")
-    action.play_sound("LandHeavy")
+    fighter.play_sound("LandHeavy")
 
     wait_until(31) // 31
     default_end()
