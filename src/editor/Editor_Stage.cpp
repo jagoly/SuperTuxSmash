@@ -15,11 +15,11 @@ using StageContext = EditorScene::StageContext;
 
 //============================================================================//
 
-StageContext::StageContext(EditorScene& _editor, StageEnum _key)
+StageContext::StageContext(EditorScene& _editor, TinyString _key)
     : BaseContext(_editor, _key), ctxKey(_key)
 {
     ctxTypeString = "Stage";
-    ctxKeyString = sq::enum_to_string(ctxKey);
+    ctxKeyString = _key;
 
     stage = &world->get_stage();
 
@@ -98,7 +98,7 @@ void StageContext::show_widget_stage()
     const ImPlus::ScopeWindow window = { "Stage", 0 };
     if (window.show == false) return;
 
-    const ImPlus::ScopeID ctxKeyIdScope = int(ctxKey);
+    const ImPlus::ScopeID ctxKeyIdScope = ctxKey.c_str();
 
     //--------------------------------------------------------//
 
@@ -132,7 +132,7 @@ void StageContext::show_widget_cubemaps()
     const ImPlus::ScopeWindow window = { "CubeMaps", 0 };
     if (window.show == false) return;
 
-    const ImPlus::ScopeID ctxKeyIdScope = int(ctxKey);
+    const ImPlus::ScopeID ctxKeyIdScope = ctxKey.c_str();
 
     //--------------------------------------------------------//
 

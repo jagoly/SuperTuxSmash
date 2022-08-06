@@ -41,7 +41,7 @@ public: //====================================================//
     //--------------------------------------------------------//
 
     /// Generate particles specified by an Emitter.
-    void generate(const Emitter& emitter);
+    void generate(const Emitter& emitter, const Entity* entity);
 
     /// Simulate all particles, then destroy dead particles.
     void update_and_clean();
@@ -55,7 +55,13 @@ public: //====================================================//
 
 private: //===================================================//
 
+    struct GenerateCall { const Emitter* emitter; const Entity* entity; };
+
+    void impl_generate(const Emitter& emitter, const Entity* entity);
+
     World& world;
+
+    StackVector<GenerateCall, 15u> mGenerateCalls;
 
     std::vector<ParticleData> mParticles;
 };

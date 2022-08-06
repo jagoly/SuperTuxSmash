@@ -43,6 +43,9 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
+    std::vector<TinyString> mStageNames;
+    std::vector<TinyString> mFighterNames;
+
     GameSetup mSetup;
 };
 

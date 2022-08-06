@@ -31,13 +31,13 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
-    void impl_integrate_hit_blobs(const std::vector<HitBlob*>& blobs);
+    void impl_integrate_hit_blobs(const std::vector<HitBlob>& blobs);
 
-    void impl_integrate_hurt_blobs(const std::vector<HurtBlob*>& blobs);
+    void impl_integrate_hurt_blobs(const std::vector<HurtBlob>& blobs);
 
     void impl_integrate_diamond(const Fighter& fighter);
 
-    void impl_integrate_skeleton(const Fighter& fighter);
+    void impl_integrate_skeleton(const Entity& entity);
 
     //--------------------------------------------------------//
 

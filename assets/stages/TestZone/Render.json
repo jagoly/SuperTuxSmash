@@ -16,8 +16,8 @@
       "Main": {
         "attributes": [ "TexCoords", "Normals", "Tangents" ],
         "pass": "Opaque",
-        "vertexShader": "gbuffer/BasicModel/VertTangents",
-        "fragmentShader": "gbuffer/BasicModel/FragNormal",
+        "vertexShader": "gbuffer/General.vert/AnimTexture0_Bones0_Tangent1",
+        "fragmentShader": "gbuffer/General.frag/TexMask0_TexNormal1",
         "cullFace": "Back",
         "alphaCoverage": "Disable",
         "depthTest": "Replace",
@@ -26,8 +26,8 @@
       "ShadowFront": {
         "attributes": [ "#TexCoords", "#Normals", "#Tangents" ],
         "pass": "ShadowFront",
-        "vertexShader": "shadow/BasicModel/Vert",
-        "fragmentShader": "shadow/BasicModel/Frag",
+        "vertexShader": "shadow/General.vert/AnimTexture0_Bones0_TexCoord0",
+        "fragmentShader": "shadow/General.frag/TexMask0",
         "cullFace": "Back",
         "alphaCoverage": "Disable",
         "depthTest": "Replace",
@@ -36,69 +36,159 @@
       "ShadowBack": {
         "attributes": [ "#TexCoords", "#Normals", "#Tangents" ],
         "pass": "ShadowBack",
-        "vertexShader": "shadow/BasicModel/Vert",
-        "fragmentShader": "shadow/BasicModel/Frag",
+        "vertexShader": "shadow/General.vert/AnimTexture0_Bones0_TexCoord0",
+        "fragmentShader": "shadow/General.frag/TexMask0",
         "cullFace": "Front",
         "alphaCoverage": "Disable",
         "depthTest": "Replace",
         "colourBlend": []
       }
-    },
-    "materials": {
-      "Main": {
-        "pipeline": "Main",
-        "textures": {
-          "tx_Albedo": "TestZone_albedo",
-          "tx_Roughness": "TestZone_roughness",
-          "tx_Normal": "TestZone_normal",
-          "tx_Metallic": "White"
-        },
-        "params": {}
-      },
-      "Shadow": [
-        {
-          "pipeline": "ShadowFront",
-          "textures": {},
-          "params": {}
-        },
-        {
-          "pipeline": "ShadowBack",
-          "textures": {},
-          "params": {}
-        }
-      ]
     }
   },
   "items": [
     {
       "condition": null,
-      "material": "Main",
       "mesh": "Stage",
-      "submesh": null
+      "subMesh": null,
+      "pipeline": "Main",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": null
+        },
+        "normalMatIndex": {
+          "type": "NormalMatrixIndex",
+          "bone": null
+        },
+        "albedoTexIndex": {
+          "type": "TextureIndex",
+          "texture": "TestZone_albedo"
+        },
+        "roughnessTexIndex": {
+          "type": "TextureIndex",
+          "texture": "TestZone_roughness"
+        },
+        "normalTexIndex": {
+          "type": "TextureIndex",
+          "texture": "TestZone_normal"
+        },
+        "metallicTexIndex": {
+          "type": "TextureIndex",
+          "texture": "White"
+        }
+      }
     },
     {
       "condition": null,
-      "material": "Main",
       "mesh": "Platforms",
-      "submesh": null
+      "subMesh": null,
+      "pipeline": "Main",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": null
+        },
+        "normalMatIndex": {
+          "type": "NormalMatrixIndex",
+          "bone": null
+        },
+        "albedoTexIndex": {
+          "type": "TextureIndex",
+          "texture": "TestZone_albedo"
+        },
+        "roughnessTexIndex": {
+          "type": "TextureIndex",
+          "texture": "TestZone_roughness"
+        },
+        "normalTexIndex": {
+          "type": "TextureIndex",
+          "texture": "TestZone_normal"
+        },
+        "metallicTexIndex": {
+          "type": "TextureIndex",
+          "texture": "White"
+        }
+      }
     },
     {
       "condition": null,
-      "material": "Main",
       "mesh": "Bounds",
-      "submesh": null
+      "subMesh": null,
+      "pipeline": "Main",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": null
+        },
+        "normalMatIndex": {
+          "type": "NormalMatrixIndex",
+          "bone": null
+        },
+        "albedoTexIndex": {
+          "type": "TextureIndex",
+          "texture": "TestZone_albedo"
+        },
+        "roughnessTexIndex": {
+          "type": "TextureIndex",
+          "texture": "TestZone_roughness"
+        },
+        "normalTexIndex": {
+          "type": "TextureIndex",
+          "texture": "TestZone_normal"
+        },
+        "metallicTexIndex": {
+          "type": "TextureIndex",
+          "texture": "White"
+        }
+      }
     },
     {
       "condition": null,
-      "material": "Shadow",
       "mesh": "Stage",
-      "submesh": null
+      "subMesh": null,
+      "pipeline": "ShadowFront",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": null
+        }
+      }
     },
     {
       "condition": null,
-      "material": "Shadow",
+      "mesh": "Stage",
+      "subMesh": null,
+      "pipeline": "ShadowBack",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": null
+        }
+      }
+    },
+    {
+      "condition": null,
       "mesh": "Platforms",
-      "submesh": null
+      "subMesh": null,
+      "pipeline": "ShadowFront",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": null
+        }
+      }
+    },
+    {
+      "condition": null,
+      "mesh": "Platforms",
+      "subMesh": null,
+      "pipeline": "ShadowBack",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": null
+        }
+      }
     }
   ]
 }

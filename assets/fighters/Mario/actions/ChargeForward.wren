@@ -10,14 +10,10 @@ class Script is Base {
     allowNext = true
 
     wait_until(6)
-    fighter.play_sound("SmashStart")
-    fighter.play_sound("VoiceChargeForward")
+    fighter.play_sound("SmashStart", true)
+    fighter.play_sound("VoiceChargeForward", false)
 
     wait_until(66) // 66
     return "SmashForward"
-  }
-
-  cancel() {
-    fighter.cancel_sound("SmashStart")
   }
 }

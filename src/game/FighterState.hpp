@@ -6,20 +6,42 @@ namespace sts {
 
 //============================================================================//
 
+struct FighterStateDef final
+{
+    FighterStateDef(const FighterDef& fighter, TinyString name);
+
+    ~FighterStateDef();
+
+    //--------------------------------------------------------//
+
+    const FighterDef& fighter;
+
+    const TinyString name;
+
+    WrenHandle* scriptClass = nullptr;
+
+    //--------------------------------------------------------//
+
+    void load_wren_from_file();
+};
+
+//============================================================================//
+
 class FighterState final : sq::NonCopyable
 {
 public: //====================================================//
 
-    FighterState(Fighter& fighter, SmallString name);
+    FighterState(const FighterStateDef& def, Fighter& fighter);
 
     ~FighterState();
 
     //--------------------------------------------------------//
 
-    Fighter& fighter;
-    World& world;
+    const FighterStateDef& def;
 
-    const TinyString name;
+    Fighter& fighter;
+
+    World& world;
 
     //--------------------------------------------------------//
 
@@ -29,11 +51,9 @@ public: //====================================================//
 
     void call_do_exit();
 
-    //--------------------------------------------------------//
-
-    void load_wren_from_file();
-
     //-- wren methods ----------------------------------------//
+
+    const TinyString& wren_get_name() { return def.name; }
 
     Fighter* wren_get_fighter() { return &fighter; }
 

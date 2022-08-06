@@ -12,8 +12,8 @@
       "Main": {
         "attributes": [ "TexCoords", "Normals" ],
         "pass": "Opaque",
-        "vertexShader": "gbuffer/BasicModel/Vert",
-        "fragmentShader": "gbuffer/BasicModel/Frag",
+        "vertexShader": "gbuffer/General.vert/AnimTexture0_Bones0_Tangent0",
+        "fragmentShader": "gbuffer/General.frag/TexMask0_TexNormal0",
         "cullFace": "Back",
         "alphaCoverage": "Disable",
         "depthTest": "Replace",
@@ -22,8 +22,8 @@
       "ShadowFront": {
         "attributes": [ "#TexCoords", "#Normals" ],
         "pass": "ShadowFront",
-        "vertexShader": "shadow/BasicModel/Vert",
-        "fragmentShader": "shadow/BasicModel/Frag",
+        "vertexShader": "shadow/General.vert/AnimTexture0_Bones0_TexCoord0",
+        "fragmentShader": "shadow/General.frag/TexMask0",
         "cullFace": "Back",
         "alphaCoverage": "Disable",
         "depthTest": "Replace",
@@ -32,50 +32,67 @@
       "ShadowBack": {
         "attributes": [ "#TexCoords", "#Normals" ],
         "pass": "ShadowBack",
-        "vertexShader": "shadow/BasicModel/Vert",
-        "fragmentShader": "shadow/BasicModel/Frag",
+        "vertexShader": "shadow/General.vert/AnimTexture0_Bones0_TexCoord0",
+        "fragmentShader": "shadow/General.frag/TexMask0",
         "cullFace": "Front",
         "alphaCoverage": "Disable",
         "depthTest": "Replace",
         "colourBlend": []
       }
-    },
-    "materials": {
-      "Main": {
-        "pipeline": "Main",
-        "textures": {
-          "tx_Albedo": "White",
-          "tx_Roughness": "Spheres_roughness",
-          "tx_Metallic": "Spheres_metallic"
-        },
-        "params": {}
-      },
-      "Shadow": [
-        {
-          "pipeline": "ShadowFront",
-          "textures": {},
-          "params": {}
-        },
-        {
-          "pipeline": "ShadowBack",
-          "textures": {},
-          "params": {}
-        }
-      ]
     }
   },
   "items": [
     {
       "condition": null,
-      "material": "Main",
       "mesh": "Spheres",
-      "submesh": null
+      "subMesh": null,
+      "pipeline": "Main",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": null
+        },
+        "normalMatIndex": {
+          "type": "NormalMatrixIndex",
+          "bone": null
+        },
+        "albedoTexIndex": {
+          "type": "TextureIndex",
+          "texture": "White"
+        },
+        "roughnessTexIndex": {
+          "type": "TextureIndex",
+          "texture": "Spheres_roughness"
+        },
+        "metallicTexIndex": {
+          "type": "TextureIndex",
+          "texture": "Spheres_metallic"
+        }
+      }
     },
     {
       "condition": null,
-      "material": "Shadow",
       "mesh": "Spheres",
-      "submesh": null
+      "subMesh": null,
+      "pipeline": "ShadowFront",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": null
+        }
+      }
+    },
+    {
+      "condition": null,
+      "mesh": "Spheres",
+      "subMesh": null,
+      "pipeline": "ShadowBack",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": null
+        }
+      }
     }
   ]
 }

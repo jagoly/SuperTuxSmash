@@ -13,7 +13,7 @@ class Script is Base {
     action.enable_hitblobs("CLEAN")
 
     wait_until(6)
-    fighter.play_sound("Swing2")
+    fighter.play_sound("Swing2", false)
 
     wait_until(9)
     action.disable_hitblobs(false)

@@ -1,0 +1,9 @@
+{
+  "format": "1x8_Unorm",
+  "wrapX": "Clamp",
+  "wrapY": "Clamp",
+  "swizzle": "RRR1",
+  "filter": "Anisotropic",
+  "mipmaps": "Generate",
+  "size": [ 64, 128 ]
+}

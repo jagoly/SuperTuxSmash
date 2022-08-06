@@ -32,7 +32,7 @@ class Script is FighterActionScript {
     // enable projectile reflect
 
     wait_until(7)
-    // fighter.play_sound("")
+    // fighter.play_sound("", false)
 
     wait_until(10)
     vars.applyGravity = false
@@ -42,8 +42,8 @@ class Script is FighterActionScript {
     //action.enable_hitblobs("")
     // visual effect
     // graphic effect?
-    // fighter.play_sound("")
-    // fighter.play_sound("")
+    // fighter.play_sound("", false)
+    // fighter.play_sound("", false)
 
     wait_until(12)
     // wind effect

@@ -2,9 +2,6 @@
 
 #include "setup.hpp"
 
-#include <sqee/vk/SwapBuffer.hpp>
-#include <sqee/objects/Armature.hpp>
-
 namespace sts {
 
 //============================================================================//
@@ -15,6 +12,8 @@ public: //====================================================//
 
     EffectSystem(Renderer& renderer);
 
+    ~EffectSystem();
+
     //--------------------------------------------------------//
 
     void tick();
@@ -23,9 +22,9 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    void play_effect(const VisualEffect& effect);
+    int32_t play_effect(const VisualEffectDef& def, const Entity* owner);
 
-    void cancel_effect(const VisualEffect& effect);
+    void cancel_effect(int32_t id);
 
     void clear();
 
@@ -33,33 +32,9 @@ private: //===================================================//
 
     Renderer& renderer;
 
-    struct BufferPoolEntry
-    {
-        sq::SwapBuffer ubo;
-        sq::Swapper<vk::DescriptorSet> descriptorSet;
-        bool used = false;
-    };
+    std::vector<std::unique_ptr<VisualEffect>> mEffects;
 
-    struct ActiveEffect
-    {
-        const VisualEffect* effect;
-        BufferPoolEntry* entry;
-        uint frame;
-        int64_t renderGroupId;
-        Mat4F modelMatrix;
-
-        struct InterpolationData
-        {
-            sq::Armature::Pose pose;
-            Vec4F params[MAX_EFFECT_BONES] {};
-        }
-        previous, current;
-    };
-
-    std::array<BufferPoolEntry, MAX_ACTIVE_EFFECTS> mBufferPool;
-    std::array<BufferPoolEntry*, MAX_ACTIVE_EFFECTS> mBufferPoolSorted;
-
-    StackVector<ActiveEffect, MAX_ACTIVE_EFFECTS> mActiveEffects;
+    int32_t mCurrentId = -1;
 };
 
 //============================================================================//

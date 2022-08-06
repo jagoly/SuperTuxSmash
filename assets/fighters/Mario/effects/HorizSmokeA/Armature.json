@@ -1,44 +1,85 @@
-[
-  {
-    "name": "TopN",
-    "parent": null,
-    "offset": [ 0.0, 0.0, 0.0 ],
-    "rotation": [ 0.0, 0.70711, 0.70711, 0.0 ],
-    "scale": [ 1.0, 1.0, 1.0 ]
+{
+  "bones": [
+    {
+      "name": "TopN",
+      "parent": null,
+      "offset": [ 0.0, 0.0, 0.0 ],
+      "rotation": [ 0.0, 0.70711, 0.70711, 0.0 ],
+      "scale": [ 1.0, 1.0, 1.0 ],
+      "flags": []
+    },
+    {
+      "name": "shock_smokeA",
+      "parent": "TopN",
+      "offset": [ 0.0, 0.0, 0.0 ],
+      "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+      "scale": [ 1.0, 1.0, 1.0 ],
+      "flags": []
+    },
+    {
+      "name": "shock_smokeB",
+      "parent": "TopN",
+      "offset": [ 0.0, 0.0, 0.0 ],
+      "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+      "scale": [ 1.0, 1.0, 1.0 ],
+      "flags": []
+    },
+    {
+      "name": "shock_smokeC",
+      "parent": "TopN",
+      "offset": [ 0.0, 0.0, 0.0 ],
+      "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+      "scale": [ 1.0, 1.0, 1.0 ],
+      "flags": []
+    },
+    {
+      "name": "shock_smokeD",
+      "parent": "TopN",
+      "offset": [ 0.0, 0.0, 0.0 ],
+      "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+      "scale": [ 1.0, 1.0, 1.0 ],
+      "flags": []
+    },
+    {
+      "name": "stormsmoke",
+      "parent": "TopN",
+      "offset": [ 0.0, 0.0, 0.0 ],
+      "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+      "scale": [ 1.0, 1.0, 1.0 ],
+      "flags": []
+    }
+  ],
+  "blocks": {
+    "shock1": {
+      "colour": {
+        "type": "Float4",
+        "default": [ 1.0, 1.0, 1.0, 1.0 ]
+      }
+    },
+    "shock2": {
+      "colour": {
+        "type": "Float4",
+        "default": [ 1.0, 1.0, 1.0, 1.0 ]
+      }
+    },
+    "shock3": {
+      "colour": {
+        "type": "Float4",
+        "default": [ 1.0, 1.0, 1.0, 1.0 ]
+      }
+    },
+    "shock4": {
+      "colour": {
+        "type": "Float4",
+        "default": [ 1.0, 1.0, 1.0, 1.0 ]
+      }
+    },
+    "storm": {
+      "colour": {
+        "type": "Float4",
+        "default": [ 1.0, 1.0, 1.0, 1.0 ]
+      }
+    }
   },
-  {
-    "name": "shock_smokeA",
-    "parent": "TopN",
-    "offset": [ 0.0, 0.0, 0.0 ],
-    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
-    "scale": [ 1.0, 1.0, 1.0 ]
-  },
-  {
-    "name": "shock_smokeB",
-    "parent": "TopN",
-    "offset": [ 0.0, 0.0, 0.0 ],
-    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
-    "scale": [ 1.0, 1.0, 1.0 ]
-  },
-  {
-    "name": "shock_smokeC",
-    "parent": "TopN",
-    "offset": [ 0.0, 0.0, 0.0 ],
-    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
-    "scale": [ 1.0, 1.0, 1.0 ]
-  },
-  {
-    "name": "shock_smokeD",
-    "parent": "TopN",
-    "offset": [ 0.0, 0.0, 0.0 ],
-    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
-    "scale": [ 1.0, 1.0, 1.0 ]
-  },
-  {
-    "name": "stormsmoke",
-    "parent": "TopN",
-    "offset": [ 0.0, 0.0, 0.0 ],
-    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
-    "scale": [ 1.0, 1.0, 1.0 ]
-  }
-]
+  "animSampleSize": 320
+}

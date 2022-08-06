@@ -28,7 +28,7 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
     ImGui::SameLine();
 
     const auto flags = fighter.index == 0 ? ImGuiTreeNodeFlags_DefaultOpen : 0;
-    if (!ImPlus::CollapsingHeader("Fighter {} - {}"_format(fighter.index, fighter.name), flags))
+    if (!ImPlus::CollapsingHeader("Fighter {} - {}"_format(fighter.index, fighter.def.name), flags))
         return;
 
     //--------------------------------------------------------//
@@ -49,18 +49,18 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
         if (state != nullptr)
         {
             if (vars.freezeTime != 0u)
-                ImPlus::Text("State: {} (frozen for {})"_format(state->name, vars.freezeTime));
+                ImPlus::Text("State: {} (frozen for {})"_format(state->def.name, vars.freezeTime));
 
-            else if (state->name.ends_with("Stun"))
-                ImPlus::Text("State: {} (stunned for {})"_format(state->name, vars.stunTime));
+            else if (state->def.name.ends_with("Stun"))
+                ImPlus::Text("State: {} (stunned for {})"_format(state->def.name, vars.stunTime));
 
-            else ImPlus::Text("State: {}"_format(state->name));
+            else ImPlus::Text("State: {}"_format(state->def.name));
         }
         else ImPlus::Text("State: None");
 
         if (action != nullptr)
         {
-            ImPlus::Text("Action: {} ({})"_format(action->name, action->mCurrentFrame - 1u));
+            ImPlus::Text("Action: {} ({})"_format(action->def.name, action->mCurrentFrame - 1u));
         }
         else ImPlus::Text("Action: None");
 
@@ -115,6 +115,8 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
         ImPlus::SliderValue("shield",      vars.shield,      0.f, SHIELD_MAX_HP, "%.2f");
         ImPlus::SliderValue("launchSpeed", vars.launchSpeed, 0.f, 100.f,         "%.4f");
 
+        ImPlus::DragValue("animTime", vars.animTime, 0.0001f, 0.f, 0.f, "%.4f");
+
         ImPlus::DragVector("attachPoint", vars.position, 0.01f, "%+.4f");
 
         ImPlus::LabelText("ledge", "{}"_format(static_cast<void*>(vars.ledge)));
@@ -141,8 +143,8 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
         ImPlus::InputValue("fastFallSpeed",  attrs.fastFallSpeed,  0.1f, "%.4f");
         ImPlus::InputValue("weight",         attrs.weight,         1.f,  "%.1f");
         ImGui::Separator();
-        ImPlus::InputValue("walkAnimStride", attrs.walkAnimStride, 0.1f, "%.4f");
-        ImPlus::InputValue("dashAnimStride", attrs.dashAnimStride, 0.1f, "%.4f");
+        ImPlus::InputValue("walkAnimSpeed",  attrs.walkAnimSpeed,  0.1f, "%.4f");
+        ImPlus::InputValue("dashAnimSpeed",  attrs.dashAnimSpeed,  0.1f, "%.4f");
         ImGui::Separator();
         ImPlus::InputValue("extraJumps",     attrs.extraJumps,     1,    "%d");
         ImPlus::InputValue("lightLandTime",  attrs.lightLandTime,  1,    "%d");
@@ -206,7 +208,7 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
 
 void DebugGui::show_widget_stage(Stage& stage)
 {
-    if (!ImPlus::CollapsingHeader("Stage - {}"_format(stage.type), 0))
+    if (!ImPlus::CollapsingHeader("Stage - {}"_format(stage.name), 0))
         return;
 
     //--------------------------------------------------------//

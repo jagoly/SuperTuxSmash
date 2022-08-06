@@ -10,7 +10,7 @@ namespace sts {
 
 struct EditorScene::StageContext : EditorScene::BaseContext
 {
-    StageContext(EditorScene& editor, StageEnum key);
+    StageContext(EditorScene& editor, TinyString key);
 
     ~StageContext() override;
 
@@ -41,7 +41,7 @@ struct EditorScene::StageContext : EditorScene::BaseContext
 
     //--------------------------------------------------------//
 
-    const StageEnum ctxKey;
+    const TinyString ctxKey;
 
     Stage* stage;
 

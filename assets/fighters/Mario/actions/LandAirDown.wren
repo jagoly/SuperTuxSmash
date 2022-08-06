@@ -11,7 +11,7 @@ class Script is Base {
     action.disable_hitblobs(true)
 
     wait_until(10)
-    fighter.play_sound("LandHeavy")
+    fighter.play_sound("LandHeavy", false)
 
     wait_until(19) // 31
     default_end()

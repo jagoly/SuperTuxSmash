@@ -8,7 +8,7 @@ class Script is Base {
 
     wait_until(5)
     lib.play_random_voice_attack()
-    fighter.play_sound("Swing1")
+    fighter.play_sound("Swing1", false)
     action.enable_hitblobs("CLEAN")
     state.doLand = "LandAirBack"
 

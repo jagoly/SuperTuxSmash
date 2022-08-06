@@ -10,7 +10,7 @@ namespace sts {
 
 struct EditorScene::FighterContext : EditorScene::BaseContext
 {
-    FighterContext(EditorScene& editor, FighterEnum key);
+    FighterContext(EditorScene& editor, TinyString key);
 
     ~FighterContext() override;
 
@@ -33,16 +33,17 @@ struct EditorScene::FighterContext : EditorScene::BaseContext
 
     //--------------------------------------------------------//
 
-    const FighterEnum ctxKey;
+    const TinyString ctxKey;
 
     Fighter* fighter;
+    FighterDef* fighterDef;
 
     struct UndoEntry
     {
-        std::map<TinyString, HurtBlob> hurtBlobs;
+        std::map<TinyString, HurtBlobDef> hurtBlobs;
         std::map<SmallString, SoundEffect> sounds;
 
-        bool has_changes(const Fighter& fighter) const;
+        bool has_changes(const FighterDef& fighterDef) const;
     };
 
     std::unique_ptr<UndoEntry> savedData;

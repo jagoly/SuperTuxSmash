@@ -8,16 +8,16 @@ class Script is Base {
     // effect 30 no transform no cancel
 
     wait_until(1)
-    fighter.play_sound("VoiceAirHop")
+    fighter.play_sound("VoiceAirHop", false)
 
     wait_until(2)
-    fighter.play_sound("AirHop")
+    fighter.play_sound("AirHop", false)
 
     wait_until(12)
-    fighter.play_sound("Whoosh2")
+    fighter.play_sound("Whoosh2", false)
     wait_until(24)
-    fighter.play_sound("Whoosh2")
+    fighter.play_sound("Whoosh2", false)
     wait_until(36)
-    fighter.play_sound("Whoosh3")
+    fighter.play_sound("Whoosh3", false)
   }
 }

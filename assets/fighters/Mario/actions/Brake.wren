@@ -11,7 +11,7 @@ class Script is Base {
     action.emit_particles("BrakeSmoke")
 
     wait_until(10)
-    fighter.play_sound("Brake")
+    fighter.play_sound("Brake", false)
     state.disable_allow_turn()
 
     wait_until(13) // 23

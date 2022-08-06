@@ -27,9 +27,6 @@ using namespace sts;
 GameScene::GameScene(SmashApp& smashApp, GameSetup setup)
     : Scene(1.0 / 48.0), mSmashApp(smashApp)
 {
-    // default to testzone, it's the only stage anyway
-    if (setup.stage == StageEnum::Null) setup.stage = StageEnum::TestZone;
-
     mSmashApp.get_debug_overlay().set_sub_timers ({
         "BeginGbuffer", " Opaque", "EndGbuffer",
         "Shadows", "ShadowAverage", "DepthMipGen", "SSAO", "BlurSSAO",
@@ -67,7 +64,7 @@ GameScene::GameScene(SmashApp& smashApp, GameSetup setup)
     //--------------------------------------------------------//
 
     mRenderer = std::make_unique<Renderer>(window, options, resourceCaches);
-    mWorld = std::make_unique<World>(false, options, audioContext, resourceCaches, *mRenderer);
+    mWorld = std::make_unique<World>(options, audioContext, resourceCaches, *mRenderer);
     mWorld->set_rng_seed(uint_fast32_t(std::time(nullptr)));
 
     mStandardCamera = std::make_unique<StandardCamera>(*mRenderer);
@@ -90,10 +87,8 @@ GameScene::GameScene(SmashApp& smashApp, GameSetup setup)
             std::make_unique<Controller>(inputDevices, "config/player{}.json"_format(index+1u))
         );
 
-        auto fighter = std::make_unique<Fighter>(*mWorld, setup.players[index].fighter, index);
-        fighter->controller = controller.get();
-
-        mWorld->add_fighter(std::move(fighter));
+        Fighter& fighter = mWorld->create_fighter(setup.players[index].fighter);
+        fighter.controller = controller.get();
     }
 
     mWorld->finish_setup();
@@ -175,6 +170,8 @@ void GameScene::update()
 
 void GameScene::integrate(double /*elapsed*/, float blend)
 {
+    mRenderer->swap_objects_buffers();
+
     // todo: pass the controller that paused the game
     mRenderer->get_camera().update_from_controller(*mControllers.front());
 

@@ -13,8 +13,11 @@ class Script is Base {
     action.play_effect("HorizSmokeA")
 
     wait_until(9)
-    fighter.play_sound("SwingSmashForward")
-    fighter.play_sound("SwingExtra")
+    fighter.play_sound("SwingSmashForward", false)
+    fighter.play_sound("SwingExtra", false)
+    // todo:
+    //  In brawl, this effect is both attached and transient. These aren't
+    //  supported for emitters yet, but for this case it doesn't really matter.
     if (angle == 0) action.emit_particles("F_Fire")
     else if (angle == -1) action.emit_particles("D_Fire")
     else if (angle == 1) action.emit_particles("U_Fire")

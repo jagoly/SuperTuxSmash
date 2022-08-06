@@ -16,9 +16,6 @@ struct SoundEffect final
     /// Handle to the loaded sq::Sound resource.
     SoundHandle handle = nullptr;
 
-    /// ID of the sound when playing.
-    int64_t id = -1;
-
     //--------------------------------------------------------//
 
     /// Path to the sound file to use.

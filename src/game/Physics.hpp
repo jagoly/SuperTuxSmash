@@ -14,10 +14,10 @@ struct LocalDiamond final
 
     void compute_normals()
     {
-        normLeftDown = sq::maths::normalize(Vec2F(-offsetCross, -halfWidth));
-        normLeftUp = sq::maths::normalize(Vec2F(-offsetCross, +halfWidth));
-        normRightDown = sq::maths::normalize(Vec2F(+offsetCross, -halfWidth));
-        normRightUp = sq::maths::normalize(Vec2F(+offsetCross, +halfWidth));
+        normLeftDown = maths::normalize(Vec2F(-offsetCross, -halfWidth));
+        normLeftUp = maths::normalize(Vec2F(-offsetCross, +halfWidth));
+        normRightDown = maths::normalize(Vec2F(+offsetCross, -halfWidth));
+        normRightUp = maths::normalize(Vec2F(+offsetCross, +halfWidth));
     }
 
     Vec2F min() const { return { -halfWidth, 0.f }; }
@@ -27,7 +27,7 @@ struct LocalDiamond final
 
 //============================================================================//
 
-/// Result of something trying to move.
+/// Result of a fighter trying to move.
 struct MoveAttempt final
 {
     bool collideFloor = false;
@@ -40,6 +40,15 @@ struct MoveAttempt final
     int8_t edge = 0;
 
     Vec2F result = Vec2F();
+};
+
+/// Result of an article trying to move.
+struct MoveAttemptSphere final
+{
+    Vec2F newPosition = Vec2F();
+    Vec2F newVelocity = Vec2F();
+
+    bool bounced = false;
 };
 
 //============================================================================//

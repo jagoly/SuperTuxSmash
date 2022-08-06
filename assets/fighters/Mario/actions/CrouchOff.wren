@@ -7,6 +7,6 @@ class Script is Base {
     default_begin()
 
     wait_until(2) // 10
-    fighter.play_sound("CrouchOff")
+    fighter.play_sound("CrouchOff", false)
   }
 }

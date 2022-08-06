@@ -20,7 +20,7 @@ class Script is FighterActionScript {
     wait_until(2)
     state.canReverse = false
     action.enable_hitblobs("A")
-    fighter.play_sound("SuperJump")
+    fighter.play_sound("SuperJump", false)
     // todo: proper angling
     vars.intangible = true
     // visual effect

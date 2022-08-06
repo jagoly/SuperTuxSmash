@@ -2,6 +2,7 @@
 
 #include "main/Options.hpp"
 
+#include "game/Article.hpp"
 #include "game/Fighter.hpp"
 #include "game/FighterAction.hpp"
 #include "game/HitBlob.hpp"
@@ -154,108 +155,64 @@ void DebugRenderer::refresh_options_create()
 
 void DebugRenderer::integrate(float /*blend*/, const World& world)
 {
-    if (renderer.options.render_hit_blobs == true)
-        impl_integrate_hit_blobs(world.get_hit_blobs());
-
     if (renderer.options.render_hurt_blobs == true)
-        impl_integrate_hurt_blobs(world.get_hurt_blobs());
+        for (const auto& fighter : world.get_fighters())
+            impl_integrate_hurt_blobs(fighter->get_hurt_blobs());
+
+    if (renderer.options.render_hit_blobs == true)
+    {
+        for (const auto& fighter : world.get_fighters())
+            impl_integrate_hit_blobs(fighter->get_hit_blobs());
+
+        for (const auto& article : world.get_articles())
+            impl_integrate_hit_blobs(article->get_hit_blobs());
+    }
 
     if (renderer.options.render_diamonds == true)
         for (const auto& fighter : world.get_fighters())
             impl_integrate_diamond(*fighter);
 
     if (renderer.options.render_skeletons == true)
+    {
         for (const auto& fighter : world.get_fighters())
             impl_integrate_skeleton(*fighter);
-}
 
-//============================================================================//
-
-void DebugRenderer::impl_integrate_hit_blobs(const std::vector<HitBlob*>& blobs)
-{
-    const Mat4F projViewMat = renderer.get_camera().get_block().projViewMat;
-
-    Line* const thick = reinterpret_cast<Line*>(mThickLinesVertexBuffer.map_only());
-
-    for (const HitBlob* blob : blobs)
-    {
-        DrawBlob& draw = mDrawBlobs.emplace_back();
-        draw.matrix = projViewMat * maths::transform(blob->sphere.origin, Vec3F(blob->sphere.radius));
-        draw.colour = Vec4F(maths::srgb_to_linear(blob->get_debug_colour()), 0.25f);
-        draw.mesh = &mSphereMesh;
-        draw.subMesh = -1;
-        draw.sortValue = int(blob->flavour);
-
-        // for relative facing, we just show an arrow in the most likely direction
-        // todo: if game is paused, alternate direction every 0.5 seconds
-        const float facing = blob->facingMode == BlobFacingMode::Forward ? +float(blob->action->fighter.variables.facing) :
-                             blob->facingMode == BlobFacingMode::Reverse ? -float(blob->action->fighter.variables.facing) :
-                             blob->action->fighter.variables.position.x < blob->sphere.origin.x ? +1.f : -1.f;
-
-        if (blob->angleMode == BlobAngleMode::Sakurai)
-        {
-            const float angle = maths::radians(40.f / 360.f);
-            const Vec3F offsetGround = Vec3F(facing, 0.f, 0.f) * blob->sphere.radius;
-            const Vec3F offsetLaunch = Vec3F(std::cos(angle) * facing, std::sin(angle), 0.f) * blob->sphere.radius;
-
-            const Vec4F pA = projViewMat * Vec4F(blob->sphere.origin, 1.f);
-            const Vec4F pB = projViewMat * Vec4F(blob->sphere.origin + offsetGround, 1.f);
-            const Vec4F pC = projViewMat * Vec4F(blob->sphere.origin + offsetLaunch, 1.f);
-
-            thick[mThickLineCount++] = Line { pA, Vec4F(1,1,1,1), pB, Vec4F(1,1,1,1) };
-            thick[mThickLineCount++] = Line { pB, Vec4F(1,1,1,1), pC, Vec4F(1,1,1,1) };
-            thick[mThickLineCount++] = Line { pC, Vec4F(1,1,1,1), pA, Vec4F(1,1,1,1) };
-        }
-        else // todo: AutoLink
-        {
-            const float angleA = maths::radians(blob->knockAngle / 360.f);
-            const float angleB = maths::radians(blob->knockAngle / 360.f + 0.0625f);
-            const float angleC = maths::radians(blob->knockAngle / 360.f - 0.0625f);
-            const Vec3F offsetA = Vec3F(std::cos(angleA) * facing, std::sin(angleA), 0.f) * blob->sphere.radius;
-            const Vec3F offsetB = Vec3F(std::cos(angleB) * facing, std::sin(angleB), 0.f) * blob->sphere.radius * 0.75f;
-            const Vec3F offsetC = Vec3F(std::cos(angleC) * facing, std::sin(angleC), 0.f) * blob->sphere.radius * 0.75f;
-
-            const Vec4F pA = projViewMat * Vec4F(blob->sphere.origin, 1.f);
-            const Vec4F pB = projViewMat * Vec4F(blob->sphere.origin + offsetA, 1.f);
-            const Vec4F pC = projViewMat * Vec4F(blob->sphere.origin + offsetB, 1.f);
-            const Vec4F pD = projViewMat * Vec4F(blob->sphere.origin + offsetC, 1.f);
-
-            thick[mThickLineCount++] = Line { pA, Vec4F(1,1,1,1), pB, Vec4F(1,1,1,1) };
-            thick[mThickLineCount++] = Line { pB, Vec4F(1,1,1,1), pC, Vec4F(1,1,1,1) };
-            thick[mThickLineCount++] = Line { pB, Vec4F(1,1,1,1), pD, Vec4F(1,1,1,1) };
-        }
+        for (const auto& article : world.get_articles())
+            impl_integrate_skeleton(*article);
     }
 }
 
 //============================================================================//
 
-void DebugRenderer::impl_integrate_hurt_blobs(const std::vector<HurtBlob*>& blobs)
+void DebugRenderer::impl_integrate_hit_blobs(const std::vector<HitBlob>& blobs)
 {
-    const Mat4F projViewMat = renderer.get_camera().get_block().projViewMat;
+    const Mat4F& projViewMat = renderer.get_camera().get_block().projViewMat;
 
-    for (const HurtBlob* blob : blobs)
+    Line* const thick = reinterpret_cast<Line*>(mThickLinesVertexBuffer.map_only());
+
+    for (const HitBlob& blob : blobs)
     {
-        const maths::Capsule& c = blob->capsule;
+        const maths::Capsule& c = blob.capsule;
 
         const Vec3F difference = c.originB - c.originA;
         const float length = maths::length(difference);
         const Mat3F rotation = length > 0.00001f ? maths::basis_from_y(difference / length) : Mat3F();
 
-        const Vec4F colour = Vec4F(maths::srgb_to_linear(blob->get_debug_colour()), 0.25f);
+        const Vec4F colour = Vec4F(maths::srgb_to_linear(blob.get_debug_colour()), 0.25f);
 
         DrawBlob& drawA = mDrawBlobs.emplace_back();
         drawA.matrix = projViewMat * maths::transform(c.originA, rotation, c.radius);
         drawA.colour = colour;
         drawA.mesh = &mCapsuleMesh;
         drawA.subMesh = 0;
-        drawA.sortValue = int(blob->region) - 3;
+        drawA.sortValue = int(blob.def.flavour);
 
         DrawBlob& drawB = mDrawBlobs.emplace_back();
         drawB.matrix = projViewMat * maths::transform(c.originB, rotation, c.radius);
         drawB.colour = colour;
         drawB.mesh = &mCapsuleMesh;
         drawB.subMesh = 1;
-        drawB.sortValue = int(blob->region) - 3;
+        drawB.sortValue = int(blob.def.flavour);
 
         if (length > 0.00001f)
         {
@@ -267,7 +224,91 @@ void DebugRenderer::impl_integrate_hurt_blobs(const std::vector<HurtBlob*>& blob
             drawC.colour = colour;
             drawC.mesh = &mCapsuleMesh;
             drawC.subMesh = 2;
-            drawC.sortValue = int(blob->region) - 3;
+            drawC.sortValue = int(blob.def.flavour);
+        }
+
+        // for relative facing, we just show an arrow in the most likely direction
+        // todo: if game is paused, alternate direction every 0.5 seconds
+        const float facing = blob.def.facingMode == BlobFacingMode::Forward ? +float(blob.entity->get_vars().facing) :
+                             blob.def.facingMode == BlobFacingMode::Reverse ? -float(blob.entity->get_vars().facing) :
+                             blob.entity->get_vars().position.x < blob.capsule.originA.x ? +1.f : -1.f;
+
+        if (blob.def.angleMode == BlobAngleMode::Sakurai)
+        {
+            const float angle = maths::radians(40.f / 360.f);
+            const Vec3F offsetGround = Vec3F(facing, 0.f, 0.f) * blob.capsule.radius;
+            const Vec3F offsetLaunch = Vec3F(std::cos(angle) * facing, std::sin(angle), 0.f) * blob.capsule.radius;
+
+            const Vec4F pA = projViewMat * Vec4F(blob.capsule.originA, 1.f);
+            const Vec4F pB = projViewMat * Vec4F(blob.capsule.originA + offsetGround, 1.f);
+            const Vec4F pC = projViewMat * Vec4F(blob.capsule.originA + offsetLaunch, 1.f);
+
+            thick[mThickLineCount++] = Line { pA, Vec4F(1,1,1,1), pB, Vec4F(1,1,1,1) };
+            thick[mThickLineCount++] = Line { pB, Vec4F(1,1,1,1), pC, Vec4F(1,1,1,1) };
+            thick[mThickLineCount++] = Line { pC, Vec4F(1,1,1,1), pA, Vec4F(1,1,1,1) };
+        }
+        else // todo: AutoLink
+        {
+            const float angleA = maths::radians(blob.def.knockAngle / 360.f);
+            const float angleB = maths::radians(blob.def.knockAngle / 360.f + 0.0625f);
+            const float angleC = maths::radians(blob.def.knockAngle / 360.f - 0.0625f);
+            const Vec3F offsetA = Vec3F(std::cos(angleA) * facing, std::sin(angleA), 0.f) * blob.capsule.radius;
+            const Vec3F offsetB = Vec3F(std::cos(angleB) * facing, std::sin(angleB), 0.f) * blob.capsule.radius * 0.75f;
+            const Vec3F offsetC = Vec3F(std::cos(angleC) * facing, std::sin(angleC), 0.f) * blob.capsule.radius * 0.75f;
+
+            const Vec4F pA = projViewMat * Vec4F(blob.capsule.originA, 1.f);
+            const Vec4F pB = projViewMat * Vec4F(blob.capsule.originA + offsetA, 1.f);
+            const Vec4F pC = projViewMat * Vec4F(blob.capsule.originA + offsetB, 1.f);
+            const Vec4F pD = projViewMat * Vec4F(blob.capsule.originA + offsetC, 1.f);
+
+            thick[mThickLineCount++] = Line { pA, Vec4F(1,1,1,1), pB, Vec4F(1,1,1,1) };
+            thick[mThickLineCount++] = Line { pB, Vec4F(1,1,1,1), pC, Vec4F(1,1,1,1) };
+            thick[mThickLineCount++] = Line { pB, Vec4F(1,1,1,1), pD, Vec4F(1,1,1,1) };
+        }
+    }
+}
+
+//============================================================================//
+
+void DebugRenderer::impl_integrate_hurt_blobs(const std::vector<HurtBlob>& blobs)
+{
+    const Mat4F& projViewMat = renderer.get_camera().get_block().projViewMat;
+
+    for (const HurtBlob& blob : blobs)
+    {
+        const maths::Capsule& c = blob.capsule;
+
+        const Vec3F difference = c.originB - c.originA;
+        const float length = maths::length(difference);
+        const Mat3F rotation = length > 0.00001f ? maths::basis_from_y(difference / length) : Mat3F();
+
+        const Vec4F colour = Vec4F(maths::srgb_to_linear(blob.get_debug_colour()), 0.25f);
+
+        DrawBlob& drawA = mDrawBlobs.emplace_back();
+        drawA.matrix = projViewMat * maths::transform(c.originA, rotation, c.radius);
+        drawA.colour = colour;
+        drawA.mesh = &mCapsuleMesh;
+        drawA.subMesh = 0;
+        drawA.sortValue = int(blob.def.region) - 3;
+
+        DrawBlob& drawB = mDrawBlobs.emplace_back();
+        drawB.matrix = projViewMat * maths::transform(c.originB, rotation, c.radius);
+        drawB.colour = colour;
+        drawB.mesh = &mCapsuleMesh;
+        drawB.subMesh = 1;
+        drawB.sortValue = int(blob.def.region) - 3;
+
+        if (length > 0.00001f)
+        {
+            const Vec3F origin = (c.originA + c.originB) * 0.5f;
+            const Vec3F scale = Vec3F(c.radius, length, c.radius);
+
+            DrawBlob& drawC = mDrawBlobs.emplace_back();
+            drawC.matrix = projViewMat * maths::transform(origin, rotation, scale);
+            drawC.colour = colour;
+            drawC.mesh = &mCapsuleMesh;
+            drawC.subMesh = 2;
+            drawC.sortValue = int(blob.def.region) - 3;
         }
     }
 }
@@ -276,7 +317,7 @@ void DebugRenderer::impl_integrate_hurt_blobs(const std::vector<HurtBlob*>& blob
 
 void DebugRenderer::impl_integrate_diamond(const Fighter& fighter)
 {
-    const Mat4F projViewMat = renderer.get_camera().get_block().projViewMat;
+    const Mat4F& projViewMat = renderer.get_camera().get_block().projViewMat;
 
     const Vec3F translate = Vec3F(fighter.variables.position + Vec2F(0.f, fighter.localDiamond.offsetCross), 0.f);
     const float scaleBtm = fighter.localDiamond.offsetCross;
@@ -299,23 +340,23 @@ void DebugRenderer::impl_integrate_diamond(const Fighter& fighter)
 
 //============================================================================//
 
-void DebugRenderer::impl_integrate_skeleton(const Fighter& fighter)
+void DebugRenderer::impl_integrate_skeleton(const Entity& entity)
 {
-    const Mat4F projViewModelMat = renderer.get_camera().get_block().projViewMat * fighter.get_model_matrix();
+    const Mat4F projViewModelMat = renderer.get_camera().get_block().projViewMat * entity.get_bone_matrix(-1);
 
-    const std::vector<Mat4F> mats = fighter.get_armature().compute_skeleton_matrices(fighter.current.pose);
+    const std::vector<Mat4F> mats = entity.get_armature().compute_skeleton_matrices(entity.get_anim_player().currentSample);
 
     Line* const thick = reinterpret_cast<Line*>(mThickLinesVertexBuffer.map_only());
     Line* const thin = reinterpret_cast<Line*>(mThinLinesVertexBuffer.map_only());
 
-    for (uint i = 0u; i < mats.size(); ++i)
+    for (size_t i = 0u; i < mats.size(); ++i)
     {
         const Mat4F matrix = projViewModelMat * mats[i];
         thin[mThinLineCount++] = Line { matrix[3], Vec4F(1,0,0,1), matrix * Vec4F(0.03f,0,0,1), Vec4F(1,0,0,1) };
         thin[mThinLineCount++] = Line { matrix[3], Vec4F(0,1,0,1), matrix * Vec4F(0,0.03f,0,1), Vec4F(0,1,0,1) };
         thin[mThinLineCount++] = Line { matrix[3], Vec4F(0,0,1,1), matrix * Vec4F(0,0,0.03f,1), Vec4F(0,0,1,1) };
 
-        if (int8_t parent = fighter.get_armature().get_bone_parent(i); parent != -1)
+        if (int8_t parent = entity.get_armature().get_bone_infos()[i].parent; parent != -1)
         {
             const Mat4F parentMatrix = projViewModelMat * mats[parent];
             thick[mThickLineCount++] = Line { parentMatrix[3], Vec4F(1,1,1,1), matrix[3], Vec4F(1,1,1,1) };

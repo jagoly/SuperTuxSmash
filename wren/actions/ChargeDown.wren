@@ -27,7 +27,7 @@ class Script is FighterActionScript {
     allowNext = true
 
     wait_until(6)
-    //fighter.play_sound("SmashStart")
+    //fighter.play_sound("SmashStart", true)
 
     wait_until(64)
     return "SmashDown"
@@ -40,9 +40,5 @@ class Script is FighterActionScript {
     if (allowNext && attackReleased) {
       return "SmashDown"
     }
-  }
-
-  cancel() {
-    //fighter.cancel_sound("SmashStart")
   }
 }

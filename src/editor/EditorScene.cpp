@@ -64,27 +64,48 @@ EditorScene::EditorScene(SmashApp& smashApp)
 
     //--------------------------------------------------------//
 
-    for (const auto& entry : sq::parse_json_from_file("assets/FighterAnimations.json"))
-        mFighterInfoCommon.animations.emplace_back(entry[0].get_ref<const String&>());
-
-    for (const auto& entry : sq::parse_json_from_file("assets/FighterActions.json"))
-        mFighterInfoCommon.actions.emplace_back(entry.get_ref<const String&>());
-
-    for (const auto& entry : sq::parse_json_from_file("assets/FighterStates.json"))
-        mFighterInfoCommon.states.emplace_back(entry.get_ref<const String&>());
-
-    for (int8_t i = 0; i < sq::enum_count_v<FighterEnum>; ++i)
+    const auto load_fighter_info = [](const String& name)
     {
-        FighterInfo& info = mFighterInfos[i];
+        FighterInfo result;
 
-        for (const auto& entry : sq::parse_json_from_file("assets/fighters/{}/Animations.json"_format(FighterEnum(i))))
-            info.animations.emplace_back(entry[0].get_ref<const String&>());
+        const String path = name.empty() ? "assets/fighters/" : "assets/fighters/{}/"_format(name);
 
-        for (const auto& entry : sq::parse_json_from_file("assets/fighters/{}/Actions.json"_format(FighterEnum(i))))
-            info.actions.emplace_back(entry.get_ref<const String&>());
+        result.name = TinyString(name);
+        {
+            const auto json = sq::parse_json_from_file(path + "Animations.json");
+            result.animations.reserve(json.size());
+            for (const auto& entry : json)
+                result.animations.emplace_back(entry[0].get_ref<const String&>());
+        }
+        {
+            const auto json = sq::parse_json_from_file(path + "Actions.json");
+            result.actions.reserve(json.size());
+            for (const auto& entry : json)
+                result.actions.emplace_back(entry.get_ref<const String&>());
+        }
+        {
+            const auto json = sq::parse_json_from_file(path + "States.json");
+            result.states.reserve(json.size());
+            for (const auto& entry : json)
+                result.states.emplace_back(entry.get_ref<const String&>());
+        }
 
-        for (const auto& entry : sq::parse_json_from_file("assets/fighters/{}/States.json"_format(FighterEnum(i))))
-            info.states.emplace_back(entry.get_ref<const String&>());
+        return result;
+    };
+
+    mFighterInfoCommon = load_fighter_info(String());
+    {
+        const auto json = sq::parse_json_from_file("assets/fighters/Fighters.json");
+        mFighterInfos.reserve(json.size());
+        for (const auto& entry : json)
+            mFighterInfos.emplace_back(load_fighter_info(entry.get_ref<const String&>()));
+    }
+
+    {
+        const auto json = sq::parse_json_from_file("assets/stages/Stages.json");
+        mStageNames.reserve(json.size());
+        for (const auto& entry : json)
+            mStageNames.emplace_back(entry.get_ref<const String&>());
     }
 }
 
@@ -177,6 +198,8 @@ void EditorScene::integrate(double /*elapsed*/, float blend)
         blend = mBlendValue;
 
     BaseContext& ctx = *mActiveContext;
+
+    ctx.renderer->swap_objects_buffers();
 
     ctx.renderer->get_camera().update_from_controller(*mController);
 
@@ -426,43 +449,36 @@ void EditorScene::impl_show_widget_navigator()
     {
         ImPlus::if_TabItemChild("Actions", 0, [&]()
         {
-            for (int8_t i = 0; i < sq::enum_count_v<FighterEnum>; ++i)
+            for (const FighterInfo& info : mFighterInfos)
             {
-                const FighterInfo& info = mFighterInfos[i];
-                const StringView fighterName = sq::enum_to_string(FighterEnum(i));
-
                 const size_t numLoaded = algo::count_if (
-                    mActionContexts, [i](const auto& item) { return item.first.fighter == FighterEnum(i); }
+                    mActionContexts, [&info](const auto& item) { return item.first.fighter == info.name; }
                 );
                 const size_t numTotal = mFighterInfoCommon.actions.size() + info.actions.size();
 
-                if (ImPlus::CollapsingHeader("{} ({}/{})###{}"_format(fighterName, numLoaded, numTotal, fighterName)))
+                if (ImPlus::CollapsingHeader("{} ({}/{})###{}"_format(info.name, numLoaded, numTotal, info.name)))
                 {
                     for (const SmallString& name : mFighterInfoCommon.actions)
-                    {
-                        const ActionKey key = { FighterEnum(i), name };
-                        context_list_entry(key, mActionContexts, "{}/{}"_format(fighterName, name));
-                    }
+                        context_list_entry(ActionKey{info.name, name}, mActionContexts, "{}/{}"_format(info.name, name));
+
                     ImGui::Separator();
+
                     for (const SmallString& name : info.actions)
-                    {
-                        const ActionKey key = { FighterEnum(i), name };
-                        context_list_entry(key, mActionContexts, "{}/{}"_format(fighterName, name));
-                    }
+                        context_list_entry(ActionKey{info.name, name}, mActionContexts, "{}/{}"_format(info.name, name));
                 }
             }
         });
 
         ImPlus::if_TabItemChild("Fighters", 0, [&]()
         {
-            for (int8_t i = 0; i < sq::enum_count_v<FighterEnum>; ++i)
-                context_list_entry(FighterEnum(i), mFighterContexts, sq::enum_to_string(FighterEnum(i)));
+            for (const FighterInfo& info : mFighterInfos)
+                context_list_entry(info.name, mFighterContexts, String(info.name));
         });
 
         ImPlus::if_TabItemChild("Stages", 0, [&]()
         {
-            for (int8_t i = 0; i < sq::enum_count_v<StageEnum>; ++i)
-                context_list_entry(StageEnum(i), mStageContexts, sq::enum_to_string(StageEnum(i)));
+            for (const TinyString& name : mStageNames)
+                context_list_entry(name, mStageContexts, String(name));
         });
     });
 
@@ -539,18 +555,6 @@ void EditorScene::populate_command_buffer(vk::CommandBuffer cmdbuf, vk::Framebuf
 
 //============================================================================//
 
-const void* EditorScene::ActionKey::hash() const
-{
-    // terrible hash combine, but ok for this
-    const size_t nameHash = std::hash<SmallString>()(name);
-    const size_t comboHash = nameHash + size_t(fighter);
-
-    // cast to a type that imgui can hash
-    return reinterpret_cast<const void*>(comboHash);
-}
-
-//============================================================================//
-
 void EditorScene::CubeMapView::initialise(EditorScene& editor, uint level, vk::Image image, vk::Sampler sampler)
 {
     const auto& ctx = sq::VulkanContext::get();
@@ -578,7 +582,7 @@ void EditorScene::CubeMapView::initialise(EditorScene& editor, uint level, vk::I
 
 //============================================================================//
 
-EditorScene::BaseContext::BaseContext(EditorScene& editor, StageEnum stage)
+EditorScene::BaseContext::BaseContext(EditorScene& editor, TinyString stage)
     : editor(editor)
 {
     sq::Window& window = editor.mSmashApp.get_window();
@@ -591,7 +595,9 @@ EditorScene::BaseContext::BaseContext(EditorScene& editor, StageEnum stage)
     camera = std::make_unique<EditorCamera>(*renderer);
     renderer->set_camera(*camera);
 
-    world = std::make_unique<World>(true, options, audioContext, resourceCaches, *renderer);
+    world = std::make_unique<World>(options, audioContext, resourceCaches, *renderer);
+    world->editor = std::make_unique<World::EditorData>();
+
     world->set_rng_seed(editor.mRandomSeed);
     world->set_stage(std::make_unique<Stage>(*world, stage));
 }

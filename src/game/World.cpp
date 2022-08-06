@@ -2,6 +2,7 @@
 
 #include "main/Options.hpp"
 
+#include "game/Article.hpp"
 #include "game/Controller.hpp"
 #include "game/EffectSystem.hpp"
 #include "game/Fighter.hpp"
@@ -28,6 +29,8 @@ WRENPLUS_TRAITS_DEFINITION(sq::coretypes::Vec2F, "Base", "Vec2F")
 WRENPLUS_TRAITS_DEFINITION(sts::InputFrame, "Controller", "InputFrame")
 WRENPLUS_TRAITS_DEFINITION(sts::InputHistory, "Controller", "InputHistory")
 WRENPLUS_TRAITS_DEFINITION(sts::Controller, "Controller", "Controller")
+WRENPLUS_TRAITS_DEFINITION(sts::Article::Variables, "Article", "Variables")
+WRENPLUS_TRAITS_DEFINITION(sts::Article, "Article", "Article")
 WRENPLUS_TRAITS_DEFINITION(sts::Fighter::Attributes, "Fighter", "Attributes")
 WRENPLUS_TRAITS_DEFINITION(sts::Fighter::Variables, "Fighter", "Variables")
 WRENPLUS_TRAITS_DEFINITION(sts::Fighter, "Fighter", "Fighter")
@@ -40,8 +43,8 @@ WRENPLUS_TRAITS_DEFINITION(sts::World, "World", "World")
 
 //============================================================================//
 
-World::World(bool editor, const Options& options, sq::AudioContext& audio, ResourceCaches& caches, Renderer& renderer)
-    : editor(editor), options(options), audio(audio), caches(caches), renderer(renderer)
+World::World(const Options& options, sq::AudioContext& audio, ResourceCaches& caches, Renderer& renderer)
+    : options(options), audio(audio), caches(caches), renderer(renderer)
 {
     mEffectSystem = std::make_unique<EffectSystem>(renderer);
     mParticleSystem = std::make_unique<ParticleSystem>(*this);
@@ -98,6 +101,73 @@ World::World(bool editor, const Options& options, sq::AudioContext& audio, Resou
 
     //--------------------------------------------------------//
 
+    // Variables
+    WRENPLUS_ADD_FIELD_R(vm, Article::Variables, position, "position");
+    WRENPLUS_ADD_FIELD_R(vm, Fighter::Variables, position, "position");
+    WRENPLUS_ADD_FIELD_R(vm, Article::Variables, velocity, "velocity");
+    WRENPLUS_ADD_FIELD_R(vm, Fighter::Variables, velocity, "velocity");
+    WRENPLUS_ADD_FIELD_RW(vm, Article::Variables, facing, "facing");
+    WRENPLUS_ADD_FIELD_RW(vm, Fighter::Variables, facing, "facing");
+    WRENPLUS_ADD_FIELD_R(vm, Article::Variables, freezeTime, "freezeTime");
+    WRENPLUS_ADD_FIELD_R(vm, Fighter::Variables, freezeTime, "freezeTime");
+    WRENPLUS_ADD_FIELD_RW(vm, Article::Variables, animTime, "animTime");
+    WRENPLUS_ADD_FIELD_RW(vm, Fighter::Variables, animTime, "animTime");
+    WRENPLUS_ADD_FIELD_R(vm, Article::Variables, attachPoint, "attachPoint");
+    WRENPLUS_ADD_FIELD_R(vm, Fighter::Variables, attachPoint, "attachPoint");
+    WRENPLUS_ADD_FIELD_R(vm, Article::Variables, hitSomething, "hitSomething");
+    WRENPLUS_ADD_FIELD_R(vm, Fighter::Variables, hitSomething, "hitSomething");
+
+    // Entity
+    WRENPLUS_ADD_METHOD(vm, Article, wren_get_name, "name");
+    WRENPLUS_ADD_METHOD(vm, Fighter, wren_get_name, "name");
+    WRENPLUS_ADD_METHOD(vm, Article, wren_get_world, "world");
+    WRENPLUS_ADD_METHOD(vm, Fighter, wren_get_world, "world");
+    WRENPLUS_ADD_METHOD(vm, Article, wren_reverse_facing_auto, "reverse_facing_auto()");
+    WRENPLUS_ADD_METHOD(vm, Fighter, wren_reverse_facing_auto, "reverse_facing_auto()");
+    WRENPLUS_ADD_METHOD(vm, Article, wren_reverse_facing_instant, "reverse_facing_instant()");
+    WRENPLUS_ADD_METHOD(vm, Fighter, wren_reverse_facing_instant, "reverse_facing_instant()");
+    WRENPLUS_ADD_METHOD(vm, Article, wren_reverse_facing_slow, "reverse_facing_slow(_,_)");
+    WRENPLUS_ADD_METHOD(vm, Fighter, wren_reverse_facing_slow, "reverse_facing_slow(_,_)");
+    WRENPLUS_ADD_METHOD(vm, Article, wren_reverse_facing_animated, "reverse_facing_animated(_)");
+    WRENPLUS_ADD_METHOD(vm, Fighter, wren_reverse_facing_animated, "reverse_facing_animated(_)");
+    WRENPLUS_ADD_METHOD(vm, Article, wren_reset_collisions, "reset_collisions()");
+    WRENPLUS_ADD_METHOD(vm, Fighter, wren_reset_collisions, "reset_collisions()");
+    WRENPLUS_ADD_METHOD(vm, Article, wren_play_animation, "play_animation(_,_,_)");
+    WRENPLUS_ADD_METHOD(vm, Fighter, wren_play_animation, "play_animation(_,_,_)");
+    WRENPLUS_ADD_METHOD(vm, Article, wren_set_next_animation, "set_next_animation(_,_)");
+    WRENPLUS_ADD_METHOD(vm, Fighter, wren_set_next_animation, "set_next_animation(_,_)");
+    WRENPLUS_ADD_METHOD(vm, Article, wren_play_sound, "play_sound(_,_)");
+    WRENPLUS_ADD_METHOD(vm, Fighter, wren_play_sound, "play_sound(_,_)");
+
+    //--------------------------------------------------------//
+
+    // Variables
+    WRENPLUS_ADD_FIELD_RW(vm, Article::Variables, fragile, "fragile");
+    WRENPLUS_ADD_FIELD_R(vm, Article::Variables, bounced, "bounced");
+
+    // Article
+    WRENPLUS_ADD_FIELD_R(vm, Article, fighter, "fighter");
+    WRENPLUS_ADD_FIELD_R(vm, Article, variables, "variables");
+    WRENPLUS_ADD_METHOD(vm, Article, wren_get_script_class, "scriptClass");
+    WRENPLUS_ADD_METHOD(vm, Article, wren_get_script, "script");
+    WRENPLUS_ADD_METHOD(vm, Article, wren_set_script, "script=(_)");
+    WRENPLUS_ADD_METHOD(vm, Article, wren_get_fiber, "fiber");
+    WRENPLUS_ADD_METHOD(vm, Article, wren_set_fiber, "fiber=(_)");
+    WRENPLUS_ADD_METHOD(vm, Article, wren_log_with_prefix, "log_with_prefix(_)");
+    WRENPLUS_ADD_METHOD(vm, Article, wren_cxx_wait_until, "cxx_wait_until(_)");
+    WRENPLUS_ADD_METHOD(vm, Article, wren_cxx_wait_for, "cxx_wait_for(_)");
+    WRENPLUS_ADD_METHOD(vm, Article, wren_cxx_next_frame, "cxx_next_frame()");
+    WRENPLUS_ADD_METHOD(vm, Article, wren_mark_for_destroy, "mark_for_destroy()");
+    WRENPLUS_ADD_METHOD(vm, Article, wren_enable_hitblobs, "enable_hitblobs(_)");
+    WRENPLUS_ADD_METHOD(vm, Article, wren_disable_hitblobs, "disable_hitblobs(_)");
+    WRENPLUS_ADD_METHOD(vm, Article, wren_play_effect, "play_effect(_)");
+    WRENPLUS_ADD_METHOD(vm, Article, wren_emit_particles, "emit_particles(_)");
+
+    vm.load_module("Article");
+    vm.cache_handles<Article::Variables, Article>();
+
+    //--------------------------------------------------------//
+
     // Attributes
     WRENPLUS_ADD_FIELD_R(vm, Fighter::Attributes, walkSpeed, "walkSpeed");
     WRENPLUS_ADD_FIELD_R(vm, Fighter::Attributes, dashSpeed, "dashSpeed");
@@ -112,18 +182,17 @@ World::World(bool editor, const Options& options, sq::AudioContext& audio, Resou
     WRENPLUS_ADD_FIELD_R(vm, Fighter::Attributes, fallSpeed, "fallSpeed");
     WRENPLUS_ADD_FIELD_R(vm, Fighter::Attributes, fastFallSpeed, "fastFallSpeed");
     WRENPLUS_ADD_FIELD_R(vm, Fighter::Attributes, weight, "weight");
+    WRENPLUS_ADD_FIELD_R(vm, Fighter::Attributes, walkAnimSpeed, "walkAnimSpeed");
+    WRENPLUS_ADD_FIELD_R(vm, Fighter::Attributes, dashAnimSpeed, "dashAnimSpeed");
     WRENPLUS_ADD_FIELD_R(vm, Fighter::Attributes, extraJumps, "extraJumps");
     WRENPLUS_ADD_FIELD_R(vm, Fighter::Attributes, lightLandTime, "lightLandTime");
 
     // Variables
-    WRENPLUS_ADD_FIELD_R(vm, Fighter::Variables, position, "position");
-    WRENPLUS_ADD_FIELD_R(vm, Fighter::Variables, velocity, "velocity");
-    WRENPLUS_ADD_FIELD_R(vm, Fighter::Variables, facing, "facing");
     WRENPLUS_ADD_FIELD_RW(vm, Fighter::Variables, extraJumps, "extraJumps");
     WRENPLUS_ADD_FIELD_RW(vm, Fighter::Variables, lightLandTime, "lightLandTime");
     WRENPLUS_ADD_FIELD_RW(vm, Fighter::Variables, noCatchTime, "noCatchTime");
     WRENPLUS_ADD_FIELD_RW(vm, Fighter::Variables, stunTime, "stunTime");
-    WRENPLUS_ADD_FIELD_RW(vm, Fighter::Variables, freezeTime, "freezeTime");
+    WRENPLUS_ADD_FIELD_R(vm, Fighter::Variables, reboundTime, "reboundTime");
     WRENPLUS_ADD_FIELD_RW(vm, Fighter::Variables, edgeStop, "edgeStop");
     WRENPLUS_ADD_FIELD_RW(vm, Fighter::Variables, intangible, "intangible");
     WRENPLUS_ADD_FIELD_RW(vm, Fighter::Variables, fastFall, "fastFall");
@@ -138,11 +207,9 @@ World::World(bool editor, const Options& options, sq::AudioContext& audio, Resou
     WRENPLUS_ADD_FIELD_R(vm, Fighter::Variables, damage, "damage");
     WRENPLUS_ADD_FIELD_R(vm, Fighter::Variables, shield, "shield");
     WRENPLUS_ADD_FIELD_R(vm, Fighter::Variables, launchSpeed, "launchSpeed");
-    WRENPLUS_ADD_FIELD_R(vm, Fighter::Variables, attachPoint, "attachPoint");
     WRENPLUS_ADD_FIELD_RW(vm, Fighter::Variables, ledge, "ledge");
 
     // Fighter
-    WRENPLUS_ADD_FIELD_R(vm, Fighter, name, "name");
     WRENPLUS_ADD_FIELD_R(vm, Fighter, index, "index");
     WRENPLUS_ADD_FIELD_R(vm, Fighter, attributes, "attributes");
     WRENPLUS_ADD_FIELD_R(vm, Fighter, localDiamond, "localDiamond");
@@ -150,24 +217,15 @@ World::World(bool editor, const Options& options, sq::AudioContext& audio, Resou
     WRENPLUS_ADD_FIELD_R(vm, Fighter, controller, "controller");
     WRENPLUS_ADD_FIELD_R(vm, Fighter, activeAction, "action");
     WRENPLUS_ADD_FIELD_R(vm, Fighter, activeState, "state");
-    WRENPLUS_ADD_METHOD(vm, Fighter, wren_get_world, "world");
     WRENPLUS_ADD_METHOD(vm, Fighter, wren_get_library, "library");
     WRENPLUS_ADD_METHOD(vm, Fighter, wren_log, "log(_)");
-    WRENPLUS_ADD_METHOD(vm, Fighter, wren_cxx_clear_action, "cxx_clear_action()");
     WRENPLUS_ADD_METHOD(vm, Fighter, wren_cxx_assign_action, "cxx_assign_action(_)");
+    WRENPLUS_ADD_METHOD(vm, Fighter, wren_cxx_assign_action_null, "cxx_assign_action_null()");
     WRENPLUS_ADD_METHOD(vm, Fighter, wren_cxx_assign_state, "cxx_assign_state(_)");
-    WRENPLUS_ADD_METHOD(vm, Fighter, wren_reverse_facing_auto, "reverse_facing_auto()");
-    WRENPLUS_ADD_METHOD(vm, Fighter, wren_reverse_facing_instant, "reverse_facing_instant()");
-    WRENPLUS_ADD_METHOD(vm, Fighter, wren_reverse_facing_slow, "reverse_facing_slow(_,_)");
-    WRENPLUS_ADD_METHOD(vm, Fighter, wren_reverse_facing_animated, "reverse_facing_animated(_)");
+    WRENPLUS_ADD_METHOD(vm, Fighter, wren_cxx_spawn_article, "cxx_spawn_article(_)");
     WRENPLUS_ADD_METHOD(vm, Fighter, wren_attempt_ledge_catch, "attempt_ledge_catch()");
-    WRENPLUS_ADD_METHOD(vm, Fighter, wren_play_animation, "play_animation(_,_,_)");
-    WRENPLUS_ADD_METHOD(vm, Fighter, wren_set_next_animation, "set_next_animation(_,_)");
-    WRENPLUS_ADD_METHOD(vm, Fighter, wren_reset_collisions, "reset_collisions()");
     WRENPLUS_ADD_METHOD(vm, Fighter, wren_enable_hurtblob, "enable_hurtblob(_)");
     WRENPLUS_ADD_METHOD(vm, Fighter, wren_disable_hurtblob, "disable_hurtblob(_)");
-    WRENPLUS_ADD_METHOD(vm, Fighter, wren_play_sound, "play_sound(_)");
-    WRENPLUS_ADD_METHOD(vm, Fighter, wren_cancel_sound, "cancel_sound(_)");
     vm.register_pointer_comparison_operators<Fighter>();
 
     vm.load_module("Fighter");
@@ -176,7 +234,7 @@ World::World(bool editor, const Options& options, sq::AudioContext& audio, Resou
     //--------------------------------------------------------//
 
     // FighterAction
-    WRENPLUS_ADD_FIELD_R(vm, FighterAction, name, "name");
+    WRENPLUS_ADD_METHOD(vm, FighterAction, wren_get_name, "name");
     WRENPLUS_ADD_METHOD(vm, FighterAction, wren_get_fighter, "fighter");
     WRENPLUS_ADD_METHOD(vm, FighterAction, wren_get_world, "world");
     WRENPLUS_ADD_METHOD(vm, FighterAction, wren_get_script, "script");
@@ -188,11 +246,10 @@ World::World(bool editor, const Options& options, sq::AudioContext& audio, Resou
     WRENPLUS_ADD_METHOD(vm, FighterAction, wren_cxx_wait_for, "cxx_wait_for(_)");
     WRENPLUS_ADD_METHOD(vm, FighterAction, wren_cxx_next_frame, "cxx_next_frame()");
     WRENPLUS_ADD_METHOD(vm, FighterAction, wren_cxx_before_cancel, "cxx_before_cancel()");
-    WRENPLUS_ADD_METHOD(vm, FighterAction, wren_check_hit_something, "check_hit_something()");
     WRENPLUS_ADD_METHOD(vm, FighterAction, wren_enable_hitblobs, "enable_hitblobs(_)");
     WRENPLUS_ADD_METHOD(vm, FighterAction, wren_disable_hitblobs, "disable_hitblobs(_)");
-    WRENPLUS_ADD_METHOD(vm, FighterAction, wren_emit_particles, "emit_particles(_)");
     WRENPLUS_ADD_METHOD(vm, FighterAction, wren_play_effect, "play_effect(_)");
+    WRENPLUS_ADD_METHOD(vm, FighterAction, wren_emit_particles, "emit_particles(_)");
 
     vm.load_module("FighterAction");
     vm.cache_handles<FighterAction>();
@@ -200,7 +257,7 @@ World::World(bool editor, const Options& options, sq::AudioContext& audio, Resou
     //--------------------------------------------------------//
 
     // FighterState
-    WRENPLUS_ADD_FIELD_R(vm, FighterState, name, "name");
+    WRENPLUS_ADD_METHOD(vm, FighterState, wren_get_name, "name");
     WRENPLUS_ADD_METHOD(vm, FighterState, wren_get_fighter, "fighter");
     WRENPLUS_ADD_METHOD(vm, FighterState, wren_get_world, "world");
     WRENPLUS_ADD_METHOD(vm, FighterState, wren_get_script, "script");
@@ -240,6 +297,8 @@ World::World(bool editor, const Options& options, sq::AudioContext& audio, Resou
     // World
     WRENPLUS_ADD_METHOD(vm, World, wren_random_int, "random_int(_,_)");
     WRENPLUS_ADD_METHOD(vm, World, wren_random_float, "random_float(_,_)");
+    WRENPLUS_ADD_METHOD(vm, World, wren_cancel_sound, "cancel_sound(_)");
+    WRENPLUS_ADD_METHOD(vm, World, wren_cancel_effect, "cancel_effect(_)");
 
     vm.load_module("World");
     vm.cache_handles<World>();
@@ -255,6 +314,9 @@ World::World(bool editor, const Options& options, sq::AudioContext& audio, Resou
     handles.state_do_enter = wrenMakeCallHandle(vm, "do_enter()");
     handles.state_do_updates = wrenMakeCallHandle(vm, "do_updates()");
     handles.state_do_exit = wrenMakeCallHandle(vm, "do_exit()");
+
+    handles.article_do_updates = wrenMakeCallHandle(vm, "do_updates()");
+    handles.article_do_destroy = wrenMakeCallHandle(vm, "do_destroy()");
 }
 
 //============================================================================//
@@ -263,13 +325,16 @@ World::~World()
 {
     wrenReleaseHandle(vm, handles.new_1);
 
+    wrenReleaseHandle(vm, handles.action_do_start);
+    wrenReleaseHandle(vm, handles.action_do_updates);
+    wrenReleaseHandle(vm, handles.action_do_cancel);
+
     wrenReleaseHandle(vm, handles.state_do_enter);
     wrenReleaseHandle(vm, handles.state_do_updates);
     wrenReleaseHandle(vm, handles.state_do_exit);
 
-    wrenReleaseHandle(vm, handles.action_do_start);
-    wrenReleaseHandle(vm, handles.action_do_updates);
-    wrenReleaseHandle(vm, handles.action_do_cancel);
+    wrenReleaseHandle(vm, handles.article_do_updates);
+    wrenReleaseHandle(vm, handles.article_do_destroy);
 }
 
 //============================================================================//
@@ -281,11 +346,21 @@ void World::tick()
     for (auto& fighter : mFighters)
         fighter->tick();
 
+    for (auto& article : mArticles)
+        article->tick();
+
     impl_update_collisions();
 
     mEffectSystem->tick();
 
     mParticleSystem->update_and_clean();
+
+    for (auto iter = mArticles.begin(); iter != mArticles.end();)
+    {
+        Article& article = **iter;
+        if (article.check_marked_for_destroy() == false) ++iter;
+        else mArticles.erase(iter);
+    }
 }
 
 //============================================================================//
@@ -297,6 +372,9 @@ void World::integrate(float blend)
     for (auto& fighter : mFighters)
         fighter->integrate(blend);
 
+    for (auto& article : mArticles)
+        article->integrate(blend);
+
     mEffectSystem->integrate(blend);
 }
 
@@ -307,10 +385,36 @@ void World::set_stage(std::unique_ptr<Stage> stage)
     mStage = std::move(stage);
 }
 
-void World::add_fighter(std::unique_ptr<Fighter> fighter)
+Fighter& World::create_fighter(TinyString name)
 {
-    SQASSERT(fighter->index == mFighters.size(), "fighter has incorrect index");
-    mFighters.emplace_back(std::move(fighter));
+    // find an existing definition or load a new one
+    FighterDef& def = mFighterDefs.try_emplace(name, *this, name).first->second;
+
+    const uint8_t index = uint8_t(mFighters.size());
+    return *mFighters.emplace_back(std::make_unique<Fighter>(def, index));
+}
+
+ArticleDef& World::load_article_def(const String& path)
+{
+    const auto [iter, created] = mArticleDefs.try_emplace(path, *this, path);
+
+    if (created == true)
+    {
+        try {
+            iter->second.load_json_from_file();
+            iter->second.load_wren_from_file();
+        }
+        catch (const std::exception& ex) {
+            sq::log_warning("'{}': {}", path, ex.what());
+        }
+    }
+
+    return iter->second;
+}
+
+Article& World::create_article(const ArticleDef& def, Fighter* fighter)
+{
+    return *mArticles.emplace_back(std::make_unique<Article>(def, fighter));
 }
 
 //============================================================================//
@@ -346,160 +450,197 @@ void World::finish_setup()
 
 //============================================================================//
 
-void World::enable_hitblob(HitBlob* blob)
-{
-    auto iter = mEnabledHitBlobs.end();
-    while (iter != mEnabledHitBlobs.begin())
-    {
-        if (*std::prev(iter) == blob) return;
-        if (*std::prev(iter) < blob) break;
-        iter = std::prev(iter);
-    }
-
-    mEnabledHitBlobs.insert(iter, blob);
-}
-
-void World::disable_hitblob(HitBlob* blob)
-{
-    const auto iter = algo::find(mEnabledHitBlobs, blob);
-    if (iter == mEnabledHitBlobs.end()) return;
-
-    mEnabledHitBlobs.erase(iter);
-}
-
-void World::disable_hitblobs(const FighterAction& action)
-{
-    const auto predicate = [&](HitBlob* blob) { return blob->action == &action; };
-    algo::erase_if(mEnabledHitBlobs, predicate);
-}
-
-void World::editor_clear_hitblobs()
-{
-    mEnabledHitBlobs.clear();
-}
-
-//============================================================================//
-
-void World::enable_hurtblob(HurtBlob* blob)
-{
-    auto iter = mEnabledHurtBlobs.end();
-    while (iter != mEnabledHurtBlobs.begin())
-    {
-        if (*std::prev(iter) == blob) return;
-        if (*std::prev(iter) < blob) break;
-        iter = std::prev(iter);
-    }
-
-    mEnabledHurtBlobs.insert(iter, blob);
-}
-
-void World::disable_hurtblob(HurtBlob* blob)
-{
-    const auto iter = algo::find(mEnabledHurtBlobs, blob);
-    if (iter == mEnabledHurtBlobs.end()) return;
-
-    mEnabledHurtBlobs.erase(iter);
-}
-
-void World::disable_hurtblobs(const Fighter& fighter)
-{
-    const auto predicate = [&](HurtBlob* blob) { return blob->fighter == &fighter; };
-    algo::erase_if(mEnabledHurtBlobs, predicate);
-}
-
-void World::editor_clear_hurtblobs()
-{
-    mEnabledHurtBlobs.clear();
-}
-
-//============================================================================//
-
 void World::impl_update_collisions()
 {
-    //-- update world space shapes of hit and hurt blobs -----//
+    //-- update capsules of hurt and hit blobs ---------------//
 
-    for (HitBlob* blob : mEnabledHitBlobs)
+    for (auto& fighter : mFighters)
     {
-        const Mat4F matrix = blob->action->fighter.get_bone_matrix(blob->bone);
-
-        blob->sphere.origin = Vec3F(matrix * Vec4F(blob->origin, 1.f));
-        blob->sphere.radius = blob->radius;// * matrix[0][0];
-    }
-
-    for (HurtBlob* blob : mEnabledHurtBlobs)
-    {
-        const Mat4F matrix = blob->fighter->get_bone_matrix(blob->bone);
-
-        blob->capsule.originA = Vec3F(matrix * Vec4F(blob->originA, 1.f));
-        blob->capsule.originB = Vec3F(matrix * Vec4F(blob->originB, 1.f));
-        blob->capsule.radius = blob->radius;// * matrix[0][0];
-    }
-
-
-    //-- find all collisions between hit and hurt blobs ------//
-
-    for (HitBlob* hit : mEnabledHitBlobs)
-    {
-        for (HurtBlob* hurt : mEnabledHurtBlobs)
+        for (HurtBlob& blob : fighter->get_hurt_blobs())
         {
-            const Fighter& hitFighter = hit->action->fighter;
-            const Fighter& hurtFighter = *hurt->fighter;
+            const Mat4F matrix = fighter->get_bone_matrix(blob.def.bone);
 
-            // blobs belong to the same fighter
-            if (&hitFighter == &hurtFighter) continue;
+            blob.capsule.originA = Vec3F(matrix * Vec4F(blob.def.originA, 1.f));
+            blob.capsule.originB = Vec3F(matrix * Vec4F(blob.def.originB, 1.f));
+            blob.capsule.radius = blob.def.radius;
+        }
+    }
 
-            // blob can not hit the other fighter
-            if (!hit->canHitGround && hurtFighter.variables.onGround) continue;
-            if (!hit->canHitAir && !hurtFighter.variables.onGround) continue;
+    const auto update_hit_blob_transforms = [](Entity& entity)
+    {
+        for (HitBlob& blob : entity.get_hit_blobs())
+        {
+            const Mat4F matrix = entity.get_bone_matrix(blob.def.bone);
 
-            // blobs are not intersecting
-            if (maths::intersect_sphere_capsule(hit->sphere, hurt->capsule) == -1) continue;
+            if (blob.justCreated == true)
+            {
+                blob.capsule.originA = Vec3F(matrix * Vec4F(blob.def.origin, 1.f));
+                blob.capsule.originB = blob.capsule.originA;
+                blob.capsule.radius = blob.def.radius;
+                blob.justCreated = false;
+            }
+            else
+            {
+                blob.capsule.originB = blob.capsule.originA;
+                blob.capsule.originA = Vec3F(matrix * Vec4F(blob.def.origin, 1.f));
+            }
+        }
+    };
 
-            // fighter already hurt the other fighter
-            if (mIgnoreCollisions[hitFighter.index][hurtFighter.index]) continue;
+    for (auto& fighter : mFighters)
+        update_hit_blob_transforms(*fighter);
 
-            // add the collision to the appropriate vector
-            mCollisions[hurt->fighter->index].push_back({*hit, *hurt});
+    for (auto& article : mArticles)
+        update_hit_blob_transforms(*article);
+
+    //-- find collisions between hit blobs -------------------//
+
+    struct HitCollision { HitBlob* first; HitBlob* second; };
+
+    using HitCollisionMap = std::map<int32_t, HitCollision>;
+    using HitCollisionMapMap = std::map<int32_t, HitCollisionMap>;
+
+    // best collision for each [entity][entity] combination
+    HitCollisionMapMap hitCollisionMapMap;
+
+    // max damage of hitboxes causing rebound
+    std::array<float, MAX_FIGHTERS> reboundDamages {};
+
+    for (auto& firstFighter : mFighters)
+    {
+        for (HitBlob& firstBlob : firstFighter->get_hit_blobs())
+        {
+            // first blob is transcendent
+            if (firstBlob.def.clangMode == BlobClangMode::Ignore) continue;
+
+            for (auto& secondFighter : mFighters)
+            {
+                if (firstFighter == secondFighter) continue;
+
+                for (HitBlob& secondBlob : secondFighter->get_hit_blobs())
+                {
+                    // second blob is transcendent
+                    if (secondBlob.def.clangMode == BlobClangMode::Ignore) continue;
+
+                    // blobs do not intersect
+                    if (!maths::intersect_capsule_capsule(firstBlob.capsule, secondBlob.capsule)) continue;
+
+                    if (firstBlob.def.clangMode != BlobClangMode::Air && secondBlob.def.clangMode != BlobClangMode::Air)
+                    {
+                        const float damageDiff = firstBlob.def.damage - secondBlob.def.damage;
+
+                        if (damageDiff < +9.f) firstBlob.cancelled = true;
+                        if (damageDiff > -9.f) secondBlob.cancelled = true;
+
+                        if (damageDiff > -9.f && damageDiff < +9.f)
+                        {
+                            if (firstBlob.def.clangMode == BlobClangMode::Ground)
+                                reboundDamages[firstFighter->index] =
+                                    std::max(reboundDamages[firstFighter->index], firstBlob.def.damage);
+
+                            if (secondBlob.def.clangMode == BlobClangMode::Ground)
+                                reboundDamages[secondFighter->index] =
+                                    std::max(reboundDamages[secondFighter->index], secondBlob.def.damage);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    //-- find collisions with fighter hurt blobs -------------//
+
+    struct HurtCollision { HurtBlob* hurt; HitBlob* hit; };
+
+    using HurtCollisionMap = std::map<Entity*, HurtCollision>;
+    using HurtMapItem = HurtCollisionMap::value_type;
+
+    // best collision for each [fighter][entity] combination
+    std::array<HurtCollisionMap, MAX_FIGHTERS> hurtCollisionMaps;
+
+    for (auto& hurtFighter : mFighters)
+    {
+        Fighter::Variables& hurtVars = hurtFighter->variables;
+
+        if (hurtVars.intangible == true) continue;
+
+        for (HurtBlob& hurtBlob : hurtFighter->get_hurt_blobs())
+        {
+            if (hurtBlob.intangible == true) continue;
+
+            const auto find_hit_blob_collisions = [&](Entity& hitEntity)
+            {
+                // hitEntity has already hit hurtFighter since the last reset
+                if (auto& vec = hitEntity.get_ignore_collisions(); algo::find(vec, hurtFighter->eid) != vec.end()) return;
+
+                // defer inserting new map entry until there is a collision
+                HurtMapItem* mapItem = nullptr;
+
+                for (HitBlob& hitBlob : hitEntity.get_hit_blobs())
+                {
+                    // hitBlob got cancelled by another hitBlob
+                    if (hitBlob.cancelled == true) continue;
+
+                    // hitBlob can not hit hurtFighter
+                    if (!hitBlob.def.canHitGround && hurtVars.onGround) continue;
+                    if (!hitBlob.def.canHitAir && !hurtVars.onGround) continue;
+
+                    // blobs do not intersect
+                    if (!maths::intersect_capsule_capsule(hitBlob.capsule, hurtBlob.capsule)) continue;
+
+                    // already have a collision, check if the new one is better
+                    if (mapItem != nullptr)
+                    {
+                        HurtCollision& best = mapItem->second;
+
+                        // same hitBlob, choose hurtBlob with highest priority
+                        if (&hitBlob == best.hit)
+                        {
+                            // lower enum value means higher priority (middle, lower, upper)
+                            if (hurtBlob.def.region >= best.hurt->def.region) continue;
+                        }
+
+                        // choose hitBlob with highest priority
+                        else if (hitBlob.def.index >= best.hit->def.index) continue;
+                    }
+
+                    // first time this frame that hurtFighter was hit by hitEntity
+                    else mapItem = &*hurtCollisionMaps[hurtBlob.fighter.index].try_emplace(&hitEntity).first;
+
+                    mapItem->second = { &hurtBlob, &hitBlob };
+                }
+            };
+
+            for (auto& hitFighter : mFighters)
+                if (hitFighter != hurtFighter)
+                    find_hit_blob_collisions(*hitFighter);
+
+            for (auto& hitArticle : mArticles)
+                if (hitArticle->fighter != hurtFighter.get())
+                    find_hit_blob_collisions(*hitArticle);
         }
     }
 
     //--------------------------------------------------------//
 
-    // todo: hitblobs can hit each other and cause a clang (rebound) effect
-
-    //--------------------------------------------------------//
-
-    constexpr auto pick_best = [](Collision* champ, Collision* contender) -> Collision*
+    for (size_t fighterIndex = 0u; fighterIndex < mFighters.size(); ++fighterIndex)
     {
-        if (champ == nullptr) return contender;
-        if (champ->hit.index < contender->hit.index) return champ;
-        if (champ->hurt.region < contender->hurt.region) return champ;
-        return contender;
-    };
+        Fighter& fighter = *mFighters[fighterIndex];
+        const auto& collisionMap = hurtCollisionMaps[fighterIndex];
 
-    std::array<Collision*, MAX_FIGHTERS> bestCollisions {};
+        if (collisionMap.empty() == false)
+        {
+            for (const auto& [hitEntity, collision] : collisionMap)
+            {
+                fighter.accumulate_hit(*collision.hit, *collision.hurt);
+                hitEntity->get_ignore_collisions().push_back(collision.hurt->fighter.eid);
+            }
+            fighter.apply_hits();
+        }
 
-    for (size_t hurtFighter = 0u; hurtFighter < MAX_FIGHTERS; ++hurtFighter)
-        for (Collision& collision : mCollisions[hurtFighter])
-            bestCollisions[hurtFighter] = pick_best(bestCollisions[hurtFighter], &collision);
-
-    for (Collision* champ : bestCollisions)
-    {
-        if (champ == nullptr) continue;
-        mIgnoreCollisions[champ->hit.action->fighter.index][champ->hurt.fighter->index] = true;
-        champ->hurt.fighter->apply_hit(champ->hit, champ->hurt);
+        else if (reboundDamages[fighterIndex] != 0.f)
+            fighter.apply_rebound(reboundDamages[fighterIndex]);
     }
-
-    // todo: maybe remove only the best collisions, leave others for next frame
-    for (auto& vector : mCollisions)
-        vector.clear();
-}
-
-//============================================================================//
-
-void World::reset_collisions(uint8_t fighter)
-{
-    mIgnoreCollisions[fighter].fill(false);
 }
 
 //============================================================================//

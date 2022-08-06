@@ -3,18 +3,26 @@
     "meshes": {
       "Body": "fighters/Mario/meshes/Body",
       "EyesIris": "fighters/Mario/meshes/EyesIris",
+      "EyesLower": "fighters/Mario/meshes/EyesLower",
+      "EyesUpper": "fighters/Mario/meshes/EyesUpper",
       "EyesWhite": "fighters/Mario/meshes/EyesWhite",
+      "Hair": "fighters/Mario/meshes/Hair",
       "HairHat": "fighters/Mario/meshes/HairHat",
+      "Hat": "fighters/Mario/meshes/Hat",
       "Head": "fighters/Mario/meshes/Head",
       "HeadHurt": "fighters/Mario/meshes/HeadHurt"
     },
     "textures": {
       "BodyA_diff": "fighters/Mario/textures/BodyA_diff",
       "BodyB_diff": "fighters/Mario/textures/BodyB_diff",
-      "EyeWhite_diff": "fighters/Mario/textures/EyeWhite_diff",
       "EyeHurt_diff": "fighters/Mario/textures/EyeHurt_diff",
       "EyeIris_diff": "fighters/Mario/textures/EyeIris_diff",
       "EyeIris_mask": "fighters/Mario/textures/EyeIris_mask",
+      "EyeLower_diff": "fighters/Mario/textures/EyeLower_diff",
+      "EyeLower_mask": "fighters/Mario/textures/EyeLower_mask",
+      "EyeUpper_diff": "fighters/Mario/textures/EyeUpper_diff",
+      "EyeUpper_mask": "fighters/Mario/textures/EyeUpper_mask",
+      "EyeWhite_diff": "fighters/Mario/textures/EyeWhite_diff",
       "Black": "textures/Black",
       "Gray20": "textures/Gray20",
       "Gray40": "textures/Gray40",
@@ -23,201 +31,695 @@
     },
     "pipelines": {
       "Basic": {
-        "attributes": [ "TexCoords", "Normals", "Bones" ],
+        "attributes": [ "TexCoords", "Normals" ],
         "pass": "Opaque",
-        "vertexShader": "gbuffer/BasicModel/VertSkelly",
-        "fragmentShader": "gbuffer/BasicModel/Frag",
+        "vertexShader": "gbuffer/General.vert/AnimTexture0_Bones0_Tangent0",
+        "fragmentShader": "gbuffer/General.frag/TexMask0_TexNormal0",
         "cullFace": "Back",
         "alphaCoverage": "Disable",
         "depthTest": "Replace",
         "colourBlend": [ "Disable", "Disable" ]
       },
-      "Mask": {
+      "BasicBones": {
         "attributes": [ "TexCoords", "Normals", "Bones" ],
         "pass": "Opaque",
-        "vertexShader": "gbuffer/BasicModel/VertSkelly",
-        "fragmentShader": "gbuffer/BasicModel/FragMask",
+        "vertexShader": "gbuffer/General.vert/AnimTexture0_Bones1_Tangent0",
+        "fragmentShader": "gbuffer/General.frag/TexMask0_TexNormal0",
+        "cullFace": "Back",
+        "alphaCoverage": "Disable",
+        "depthTest": "Replace",
+        "colourBlend": [ "Disable", "Disable" ]
+      },
+      "AnimTextureMask": {
+        "attributes": [ "TexCoords", "Normals" ],
+        "pass": "Opaque",
+        "vertexShader": "gbuffer/General.vert/AnimTexture1_Bones0_Tangent0",
+        "fragmentShader": "gbuffer/General.frag/TexMask1_TexNormal0",
         "cullFace": "Back",
         "alphaCoverage": "Disable",
         "depthTest": "Replace",
         "colourBlend": [ "Disable", "Disable" ]
       },
       "ShadowFront": {
+        "attributes": [ "#TexCoords", "#Normals" ],
+        "pass": "ShadowFront",
+        "vertexShader": "shadow/General.vert/AnimTexture0_Bones0_TexCoord0",
+        "fragmentShader": "shadow/General.frag/TexMask0",
+        "cullFace": "Back",
+        "alphaCoverage": "Disable",
+        "depthTest": "Replace",
+        "colourBlend": []
+      },
+      "ShadowFrontBones": {
         "attributes": [ "#TexCoords", "#Normals", "Bones" ],
         "pass": "ShadowFront",
-        "vertexShader": "shadow/BasicModel/Vert_Skelly",
-        "fragmentShader": "shadow/BasicModel/Frag",
+        "vertexShader": "shadow/General.vert/AnimTexture0_Bones1_TexCoord0",
+        "fragmentShader": "shadow/General.frag/TexMask0",
         "cullFace": "Back",
         "alphaCoverage": "Disable",
         "depthTest": "Replace",
         "colourBlend": []
       },
       "ShadowBack": {
+        "attributes": [ "#TexCoords", "#Normals" ],
+        "pass": "ShadowBack",
+        "vertexShader": "shadow/General.vert/AnimTexture0_Bones0_TexCoord0",
+        "fragmentShader": "shadow/General.frag/TexMask0",
+        "cullFace": "Front",
+        "alphaCoverage": "Disable",
+        "depthTest": "Replace",
+        "colourBlend": []
+      },
+      "ShadowBackBones": {
         "attributes": [ "#TexCoords", "#Normals", "Bones" ],
         "pass": "ShadowBack",
-        "vertexShader": "shadow/BasicModel/Vert_Skelly",
-        "fragmentShader": "shadow/BasicModel/Frag",
+        "vertexShader": "shadow/General.vert/AnimTexture0_Bones1_TexCoord0",
+        "fragmentShader": "shadow/General.frag/TexMask0",
         "cullFace": "Front",
         "alphaCoverage": "Disable",
         "depthTest": "Replace",
         "colourBlend": []
       }
-    },
-    "materials": {
-      "BodyA": {
-        "pipeline": "Basic",
-        "textures": {
-          "tx_Albedo": "BodyA_diff",
-          "tx_Roughness": "Gray80",
-          "tx_Metallic": "Black"
-        },
-        "params": {}
-      },
-      "BodyB": {
-        "pipeline": "Basic",
-        "textures": {
-          "tx_Albedo": "BodyB_diff",
-          "tx_Roughness": "Gray80",
-          "tx_Metallic": "Black"
-        },
-        "params": {}
-      },
-      "Buttons": {
-        "cullface": "back",
-        "pipeline": "Basic",
-        "textures": {
-          "tx_Albedo": "BodyB_diff",
-          "tx_Roughness": "Gray40",
-          "tx_Metallic": "White"
-        },
-        "params": {}
-      },
-      "EyesHurt": {
-        "pipeline": "Basic",
-        "textures": {
-          "tx_Albedo": "EyeHurt_diff",
-          "tx_Roughness": "Gray80",
-          "tx_Metallic": "Black"
-        },
-        "params": {}
-      },
-      "EyesIris": {
-        "pipeline": "Mask",
-        "textures": {
-          "tx_Albedo": "EyeIris_diff",
-          "tx_Roughness": "Gray20",
-          "tx_Metallic": "Black",
-          "tx_Mask": "EyeIris_mask"
-        },
-        "params": {}
-      },
-      "EyesWhite": {
-        "pipeline": "Basic",
-        "textures": {
-          "tx_Albedo": "EyeWhite_diff",
-          "tx_Roughness": "Gray20",
-          "tx_Metallic": "Black"
-        },
-        "params": {}
-      },
-      "Shadow": [
-        {
-          "pipeline": "ShadowFront",
-          "textures": {},
-          "params": {}
-        },
-        {
-          "pipeline": "ShadowBack",
-          "textures": {},
-          "params": {}
-        }
-      ]
     }
   },
   "items": [
     {
       "condition": null,
-      "material": "BodyA",
       "mesh": "Body",
-      "submesh": 0
+      "subMesh": "BodyA",
+      "pipeline": "BasicBones",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": null
+        },
+        "normalMatIndex": {
+          "type": "NormalMatrixIndex",
+          "bone": null
+        },
+        "albedoTexIndex": {
+          "type": "TextureIndex",
+          "texture": "BodyA_diff"
+        },
+        "roughnessTexIndex": {
+          "type": "TextureIndex",
+          "texture": "Gray80"
+        },
+        "metallicTexIndex": {
+          "type": "TextureIndex",
+          "texture": "Black"
+        }
+      }
     },
     {
       "condition": null,
-      "material": "BodyB",
       "mesh": "Body",
-      "submesh": 1
+      "subMesh": "BodyB",
+      "pipeline": "BasicBones",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": null
+        },
+        "normalMatIndex": {
+          "type": "NormalMatrixIndex",
+          "bone": null
+        },
+        "albedoTexIndex": {
+          "type": "TextureIndex",
+          "texture": "BodyB_diff"
+        },
+        "roughnessTexIndex": {
+          "type": "TextureIndex",
+          "texture": "Gray80"
+        },
+        "metallicTexIndex": {
+          "type": "TextureIndex",
+          "texture": "Black"
+        }
+      }
     },
     {
       "condition": null,
-      "material": "Buttons",
       "mesh": "Body",
-      "submesh": 2
+      "subMesh": "Buttons",
+      "pipeline": "BasicBones",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": null
+        },
+        "normalMatIndex": {
+          "type": "NormalMatrixIndex",
+          "bone": null
+        },
+        "albedoTexIndex": {
+          "type": "TextureIndex",
+          "texture": "BodyB_diff"
+        },
+        "roughnessTexIndex": {
+          "type": "TextureIndex",
+          "texture": "Gray40"
+        },
+        "metallicTexIndex": {
+          "type": "TextureIndex",
+          "texture": "White"
+        }
+      }
     },
     {
       "condition": null,
-      "material": "BodyA",
       "mesh": "HairHat",
-      "submesh": null
+      "subMesh": null,
+      "pipeline": "Basic",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": "HeadN"
+        },
+        "normalMatIndex": {
+          "type": "NormalMatrixIndex",
+          "bone": "HeadN"
+        },
+        "albedoTexIndex": {
+          "type": "TextureIndex",
+          "texture": "BodyA_diff"
+        },
+        "roughnessTexIndex": {
+          "type": "TextureIndex",
+          "texture": "Gray80"
+        },
+        "metallicTexIndex": {
+          "type": "TextureIndex",
+          "texture": "Black"
+        }
+      }
+    },
+    {
+      "condition": null,
+      "mesh": "Hat",
+      "subMesh": null,
+      "pipeline": "Basic",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": "HeadN"
+        },
+        "normalMatIndex": {
+          "type": "NormalMatrixIndex",
+          "bone": "HeadN"
+        },
+        "albedoTexIndex": {
+          "type": "TextureIndex",
+          "texture": "BodyA_diff"
+        },
+        "roughnessTexIndex": {
+          "type": "TextureIndex",
+          "texture": "Gray80"
+        },
+        "metallicTexIndex": {
+          "type": "TextureIndex",
+          "texture": "Black"
+        }
+      }
     },
     {
       "condition": "!flinch",
-      "material": "BodyA",
       "mesh": "Head",
-      "submesh": null
+      "subMesh": null,
+      "pipeline": "BasicBones",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": null
+        },
+        "normalMatIndex": {
+          "type": "NormalMatrixIndex",
+          "bone": null
+        },
+        "albedoTexIndex": {
+          "type": "TextureIndex",
+          "texture": "BodyA_diff"
+        },
+        "roughnessTexIndex": {
+          "type": "TextureIndex",
+          "texture": "Gray80"
+        },
+        "metallicTexIndex": {
+          "type": "TextureIndex",
+          "texture": "Black"
+        }
+      }
     },
     {
       "condition": "!flinch",
-      "material": "EyesWhite",
-      "mesh": "EyesWhite",
-      "submesh": null
+      "mesh": "EyesUpper",
+      "subMesh": "EyeUpperL",
+      "pipeline": "AnimTextureMask",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": "HeadN"
+        },
+        "normalMatIndex": {
+          "type": "NormalMatrixIndex",
+          "bone": "HeadN"
+        },
+        "texTransform": {
+          "type": "AnimTextureTransform",
+          "block": "EyeUpperL",
+          "tracks": [ "texOffset", "texRotation", "texScale" ]
+        },
+        "albedoTexIndex": {
+          "type": "TextureIndex",
+          "texture": "EyeUpper_diff"
+        },
+        "roughnessTexIndex": {
+          "type": "TextureIndex",
+          "texture": "Gray80"
+        },
+        "metallicTexIndex": {
+          "type": "TextureIndex",
+          "texture": "Black"
+        },
+        "maskTexIndex": {
+          "type": "TextureIndex",
+          "texture": "EyeUpper_mask"
+        }
+      }
     },
     {
       "condition": "!flinch",
-      "material": "EyesIris",
+      "mesh": "EyesUpper",
+      "subMesh": "EyeUpperR",
+      "pipeline": "AnimTextureMask",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": "HeadN"
+        },
+        "normalMatIndex": {
+          "type": "NormalMatrixIndex",
+          "bone": "HeadN"
+        },
+        "texTransform": {
+          "type": "AnimTextureTransform",
+          "block": "EyeUpperR",
+          "tracks": [ "texOffset", "texRotation", "texScale" ]
+        },
+        "albedoTexIndex": {
+          "type": "TextureIndex",
+          "texture": "EyeUpper_diff"
+        },
+        "roughnessTexIndex": {
+          "type": "TextureIndex",
+          "texture": "Gray80"
+        },
+        "metallicTexIndex": {
+          "type": "TextureIndex",
+          "texture": "Black"
+        },
+        "maskTexIndex": {
+          "type": "TextureIndex",
+          "texture": "EyeUpper_mask"
+        }
+      }
+    },
+    {
+      "condition": "!flinch",
+      "mesh": "EyesLower",
+      "subMesh": "EyeLowerL",
+      "pipeline": "AnimTextureMask",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": "HeadN"
+        },
+        "normalMatIndex": {
+          "type": "NormalMatrixIndex",
+          "bone": "HeadN"
+        },
+        "texTransform": {
+          "type": "AnimTextureTransform",
+          "block": "EyeLowerL",
+          "tracks": [ "texOffset", "texRotation", "texScale" ]
+        },
+        "albedoTexIndex": {
+          "type": "TextureIndex",
+          "texture": "EyeLower_diff"
+        },
+        "roughnessTexIndex": {
+          "type": "TextureIndex",
+          "texture": "Gray80"
+        },
+        "metallicTexIndex": {
+          "type": "TextureIndex",
+          "texture": "Black"
+        },
+        "maskTexIndex": {
+          "type": "TextureIndex",
+          "texture": "EyeLower_mask"
+        }
+      }
+    },
+    {
+      "condition": "!flinch",
+      "mesh": "EyesLower",
+      "subMesh": "EyeLowerR",
+      "pipeline": "AnimTextureMask",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": "HeadN"
+        },
+        "normalMatIndex": {
+          "type": "NormalMatrixIndex",
+          "bone": "HeadN"
+        },
+        "texTransform": {
+          "type": "AnimTextureTransform",
+          "block": "EyeLowerR",
+          "tracks": [ "texOffset", "texRotation", "texScale" ]
+        },
+        "albedoTexIndex": {
+          "type": "TextureIndex",
+          "texture": "EyeLower_diff"
+        },
+        "roughnessTexIndex": {
+          "type": "TextureIndex",
+          "texture": "Gray80"
+        },
+        "metallicTexIndex": {
+          "type": "TextureIndex",
+          "texture": "Black"
+        },
+        "maskTexIndex": {
+          "type": "TextureIndex",
+          "texture": "EyeLower_mask"
+        }
+      }
+    },
+    {
+      "condition": "!flinch",
       "mesh": "EyesIris",
-      "submesh": null
-    },
-    {
-      "condition": "flinch",
-      "material": "BodyA",
-      "mesh": "HeadHurt",
-      "submesh": 0
-    },
-    {
-      "condition": "flinch",
-      "material": "EyesHurt",
-      "mesh": "HeadHurt",
-      "submesh": 1
-    },
-    {
-      "condition": null,
-      "material": "Shadow",
-      "mesh": "Body",
-      "submesh": null
-    },
-    {
-      "condition": null,
-      "material": "Shadow",
-      "mesh": "HairHat",
-      "submesh": null
+      "subMesh": "EyeIrisL",
+      "pipeline": "AnimTextureMask",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": "HeadN"
+        },
+        "normalMatIndex": {
+          "type": "NormalMatrixIndex",
+          "bone": "HeadN"
+        },
+        "texTransform": {
+          "type": "AnimTextureTransform",
+          "block": "EyeIrisL",
+          "tracks": [ "texOffset", "texRotation", "texScale" ]
+        },
+        "albedoTexIndex": {
+          "type": "TextureIndex",
+          "texture": "EyeIris_diff"
+        },
+        "roughnessTexIndex": {
+          "type": "TextureIndex",
+          "texture": "Gray20"
+        },
+        "metallicTexIndex": {
+          "type": "TextureIndex",
+          "texture": "Black"
+        },
+        "maskTexIndex": {
+          "type": "TextureIndex",
+          "texture": "EyeIris_mask"
+        }
+      }
     },
     {
       "condition": "!flinch",
-      "material": "Shadow",
-      "mesh": "Head",
-      "submesh": null
+      "mesh": "EyesIris",
+      "subMesh": "EyeIrisR",
+      "pipeline": "AnimTextureMask",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": "HeadN"
+        },
+        "normalMatIndex": {
+          "type": "NormalMatrixIndex",
+          "bone": "HeadN"
+        },
+        "texTransform": {
+          "type": "AnimTextureTransform",
+          "block": "EyeIrisR",
+          "tracks": [ "texOffset", "texRotation", "texScale" ]
+        },
+        "albedoTexIndex": {
+          "type": "TextureIndex",
+          "texture": "EyeIris_diff"
+        },
+        "roughnessTexIndex": {
+          "type": "TextureIndex",
+          "texture": "Gray20"
+        },
+        "metallicTexIndex": {
+          "type": "TextureIndex",
+          "texture": "Black"
+        },
+        "maskTexIndex": {
+          "type": "TextureIndex",
+          "texture": "EyeIris_mask"
+        }
+      }
     },
     {
       "condition": "!flinch",
-      "material": "Shadow",
       "mesh": "EyesWhite",
-      "submesh": null
+      "subMesh": null,
+      "pipeline": "Basic",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": "HeadN"
+        },
+        "normalMatIndex": {
+          "type": "NormalMatrixIndex",
+          "bone": "HeadN"
+        },
+        "albedoTexIndex": {
+          "type": "TextureIndex",
+          "texture": "EyeWhite_diff"
+        },
+        "roughnessTexIndex": {
+          "type": "TextureIndex",
+          "texture": "Gray20"
+        },
+        "metallicTexIndex": {
+          "type": "TextureIndex",
+          "texture": "Black"
+        }
+      }
     },
     {
       "condition": "flinch",
-      "material": "Shadow",
       "mesh": "HeadHurt",
-      "submesh": null
+      "subMesh": "BodyA",
+      "pipeline": "Basic",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": "HeadN"
+        },
+        "normalMatIndex": {
+          "type": "NormalMatrixIndex",
+          "bone": "HeadN"
+        },
+        "albedoTexIndex": {
+          "type": "TextureIndex",
+          "texture": "BodyA_diff"
+        },
+        "roughnessTexIndex": {
+          "type": "TextureIndex",
+          "texture": "Gray80"
+        },
+        "metallicTexIndex": {
+          "type": "TextureIndex",
+          "texture": "Black"
+        }
+      }
+    },
+    {
+      "condition": "flinch",
+      "mesh": "HeadHurt",
+      "subMesh": "EyesHurt",
+      "pipeline": "Basic",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": "HeadN"
+        },
+        "normalMatIndex": {
+          "type": "NormalMatrixIndex",
+          "bone": "HeadN"
+        },
+        "albedoTexIndex": {
+          "type": "TextureIndex",
+          "texture": "EyeHurt_diff"
+        },
+        "roughnessTexIndex": {
+          "type": "TextureIndex",
+          "texture": "Gray80"
+        },
+        "metallicTexIndex": {
+          "type": "TextureIndex",
+          "texture": "Black"
+        }
+      }
+    },
+    {
+      "condition": null,
+      "mesh": "Body",
+      "subMesh": null,
+      "pipeline": "ShadowFrontBones",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": null
+        }
+      }
+    },
+    {
+      "condition": null,
+      "mesh": "Body",
+      "subMesh": null,
+      "pipeline": "ShadowBackBones",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": null
+        }
+      }
+    },
+    {
+      "condition": null,
+      "mesh": "HairHat",
+      "subMesh": null,
+      "pipeline": "ShadowFront",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": "HeadN"
+        }
+      }
+    },
+    {
+      "condition": null,
+      "mesh": "HairHat",
+      "subMesh": null,
+      "pipeline": "ShadowBack",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": "HeadN"
+        }
+      }
+    },
+    {
+      "condition": null,
+      "mesh": "Hat",
+      "subMesh": null,
+      "pipeline": "ShadowFront",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": "HeadN"
+        }
+      }
+    },
+    {
+      "condition": null,
+      "mesh": "Hat",
+      "subMesh": null,
+      "pipeline": "ShadowBack",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": "HeadN"
+        }
+      }
+    },
+    {
+      "condition": "!flinch",
+      "mesh": "Head",
+      "subMesh": null,
+      "pipeline": "ShadowFrontBones",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": null
+        }
+      }
+    },
+    {
+      "condition": "!flinch",
+      "mesh": "Head",
+      "subMesh": null,
+      "pipeline": "ShadowBackBones",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": null
+        }
+      }
+    },
+    {
+      "condition": "!flinch",
+      "mesh": "EyesWhite",
+      "subMesh": null,
+      "pipeline": "ShadowFront",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": "HeadN"
+        }
+      }
+    },
+    {
+      "condition": "!flinch",
+      "mesh": "EyesWhite",
+      "subMesh": null,
+      "pipeline": "ShadowBack",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": "HeadN"
+        }
+      }
+    },
+    {
+      "condition": "flinch",
+      "mesh": "HeadHurt",
+      "subMesh": null,
+      "pipeline": "ShadowFront",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": "HeadN"
+        }
+      }
+    },
+    {
+      "condition": "flinch",
+      "mesh": "HeadHurt",
+      "subMesh": null,
+      "pipeline": "ShadowBack",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": "HeadN"
+        }
+      }
     }
   ]
 }

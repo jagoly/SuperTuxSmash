@@ -24,9 +24,15 @@ ParticleSystem::ParticleSystem(World& world)
 
 //============================================================================//
 
-void ParticleSystem::generate(const Emitter& emitter)
+void ParticleSystem::generate(const Emitter& emitter, const Entity* entity)
 {
-    SQASSERT(emitter.bone == -1 || emitter.fighter != nullptr, "bone set without a fighter");
+    // defer generation until after entity matrices have been updated
+    mGenerateCalls.push_back({&emitter, entity});
+}
+
+void ParticleSystem::impl_generate(const Emitter& emitter, const Entity* entity)
+{
+    SQASSERT(emitter.bone == -1 || entity != nullptr, "bone set without an entity");
 
     const auto& [spriteMin, spriteMax] = sprites[emitter.sprite];
 
@@ -34,7 +40,7 @@ void ParticleSystem::generate(const Emitter& emitter)
     const maths::RandomRange<uint16_t> randColour { 0u, uint16_t(emitter.colour.size() - 1u) };
     const maths::RandomRange<Vec3F> randNormal { Vec3F(-1.f), Vec3F(1.f) };
 
-    const Mat4F boneMatrix = emitter.fighter ? emitter.fighter->get_bone_matrix(emitter.bone) : Mat4F();
+    const Mat4F boneMatrix = entity ? entity->get_bone_matrix(emitter.bone) : Mat4F();
 
     std::mt19937& rng = world.get_rng();
 
@@ -84,6 +90,11 @@ void ParticleSystem::generate(const Emitter& emitter)
 
 void ParticleSystem::update_and_clean()
 {
+    for (const auto& [emitter, entity] : mGenerateCalls)
+        impl_generate(*emitter, entity);
+
+    mGenerateCalls.clear();
+
     const auto predicate = [](const ParticleData& p) { return p.progress == p.lifetime; };
     algo::erase_if(mParticles, predicate);
 

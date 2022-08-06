@@ -9,51 +9,92 @@
     },
     "pipelines": {
       "": {
-        "attributes": [ "TexCoords", "Bones" ],
+        "attributes": [ "TexCoords" ],
         "pass": "Transparent",
-        "vertexShader": "transparent/BasicEffect/Vert",
-        "fragmentShader": "transparent/BasicEffect/Frag",
+        "vertexShader": "transparent/General.vert/AnimColour1_AnimTexture0_Bones0_Colour0_TexCoord1",
+        "fragmentShader": "transparent/General.frag/Colour1_Texture1",
         "cullFace": "Disable",
         "alphaCoverage": "Disable",
         "depthTest": "Keep",
         "colourBlend": [ "Alpha" ]
-      }
-    },
-    "materials": {
-      "dash": {
-        "pipeline": "",
-        "textures": {
-          "tx_Colour": "eff_cmn_smokeB"
-        },
-        "params": {}
-      },
-      "storm": {
-        "pipeline": "",
-        "textures": {
-          "tx_Colour": "eff_cmn_stormsomke"
-        },
-        "params": {}
       }
     }
   },
   "items": [
     {
       "condition": null,
-      "material": "dash",
       "mesh": "",
-      "submesh": 0
+      "subMesh": "dash1",
+      "pipeline": "",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": "Line02"
+        },
+        "colour": {
+          "type": "AnimFloat4",
+          "block": "dash1",
+          "track": "colour"
+        },
+        "colourTexIndex": {
+          "type": "TextureIndex",
+          "texture": "eff_cmn_smokeB"
+        },
+        "blendDepth": {
+          "type": "ConstFloat",
+          "value": 0.2
+        }
+      }
     },
     {
       "condition": null,
-      "material": "dash",
       "mesh": "",
-      "submesh": 1
+      "subMesh": "dash2",
+      "pipeline": "",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": "Line01"
+        },
+        "colour": {
+          "type": "AnimFloat4",
+          "block": "dash2",
+          "track": "colour"
+        },
+        "colourTexIndex": {
+          "type": "TextureIndex",
+          "texture": "eff_cmn_smokeB"
+        },
+        "blendDepth": {
+          "type": "ConstFloat",
+          "value": 0.2
+        }
+      }
     },
     {
       "condition": null,
-      "material": "storm",
       "mesh": "",
-      "submesh": 2
+      "subMesh": "storm",
+      "pipeline": "",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": "stormsmoke"
+        },
+        "colour": {
+          "type": "AnimFloat4",
+          "block": "storm",
+          "track": "colour"
+        },
+        "colourTexIndex": {
+          "type": "TextureIndex",
+          "texture": "eff_cmn_stormsomke"
+        },
+        "blendDepth": {
+          "type": "ConstFloat",
+          "value": 0.2
+        }
+      }
     }
   ]
 }

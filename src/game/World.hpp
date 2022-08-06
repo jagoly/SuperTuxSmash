@@ -16,13 +16,11 @@ class World final : sq::NonCopyable
 {
 public: //====================================================//
 
-    World(bool editor, const Options& options, sq::AudioContext& audio, ResourceCaches& caches, Renderer& renderer);
+    World(const Options& options, sq::AudioContext& audio, ResourceCaches& caches, Renderer& renderer);
 
     ~World();
 
     //--------------------------------------------------------//
-
-    const bool editor;
 
     const Options& options;
 
@@ -31,6 +29,18 @@ public: //====================================================//
     ResourceCaches& caches;
 
     Renderer& renderer;
+
+    //--------------------------------------------------------//
+
+    /// Data that is only relevant to the editor.
+    struct EditorData
+    {
+        std::optional<std::tuple<TinyString, SmallString>> actionKey;
+        std::optional<TinyString> fighterKey;
+        String errorMessage;
+    };
+
+    std::unique_ptr<EditorData> editor;
 
     //--------------------------------------------------------//
 
@@ -44,6 +54,8 @@ public: //====================================================//
         WrenHandle* state_do_enter = nullptr;
         WrenHandle* state_do_updates = nullptr;
         WrenHandle* state_do_exit = nullptr;
+        WrenHandle* article_do_updates = nullptr;
+        WrenHandle* article_do_destroy = nullptr;
     } handles;
 
     //--------------------------------------------------------//
@@ -54,77 +66,40 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
+    /// Generate a new entity id.
+    int32_t generate_entity_id() { return ++mEntityId; }
+
     /// Set the stage for the game.
     void set_stage(std::unique_ptr<Stage> stage);
 
     /// Add a fighter to the game.
-    void add_fighter(std::unique_ptr<Fighter> fighter);
+    Fighter& create_fighter(TinyString name);
+
+    /// Load an article definition for later.
+    ArticleDef& load_article_def(const String& path);
+
+    /// Create a new article from a definition.
+    Article& create_article(const ArticleDef& def, Fighter* fighter);
 
     /// Called after the stage and fighters have been added.
     void finish_setup();
 
     //--------------------------------------------------------//
 
-    /// Enable a hitblob.
-    void enable_hitblob(HitBlob* blob);
-
-    /// Disable a hitblob.
-    void disable_hitblob(HitBlob* blob);
-
-    /// Disable an action's hitblobs.
-    void disable_hitblobs(const FighterAction& action);
-
-    /// Disable all hitblobs.
-    void editor_clear_hitblobs();
-
-    //--------------------------------------------------------//
-
-    /// Enable a hurtblob.
-    void enable_hurtblob(HurtBlob* blob);
-
-    /// Disable a hurtblob.
-    void disable_hurtblob(HurtBlob* blob);
-
-    /// Disable a fighter's hurtblobs.
-    void disable_hurtblobs(const Fighter& fighter);
-
-    /// Disable all hurtblobs.
-    void editor_clear_hurtblobs();
-
-    //--------------------------------------------------------//
-
-    /// Reset a fighter's collisions.
-    void reset_collisions(uint8_t fighter);
-
     /// Compute a bounding box around all fighters.
     MinMax<Vec2F> compute_fighter_bounds() const;
 
     //--------------------------------------------------------//
 
-    /// Access the stage.
     Stage& get_stage() { return *mStage; }
 
-    /// Access the stage (const).
     const Stage& get_stage() const { return *mStage; }
-
-    /// Access a fighter by index.
-    Fighter& get_fighter(uint8_t index) { return *mFighters[index]; }
-
-    /// Access a fighter by index (const).
-    const Fighter& get_fighter(uint8_t index) const { return *mFighters[index]; }
-
-    //--------------------------------------------------------//
 
     // todo: in c++20 can use ranges to not expose the (unique) pointers
 
-    /// Access an iterable of all fighters.
     const StackVector<std::unique_ptr<Fighter>, MAX_FIGHTERS>& get_fighters() const { return mFighters; }
 
-    /// Access the enabled HurtBlobs.
-    const std::vector<HurtBlob*>& get_hurt_blobs() const { return mEnabledHurtBlobs; };
-
-    /// Access the enabled HitBlobs.
-    const std::vector<HitBlob*>& get_hit_blobs() const { return mEnabledHitBlobs; };
+    const std::vector<std::unique_ptr<Article>>& get_articles() const { return mArticles; }
 
     //--------------------------------------------------------//
 
@@ -146,13 +121,15 @@ public: //====================================================//
 
     double wren_random_float(float min, float max);
 
+    void wren_cancel_sound(int32_t id);
+
+    void wren_cancel_effect(int32_t id);
+
 private: //===================================================//
 
     void impl_update_collisions();
 
     //--------------------------------------------------------//
-
-    std::mt19937 mRandNumGen;
 
     std::unique_ptr<EffectSystem> mEffectSystem;
 
@@ -162,16 +139,18 @@ private: //===================================================//
 
     StackVector<std::unique_ptr<Fighter>, MAX_FIGHTERS> mFighters;
 
-    std::vector<HitBlob*> mEnabledHitBlobs;
-    std::vector<HurtBlob*> mEnabledHurtBlobs;
+    std::vector<std::unique_ptr<Article>> mArticles;
 
-    //--------------------------------------------------------//
+    // loaded fighter definitions, by name
+    std::map<TinyString, FighterDef> mFighterDefs;
 
-    struct Collision { HitBlob& hit; HurtBlob& hurt; };
+    // loaded article definitions, by path
+    std::map<String, ArticleDef> mArticleDefs;
 
-    std::array<std::array<bool, MAX_FIGHTERS>, MAX_FIGHTERS> mIgnoreCollisions {};
+    int32_t mEntityId = -1;
 
-    std::array<std::vector<Collision>, MAX_FIGHTERS> mCollisions;
+    // at the end of the structure, because it's huge
+    std::mt19937 mRandNumGen;
 };
 
 //============================================================================//

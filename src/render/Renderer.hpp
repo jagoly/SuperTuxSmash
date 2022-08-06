@@ -4,8 +4,7 @@
 
 #include "main/Resources.hpp"
 
-#include "render/DrawItem.hpp"
-
+#include <sqee/objects/DrawItem.hpp>
 #include <sqee/objects/Texture.hpp>
 #include <sqee/vk/SwapBuffer.hpp>
 #include <sqee/vk/Wrappers.hpp>
@@ -51,15 +50,16 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    /// Create some DrawItems from a vector of definitions.
-    int64_t create_draw_items(const std::vector<DrawItemDef>& defs,
-                              const sq::Swapper<vk::DescriptorSet>& descriptorSet,
-                              const std::map<TinyString, const bool*>& conditions);
-
-    /// Delete all DrawItems with the given group id.
-    void delete_draw_items(int64_t groupId);
+    /// Add a draw call for an item to this frame.
+    void add_draw_call(const sq::DrawItem& item, const AnimPlayer& player);
 
     void update_cubemap_descriptor_sets();
+
+    //--------------------------------------------------------//
+
+    void swap_objects_buffers();
+
+    Mat34F* reserve_matrices(uint count, uint& index);
 
     //--------------------------------------------------------//
 
@@ -84,6 +84,7 @@ public: //====================================================//
     struct {
         sq::SwapBuffer camera;
         sq::SwapBuffer environment;
+        sq::SwapBuffer matrices;
     } ubos;
 
     struct {
@@ -104,7 +105,6 @@ public: //====================================================//
         vk::DescriptorSetLayout transparent;
         vk::DescriptorSetLayout particles;
         vk::DescriptorSetLayout composite;
-        vk::DescriptorSetLayout object;
     } setLayouts;
 
     struct {
@@ -251,15 +251,21 @@ private: //===================================================//
     sq::PassConfig* mPassConfigShadowBack = nullptr;
     sq::PassConfig* mPassConfigTransparent = nullptr;
 
-    std::vector<DrawItem> mDrawItemsGbuffer;
-    std::vector<DrawItem> mDrawItemsShadowFront;
-    std::vector<DrawItem> mDrawItemsShadowBack;
-    std::vector<DrawItem> mDrawItemsTransparent;
+    struct DrawCall
+    {
+        const sq::DrawItem* item;
+        const AnimPlayer* player;
+    };
+
+    std::vector<DrawCall> mDrawCallsGbuffer;
+    std::vector<DrawCall> mDrawCallsShadowFront;
+    std::vector<DrawCall> mDrawCallsShadowBack;
+    std::vector<DrawCall> mDrawCallsTransparent;
 
     bool mNeedDestroyShadow = false;
     bool mNeedDestroySSAO = false;
 
-    int64_t mCurrentGroupId = -1;
+    uint mNextMatrixIndex = 0u;
 
     //--------------------------------------------------------//
 

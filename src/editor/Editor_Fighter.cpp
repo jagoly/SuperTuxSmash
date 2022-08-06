@@ -1,7 +1,6 @@
 #include "editor/Editor_Fighter.hpp"
 
 #include "game/Fighter.hpp"
-#include "game/FighterState.hpp"
 #include "game/HurtBlob.hpp"
 #include "game/SoundEffect.hpp"
 #include "game/World.hpp"
@@ -20,26 +19,27 @@ using FighterContext = EditorScene::FighterContext;
 
 //============================================================================//
 
-FighterContext::FighterContext(EditorScene& _editor, FighterEnum _key)
-    : BaseContext(_editor, StageEnum::TestZone), ctxKey(_key)
+FighterContext::FighterContext(EditorScene& _editor, TinyString _key)
+    : BaseContext(_editor, "TestZone"), ctxKey(_key)
 {
     ctxTypeString = "Fighter";
-    ctxKeyString = sq::enum_to_string(ctxKey);
+    ctxKeyString = _key;
 
-    world->add_fighter(std::make_unique<Fighter>(*world, ctxKey, 0u));
-    world->get_fighter(0u).controller = editor.mController.get();
+    fighter = &world->create_fighter(ctxKey);
+    fighter->controller = editor.mController.get();
 
-    fighter = &world->get_fighter(0u);
-
-    fighter->mAnimation = nullptr;
+    fighter->mAnimPlayer.animation = nullptr;
     fighter->variables.facing = 2;
     world->tick();
+    world->tick();
+
+    fighterDef = const_cast<FighterDef*>(&fighter->def);
 
     savedData = std::make_unique<UndoEntry>();
-    *savedData = { fighter->mHurtBlobs, fighter->mSounds };
+    *savedData = { fighterDef->hurtBlobs, fighterDef->sounds };
 
     undoStack.emplace_back(std::make_unique<UndoEntry>());
-    *undoStack.back() = { fighter->mHurtBlobs, fighter->mSounds };
+    *undoStack.back() = { fighterDef->hurtBlobs, fighterDef->sounds };
 }
 
 FighterContext::~FighterContext() = default;
@@ -48,21 +48,19 @@ FighterContext::~FighterContext() = default;
 
 void FighterContext::apply_working_changes()
 {
-    if (undoStack[undoIndex]->has_changes(*fighter) == true)
+    if (undoStack[undoIndex]->has_changes(*fighterDef) == true)
     {
-        world->editor_clear_hurtblobs();
-
-        for (auto& [key, blob] : fighter->mHurtBlobs)
-            world->enable_hurtblob(&blob);
+        fighter->mHurtBlobs.clear();
+        fighter->initialise_hurtblobs();
 
         world->tick();
 
         undoStack.erase(undoStack.begin() + ++undoIndex, undoStack.end());
 
         undoStack.emplace_back(std::make_unique<UndoEntry>());
-        *undoStack.back() = { fighter->mHurtBlobs, fighter->mSounds };
+        *undoStack.back() = { fighterDef->hurtBlobs, fighterDef->sounds };
 
-        modified = savedData->has_changes(*fighter);
+        modified = savedData->has_changes(*fighterDef);
     }
 }
 
@@ -77,17 +75,15 @@ void FighterContext::do_undo_redo(bool redo)
 
     if (undoIndex != oldIndex)
     {
-        world->editor_clear_hurtblobs();
+        fighterDef->hurtBlobs = undoStack[undoIndex]->hurtBlobs;
+        fighterDef->sounds = undoStack[undoIndex]->sounds;
 
-        fighter->mHurtBlobs = undoStack[undoIndex]->hurtBlobs;
-        fighter->mSounds = undoStack[undoIndex]->sounds;
-
-        for (auto& [key, blob] : fighter->mHurtBlobs)
-            world->enable_hurtblob(&blob);
+        fighter->mHurtBlobs.clear();
+        fighter->initialise_hurtblobs();
 
         world->tick();
 
-        modified = savedData->has_changes(*fighter);
+        modified = savedData->has_changes(*fighterDef);
     }
 }
 
@@ -95,33 +91,33 @@ void FighterContext::do_undo_redo(bool redo)
 
 void FighterContext::save_changes()
 {
-    if (savedData->hurtBlobs != fighter->mHurtBlobs)
+    if (savedData->hurtBlobs != fighterDef->hurtBlobs)
     {
         JsonValue json;
 
-        for (const auto& [key, blob] : fighter->mHurtBlobs)
-            blob.to_json(json[key.c_str()]);
+        for (const auto& [key, def] : fighterDef->hurtBlobs)
+            def.to_json(json[key.c_str()], fighterDef->armature);
 
         sq::write_text_to_file (
-            "assets/fighters/{}/HurtBlobs.json"_format(fighter->name),
+            "assets/{}/HurtBlobs.json"_format(fighterDef->directory),
             json.dump(2), true
         );
     }
 
-    if (savedData->sounds != fighter->mSounds)
+    if (savedData->sounds != fighterDef->sounds)
     {
         JsonValue json;
 
-        for (const auto& [key, sound] : fighter->mSounds)
+        for (const auto& [key, sound] : fighterDef->sounds)
             sound.to_json(json[key.c_str()]);
 
         sq::write_text_to_file (
-            "assets/fighters/{}/Sounds.json"_format(fighter->name),
+            "assets/{}/Sounds.json"_format(fighterDef->directory),
             json.dump(2), true
         );
     }
 
-    *savedData = { fighter->mHurtBlobs, fighter->mSounds };
+    *savedData = { fighterDef->hurtBlobs, fighterDef->sounds };
     modified = false;
 }
 
@@ -149,30 +145,30 @@ void FighterContext::show_widget_hurtblobs()
     const ImPlus::ScopeWindow window = { "HurtBlobs", 0 };
     if (window.show == false) return;
 
-    const ImPlus::ScopeID ctxKeyIdScope = int(ctxKey);
+    const ImPlus::ScopeID ctxKeyIdScope = ctxKey.c_str();
 
     //--------------------------------------------------------//
 
-    const auto funcInit = [&](HurtBlob& blob)
+    const auto funcInit = [&](HurtBlobDef& /*def*/)
     {
-        blob.fighter = fighter;
+        // nothing to do
     };
 
-    const auto funcEdit = [&](HurtBlob& blob)
+    const auto funcEdit = [&](HurtBlobDef& def)
     {
         const ImPlus::ScopeItemWidth widthScope = -100.f;
 
-        ImPlus::Combo("Bone", fighter->get_armature().get_bone_names(), blob.bone, "(None)");
+        ImPlus::ComboIndex("Bone", fighter->def.armature.get_bone_names(), def.bone, "(None)");
 
-        ImPlus::ComboEnum("Region", blob.region);
+        ImPlus::ComboEnum("Region", def.region);
 
-        editor.helper_edit_origin("OriginA", *fighter, blob.bone, blob.originA);
-        editor.helper_edit_origin("OriginB", *fighter, blob.bone, blob.originB);
+        editor.helper_edit_origin("OriginA", *fighter, def.bone, def.originA);
+        editor.helper_edit_origin("OriginB", *fighter, def.bone, def.originB);
 
-        ImPlus::SliderValue("Radius", blob.radius, 0.05f, 1.5f, "%.2f metres");
+        ImPlus::SliderValue("Radius", def.radius, 0.05f, 1.5f, "%.2f metres");
     };
 
-    editor.helper_edit_objects(fighter->mHurtBlobs, funcInit, funcEdit, nullptr);
+    editor.helper_edit_objects(fighterDef->hurtBlobs, funcInit, funcEdit, nullptr);
 }
 
 //============================================================================//
@@ -185,14 +181,14 @@ void FighterContext::show_widget_sounds()
     const ImPlus::ScopeWindow window = { "Sounds", 0 };
     if (window.show == false) return;
 
-    const ImPlus::ScopeID ctxKeyScope = int(ctxKey);
+    const ImPlus::ScopeID ctxKeyScope = ctxKey.c_str();
 
     //--------------------------------------------------------//
 
     const auto funcInit = [&](SoundEffect& sound)
     {
         sound.cache = &world->caches.sounds;
-        sound.path = "fighters/{}/sounds/{}"_format(fighter->name, sound.get_key());
+        sound.path = "{}/sounds/{}"_format(fighterDef->directory, sound.get_key());
         sound.handle = sound.cache->try_acquire(sound.path.c_str(), true);
     };
 
@@ -217,12 +213,12 @@ void FighterContext::show_widget_sounds()
         ImGui::SameLine();
     };
 
-    editor.helper_edit_objects(fighter->mSounds, funcInit, funcEdit, funcBefore);
+    editor.helper_edit_objects(fighterDef->sounds, funcInit, funcEdit, funcBefore);
 }
 
 //============================================================================//
 
-bool FighterContext::UndoEntry::has_changes(const Fighter& fighter) const
+bool FighterContext::UndoEntry::has_changes(const FighterDef& fighterDef) const
 {
-    return hurtBlobs != fighter.mHurtBlobs || sounds != fighter.mSounds;
+    return hurtBlobs != fighterDef.hurtBlobs || sounds != fighterDef.sounds;
 }

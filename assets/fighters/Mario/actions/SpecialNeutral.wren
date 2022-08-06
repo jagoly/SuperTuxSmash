@@ -27,17 +27,18 @@ class Script is FighterActionScript {
     state.canReverse = true
 
     wait_until(5)
+    // visual effect
     state.canReverse = false
 
     wait_until(11)
-    //fighter.play_sound("")
+    fighter.play_sound("FireBallLaunch", false)
 
     wait_until(12)
     // visual effect
-    //fighter.play_sound("")
+    fighter.play_sound("FireBallBloop", false)
 
     wait_until(13)
-    // generate article
+    fighter.spawn_article("FireBall")
 
     wait_until(14)
     // flash effect overlay?

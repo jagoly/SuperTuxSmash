@@ -10,10 +10,10 @@ class Script is Base {
     // play effect
 
     wait_until(2)
-    fighter.play_sound("LedgeCatch")
+    fighter.play_sound("LedgeCatch", false)
 
     wait_until(4)
-    fighter.play_sound("VoiceLedgeCatch")
+    fighter.play_sound("VoiceLedgeCatch", false)
 
     wait_until(21) // 21
     default_end()

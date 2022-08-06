@@ -2,8 +2,6 @@
 
 #include "setup.hpp"
 
-#include "main/MainEnums.hpp"
-
 #include <sqee/app/Scene.hpp>
 #include <sqee/objects/Texture.hpp>
 #include <sqee/vk/Wrappers.hpp>
@@ -39,6 +37,7 @@ public: //====================================================//
 
     struct FighterInfo
     {
+        TinyString name;
         std::vector<SmallString> animations;
         std::vector<SmallString> actions;
         std::vector<SmallString> states;
@@ -46,10 +45,10 @@ public: //====================================================//
 
     struct ActionKey
     {
-        FighterEnum fighter; SmallString name;
+        TinyString fighter; SmallString action;
         bool operator==(const ActionKey& other) const { return std::memcmp(this, &other, sizeof(ActionKey)) == 0; }
         bool operator<(const ActionKey& other) const { return std::memcmp(this, &other, sizeof(ActionKey)) < 0; }
-        const void* hash() const;
+        StringView hash() const { return StringView(reinterpret_cast<const char*>(this), sizeof(ActionKey)); };
     };
 
     struct ShrunkCubeMap
@@ -67,7 +66,7 @@ public: //====================================================//
 
     struct BaseContext
     {
-        BaseContext(EditorScene& editor, StageEnum stage);
+        BaseContext(EditorScene& editor, TinyString stage);
 
         virtual ~BaseContext();
 
@@ -114,12 +113,13 @@ private: //===================================================//
 
     std::unique_ptr<Controller> mController;
 
-    std::array<FighterInfo, sq::enum_count_v<FighterEnum>> mFighterInfos;
     FighterInfo mFighterInfoCommon;
+    std::vector<FighterInfo> mFighterInfos;
+    std::vector<TinyString> mStageNames;
 
     std::map<ActionKey, ActionContext> mActionContexts;
-    std::map<FighterEnum, FighterContext> mFighterContexts;
-    std::map<StageEnum, StageContext> mStageContexts;
+    std::map<TinyString, FighterContext> mFighterContexts;
+    std::map<TinyString, StageContext> mStageContexts;
 
     BaseContext* mActiveContext = nullptr;
 

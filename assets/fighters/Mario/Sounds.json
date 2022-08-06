@@ -23,6 +23,14 @@
     "path": "fighters/Mario/sounds/Evade",
     "volume": 0.56
   },
+  "FireBallBloop": {
+    "path": "fighters/Mario/sounds/FireBallBloop",
+    "volume": 0.56
+  },
+  "FireBallLaunch": {
+    "path": "fighters/Mario/sounds/FireBallLaunch",
+    "volume": 0.56
+  },
   "HitBurn3": {
     "path": "fighters/Mario/sounds/HitBurn3",
     "volume": 0.46

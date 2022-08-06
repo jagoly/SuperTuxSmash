@@ -2,9 +2,10 @@
 
 #include "setup.hpp"
 
-#include "main/MainEnums.hpp"
+#include "render/AnimPlayer.hpp"
 
-#include <sqee/vk/SwapBuffer.hpp>
+#include <sqee/objects/Armature.hpp>
+#include <sqee/objects/DrawItem.hpp>
 
 namespace sts {
 
@@ -40,7 +41,7 @@ class Stage final : sq::NonCopyable
 {
 public: //====================================================//
 
-    Stage(World& world, StageEnum type);
+    Stage(World& world, TinyString name);
 
     ~Stage();
 
@@ -52,11 +53,14 @@ public: //====================================================//
 
     World& world;
 
-    const StageEnum type;
+    /// Short name of this stage.
+    const TinyString name;
 
     //--------------------------------------------------------//
 
     MoveAttempt attempt_move(const LocalDiamond& diamond, Vec2F current, Vec2F target, bool edgeStop, bool ignorePlatforms);
+
+    MoveAttemptSphere attempt_move_sphere(float radius, float bounceFactor, Vec2F position, Vec2F velocity, bool ignorePlatforms);
 
     Ledge* find_ledge(const LocalDiamond& diamond, Vec2F origin, int8_t facing, int8_t inputX);
 
@@ -71,6 +75,12 @@ public: //====================================================//
     const MinMax<Vec3F>& get_shadow_casters() const { return mShadowCasters; }
 
 protected: //=================================================//
+
+    sq::Armature mArmature;
+
+    std::vector<sq::DrawItem> mDrawItems;
+
+    AnimPlayer mAnimPlayer;
 
     MinMax<Vec2F> mInnerBoundary;
     MinMax<Vec2F> mOuterBoundary;
@@ -92,9 +102,6 @@ protected: //=================================================//
     std::vector<Ledge> mLedges;
 
     //--------------------------------------------------------//
-
-    sq::SwapBuffer mStaticUbo;
-    sq::Swapper<vk::DescriptorSet> mDescriptorSet;
 
     friend EditorScene;
     friend DebugGui;

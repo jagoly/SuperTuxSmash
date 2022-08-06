@@ -9,7 +9,7 @@ class Script is Base {
     _autoJab = false
 
     wait_until(1)
-    fighter.play_sound("Swing2")
+    fighter.play_sound("Swing2", false)
     action.enable_hitblobs("")
 
     wait_until(3)
@@ -33,7 +33,7 @@ class Script is Base {
         if (frame.pressAttack) return "NeutralComboC"
       }
       if (ctrl.input.holdAttack) {
-        if (action.check_hit_something()) return "NeutralComboC"
+        if (vars.hitSomething) return "NeutralComboC"
         if (_autoJab) return "NeutralComboA"
       }
     }

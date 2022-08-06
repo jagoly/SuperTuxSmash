@@ -6,20 +6,63 @@ namespace sts {
 
 //============================================================================//
 
+struct FighterActionDef final
+{
+    FighterActionDef(const FighterDef& fighter, SmallString name);
+
+    ~FighterActionDef();
+
+    //--------------------------------------------------------//
+
+    const FighterDef& fighter;
+
+    const SmallString name;
+
+    std::map<TinyString, HitBlobDef> blobs;
+    std::map<TinyString, VisualEffectDef> effects;
+    std::map<TinyString, Emitter> emitters;
+
+    WrenHandle* scriptClass = nullptr;
+
+    // todo: find a way to move this to the editor
+    String wrenSource;
+
+    //--------------------------------------------------------//
+
+    void load_json_from_file();
+
+    void load_wren_from_file();
+
+    void interpret_module();
+
+    //--------------------------------------------------------//
+
+    bool has_changes(const FighterActionDef& other) const;
+
+    void apply_changes(const FighterActionDef& other);
+
+    std::unique_ptr<FighterActionDef> clone() const;
+};
+
+//============================================================================//
+
 class FighterAction final : sq::NonCopyable
 {
 public: //====================================================//
 
-    FighterAction(Fighter& fighter, SmallString name);
+    FighterAction(const FighterActionDef& def, Fighter& fighter);
 
     ~FighterAction();
 
+    void initialise_script();
+
     //--------------------------------------------------------//
 
-    Fighter& fighter;
-    World& world;
+    const FighterActionDef& def;
 
-    const SmallString name;
+    Fighter& fighter;
+
+    World& world;
 
     //--------------------------------------------------------//
 
@@ -29,19 +72,9 @@ public: //====================================================//
 
     void call_do_cancel();
 
-    //--------------------------------------------------------//
-
-    void set_hit_something() { mHitSomething = true; }
-
-    //--------------------------------------------------------//
-
-    void load_json_from_file();
-
-    void load_wren_from_file();
-
-    void load_wren_from_string();
-
     //-- wren methods ----------------------------------------//
+
+    const SmallString& wren_get_name() { return def.name; }
 
     Fighter* wren_get_fighter() { return &fighter; }
 
@@ -65,17 +98,17 @@ public: //====================================================//
 
     void wren_cxx_before_cancel();
 
-    bool wren_check_hit_something() { return mHitSomething; }
-
     void wren_enable_hitblobs(StringView prefix);
 
     void wren_disable_hitblobs(bool resetCollisions);
 
-    void wren_play_effect(TinyString key);
+    int32_t wren_play_effect(TinyString key);
 
     void wren_emit_particles(TinyString key);
 
 private: //===================================================//
+
+    // todo: only mScriptHandle is needed per action, move the rest to Fighter
 
     uint mCurrentFrame = 0u;
     uint mWaitUntil = 0u;
@@ -83,23 +116,7 @@ private: //===================================================//
     WrenHandle* mScriptHandle = nullptr;
     WrenHandle* mFiberHandle = nullptr;
 
-    // todo: should be a list of things
-    bool mHitSomething = false;
-
-    std::map<TinyString, HitBlob> mBlobs;
-    std::map<TinyString, VisualEffect> mEffects;
-    std::map<TinyString, Emitter> mEmitters;
-
-    // todo: find a way to move this to the editor
-    String mWrenSource;
-
     //--------------------------------------------------------//
-
-    bool has_changes(const FighterAction& reference) const;
-
-    void apply_changes(const FighterAction& source);
-
-    std::unique_ptr<FighterAction> clone() const;
 
     void set_error_message(StringView method, StringView error);
 

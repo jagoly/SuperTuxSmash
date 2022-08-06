@@ -74,9 +74,9 @@ class Library is FighterLibrary {
 
   play_random_voice_attack() {
     var index = world.random_int(0, 3)
-    if (index == 0) fighter.play_sound("VoiceAttackA")
-    else if (index == 1) fighter.play_sound("VoiceAttackB")
-    else if (index == 2) fighter.play_sound("VoiceAttackC")
-    else fighter.play_sound("VoiceAttackD")
+    if (index == 0) fighter.play_sound("VoiceAttackA", false)
+    else if (index == 1) fighter.play_sound("VoiceAttackB", false)
+    else if (index == 2) fighter.play_sound("VoiceAttackC", false)
+    else fighter.play_sound("VoiceAttackD", false)
   }
 }

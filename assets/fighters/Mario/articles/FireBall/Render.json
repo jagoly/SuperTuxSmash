@@ -1,0 +1,153 @@
+{
+  "assets": {
+    "meshes": {
+      "ColourOnly": "fighters/Mario/articles/FireBall/meshes/ColourOnly",
+      "Textured": "fighters/Mario/articles/FireBall/meshes/Textured"
+    },
+    "textures": {
+      "fire": "fighters/Mario/textures/effects/fire",
+      "noise": "fighters/Mario/textures/effects/noise"
+    },
+    "pipelines": {
+      "ColourAccumulate": {
+        "attributes": [ "Colours" ],
+        "pass": "Transparent",
+        "vertexShader": "transparent/General.vert/AnimColour0_AnimTexture0_Bones0_Colour1_TexCoord0",
+        "fragmentShader": "transparent/General.frag/Colour1_Texture0",
+        "cullFace": "Disable",
+        "alphaCoverage": "Disable",
+        "depthTest": "Keep",
+        "colourBlend": [ "Accumulate" ]
+      },
+      "ColourNegative": {
+        "attributes": [ "Colours" ],
+        "pass": "Transparent",
+        "vertexShader": "transparent/General.vert/AnimColour0_AnimTexture0_Bones0_Colour1_TexCoord0",
+        "fragmentShader": "transparent/General.frag/Colour1_Texture0",
+        "cullFace": "Disable",
+        "alphaCoverage": "Disable",
+        "depthTest": "Keep",
+        "colourBlend": [ "RevSubtract" ]
+      },
+      "Textured": {
+        "attributes": [ "TexCoords", "Colours" ],
+        "pass": "Transparent",
+        "vertexShader": "transparent/General.vert/AnimColour0_AnimTexture1_Bones0_Colour1_TexCoord1",
+        "fragmentShader": "transparent/General.frag/Colour1_Texture1",
+        "cullFace": "Disable",
+        "alphaCoverage": "Disable",
+        "depthTest": "Keep",
+        "colourBlend": [ "Accumulate" ]
+      }
+    }
+  },
+  "items": [
+    {
+      "condition": null,
+      "mesh": "ColourOnly",
+      "subMesh": "genzan",
+      "pipeline": "ColourNegative",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": "genzan"
+        },
+        "blendDepth": {
+          "type": "ConstFloat",
+          "value": 0.3
+        }
+      }
+    },
+    {
+      "condition": null,
+      "mesh": "Textured",
+      "subMesh": "fireA",
+      "pipeline": "Textured",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": "fireA"
+        },
+        "texTransform": {
+          "type": "AnimTextureTransform",
+          "block": "K_fire",
+          "tracks": [ "texOffset", "texRotation", "texScale" ]
+        },
+        "colourTexIndex": {
+          "type": "TextureIndex",
+          "texture": "fire"
+        },
+        "blendDepth": {
+          "type": "ConstFloat",
+          "value": 0.2
+        }
+      }
+    },
+    {
+      "condition": null,
+      "mesh": "Textured",
+      "subMesh": "freaA",
+      "pipeline": "Textured",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": "freaA"
+        },
+        "texTransform": {
+          "type": "AnimTextureTransform",
+          "block": "K_frea",
+          "tracks": [ "texOffset", "texRotation", "texScale" ]
+        },
+        "colourTexIndex": {
+          "type": "TextureIndex",
+          "texture": "noise"
+        },
+        "blendDepth": {
+          "type": "ConstFloat",
+          "value": 0.5
+        }
+      }
+    },
+    {
+      "condition": null,
+      "mesh": "ColourOnly",
+      "subMesh": "freaB",
+      "pipeline": "ColourAccumulate",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": "freaB"
+        },
+        "blendDepth": {
+          "type": "ConstFloat",
+          "value": 0.3
+        }
+      }
+    },
+    {
+      "condition": null,
+      "mesh": "Textured",
+      "subMesh": "shippo",
+      "pipeline": "Textured",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": "shippo"
+        },
+        "texTransform": {
+          "type": "AnimTextureTransform",
+          "block": "K_fire",
+          "tracks": [ "texOffset", "texRotation", "texScale" ]
+        },
+        "colourTexIndex": {
+          "type": "TextureIndex",
+          "texture": "fire"
+        },
+        "blendDepth": {
+          "type": "ConstFloat",
+          "value": 0.2
+        }
+      }
+    }
+  ]
+}

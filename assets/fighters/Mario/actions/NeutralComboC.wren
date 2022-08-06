@@ -8,12 +8,12 @@ class Script is Base {
 
     wait_until(5)
     lib.play_random_voice_attack()
-    fighter.play_sound("Swing3")
+    fighter.play_sound("Swing3", false)
 
     wait_until(6)
     action.enable_hitblobs("")
 
-    wait_until(9)
+    wait_until(10)
     action.disable_hitblobs(true)
 
     wait_until(29) // 40

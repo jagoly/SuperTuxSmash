@@ -8,7 +8,9 @@
 #include "game/FighterAction.hpp"
 #include "game/FighterState.hpp"
 #include "game/HitBlob.hpp"
+#include "game/HurtBlob.hpp"
 #include "game/ParticleSystem.hpp"
+#include "game/SoundEffect.hpp"
 #include "game/VisualEffect.hpp"
 #include "game/World.hpp"
 
@@ -26,19 +28,21 @@ using ActionContext = EditorScene::ActionContext;
 //============================================================================//
 
 ActionContext::ActionContext(EditorScene& _editor, ActionKey _key)
-    : BaseContext(_editor, StageEnum::TestZone), ctxKey(_key)
+    : BaseContext(_editor, "TestZone"), ctxKey(_key)
 {
     ctxTypeString = "Action";
-    ctxKeyString = "{}/{}"_format(ctxKey.fighter, ctxKey.name);
+    ctxKeyString = "{}/{}"_format(ctxKey.fighter, ctxKey.action);
 
-    world->add_fighter(std::make_unique<Fighter>(*world, ctxKey.fighter, 0u));
-    world->get_fighter(0u).controller = editor.mController.get();
+    world->editor->actionKey = { ctxKey.fighter, ctxKey.action };
 
-    fighter = &world->get_fighter(0u);
-    action = &fighter->mActions.at(ctxKey.name);
+    fighter = &world->create_fighter(ctxKey.fighter);
+    fighter->controller = editor.mController.get();
 
-    savedData = action->clone();
-    undoStack.push_back(action->clone());
+    action = &fighter->mActions.at(ctxKey.action);
+    actionDef = const_cast<FighterActionDef*>(&action->def);
+
+    savedData = actionDef->clone();
+    undoStack.push_back(actionDef->clone());
 
     reset_timeline_length();
     scrub_to_frame(-1);
@@ -50,20 +54,21 @@ ActionContext::~ActionContext() = default;
 
 void ActionContext::apply_working_changes()
 {
-    if (action->has_changes(*undoStack[undoIndex]) == true)
+    if (actionDef->has_changes(*undoStack[undoIndex]) == true)
     {
-        world->editor_clear_hitblobs();
+        fighter->cancel_action();
+        fighter->get_hit_blobs().clear();
 
-        // always reload script so that error message updates
-        action->load_wren_from_string();
+        actionDef->interpret_module();
+        action->initialise_script();
 
         scrub_to_frame(currentFrame);
 
         ++undoIndex;
         undoStack.erase(undoStack.begin() + undoIndex, undoStack.end());
-        undoStack.push_back(action->clone());
+        undoStack.push_back(actionDef->clone());
 
-        modified = action->has_changes(*savedData);
+        modified = actionDef->has_changes(*savedData);
     }
 }
 
@@ -78,14 +83,17 @@ void ActionContext::do_undo_redo(bool redo)
 
     if (undoIndex != oldIndex)
     {
-        world->editor_clear_hitblobs();
+        fighter->cancel_action();
+        fighter->get_hit_blobs().clear();
 
-        action->apply_changes(*undoStack[undoIndex]);
-        action->load_wren_from_string();
+        actionDef->apply_changes(*undoStack[undoIndex]);
+
+        actionDef->interpret_module();
+        action->initialise_script();
 
         scrub_to_frame(currentFrame);
 
-        modified = action->has_changes(*savedData);
+        modified = actionDef->has_changes(*savedData);
     }
 }
 
@@ -99,25 +107,25 @@ void ActionContext::save_changes()
     auto& effects = json["effects"] = JsonValue::object();
     auto& emitters = json["emitters"] = JsonValue::object();
 
-    for (const auto& [key, blob] : action->mBlobs)
-        blob.to_json(blobs[key.c_str()]);
+    for (const auto& [key, blob] : actionDef->blobs)
+        blob.to_json(blobs[key.c_str()], fighter->def.armature);
 
-    for (const auto& [key, effect] : action->mEffects)
-        effect.to_json(effects[key.c_str()]);
+    for (const auto& [key, effect] : actionDef->effects)
+        effect.to_json(effects[key.c_str()], fighter->def.armature);
 
-    for (const auto& [key, emitter] : action->mEmitters)
-        emitter.to_json(emitters[key.c_str()]);
+    for (const auto& [key, emitter] : actionDef->emitters)
+        emitter.to_json(emitters[key.c_str()], fighter->def.armature);
 
     sq::write_text_to_file (
-        "assets/fighters/{}/actions/{}.json"_format(fighter->name, action->name),
+        "assets/fighters/{}/actions/{}.json"_format(ctxKey.fighter, ctxKey.action),
         json.dump(2), true
     );
     sq::write_text_to_file (
-        "assets/fighters/{}/actions/{}.wren"_format(fighter->name, action->name),
-        action->mWrenSource, true
+        "assets/fighters/{}/actions/{}.wren"_format(ctxKey.fighter, ctxKey.action),
+        actionDef->wrenSource, true
     );
 
-    savedData = action->clone();
+    savedData = actionDef->clone();
     modified = false;
 }
 
@@ -125,21 +133,31 @@ void ActionContext::save_changes()
 
 void ActionContext::show_menu_items()
 {
+    FighterDef& def = const_cast<FighterDef&>(fighter->def);
+
     if (ImGui::MenuItem("Reload HurtBlobs"))
     {
+        def.hurtBlobs.clear();
+        fighter->mHurtBlobs.clear();
+        def.initialise_hurtblobs();
         fighter->initialise_hurtblobs();
         scrub_to_frame(currentFrame);
     }
 
     if (ImGui::MenuItem("Reload Sounds"))
     {
-        fighter->initialise_sounds();
+        // todo: make sure there are no dangling pointers around
+        def.sounds.clear();
+        def.initialise_sounds("assets/{}/Sounds.json"_format(def.directory));
         scrub_to_frame(currentFrame);
     }
 
-    if (ImGui::MenuItem("Reload Animations"))
+    if (ImGui::MenuItem("Reload Animations "))
     {
-        fighter->initialise_animations();
+        // todo: make sure there are no dangling pointers around
+        def.animations.clear();
+        def.initialise_animations("assets/fighters/Animations.json");
+        def.initialise_animations("assets/{}/Animations.json"_format(def.directory));
         reset_timeline_length();
         scrub_to_frame(currentFrame);
     }
@@ -171,22 +189,21 @@ void ActionContext::show_widget_hitblobs()
 
     //--------------------------------------------------------//
 
-    const auto funcInit = [&](HitBlob& blob)
+    const auto funcInit = [&](HitBlobDef& blob)
     {
-        blob.action = action;
         // todo: should also be done for copy and rename
         for (const char* c = blob.get_key().c_str(); *c != '\0'; ++c)
             if (*c >= '0' && *c <= '9')
                 { blob.index = uint8_t(*c - '0'); break; }
     };
 
-    const auto funcEdit = [&](HitBlob& blob)
+    const auto funcEdit = [&](HitBlobDef& blob)
     {
         const ImPlus::ScopeItemWidth width = -120.f;
 
         ImPlus::InputValue("Index", blob.index, 1, "%u");
 
-        ImPlus::Combo("Bone", fighter->get_armature().get_bone_names(), blob.bone, "(None)");
+        ImPlus::ComboIndex("Bone", fighter->def.armature.get_bone_names(), blob.bone, "(None)");
 
         editor.helper_edit_origin("Origin", *fighter, blob.bone, blob.origin);
 
@@ -216,7 +233,7 @@ void ActionContext::show_widget_hitblobs()
         ImGui::InputText("Sound", blob.sound.data(), blob.sound.buffer_size());
     };
 
-    editor.helper_edit_objects(action->mBlobs, funcInit, funcEdit, nullptr);
+    editor.helper_edit_objects(actionDef->blobs, funcInit, funcEdit, nullptr);
 }
 
 //============================================================================//
@@ -233,38 +250,37 @@ void ActionContext::show_widget_effects()
 
     //--------------------------------------------------------//
 
-    const auto funcInit = [&](VisualEffect& effect)
+    const auto funcInit = [&](VisualEffectDef& def)
     {
-        effect.cache = &world->caches.effects;
-        effect.fighter = fighter;
-        effect.path = "fighters/{}/effects/{}"_format(fighter->name, effect.get_key());
-        effect.handle = effect.cache->try_acquire(effect.path.c_str(), true);
+        def.path = "fighters/{}/effects/{}"_format(ctxKey.fighter, def.get_key());
+        def.handle = world->caches.effects.try_acquire(def.path.c_str(), true);
     };
 
-    const auto funcEdit = [&](VisualEffect& effect)
+    const auto funcEdit = [&](VisualEffectDef& def)
     {
         const ImPlus::ScopeItemWidth widthScope = -100.f;
 
-        if (ImPlus::InputString("Path", effect.path))
-            effect.handle = effect.cache->try_acquire(effect.path.c_str(), true);
+        if (ImPlus::InputString("Path", def.path))
+            def.handle = world->caches.effects.try_acquire(def.path.c_str(), true);
 
-        if (effect.handle == nullptr) ImPlus::LabelText("Resolved", "COULD NOT LOAD RESOURCE");
-        else ImPlus::LabelText("Resolved", "assets/{}/..."_format(effect.path));
+        if (def.handle == nullptr) ImPlus::LabelText("Resolved", "COULD NOT LOAD RESOURCE");
+        else ImPlus::LabelText("Resolved", "assets/{}/..."_format(def.path));
 
-        ImPlus::Combo("Bone", fighter->get_armature().get_bone_names(), effect.bone, "(None)");
+        ImPlus::ComboIndex("Bone", fighter->def.armature.get_bone_names(), def.bone, "(None)");
 
         bool changed = false;
-        changed |= ImPlus::InputVector("Origin", effect.origin, 0, "%.4f");
-        changed |= ImPlus::InputQuaternion("Rotation", effect.rotation, 0, "%.4f");
-        changed |= ImPlus::InputVector("Scale", effect.scale, 0, "%.4f");
+        changed |= ImPlus::InputVector("Origin", def.origin, 0, "%.4f");
+        changed |= ImPlus::InputQuaternion("Rotation", def.rotation, 0, "%.4f");
+        changed |= ImPlus::InputVector("Scale", def.scale, 0, "%.4f");
 
         if (changed == true)
-            effect.localMatrix = maths::transform(effect.origin, effect.rotation, effect.scale);
+            def.localMatrix = maths::transform(def.origin, def.rotation, def.scale);
 
-        ImPlus::Checkbox("Anchored", &effect.anchored);
+        ImPlus::Checkbox("Attached", &def.attached); ImGui::SameLine(120.f);
+        ImPlus::Checkbox("Transient", &def.transient);
     };
 
-    editor.helper_edit_objects(action->mEffects, funcInit, funcEdit, nullptr);
+    editor.helper_edit_objects(actionDef->effects, funcInit, funcEdit, nullptr);
 }
 
 //============================================================================//
@@ -283,7 +299,6 @@ void ActionContext::show_widget_emitters()
 
     const auto funcInit = [&](Emitter& emitter)
     {
-        emitter.fighter = fighter;
         emitter.colour.emplace_back(1.f, 1.f, 1.f);
     };
 
@@ -291,7 +306,7 @@ void ActionContext::show_widget_emitters()
     {
         const ImPlus::ScopeItemWidth widthScope = -100.f;
 
-        ImPlus::Combo("Bone", fighter->get_armature().get_bone_names(), emitter.bone, "(None)");
+        ImPlus::ComboIndex("Bone", fighter->def.armature.get_bone_names(), emitter.bone, "(None)");
 
         ImPlus::SliderValue("Count", emitter.count, 0u, 120u, "%u");
 
@@ -336,7 +351,7 @@ void ActionContext::show_widget_emitters()
         ImGui::InputText("Sprite", emitter.sprite.data(), emitter.sprite.capacity());
     };
 
-    editor.helper_edit_objects(action->mEmitters, funcInit, funcEdit, nullptr);
+    editor.helper_edit_objects(actionDef->emitters, funcInit, funcEdit, nullptr);
 }
 
 //============================================================================//
@@ -358,10 +373,10 @@ void ActionContext::show_widget_scripts()
     const ImVec2 contentRegion = ImGui::GetContentRegionAvail();
     const ImVec2 inputSize = { contentRegion.x, contentRegion.y - 160.f };
 
-    ImPlus::InputStringMultiline("##Script", action->mWrenSource, inputSize, ImGuiInputTextFlags_NoUndoRedo);
+    ImPlus::InputStringMultiline("##Script", actionDef->wrenSource, inputSize, ImGuiInputTextFlags_NoUndoRedo);
 
-    if (fighter->editorErrorMessage.empty() == false)
-        ImPlus::TextWrapped(fighter->editorErrorMessage);
+    if (world->editor->errorMessage.empty() == false)
+        ImPlus::TextWrapped(world->editor->errorMessage);
 }
 
 //============================================================================//
@@ -431,8 +446,8 @@ void ActionContext::reset_timeline_length()
 
     const auto anim_length = [this](const SmallString& name)
     {
-        const auto iter = fighter->mAnimations.find(name);
-        if (iter == fighter->mAnimations.end())
+        const auto iter = fighter->def.animations.find(name);
+        if (iter == fighter->def.animations.end())
         {
             sq::log_warning("could not find animation '{}'", name);
             return 80u;
@@ -440,7 +455,8 @@ void ActionContext::reset_timeline_length()
         return iter->second.anim.frameCount;
     };
 
-    const SmallString& name = ctxKey.name;
+    // by default, assume anim name is the same as the action
+    const SmallString& name = ctxKey.action;
 
     if      (name == "HopBack")    timelineLength = anim_length("JumpBack");
     else if (name == "HopForward") timelineLength = anim_length("JumpForward");
@@ -459,36 +475,36 @@ void ActionContext::setup_state_for_action()
     Fighter::Attributes& attrs = fighter->attributes;
     Fighter::Variables& vars = fighter->variables;
 
-    const SmallString& name = ctxKey.name;
+    const SmallString& name = ctxKey.action;
 
     if (name == "Brake" || name == "BrakeTurn")
     {
         //fighter.change_state(fighter.mStates.at("Dash"));
         fighter->change_state(fighter->mStates.at("Neutral"));
-        fighter->play_animation(fighter->mAnimations.at("DashLoop"), 0u, true);
+        fighter->play_animation(fighter->def.animations.at("DashLoop"), 0u, true);
         vars.velocity.x = attrs.dashSpeed + attrs.traction;
     }
 
     else if (name == "HopBack" || name == "HopForward")
     {
         fighter->change_state(fighter->mStates.at("JumpSquat"));
-        fighter->play_animation(fighter->mAnimations.at("JumpSquat"), 0u, true);
-        fighter->mAnimTimeDiscrete = fighter->mAnimation->anim.frameCount - 1u;
+        fighter->play_animation(fighter->def.animations.at("JumpSquat"), 0u, true);
+        fighter->mAnimPlayer.animTime = float(fighter->mAnimPlayer.animation->anim.frameCount) - 1.f;
         vars.velocity.y = std::sqrt(2.f * attrs.hopHeight * attrs.gravity) + attrs.gravity * 0.5f;
     }
 
     else if (name == "JumpBack" || name == "JumpForward")
     {
         fighter->change_state(fighter->mStates.at("JumpSquat"));
-        fighter->play_animation(fighter->mAnimations.at("JumpSquat"), 0u, true);
-        fighter->mAnimTimeDiscrete = fighter->mAnimation->anim.frameCount - 1u;
+        fighter->play_animation(fighter->def.animations.at("JumpSquat"), 0u, true);
+        fighter->mAnimPlayer.animTime = float(fighter->mAnimPlayer.animation->anim.frameCount) - 1.f;
         vars.velocity.y = std::sqrt(2.f * attrs.jumpHeight * attrs.gravity) + attrs.gravity * 0.5f;
     }
 
     else if (name.starts_with("Air") || name.starts_with("SpecialAir"))
     {
         fighter->change_state(fighter->mStates.at("Fall"));
-        fighter->play_animation(fighter->mAnimations.at("FallLoop"), 0u, true);
+        fighter->play_animation(fighter->def.animations.at("FallLoop"), 0u, true);
         attrs.gravity = 0.f;
         vars.position = Vec2F(0.f, 1.f);
     }
@@ -496,7 +512,7 @@ void ActionContext::setup_state_for_action()
     else
     {
         fighter->change_state(fighter->mStates.at("Neutral"));
-        fighter->play_animation(fighter->mAnimations.at("NeutralLoop"), 0u, true);
+        fighter->play_animation(fighter->def.animations.at("NeutralLoop"), 0u, true);
     }
 }
 
@@ -521,6 +537,7 @@ void ActionContext::scrub_to_frame(int frame)
     world->tick();
 
     // don't t-pose when blending the starting frame
+    fighter->mAnimPlayer.previousSample = fighter->mAnimPlayer.currentSample;
     fighter->previous = fighter->current;
     fighter->debugPreviousPoseInfo = fighter->debugCurrentPoseInfo;
 
@@ -535,7 +552,7 @@ void ActionContext::scrub_to_frame(int frame)
 
     // this would be an assertion, but we want to avoid crashing the editor
     #ifdef SQEE_DEBUG
-    if (fighter->activeAction == action && currentFrame >= 0 && fighter->editorErrorCause == nullptr)
+    if (fighter->activeAction == action && currentFrame >= 0 && world->editor->errorMessage.empty())
     {
         const int actionFrame = int(fighter->activeAction->mCurrentFrame) - 1;
         if (currentFrame != actionFrame)

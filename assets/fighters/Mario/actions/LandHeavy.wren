@@ -10,7 +10,7 @@ class Script is Base {
     action.play_effect("LandHeavy")
 
     wait_until(3)
-    fighter.play_sound("LandHeavy")
+    fighter.play_sound("LandHeavy", false)
 
     wait_until(5)
     action.emit_particles("Ring")

@@ -7,7 +7,7 @@ class Script is Base {
     default_begin()
 
     wait_until(2)
-    fighter.play_sound("Swing1")
+    fighter.play_sound("Swing1", false)
     action.enable_hitblobs("CLEAN")
     state.doLand = "LandAirNeutral"
 

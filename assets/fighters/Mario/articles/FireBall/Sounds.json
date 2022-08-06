@@ -1,0 +1,10 @@
+{
+  "FireBallBounce": {
+    "path": "fighters/Mario/sounds/FireBallBounce",
+    "volume": 0.56
+  },
+  "HitBurn1": {
+    "path": "fighters/Mario/sounds/HitBurn1",
+    "volume": 0.46
+  }
+}

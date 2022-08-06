@@ -3,6 +3,7 @@
 #include "setup.hpp"
 
 #include <sqee/maths/Random.hpp>
+#include <sqee/objects/Armature.hpp>
 
 namespace sts {
 
@@ -10,10 +11,6 @@ namespace sts {
 
 struct Emitter final
 {
-    Fighter* fighter = nullptr; ///< Fighter that owns this emitter.
-
-    //--------------------------------------------------------//
-
     int8_t bone = -1; ///< Index of the bone to attach to.
 
     uint8_t count = 0u; ///< Number of particles to emit at a time.
@@ -46,9 +43,9 @@ struct Emitter final
         return *std::prev(reinterpret_cast<const TinyString*>(this));
     }
 
-    void from_json(const JsonValue& json);
+    void from_json(const JsonValue& json, const sq::Armature& armature);
 
-    void to_json(JsonValue& json) const;
+    void to_json(JsonValue& json, const sq::Armature& armature) const;
 
     bool operator==(const Emitter& other) const;
 };

@@ -2,6 +2,7 @@
 
 #include "main/Options.hpp"
 
+#include "render/AnimPlayer.hpp"
 #include "render/Camera.hpp"
 #include "render/DebugRender.hpp"
 #include "render/ParticleRender.hpp"
@@ -10,8 +11,8 @@
 #include <sqee/debug/Assert.hpp>
 #include <sqee/misc/Files.hpp>
 #include <sqee/misc/Json.hpp>
-#include <sqee/objects/Material.hpp>
 #include <sqee/objects/Mesh.hpp>
+#include <sqee/objects/Pipeline.hpp>
 #include <sqee/vk/Helpers.hpp>
 
 using namespace sts;
@@ -47,17 +48,26 @@ Renderer::Renderer(const sq::Window& window, const Options& options, ResourceCac
         ubos.camera.initialise(sizeof(CameraBlock), vk::BufferUsageFlagBits::eUniformBuffer);
         ubos.environment.initialise(sizeof(EnvironmentBlock), vk::BufferUsageFlagBits::eUniformBuffer);
 
+        ubos.matrices.initialise(65536u, vk::BufferUsageFlagBits::eStorageBuffer);
+
         sq::vk_update_descriptor_set_swapper (
-            ctx, sets.gbuffer, sq::DescriptorUniformBuffer(0u, 0u, ubos.camera.get_descriptor_info())
+            ctx, sets.gbuffer,
+            sq::DescriptorUniformBuffer(0u, 0u, ubos.camera.get_descriptor_info()),
+            sq::DescriptorStorageBuffer(1u, 0u, ubos.matrices.get_descriptor_info())
         );
         sq::vk_update_descriptor_set_swapper (
-            ctx, sets.shadow, sq::DescriptorUniformBuffer(0u, 0u, ubos.environment.get_descriptor_info())
+            ctx, sets.shadow,
+            sq::DescriptorUniformBuffer(0u, 0u, ubos.environment.get_descriptor_info()),
+            sq::DescriptorStorageBuffer(1u, 0u, ubos.matrices.get_descriptor_info())
         );
         sq::vk_update_descriptor_set_swapper (
-            ctx, sets.skybox, sq::DescriptorUniformBuffer(0u, 0u, ubos.camera.get_descriptor_info())
+            ctx, sets.skybox,
+            sq::DescriptorUniformBuffer(0u, 0u, ubos.camera.get_descriptor_info())
         );
         sq::vk_update_descriptor_set_swapper (
-            ctx, sets.transparent, sq::DescriptorUniformBuffer(0u, 0u, ubos.camera.get_descriptor_info())
+            ctx, sets.transparent,
+            sq::DescriptorUniformBuffer(0u, 0u, ubos.camera.get_descriptor_info()),
+            sq::DescriptorStorageBuffer(1u, 0u, ubos.matrices.get_descriptor_info())
         );
     }
 
@@ -102,7 +112,6 @@ Renderer::~Renderer()
     ctx.device.destroy(setLayouts.skybox);
     ctx.device.destroy(setLayouts.transparent);
     ctx.device.destroy(setLayouts.composite);
-    ctx.device.destroy(setLayouts.object);
 
     ctx.device.free(ctx.descriptorPool, {sets.gbuffer.front, sets.gbuffer.back});
     ctx.device.free(ctx.descriptorPool, {sets.shadow.front, sets.shadow.back});
@@ -139,10 +148,12 @@ void Renderer::impl_initialise_layouts()
     const auto& ctx = sq::VulkanContext::get();
 
     setLayouts.gbuffer = ctx.create_descriptor_set_layout ({
-        vk::DescriptorSetLayoutBinding { 0u, vk::DescriptorType::eUniformBuffer, 1u, vk::ShaderStageFlagBits::eVertex }
+        vk::DescriptorSetLayoutBinding { 0u, vk::DescriptorType::eUniformBuffer, 1u, vk::ShaderStageFlagBits::eVertex },
+        vk::DescriptorSetLayoutBinding { 1u, vk::DescriptorType::eStorageBuffer, 1u, vk::ShaderStageFlagBits::eVertex }
     });
     setLayouts.shadow = ctx.create_descriptor_set_layout ({
-        vk::DescriptorSetLayoutBinding { 0u, vk::DescriptorType::eUniformBuffer, 1u, vk::ShaderStageFlagBits::eVertex }
+        vk::DescriptorSetLayoutBinding { 0u, vk::DescriptorType::eUniformBuffer, 1u, vk::ShaderStageFlagBits::eVertex },
+        vk::DescriptorSetLayoutBinding { 1u, vk::DescriptorType::eStorageBuffer, 1u, vk::ShaderStageFlagBits::eVertex }
     });
     setLayouts.shadowMiddle = ctx.create_descriptor_set_layout ({
         vk::DescriptorSetLayoutBinding { 0u, vk::DescriptorType::eInputAttachment, 1u, vk::ShaderStageFlagBits::eFragment },
@@ -167,25 +178,25 @@ void Renderer::impl_initialise_layouts()
         vk::DescriptorSetLayoutBinding { 1u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment }
     });
     setLayouts.transparent = ctx.create_descriptor_set_layout ({
-        vk::DescriptorSetLayoutBinding { 0u, vk::DescriptorType::eUniformBuffer, 1u, vk::ShaderStageFlagBits::eVertex }
+        vk::DescriptorSetLayoutBinding { 0u, vk::DescriptorType::eUniformBuffer, 1u, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment },
+        vk::DescriptorSetLayoutBinding { 1u, vk::DescriptorType::eStorageBuffer, 1u, vk::ShaderStageFlagBits::eVertex },
+        vk::DescriptorSetLayoutBinding { 2u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment }
     });
     setLayouts.composite = ctx.create_descriptor_set_layout ({
         vk::DescriptorSetLayoutBinding { 0u, vk::DescriptorType::eCombinedImageSampler, 1u, vk::ShaderStageFlagBits::eFragment }
     });
-    setLayouts.object = ctx.create_descriptor_set_layout ({
-        vk::DescriptorSetLayoutBinding { 0u, vk::DescriptorType::eUniformBuffer, 1u, vk::ShaderStageFlagBits::eVertex }
-    });
 
+    const auto drawItemPushConstants = vk::PushConstantRange(vk::ShaderStageFlagBits::eAllGraphics, 0u, 128u);
     const auto compositePushConstants = vk::PushConstantRange(vk::ShaderStageFlagBits::eFragment, 0u, sizeof(tonemap));
 
-    pipelineLayouts.gbuffer      = ctx.create_pipeline_layout(setLayouts.gbuffer, {});
-    pipelineLayouts.shadow       = ctx.create_pipeline_layout(setLayouts.shadow, {});
+    pipelineLayouts.gbuffer      = ctx.create_pipeline_layout({setLayouts.gbuffer, caches.bindlessTextureSetLayout}, drawItemPushConstants);
+    pipelineLayouts.shadow       = ctx.create_pipeline_layout({setLayouts.shadow, caches.bindlessTextureSetLayout}, drawItemPushConstants);
     pipelineLayouts.shadowMiddle = ctx.create_pipeline_layout(setLayouts.shadowMiddle, {});
     pipelineLayouts.depthMipGen  = ctx.create_pipeline_layout(setLayouts.depthMipGen, {});
     pipelineLayouts.ssao         = ctx.create_pipeline_layout(setLayouts.ssao, {});
     pipelineLayouts.ssaoBlur     = ctx.create_pipeline_layout(setLayouts.ssaoBlur, {});
     pipelineLayouts.skybox       = ctx.create_pipeline_layout(setLayouts.skybox, {});
-    pipelineLayouts.transparent  = ctx.create_pipeline_layout(setLayouts.transparent, {});
+    pipelineLayouts.transparent  = ctx.create_pipeline_layout({setLayouts.transparent, caches.bindlessTextureSetLayout}, drawItemPushConstants);
     pipelineLayouts.composite    = ctx.create_pipeline_layout(setLayouts.composite, compositePushConstants);
 }
 
@@ -340,16 +351,21 @@ void Renderer::impl_create_render_targets()
         ctx.set_debug_object_name(passes.hdr.framebuf, "Renderer.Framebuffer.HDR");
     }
 
+    sq::vk_update_descriptor_set_swapper (
+        ctx, sets.transparent,
+        sq::DescriptorImageSampler(2u, 0u, samplers.nearestClamp, images.depthView, vk::ImageLayout::eDepthStencilReadOnlyOptimal)
+    );
+
     *mPassConfigGbuffer = sq::PassConfig {
         passes.gbuffer.pass, 0u, vk::SampleCountFlagBits::e1,
         vk::StencilOpState { {}, vk::StencilOp::eReplace, {}, vk::CompareOp::eAlways, 0, 0b1, 0b1 },
-        window.get_size(), setLayouts.gbuffer,
+        window.get_size(), pipelineLayouts.gbuffer,
         sq::SpecialisationConstants(4u, int(options.debug_toggle_1), 5u, int(options.debug_toggle_2))
     };
 
     *mPassConfigTransparent = sq::PassConfig {
         passes.hdr.pass, 0u, vk::SampleCountFlagBits::e1, vk::StencilOpState(),
-        window.get_size(), setLayouts.transparent,
+        window.get_size(), pipelineLayouts.transparent,
         sq::SpecialisationConstants(4u, int(options.debug_toggle_1), 5u, int(options.debug_toggle_2))
     };
 }
@@ -727,13 +743,13 @@ void Renderer::impl_create_shadow_stuff()
 
     *mPassConfigShadowFront = sq::PassConfig {
         passes.shadow.pass, 0u, vk::SampleCountFlagBits::e1, vk::StencilOpState(),
-        Vec2U(shadowSize), setLayouts.shadow,
+        Vec2U(shadowSize), pipelineLayouts.shadow,
         sq::SpecialisationConstants(4u, int(options.debug_toggle_1), 5u, int(options.debug_toggle_2))
     };
 
     *mPassConfigShadowBack = sq::PassConfig {
         passes.shadow.pass, 1u, vk::SampleCountFlagBits::e1, vk::StencilOpState(),
-        Vec2U(shadowSize), setLayouts.shadow,
+        Vec2U(shadowSize), pipelineLayouts.shadow,
         sq::SpecialisationConstants(4u, int(options.debug_toggle_1), 5u, int(options.debug_toggle_2))
     };
 }
@@ -1109,56 +1125,21 @@ void Renderer::refresh_options_create()
 
 //============================================================================//
 
-int64_t Renderer::create_draw_items(const std::vector<DrawItemDef>& defs,
-                                    const sq::Swapper<vk::DescriptorSet>& descriptorSet,
-                                    const std::map<TinyString, const bool*>& conditions)
+void Renderer::add_draw_call(const sq::DrawItem& item, const AnimPlayer& player)
 {
-    const int64_t groupId = ++mCurrentGroupId;
+    std::vector<DrawCall>* drawCalls = nullptr;
 
-    for (const DrawItemDef& def : defs)
-    {
-        for (uint8_t pass = 0u; pass < def.material->get_pass_count(); ++pass)
-        {
-            std::vector<DrawItem>* drawItems = nullptr;
+    if (item.pipeline->get_pass_config() == mPassConfigGbuffer)
+        drawCalls = &mDrawCallsGbuffer;
+    else if (item.pipeline->get_pass_config() == mPassConfigShadowFront)
+        drawCalls = &mDrawCallsShadowFront;
+    else if (item.pipeline->get_pass_config() == mPassConfigShadowBack)
+        drawCalls = &mDrawCallsShadowBack;
+    else if (item.pipeline->get_pass_config() == mPassConfigTransparent)
+        drawCalls = &mDrawCallsTransparent;
+    else SQEE_UNREACHABLE();
 
-            if (def.material->get_pipeline(pass).get_pass_config() == mPassConfigGbuffer)
-                drawItems = &mDrawItemsGbuffer;
-            if (def.material->get_pipeline(pass).get_pass_config() == mPassConfigShadowFront)
-                drawItems = &mDrawItemsShadowFront;
-            if (def.material->get_pipeline(pass).get_pass_config() == mPassConfigShadowBack)
-                drawItems = &mDrawItemsShadowBack;
-            if (def.material->get_pipeline(pass).get_pass_config() == mPassConfigTransparent)
-                drawItems = &mDrawItemsTransparent;
-
-            DrawItem& item = drawItems->emplace_back();
-
-            if (def.condition.empty() == false)
-                item.condition = conditions.at(def.condition);
-
-            item.material = def.material;
-            item.mesh = def.mesh;
-
-            item.invertCondition = def.invertCondition;
-            item.materialPass = pass;
-            item.subMesh = def.subMesh;
-
-            item.descriptorSet = &descriptorSet;
-            item.groupId = groupId;
-        }
-    }
-
-    // todo: sort draw items here
-
-    return groupId;
-}
-
-void Renderer::delete_draw_items(int64_t groupId)
-{
-    const auto predicate = [groupId](DrawItem& item) { return item.groupId == groupId; };
-    algo::erase_if(mDrawItemsGbuffer, predicate);
-    algo::erase_if(mDrawItemsShadowFront, predicate);
-    algo::erase_if(mDrawItemsShadowBack, predicate);
-    algo::erase_if(mDrawItemsTransparent, predicate);
+    drawCalls->emplace_back() = { &item, &player };
 }
 
 //============================================================================//
@@ -1182,6 +1163,26 @@ void Renderer::update_cubemap_descriptor_sets()
         ctx, sets.particles,
         sq::DescriptorImageSampler(3u, 0u, cubemaps.irradiance.get_descriptor_info())
     );
+}
+
+//============================================================================//
+
+void Renderer::swap_objects_buffers()
+{
+    mDrawCallsGbuffer.clear();
+    mDrawCallsShadowFront.clear();
+    mDrawCallsShadowBack.clear();
+    mDrawCallsTransparent.clear();
+
+    mNextMatrixIndex = 0u;
+    ubos.matrices.swap_only();
+}
+
+Mat34F* Renderer::reserve_matrices(uint count, uint& index)
+{
+    index = mNextMatrixIndex;
+    mNextMatrixIndex += count;
+    return reinterpret_cast<Mat34F*>(ubos.matrices.map_only()) + index;
 }
 
 //============================================================================//
@@ -1238,47 +1239,44 @@ void Renderer::populate_command_buffer(vk::CommandBuffer cmdbuf)
                 mFrameTimings[i] = double(timestamps[i+1] - timestamps[i]) * double(ctx.limits.timestampPeriod) * 0.000001;
 
         cmdbuf.resetQueryPool(mTimestampQueryPool.front, 0u, NUM_TIME_STAMPS + 1u);
-        cmdbuf.writeTimestamp(vk::PipelineStageFlagBits::eBottomOfPipe, mTimestampQueryPool.front, 0u);
+        cmdbuf.writeTimestamp(vk::PipelineStageFlagBits::eTopOfPipe, mTimestampQueryPool.front, 0u);
     }
 
     //--------------------------------------------------------//
 
-    const auto render_draw_items = [&](const std::vector<DrawItem>& drawItems)
+    const auto submit_draw_calls = [cmdbuf](const sq::PassConfig& passConfig, const std::vector<DrawCall>& drawCalls)
     {
-        const void *prevPipeline = nullptr, *prevMaterial = nullptr, *prevObject = nullptr, *prevMesh = nullptr;
+        const sq::Pipeline* prevPipeline = nullptr;
+        const sq::Mesh* prevMesh = nullptr;
 
-        for (const DrawItem& item : drawItems)
+        std::array<std::byte, 128u> pushConstants;
+
+        for (const DrawCall& call : drawCalls)
         {
-            // skip item if condition not satisfied
-            if (item.condition && *item.condition == item.invertCondition)
-                continue;
-
-            if (prevPipeline != &item.material->get_pipeline(item.materialPass))
+            if (prevPipeline != &call.item->pipeline.get())
             {
-                item.material->get_pipeline(item.materialPass).bind(cmdbuf);
-                prevPipeline = &item.material->get_pipeline(item.materialPass);
-                prevObject = nullptr; // force rebinding
+                call.item->pipeline->bind(cmdbuf);
+                prevPipeline = &call.item->pipeline.get();
             }
 
-            if (prevMaterial != &item.material.get())
+            if (prevMesh != &call.item->mesh.get())
             {
-                item.material->bind_material_set(cmdbuf, item.materialPass);
-                prevMaterial = &item.material.get();
+                call.item->mesh->bind_buffers(cmdbuf);
+                prevMesh = &call.item->mesh.get();
             }
 
-            if (prevObject != item.descriptorSet)
-            {
-                item.material->bind_object_set(cmdbuf, item.materialPass, item.descriptorSet->front);
-                prevObject = item.descriptorSet;
-            }
+            call.item->compute_push_constants (
+                call.player->blendSample,
+                call.player->modelMatsIndex, call.player->normalMatsIndex,
+                pushConstants
+            );
 
-            if (prevMesh != &item.mesh.get())
-            {
-                item.mesh->bind_buffers(cmdbuf);
-                prevMesh = &item.mesh.get();
-            }
+            cmdbuf.pushConstants (
+                passConfig.pipelineLayout, vk::ShaderStageFlagBits::eAllGraphics,
+                0u, pushConstants.size(), pushConstants.data()
+            );
 
-            item.mesh->draw(cmdbuf, item.subMesh);
+            call.item->mesh->draw(cmdbuf, call.item->subMesh);
         }
     };
 
@@ -1295,6 +1293,7 @@ void Renderer::populate_command_buffer(vk::CommandBuffer cmdbuf)
     //-- GBuffer Pass ----------------------------------------//
 
     cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayouts.gbuffer, 0u, sets.gbuffer.front, {});
+    cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayouts.gbuffer, 1u, caches.bindlessTextureSet, {});
 
     cmdbuf.beginRenderPass (
         vk::RenderPassBeginInfo {
@@ -1305,7 +1304,7 @@ void Renderer::populate_command_buffer(vk::CommandBuffer cmdbuf)
     );
     write_time_stamp(cmdbuf, TimeStamp::BeginGbuffer);
 
-    render_draw_items(mDrawItemsGbuffer);
+    submit_draw_calls(*mPassConfigGbuffer, mDrawCallsGbuffer);
     write_time_stamp(cmdbuf, TimeStamp::Opaque);
 
     cmdbuf.endRenderPass();
@@ -1329,11 +1328,12 @@ void Renderer::populate_command_buffer(vk::CommandBuffer cmdbuf)
         );
 
         cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayouts.shadow, 0u, sets.shadow.front, {});
+        cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayouts.shadow, 1u, caches.bindlessTextureSet, {});
 
-        render_draw_items(mDrawItemsShadowFront);
+        submit_draw_calls(*mPassConfigShadowFront, mDrawCallsShadowFront);
         cmdbuf.nextSubpass(vk::SubpassContents::eInline);
 
-        render_draw_items(mDrawItemsShadowBack);
+        submit_draw_calls(*mPassConfigShadowBack, mDrawCallsShadowBack);
         cmdbuf.nextSubpass(vk::SubpassContents::eInline);
 
         write_time_stamp(cmdbuf, TimeStamp::Shadows);
@@ -1428,8 +1428,9 @@ void Renderer::populate_command_buffer(vk::CommandBuffer cmdbuf)
     write_time_stamp(cmdbuf, TimeStamp::LightDefault);
 
     cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayouts.transparent, 0u, sets.transparent.front, {});
+    cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayouts.transparent, 1u, caches.bindlessTextureSet, {});
 
-    render_draw_items(mDrawItemsTransparent);
+    submit_draw_calls(*mPassConfigTransparent, mDrawCallsTransparent);
     write_time_stamp(cmdbuf, TimeStamp::Transparent);
 
     mParticleRenderer->populate_command_buffer(cmdbuf);

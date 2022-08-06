@@ -3,13 +3,13 @@ image: Visual Studio 2019
 before_build:
 
   - cd c:/projects
-  - curl -fsSL -o vulkan-sdk.exe https://sdk.lunarg.com/sdk/download/1.2.189.2/windows/VulkanSDK-1.2.189.2-Installer.exe
+  - curl -fsSL -o vulkan-sdk.exe https://sdk.lunarg.com/sdk/download/1.3.216.0/windows/VulkanSDK-1.3.216.0-Installer.exe
   - vulkan-sdk.exe --accept-licenses --default-answer --confirm-command install
-  - set VULKAN_SDK=c:/VulkanSDK/1.2.189.2
-  - set PATH=c:/VulkanSDK/1.2.189.2/Bin;%PATH%
+  - set VULKAN_SDK=c:/VulkanSDK/1.3.216.0
+  - set PATH=c:/VulkanSDK/1.3.216.0/Bin;%PATH%
 
   - cd c:/projects
-  - git clone --depth 1 --branch 3.3.4 https://github.com/glfw/glfw.git
+  - git clone --depth 1 --branch 3.3.7 https://github.com/glfw/glfw.git
   - cd c:/projects/glfw
   - cmake . -DBUILD_SHARED_LIBS=False -DUSE_MSVC_RUNTIME_LIBRARY_DLL=False -DGLFW_BUILD_DOCS=False -DGLFW_BUILD_EXAMPLES=False -DGLFW_BUILD_TESTS=False -DCMAKE_INSTALL_PREFIX=.
   - cmake --build . --target install --config Debug

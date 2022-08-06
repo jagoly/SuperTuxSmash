@@ -1,7 +1,5 @@
 #include "game/Emitter.hpp"
 
-#include "game/Fighter.hpp"
-
 #include <sqee/debug/Assert.hpp>
 #include <sqee/misc/Json.hpp>
 
@@ -9,11 +7,9 @@ using namespace sts;
 
 //============================================================================//
 
-void Emitter::from_json(const JsonValue& json)
+void Emitter::from_json(const JsonValue& json, const sq::Armature& armature)
 {
-    SQASSERT(fighter != nullptr, "");
-
-    bone = fighter->bone_from_json(json.at("bone"));
+    bone = armature.bone_from_json(json.at("bone"));
 
     json.at("count").get_to(count);
 
@@ -42,11 +38,9 @@ void Emitter::from_json(const JsonValue& json)
 
 //============================================================================//
 
-void Emitter::to_json(JsonValue& json) const
+void Emitter::to_json(JsonValue& json, const sq::Armature& armature) const
 {
-    SQASSERT(fighter != nullptr, "");
-
-    json["bone"] = fighter->bone_to_json(bone);
+    json["bone"] = armature.bone_to_json(bone);
 
     json["count"] = count;
 

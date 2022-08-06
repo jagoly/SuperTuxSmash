@@ -17,8 +17,8 @@
 "fastFallSpeed": 0.24,
 "weight":        98.0,
 
-"walkAnimStride": 2.87,
-"dashAnimStride": 3.3,
+"walkAnimSpeed": 0.11,
+"dashAnimSpeed": 0.15,
 
 "extraJumps":    10,
 "lightLandTime": 4,

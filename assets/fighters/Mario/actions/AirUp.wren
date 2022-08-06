@@ -10,7 +10,7 @@ class Script is Base {
     state.doLand = "LandAirUp"
 
     wait_until(3)
-    fighter.play_sound("Swing1")
+    fighter.play_sound("Swing1", false)
     action.enable_hitblobs("")
 
     wait_until(9)

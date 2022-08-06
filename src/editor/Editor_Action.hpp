@@ -48,8 +48,6 @@ struct EditorScene::ActionContext : EditorScene::BaseContext
 
     void scrub_to_frame(int frame);
 
-    //void scrub_to_frame_current();
-
     void advance_frame(bool previous);
 
     //--------------------------------------------------------//
@@ -58,9 +56,10 @@ struct EditorScene::ActionContext : EditorScene::BaseContext
 
     Fighter* fighter;
     FighterAction* action;
+    FighterActionDef* actionDef;
 
-    std::unique_ptr<FighterAction> savedData;
-    std::vector<std::unique_ptr<FighterAction>> undoStack;
+    std::unique_ptr<FighterActionDef> savedData;
+    std::vector<std::unique_ptr<FighterActionDef>> undoStack;
 
     int timelineLength = 0;
     int currentFrame = -1;

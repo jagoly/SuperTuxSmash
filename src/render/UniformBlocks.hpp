@@ -27,31 +27,4 @@ struct EnvironmentBlock
 
 //============================================================================//
 
-struct StaticBlock
-{
-    alignas(16) Mat4F  matrix;
-    alignas(16) Mat34F normMat;
-};
-
-//============================================================================//
-
-struct SkellyBlock
-{
-    alignas(16) Mat4F  matrix;
-    alignas(16) Mat34F normMat;
-    alignas(16) Mat34F bones[80];
-};
-
-//============================================================================//
-
-struct EffectBlock
-{
-    alignas(16) Mat4F  matrix;
-    alignas(16) Mat34F normMat;
-    alignas(16) Vec4F  params[8];
-    alignas(16) Mat34F bones[8];
-};
-
-//============================================================================//
-
 } // namespace sts

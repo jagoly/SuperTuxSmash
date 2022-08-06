@@ -7,14 +7,14 @@ class Script is Base {
     default_begin()
 
     wait_until(18)
-    fighter.play_sound("Swing3")
+    fighter.play_sound("Swing3", false)
     action.enable_hitblobs("A")
 
     wait_until(20)
     action.disable_hitblobs(true)
 
     wait_until(24)
-    fighter.play_sound("Swing3")
+    fighter.play_sound("Swing3", false)
     action.enable_hitblobs("B")
 
     wait_until(26)

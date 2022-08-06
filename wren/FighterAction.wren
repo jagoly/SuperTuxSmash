@@ -19,11 +19,10 @@ foreign class FighterAction {
   foreign cxx_next_frame()
   foreign cxx_before_cancel()
 
-  foreign check_hit_something()
   foreign enable_hitblobs(prefix)
   foreign disable_hitblobs(resetCollisions)
-  foreign emit_particles(key)
   foreign play_effect(key)
+  foreign emit_particles(key)
 
   do_start() {
     cxx_before_start()
@@ -39,7 +38,7 @@ foreign class FighterAction {
         if (newAction) {
           fighter.start_action(newAction)
         } else {
-          fighter.cxx_clear_action()
+          fighter.cxx_assign_action_null()
         }
         return // don't call script.update()
       }
@@ -95,4 +94,14 @@ class FighterActionScript {
 
   // optional method, called if action ends abnormally
   cancel() {}
+}
+
+//========================================================//
+
+class FallbackScript is FighterActionScript {
+  construct new(a) { super(a) }
+
+  execute() {
+    return vars.onGround ? "Dodge" : "AirDodge"
+  }
 }

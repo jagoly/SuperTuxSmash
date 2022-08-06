@@ -2,7 +2,8 @@
 
 #include "setup.hpp"
 
-#include <sqee/maths/Volumes.hpp> // IWYU pragma: export
+#include <sqee/maths/Volumes.hpp>
+#include <sqee/objects/Armature.hpp>
 
 namespace sts {
 
@@ -22,14 +23,8 @@ enum class BlobFlavour : int8_t { Sour, Tangy, Sweet };
 
 //============================================================================//
 
-struct HitBlob final
+struct HitBlobDef final
 {
-    FighterAction* action = nullptr; ///< Action that owns this blob.
-
-    maths::Sphere sphere = {}; ///< Blob sphere after transform.
-
-    //--------------------------------------------------------//
-
     Vec3F origin = {};  ///< Model space origin of the blob sphere.
     float radius = 0.f; ///< Model space radius of the blob sphere.
 
@@ -66,11 +61,28 @@ struct HitBlob final
         return *std::prev(reinterpret_cast<const TinyString*>(this));
     }
 
-    void from_json(const JsonValue& json);
+    void from_json(const JsonValue& json, const sq::Armature& armature);
 
-    void to_json(JsonValue& json) const;
+    void to_json(JsonValue& json, const sq::Armature& armature) const;
 
-    bool operator==(const HitBlob& other) const;
+    bool operator==(const HitBlobDef& other) const;
+};
+
+//============================================================================//
+
+struct HitBlob final
+{
+    HitBlob(const HitBlobDef& def, Entity* entity) : def(def), entity(entity) {}
+
+    const HitBlobDef& def;
+
+    Entity* const entity;
+
+    maths::Capsule capsule = {}; ///< Blob capsule after transform.
+
+    bool justCreated = true; ///< Should the blob interpolate.
+
+    bool cancelled = false; ///< Was the blob cancelled by another blob.
 
     Vec3F get_debug_colour() const;
 };

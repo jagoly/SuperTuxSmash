@@ -1,0 +1,83 @@
+{
+  "bones": [
+    {
+      "name": "kaiten",
+      "parent": null,
+      "offset": [ 0.0, 0.0, 0.0 ],
+      "rotation": [ 0.0, 0.70711, 0.70711, 0.0 ],
+      "scale": [ 1.0, 1.0, 1.0 ],
+      "flags": []
+    },
+    {
+      "name": "fireA",
+      "parent": "kaiten",
+      "offset": [ 0.0, 0.0, 0.0 ],
+      "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+      "scale": [ 1.0, 1.0, 1.0 ],
+      "flags": [ "Billboard" ]
+    },
+    {
+      "name": "freaA",
+      "parent": "kaiten",
+      "offset": [ 0.0, 0.0, 0.0 ],
+      "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+      "scale": [ 1.0, 1.0, 1.0 ],
+      "flags": [ "Billboard" ]
+    },
+    {
+      "name": "freaB",
+      "parent": "kaiten",
+      "offset": [ 0.0, 0.0, 0.0 ],
+      "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+      "scale": [ 1.0, 1.0, 1.0 ],
+      "flags": [ "Billboard" ]
+    },
+    {
+      "name": "genzan",
+      "parent": "kaiten",
+      "offset": [ 0.0, 0.0, 0.0 ],
+      "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+      "scale": [ 1.0, 1.0, 1.0 ],
+      "flags": [ "Billboard" ]
+    },
+    {
+      "name": "shippo",
+      "parent": "kaiten",
+      "offset": [ 0.0, 0.0, 0.0 ],
+      "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+      "scale": [ 1.0, 1.0, 1.0 ],
+      "flags": []
+    }
+  ],
+  "blocks": {
+    "K_fire": {
+      "texOffset": {
+        "type": "Float2",
+        "default": [ 0.0, 0.0 ]
+      },
+      "texRotation": {
+        "type": "Angle",
+        "default": [ 0.0 ]
+      },
+      "texScale": {
+        "type": "Float2",
+        "default": [ 1.0, 1.0 ]
+      }
+    },
+    "K_frea": {
+      "texOffset": {
+        "type": "Float2",
+        "default": [ 0.0, 0.0 ]
+      },
+      "texRotation": {
+        "type": "Angle",
+        "default": [ 0.0 ]
+      },
+      "texScale": {
+        "type": "Float2",
+        "default": [ 1.0, 1.0 ]
+      }
+    }
+  },
+  "animSampleSize": 280
+}

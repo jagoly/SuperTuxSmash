@@ -1,0 +1,10 @@
+{
+  "options": {
+    "AnimTexture": [ "0", "1" ],
+    "Bones": [ "0", "1" ],
+    "TexCoord": [ "0", "1" ]
+  },
+  "requirements": [
+    "p['AnimTexture'] == '0' or p['TexCoord'] == '1'"
+  ]
+}

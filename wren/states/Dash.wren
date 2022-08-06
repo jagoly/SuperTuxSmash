@@ -12,6 +12,9 @@ class Script is FighterStateScript {
   update() {
     var r // return value
 
+    // advance animation based on velocity
+    vars.animTime = vars.animTime + vars.velocity.x.abs / attrs.dashAnimSpeed
+
     // fall
     if (base_update_ground()) return "MiscFall"
 

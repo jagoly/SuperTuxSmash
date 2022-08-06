@@ -1,0 +1,9 @@
+{
+  "options": {
+    "Colour": [ "0", "1" ],
+    "Texture": [ "0", "1" ]
+  },
+  "requirements": [
+    "p['Colour'] == '1' or p['Texture'] == '1'"
+  ]
+}

@@ -69,12 +69,13 @@
   },
   "effects": {
     "HorizSmokeA": {
-      "anchored": true,
+      "attached": false,
       "bone": null,
       "origin": [ 0.0, 0.0, 0.0 ],
       "path": "fighters/Mario/effects/HorizSmokeA",
       "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
-      "scale": [ 1.0, 1.0, 1.0 ]
+      "scale": [ 1.0, 1.0, 1.0 ],
+      "transient": false
     }
   },
   "emitters": {

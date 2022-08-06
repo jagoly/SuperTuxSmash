@@ -1,8 +1,5 @@
 #include "game/HitBlob.hpp"
 
-#include "game/Fighter.hpp"
-#include "game/FighterAction.hpp"
-
 #include <sqee/debug/Assert.hpp>
 #include <sqee/misc/Json.hpp>
 
@@ -10,10 +7,8 @@ using namespace sts;
 
 //============================================================================//
 
-void HitBlob::from_json(const JsonValue& json)
+void HitBlobDef::from_json(const JsonValue& json, const sq::Armature& armature)
 {
-    SQASSERT(action != nullptr, "");
-
     json.at("origin").get_to(origin);
     json.at("radius").get_to(radius);
 
@@ -25,7 +20,7 @@ void HitBlob::from_json(const JsonValue& json)
     json.at("knockBase").get_to(knockBase);
     json.at("knockScale").get_to(knockScale);
 
-    bone = action->fighter.bone_from_json(json.at("bone"));
+    bone = armature.bone_from_json(json.at("bone"));
 
     json.at("index").get_to(index);
 
@@ -46,10 +41,8 @@ void HitBlob::from_json(const JsonValue& json)
 
 //============================================================================//
 
-void HitBlob::to_json(JsonValue& json) const
+void HitBlobDef::to_json(JsonValue& json, const sq::Armature& armature) const
 {
-    SQASSERT(action != nullptr, "");
-
     json["origin"] = origin;
     json["radius"] = radius;
 
@@ -61,7 +54,7 @@ void HitBlob::to_json(JsonValue& json) const
     json["knockBase"] = knockBase;
     json["knockScale"] = knockScale;
 
-    json["bone"] = action->fighter.bone_to_json(bone);
+    json["bone"] = armature.bone_to_json(bone);
 
     json["index"] = index;
 
@@ -84,7 +77,7 @@ void HitBlob::to_json(JsonValue& json) const
 
 DISABLE_WARNING_FLOAT_EQUALITY()
 
-bool HitBlob::operator==(const HitBlob& other) const
+bool HitBlobDef::operator==(const HitBlobDef& other) const
 {
     return origin == other.origin &&
            radius == other.radius &&
@@ -114,8 +107,8 @@ ENABLE_WARNING_FLOAT_EQUALITY()
 
 Vec3F HitBlob::get_debug_colour() const
 {
-    if (flavour == BlobFlavour::Sour)  return { 0.6f, 0.6f, 0.0f };
-    if (flavour == BlobFlavour::Tangy) return { 0.2f, 1.0f, 0.0f };
-    if (flavour == BlobFlavour::Sweet) return { 1.0f, 0.1f, 0.1f };
+    if (def.flavour == BlobFlavour::Sour)  return { 0.6f, 0.6f, 0.0f };
+    if (def.flavour == BlobFlavour::Tangy) return { 0.2f, 1.0f, 0.0f };
+    if (def.flavour == BlobFlavour::Sweet) return { 1.0f, 0.1f, 0.1f };
     SQEE_UNREACHABLE();
 }

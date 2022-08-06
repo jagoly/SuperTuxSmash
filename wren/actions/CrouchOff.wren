@@ -13,6 +13,6 @@ class Script is FighterActionScript {
     default_begin()
 
     wait_until(2)
-    //fighter.play_sound("CrouchOff")
+    //fighter.play_sound("CrouchOff", false)
   }
 }

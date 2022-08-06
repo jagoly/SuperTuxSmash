@@ -9,16 +9,62 @@
 
 using namespace sts;
 
+// FighterState is much simpler than FighterAction, since the editor only
+// supports editing actions, so states don't need robust error handling.
+
+// This may change in the future, but it would be a bit of work.
+
 //============================================================================//
 
-FighterState::FighterState(Fighter& fighter, SmallString name)
-    : fighter(fighter), world(fighter.world), name(name)
+FighterStateDef::FighterStateDef(const FighterDef& fighter, TinyString name)
+    : fighter(fighter), name(name) {}
+
+FighterStateDef::~FighterStateDef()
 {
+    if (scriptClass) wrenReleaseHandle(fighter.world.vm, scriptClass);
+}
+
+//============================================================================//
+
+void FighterStateDef::load_wren_from_file()
+{
+    SQASSERT(scriptClass == nullptr, "module already loaded");
+
+    auto& vm = fighter.world.vm;
+
+    // first try to load a fighter specific script
+    auto source = sq::try_read_text_from_file("assets/{}/states/{}.wren"_format(fighter.directory, name));
+
+    String module;
+
+    // for states, per fighter scripts are not required
+    if (source.has_value() == false)
+    {
+        module = "states/{}"_format(name);
+        vm.load_module(module.c_str());
+    }
+    else
+    {
+        module = "{}/states/{}"_format(fighter.directory, name);
+        vm.interpret(module.c_str(), source->c_str());
+    }
+
+    // store the class for use by FighterState
+    scriptClass = vm.get_variable(module.c_str(), "Script");
+}
+
+//============================================================================//
+
+FighterState::FighterState(const FighterStateDef& def, Fighter& fighter)
+    : def(def), fighter(fighter), world(fighter.world)
+{
+    // create a new instance of the Script object
+    mScriptHandle = world.vm.call<WrenHandle*>(world.handles.new_1, def.scriptClass, this);
 }
 
 FighterState::~FighterState()
 {
-    if (mScriptHandle) wrenReleaseHandle(world.vm, mScriptHandle);
+    wrenReleaseHandle(world.vm, mScriptHandle);
 }
 
 //============================================================================//
@@ -56,36 +102,13 @@ void FighterState::call_do_exit()
 
 //============================================================================//
 
-void FighterState::load_wren_from_file()
+void FighterState::set_error_message(StringView method, StringView errors)
 {
-    SQASSERT(mScriptHandle == nullptr, "script already loaded");
+    String message = "'{}/states/{}'\n{}C++ | {}()\n"_format(def.fighter.directory, def.name, errors, method);
 
-    // first try to load a fighter specific script
-    auto source = sq::try_read_text_from_file("assets/fighters/{}/states/{}.wren"_format(fighter.name, name));
-
-    // otherwise just use the common script
-    if (source.has_value() == false)
-        source = sq::read_text_from_file("wren/states/{}.wren"_format(name));
-
-    // every fighter gets its own module for each state
-    // todo: probably not needed for states?
-    const auto module = "{}_STATE_{}"_format(fighter.index, name);
-
-    // interpret wren source into the new module
-    world.vm.interpret(module.c_str(), source->c_str());
-
-    // create a new instance of the Script object
-    mScriptHandle = world.vm.call<WrenHandle*>(world.handles.new_1, wren::GetVar(module.c_str(), "Script"), this);
-}
-
-//============================================================================//
-
-void FighterState::set_error_message(StringView method, StringView error)
-{
-    String message = "State '{}/{}'\n{}\nC++ | {}()\n"_format(fighter.name, name, error, method);
-
-    if (world.editor == false)
+    if (world.editor == nullptr)
         sq::log_error_multiline(message);
 
-    fighter.set_error_message(this, std::move(message));
+    else
+        sq::log_warning_multiline(message);
 }

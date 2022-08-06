@@ -4,6 +4,7 @@
 #include "main/SmashApp.hpp"
 
 #include <sqee/app/GuiWidgets.hpp>
+#include <sqee/misc/Json.hpp>
 
 using namespace sts;
 
@@ -16,6 +17,22 @@ MenuScene::MenuScene(SmashApp& smashApp)
     mSmashApp.get_window().set_key_repeat(false);
 
     mSmashApp.get_debug_overlay().set_sub_timers({});
+
+    // load stage names
+    {
+        const auto json = sq::parse_json_from_file("assets/stages/Stages.json");
+        mStageNames.reserve(json.size());
+        for (const auto& entry : json)
+            mStageNames.emplace_back(entry.get_ref<const String&>());
+    }
+
+    // load fighter names
+    {
+        const auto json = sq::parse_json_from_file("assets/fighters/Fighters.json");
+        mFighterNames.reserve(json.size());
+        for (const auto& entry : json)
+            mFighterNames.emplace_back(entry.get_ref<const String&>());
+    }
 }
 
 MenuScene::~MenuScene() = default;
@@ -70,7 +87,7 @@ void MenuScene::show_imgui_widgets()
 
     ImGui::SameLine();
     ImGui::SetNextItemWidth(160.f);
-    ImPlus::ComboEnum("Stage", mSetup.stage);
+    ImPlus::ComboString("Stage", mStageNames, mSetup.stage);
 
     ImGui::Separator();
 
@@ -86,7 +103,7 @@ void MenuScene::show_imgui_widgets()
 
         ImGui::SameLine();
         ImGui::SetNextItemWidth(160.f);
-        ImPlus::ComboEnum("Fighter##{}"_format(index), iter->fighter);
+        ImPlus::ComboString("Fighter##{}"_format(index), mFighterNames, iter->fighter);
 
         if (erase) iter = mSetup.players.erase(iter) - 1;
     }
@@ -99,12 +116,12 @@ void MenuScene::show_imgui_widgets()
     ImGui::Indent(50.f);
     if (ImPlus::Button("Start Game"))
     {
-        if (mSetup.players.empty() == true && mSetup.stage == StageEnum::Null)
+        if (mSetup.players.empty() == true && mSetup.stage.empty() == true)
             mSmashApp.start_game(GameSetup::get_defaults());
 
-        bool valid = (mSetup.stage != StageEnum::Null);
+        bool valid = (mSetup.stage.empty() == false);
         for (auto& player : mSetup.players)
-            valid &= (player.fighter != FighterEnum::Null);
+            valid &= (player.fighter.empty() == false);
 
         if (valid == true)
              mSmashApp.start_game(mSetup);

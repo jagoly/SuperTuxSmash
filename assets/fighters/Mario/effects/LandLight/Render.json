@@ -9,45 +9,67 @@
     },
     "pipelines": {
       "": {
-        "attributes": [ "TexCoords", "Bones" ],
+        "attributes": [ "TexCoords" ],
         "pass": "Transparent",
-        "vertexShader": "transparent/BasicEffect/Vert",
-        "fragmentShader": "transparent/BasicEffect/Frag",
+        "vertexShader": "transparent/General.vert/AnimColour1_AnimTexture0_Bones0_Colour0_TexCoord1",
+        "fragmentShader": "transparent/General.frag/Colour1_Texture1",
         "cullFace": "Disable",
         "alphaCoverage": "Disable",
         "depthTest": "Keep",
         "colourBlend": [ "Alpha" ]
-      }
-    },
-    "materials": {
-      "smokeB": {
-        "pipeline": "",
-        "textures": {
-          "tx_Colour": "eff_cmn_smokeB"
-        },
-        "params": {}
-      },
-      "down_shock": {
-        "pipeline": "",
-        "textures": {
-          "tx_Colour": "eff_cmn_smokeA"
-        },
-        "params": {}
       }
     }
   },
   "items": [
     {
       "condition": null,
-      "material": "smokeB",
       "mesh": "",
-      "submesh": 0
+      "subMesh": "smokeB",
+      "pipeline": "",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": "smokeA"
+        },
+        "colour": {
+          "type": "AnimFloat4",
+          "block": "smokeB",
+          "track": "colour"
+        },
+        "colourTexIndex": {
+          "type": "TextureIndex",
+          "texture": "eff_cmn_smokeB"
+        },
+        "blendDepth": {
+          "type": "ConstFloat",
+          "value": 0.2
+        }
+      }
     },
     {
       "condition": null,
-      "material": "down_shock",
       "mesh": "",
-      "submesh": 1
+      "subMesh": "down_shock",
+      "pipeline": "",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": "smokeC"
+        },
+        "colour": {
+          "type": "AnimFloat4",
+          "block": "down_shock",
+          "track": "colour"
+        },
+        "colourTexIndex": {
+          "type": "TextureIndex",
+          "texture": "eff_cmn_smokeA"
+        },
+        "blendDepth": {
+          "type": "ConstFloat",
+          "value": 0.0
+        }
+      }
     }
   ]
 }

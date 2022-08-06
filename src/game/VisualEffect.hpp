@@ -4,37 +4,30 @@
 
 #include "main/Resources.hpp"
 
-#include "render/DrawItem.hpp"
+#include "render/AnimPlayer.hpp"
 
 #include <sqee/objects/Armature.hpp>
+#include <sqee/objects/DrawItem.hpp>
 
 namespace sts {
 
 //============================================================================//
 
-/// Cached resource that is shared between VisualEffects.
+/// Cached resource that is shared between effect defs.
 struct EffectAsset final
 {
     void load_from_directory(const String& path, ResourceCaches& caches);
 
     sq::Armature armature;
-    sq::Armature::Animation animation;
+    sq::Animation animation;
 
-    const sq::Armature::Animation::Track* paramTracks[MAX_EFFECT_BONES] {};
-
-    std::vector<DrawItemDef> drawItemDefs;
+    std::vector<sq::DrawItem> drawItems;
 };
 
 //============================================================================//
 
-struct VisualEffect final
+struct VisualEffectDef final
 {
-    /// Must be set before calling from_json.
-    EffectCache* cache = nullptr;
-
-    /// Fighter that owns this effect.
-    Fighter* fighter = nullptr;
-
     /// Handle to the loaded EffectAsset resource.
     EffectHandle handle = nullptr;
 
@@ -54,7 +47,10 @@ struct VisualEffect final
     int8_t bone = -1;
 
     /// Move the effect with the fighter.
-    bool anchored = true;
+    bool attached = true;
+
+    /// Automatically cancel when the action does.
+    bool transient = true;
 
     //--------------------------------------------------------//
 
@@ -63,11 +59,30 @@ struct VisualEffect final
         return *std::prev(reinterpret_cast<const TinyString*>(this));
     }
 
-    void from_json(const JsonValue& json);
+    void from_json(const JsonValue& json, const sq::Armature& armature, EffectCache& cache);
 
-    void to_json(JsonValue& json) const;
+    void to_json(JsonValue& json, const sq::Armature& armature) const;
 
-    bool operator==(const VisualEffect& other) const;
+    bool operator==(const VisualEffectDef& other) const;
+};
+
+//============================================================================//
+
+struct VisualEffect final
+{
+    VisualEffect(const VisualEffectDef& def, const Entity* entity)
+        : def(def), entity(entity), animPlayer(def.handle->armature) {}
+
+    const VisualEffectDef& def;
+
+    const Entity* const entity; // optional
+
+    AnimPlayer animPlayer;
+
+    Mat4F modelMatrix = Mat4F();
+    float bbScaleX = 1.f;
+
+    int32_t id = -1;
 };
 
 //============================================================================//

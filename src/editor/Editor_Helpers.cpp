@@ -11,7 +11,7 @@ using namespace sts;
 void EditorScene::helper_edit_origin(const char* label, Fighter& fighter, int8_t bone, Vec3F& origin)
 {
     const ImPlus::ScopeID idScope = label;
-    const auto& armature = fighter.get_armature();
+    const auto& armature = fighter.def.armature;
     static Vec3F localOrigin = nullptr;
 
     const bool openPopup = ImGui::Button("#") && bone >= 0;
@@ -20,7 +20,7 @@ void EditorScene::helper_edit_origin(const char* label, Fighter& fighter, int8_t
 
     if (openPopup == true)
     {
-        const Mat4F boneMatrix = armature.compute_bone_matrix(armature.get_rest_pose(), bone);
+        const Mat4F boneMatrix = armature.compute_bone_matrix(armature.get_rest_sample(), bone);
         localOrigin = Vec3F(maths::inverse(boneMatrix) * Vec4F(origin, 1.f));
         ImGui::OpenPopup("popup_input_local");
         ImVec2 popupPos = ImGui::GetCursorScreenPos();
@@ -35,7 +35,7 @@ void EditorScene::helper_edit_origin(const char* label, Fighter& fighter, int8_t
         ImGui::SameLine();
 
         ImPlus::InputVector("", localOrigin, 0, "%.4f");
-        const Mat4F boneMatrix = armature.compute_bone_matrix(armature.get_rest_pose(), bone);
+        const Mat4F boneMatrix = armature.compute_bone_matrix(armature.get_rest_sample(), bone);
         const Vec3F newValue = Vec3F(boneMatrix * Vec4F(localOrigin, 1.f));
         const Vec3F diff = maths::abs(newValue - origin);
         if (maths::max(diff.x, diff.y, diff.z) > 0.000001f) origin = newValue;

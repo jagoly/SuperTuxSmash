@@ -1,23 +1,43 @@
-[
-  {
-    "name": "TopN",
-    "parent": null,
-    "offset": [ 0.0, 0.0, 0.0 ],
-    "rotation": [ 0.0, 0.70711, 0.70711, 0.0 ],
-    "scale": [ 1.0, 1.0, 1.0 ]
+{
+  "bones": [
+    {
+      "name": "TopN",
+      "parent": null,
+      "offset": [ 0.0, 0.0, 0.0 ],
+      "rotation": [ 0.0, 0.70711, 0.70711, 0.0 ],
+      "scale": [ 1.0, 1.0, 1.0 ],
+      "flags": []
+    },
+    {
+      "name": "smokeA",
+      "parent": "TopN",
+      "offset": [ 0.0, 0.0, 0.0 ],
+      "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+      "scale": [ 1.0, 1.0, 1.0 ],
+      "flags": []
+    },
+    {
+      "name": "smokeC",
+      "parent": "TopN",
+      "offset": [ 0.0, 0.0, 0.0 ],
+      "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+      "scale": [ 1.0, 1.0, 1.0 ],
+      "flags": []
+    }
+  ],
+  "blocks": {
+    "down_shock": {
+      "colour": {
+        "type": "Float4",
+        "default": [ 1.0, 1.0, 1.0, 1.0 ]
+      }
+    },
+    "smokeB": {
+      "colour": {
+        "type": "Float4",
+        "default": [ 1.0, 1.0, 1.0, 1.0 ]
+      }
+    }
   },
-  {
-    "name": "smokeA",
-    "parent": "TopN",
-    "offset": [ 0.0, 0.0, 0.0 ],
-    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
-    "scale": [ 1.0, 1.0, 1.0 ]
-  },
-  {
-    "name": "smokeC",
-    "parent": "TopN",
-    "offset": [ 0.0, 0.0, 0.0 ],
-    "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
-    "scale": [ 1.0, 1.0, 1.0 ]
-  }
-]
+  "animSampleSize": 152
+}

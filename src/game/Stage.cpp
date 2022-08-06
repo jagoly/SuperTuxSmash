@@ -3,9 +3,9 @@
 #include "game/Physics.hpp"
 #include "game/World.hpp"
 
+#include "render/Camera.hpp"
 #include "render/Renderer.hpp"
 #include "render/UniformBlocks.hpp"
-#include "render/Camera.hpp"
 
 #include <sqee/maths/Culling.hpp>
 #include <sqee/maths/Functions.hpp>
@@ -16,11 +16,12 @@ using namespace sts;
 
 //============================================================================//
 
-Stage::Stage(World& world, StageEnum type)
-    : world(world), type(type)
+Stage::Stage(World& world, TinyString name)
+    : world(world), name(name)
+    , mArmature("assets/stages/{}/Armature.json"_format(name))
+    , mAnimPlayer(mArmature)
 {
-    const String path = sq::build_string("assets/stages/", sq::enum_to_string(type));
-    const JsonValue json = sq::parse_json_from_file(path + "/Stage.json");
+    const JsonValue json = sq::parse_json_from_file("assets/stages/{}/Stage.json"_format(name));
 
     const JsonValue& render = json.at("render");
     render.at("skybox").get_to(mSkyboxPath);
@@ -60,30 +61,19 @@ Stage::Stage(World& world, StageEnum type)
         jplatform.at("maxX").get_to(platform.maxX);
     }
 
-    const auto& ctx = sq::VulkanContext::get();
-
     // load environment maps
     {
-        world.renderer.cubemaps.skybox.load_from_file_cube(sq::build_string("assets/", mSkyboxPath + "/Sky"));
-        world.renderer.cubemaps.irradiance.load_from_file_cube(sq::build_string("assets/", mSkyboxPath + "/Irradiance"));
-        world.renderer.cubemaps.radiance.load_from_file_cube(sq::build_string("assets/", mSkyboxPath + "/Radiance"));
+        world.renderer.cubemaps.skybox.load_from_file_cube("assets/{}/Sky"_format(mSkyboxPath));
+        world.renderer.cubemaps.irradiance.load_from_file_cube("assets/{}/Irradiance"_format(mSkyboxPath));
+        world.renderer.cubemaps.radiance.load_from_file_cube("assets/{}/Radiance"_format(mSkyboxPath));
 
         world.renderer.update_cubemap_descriptor_sets();
     }
 
-    // uniform buffer and descriptor set
-    {
-        mStaticUbo.initialise(sizeof(StaticBlock), vk::BufferUsageFlagBits::eUniformBuffer);
-        mDescriptorSet = sq::vk_allocate_descriptor_set_swapper(ctx, world.renderer.setLayouts.object);
-
-        sq::vk_update_descriptor_set_swapper (
-            ctx, mDescriptorSet,
-            sq::DescriptorUniformBuffer(0u, 0u, mStaticUbo.get_descriptor_info())
-        );
-    }
-
-    world.renderer.create_draw_items(DrawItemDef::load_from_json(path + "/Render.json", world.caches),
-                                     mDescriptorSet, {});
+    mDrawItems = sq::DrawItem::load_from_json (
+        "assets/stages/{}/Render.json"_format(name), mArmature,
+        world.caches.meshes, world.caches.pipelines, world.caches.textures
+    );
 }
 
 Stage::~Stage() = default;
@@ -98,12 +88,21 @@ void Stage::tick()
 
 void Stage::integrate(float /*blend*/)
 {
-    mDescriptorSet.swap();
-    auto& block = *reinterpret_cast<StaticBlock*>(mStaticUbo.swap_map());
+    Mat34F* modelMats = world.renderer.reserve_matrices(1u, mAnimPlayer.modelMatsIndex);
+    modelMats[0] = Mat34F();
 
-    block.matrix = Mat4F();
-    //block.normMat = Mat34F(maths::normal_matrix(camera.viewMat));
-    block.normMat = Mat34F();
+    Mat34F* normalMats = world.renderer.reserve_matrices(1u, mAnimPlayer.normalMatsIndex);
+    normalMats[0] = Mat34F();
+
+    const auto check_condition = [&](const TinyString& condition)
+    {
+        if (condition.empty()) return true;
+        SQASSERT(false, "invalid condition");
+    };
+
+    for (const sq::DrawItem& item : mDrawItems)
+        if (check_condition(item.condition) == true)
+            world.renderer.add_draw_call(item, mAnimPlayer);
 
     auto& environmentBlock = *reinterpret_cast<EnvironmentBlock*>(world.renderer.ubos.environment.swap_map());
     environmentBlock.lightColour = mLightColour;
@@ -310,6 +309,156 @@ MoveAttempt Stage::attempt_move(const LocalDiamond& diamond, Vec2F current, Vec2
     }
 
     //--------------------------------------------------------//
+
+    return attempt;
+}
+
+//============================================================================//
+
+MoveAttemptSphere Stage::attempt_move_sphere(float radius, float bounceFactor, Vec2F position, Vec2F velocity, bool ignorePlatforms)
+{
+    // This function was designed specifically for Mario's fireball.
+    // It has some paramaters, but they may or may not work.
+
+    const Vec2F target = position + velocity;
+
+    MoveAttemptSphere attempt;
+
+    attempt.newPosition = target;
+    attempt.newVelocity = velocity;
+    attempt.bounced = false;
+
+    const float length = maths::length(velocity);
+
+    // todo: may need to be smaller for moving blocks/platforms
+    const float numSteps = std::ceil(length / radius);
+    const float stepSize = 1.0 / numSteps;
+
+    float responseStep = numSteps + 1.f;
+    float responsePenetration = 0.f;
+    Vec2F responseOrigin = Vec2F();
+    Vec2F responseNormal = Vec2F();
+
+    //--------------------------------------------------------//
+
+    for (const auto& block : mAlignedBlocks)
+    {
+        // seperate axis test if completely outside of the block
+        if (position.x + radius < block.minimum.x && target.x + radius < block.minimum.x) continue;
+        if (position.x - radius > block.maximum.x && target.x - radius > block.maximum.x) continue;
+        if (position.y + radius < block.minimum.y && target.y + radius < block.minimum.y) continue;
+        if (position.y - radius > block.maximum.y && target.y - radius > block.maximum.y) continue;
+
+        // only check steps earlier than the earliest collision already found
+        for (float step = 0.f; step < responseStep; step += 1.f)
+        {
+            const Vec2F stepOrigin = position + velocity * stepSize * step;
+
+            // closest point on or inside the box to the circle
+            const Vec2F closest = maths::clamp(stepOrigin, block.minimum, block.maximum);
+
+            const Vec2F difference = stepOrigin - closest;
+            const float distSquared = maths::length_squared(difference);
+
+            if (distSquared < radius * radius) // intersects
+            {
+                responseStep = step;
+                responseOrigin = stepOrigin;
+
+                if (distSquared > 0.00001f) // origin is outside of the box
+                {
+                    const float distance = std::sqrt(distSquared);
+
+                    responsePenetration = radius - distance;
+                    responseNormal = difference * (1.f / distance);
+                }
+                else // origin is inside of the box
+                {
+                    const float overlapNegX = std::min(block.minimum.x - stepOrigin.x - radius, 0.f);
+                    const float overlapPosX = std::max(block.maximum.x - stepOrigin.x + radius, 0.f);
+
+                    const float overlapNegY = std::min(block.minimum.y - stepOrigin.y - radius, 0.f);
+                    const float overlapPosY = std::max(block.maximum.y - stepOrigin.y + radius, 0.f);
+
+                    if (true)                               { responsePenetration = +overlapPosY; responseNormal = { 0.f, +1.f }; }
+                    if (-overlapNegY < responsePenetration) { responsePenetration = -overlapNegY; responseNormal = { 0.f, -1.f }; }
+                    if (+overlapPosX < responsePenetration) { responsePenetration = +overlapPosX; responseNormal = { +1.f, 0.f }; }
+                    if (-overlapNegX < responsePenetration) { responsePenetration = -overlapNegX; responseNormal = { -1.f, 0.f }; }
+                }
+
+                //sq::log_debug_multiline (
+                //    "collision with AlignedBlock\n"
+                //    "stepOrigin: {}\nclosest: {}\ndifference: {}\nstep: {}\npenetration: {}\norigin: {}\nnormal: {}",
+                //    stepOrigin, closest, difference, responseStep, responsePenetration, responseOrigin, responseNormal
+                //);
+            }
+        }
+    }
+
+    //--------------------------------------------------------//
+
+    if (ignorePlatforms == false && velocity.y < 0.f)
+    {
+        for (const auto& platform : mPlatforms)
+        {
+            // check if position and target are both to one side of the platform
+            if (position.x < platform.minX && target.x < platform.minX) continue;
+            if (position.x > platform.maxX && target.x > platform.maxX) continue;
+
+            // check if position is below or intersecting the platform
+            if (position.y - radius < platform.originY) continue;
+
+            // check if target is above and not intersecting the platform
+            if (target.y - radius > platform.originY) continue;
+
+            // only check steps earlier than the earliest collision already found
+            for (float step = 0.f; step < responseStep; step += 1.f)
+            {
+                const Vec2F stepOrigin = position + velocity * stepSize * step;
+
+                // we ignore intersections with the ends of platform (only bounce on the flat part)
+                if (stepOrigin.y - radius > platform.originY) continue;
+                if (stepOrigin.x < platform.minX || stepOrigin.x > platform.maxX) continue;
+
+                responseStep = step;
+                responseOrigin = stepOrigin;
+
+                responsePenetration = radius - stepOrigin.y + platform.originY;
+                responseNormal = Vec2F(0.f, 1.f);
+
+                //sq::log_debug_multiline (
+                //    "collision with Platform\n"
+                //    "stepOrigin: {}\nstep: {}\npenetration: {}\norigin: {}\nnormal: {}",
+                //    stepOrigin, responseStep, responsePenetration, responseOrigin, responseNormal
+                //);
+            }
+        }
+    }
+
+    //--------------------------------------------------------//
+
+    if (responseStep <= numSteps)
+    {
+        attempt.newPosition = responseOrigin + responseNormal * (responsePenetration + 0.00001f);
+
+        const Vec2F incident = velocity * (1.f / length);
+
+        const float nDotI = maths::dot(responseNormal, incident);
+        if (nDotI < 0.f)
+        {
+            const Vec2F reflected = incident - responseNormal * nDotI * 2.f;
+            attempt.newVelocity = reflected * length * bounceFactor;
+            attempt.bounced = true;
+        }
+
+        attempt.newPosition += attempt.newVelocity * ((numSteps - responseStep) / numSteps);
+
+        //sq::log_debug_multiline (
+        //    "collided with something\n"
+        //    "oldPosition: {}\noldVelocity: {}\nnewPosition: {}\nincident: {}\nnewVelocity: {}",
+        //    position, velocity, attempt.newPosition, incident, attempt.newVelocity
+        //);
+    }
 
     return attempt;
 }

@@ -10,70 +10,142 @@
     },
     "pipelines": {
       "": {
-        "attributes": [ "TexCoords", "Bones" ],
+        "attributes": [ "TexCoords" ],
         "pass": "Transparent",
-        "vertexShader": "transparent/BasicEffect/Vert",
-        "fragmentShader": "transparent/BasicEffect/Frag",
+        "vertexShader": "transparent/General.vert/AnimColour1_AnimTexture0_Bones0_Colour0_TexCoord1",
+        "fragmentShader": "transparent/General.frag/Colour1_Texture1",
         "cullFace": "Disable",
         "alphaCoverage": "Disable",
         "depthTest": "Keep",
         "colourBlend": [ "Alpha" ]
-      }
-    },
-    "materials": {
-      "shock123": {
-        "pipeline": "",
-        "textures": {
-          "tx_Colour": "eff_cmn_smokeB"
-        },
-        "params": {}
-      },
-      "shock4": {
-        "pipeline": "",
-        "textures": {
-          "tx_Colour": "eff_cmn_shockC"
-        },
-        "params": {}
-      },
-      "storm": {
-        "pipeline": "",
-        "textures": {
-          "tx_Colour": "eff_cmn_stormsomke"
-        },
-        "params": {}
       }
     }
   },
   "items": [
     {
       "condition": null,
-      "material": "shock123",
       "mesh": "",
-      "submesh": 0
+      "subMesh": "shock1",
+      "pipeline": "",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": "shock_smokeA"
+        },
+        "colour": {
+          "type": "AnimFloat4",
+          "block": "shock1",
+          "track": "colour"
+        },
+        "colourTexIndex": {
+          "type": "TextureIndex",
+          "texture": "eff_cmn_smokeB"
+        },
+        "blendDepth": {
+          "type": "ConstFloat",
+          "value": 0.2
+        }
+      }
     },
     {
       "condition": null,
-      "material": "shock123",
       "mesh": "",
-      "submesh": 1
+      "subMesh": "shock2",
+      "pipeline": "",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": "shock_smokeB"
+        },
+        "colour": {
+          "type": "AnimFloat4",
+          "block": "shock2",
+          "track": "colour"
+        },
+        "colourTexIndex": {
+          "type": "TextureIndex",
+          "texture": "eff_cmn_smokeB"
+        },
+        "blendDepth": {
+          "type": "ConstFloat",
+          "value": 0.2
+        }
+      }
     },
     {
       "condition": null,
-      "material": "shock4",
       "mesh": "",
-      "submesh": 2
+      "subMesh": "shock4",
+      "pipeline": "",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": "shock_smokeC"
+        },
+        "colour": {
+          "type": "AnimFloat4",
+          "block": "shock4",
+          "track": "colour"
+        },
+        "colourTexIndex": {
+          "type": "TextureIndex",
+          "texture": "eff_cmn_shockC"
+        },
+        "blendDepth": {
+          "type": "ConstFloat",
+          "value": 0.2
+        }
+      }
     },
     {
       "condition": null,
-      "material": "shock123",
       "mesh": "",
-      "submesh": 3
+      "subMesh": "shock3",
+      "pipeline": "",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": "shock_smokeD"
+        },
+        "colour": {
+          "type": "AnimFloat4",
+          "block": "shock3",
+          "track": "colour"
+        },
+        "colourTexIndex": {
+          "type": "TextureIndex",
+          "texture": "eff_cmn_smokeB"
+        },
+        "blendDepth": {
+          "type": "ConstFloat",
+          "value": 0.2
+        }
+      }
     },
     {
       "condition": null,
-      "material": "storm",
       "mesh": "",
-      "submesh": 4
+      "subMesh": "storm",
+      "pipeline": "",
+      "params": {
+        "modelMatIndex": {
+          "type": "ModelMatrixIndex",
+          "bone": "stormsmoke"
+        },
+        "colour": {
+          "type": "AnimFloat4",
+          "block": "storm",
+          "track": "colour"
+        },
+        "colourTexIndex": {
+          "type": "TextureIndex",
+          "texture": "eff_cmn_stormsomke"
+        },
+        "blendDepth": {
+          "type": "ConstFloat",
+          "value": 0.2
+        }
+      }
     }
   ]
 }

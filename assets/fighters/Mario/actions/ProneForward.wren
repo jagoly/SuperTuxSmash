@@ -5,7 +5,7 @@ class Script is Base {
 
   execute() {
     default_begin()
-    fighter.play_sound("Evade")
+    fighter.play_sound("Evade", false)
 
     wait_until(20)
     vars.intangible = false

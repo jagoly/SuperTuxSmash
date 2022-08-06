@@ -7,7 +7,7 @@ class Script is Base {
     default_begin()
 
     wait_until(2)
-    fighter.play_sound("CrouchOff")
+    fighter.play_sound("CrouchOff", false)
 
     wait_until(22)
     vars.intangible = false

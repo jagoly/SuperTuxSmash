@@ -16,6 +16,8 @@ foreign class Attributes {
   foreign fallSpeed
   foreign fastFallSpeed
   foreign weight
+  foreign walkAnimSpeed
+  foreign dashAnimSpeed
   foreign extraJumps
   foreign lightLandTime
 }
@@ -27,6 +29,12 @@ foreign class Variables {
   foreign position
   foreign velocity
   foreign facing
+  foreign facing=(value)
+  foreign freezeTime
+  foreign hitSomething
+  foreign animTime
+  foreign animTime=(value)
+  foreign attachPoint
 
   foreign extraJumps
   foreign extraJumps=(value)
@@ -36,8 +44,8 @@ foreign class Variables {
   foreign noCatchTime=(value)
   foreign stunTime
   foreign stunTime=(value)
-  foreign freezeTime
-  foreign freezeTime=(value)
+
+  foreign reboundTime
 
   foreign edgeStop
   foreign edgeStop=(value)
@@ -67,8 +75,6 @@ foreign class Variables {
   foreign shield
   foreign launchSpeed
 
-  foreign attachPoint
-
   foreign ledge
   foreign ledge=(value)
 }
@@ -81,8 +87,9 @@ foreign class Fighter {
   foreign !=(other)
 
   foreign name
-  foreign index
   foreign world
+
+  foreign index
 
   foreign attributes
   foreign localDiamond
@@ -95,8 +102,8 @@ foreign class Fighter {
 
   foreign log(message)
 
-  foreign cxx_clear_action()
   foreign cxx_assign_action(key)
+  foreign cxx_assign_action_null()
   foreign cxx_assign_state(key)
 
   foreign reverse_facing_auto()
@@ -104,17 +111,26 @@ foreign class Fighter {
   foreign reverse_facing_slow(clockwise, time)
   foreign reverse_facing_animated(clockwise)
 
-  foreign attempt_ledge_catch()
+  foreign reset_collisions()
 
   foreign play_animation(key, fade, fromStart)
   foreign set_next_animation(key, fade)
 
-  foreign reset_collisions()
+  foreign play_sound(key, transient)
+
+  foreign attempt_ledge_catch()
+
   foreign enable_hurtblob(key)
   foreign disable_hurtblob(key)
 
-  foreign play_sound(key)
-  foreign cancel_sound(key)
+  foreign cxx_spawn_article(key)
+
+  // spawn an article and call its constructor
+  spawn_article(key) {
+    var article = cxx_spawn_article(key)
+    article.script = article.scriptClass.new(article)
+    return article
+  }
 
   // activate an action or call a pseudo action
   start_action(newAction) {
@@ -126,7 +142,7 @@ foreign class Fighter {
       action.do_start()
     }
     else if (newAction is Fn) {
-      cxx_clear_action()
+      cxx_assign_action_null()
       newAction.call()
     }
     else Fiber.abort("invalid argument")
@@ -136,7 +152,7 @@ foreign class Fighter {
   cancel_action() {
     if (action) {
       action.do_cancel()
-      cxx_clear_action()
+      cxx_assign_action_null()
     }
   }
 

@@ -29,23 +29,36 @@ using sq::StackVector;
 
 //============================================================================//
 
+struct AnimPlayer;
+struct Animation;
+struct ArticleDef;
 struct DebugGui;
 struct Emitter;
+struct EntityDef;
+struct FighterActionDef;
+struct FighterDef;
+struct FighterStateDef;
 struct GameSetup;
 struct HitBlob;
+struct HitBlobDef;
 struct HurtBlob;
+struct HurtBlobDef;
 struct Ledge;
 struct LocalDiamond;
 struct MoveAttempt;
+struct MoveAttemptSphere;
 struct Options;
 struct SoundEffect;
 struct VisualEffect;
+struct VisualEffectDef;
 
+class Article;
 class Camera;
 class Controller;
 class EditorCamera;
 class EditorScene;
 class EffectSystem;
+class Entity;
 class Fighter;
 class FighterAction;
 class FighterState;
@@ -56,6 +69,8 @@ class SmashApp;
 class Stage;
 class StandardCamera;
 class World;
+
+enum class BlobRegion : int8_t;
 
 //============================================================================//
 
@@ -70,12 +85,6 @@ constexpr const size_t MAX_FIGHTERS = 4u;
 
 /// Number of frames that input commands are buffered for.
 constexpr const size_t CMD_BUFFER_SIZE = 9u;
-
-/// Maximum number of bones in a visual effect.
-constexpr const size_t MAX_EFFECT_BONES = 8u;
-
-/// Maximum number of visual effects that can be active at once.
-constexpr const size_t MAX_ACTIVE_EFFECTS = 16u;
 
 /// Minimum amount of hitstun required to cause heavy flinch animations.
 constexpr const uint8_t MIN_HITSTUN_HEAVY = 16u;

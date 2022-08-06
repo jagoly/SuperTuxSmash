@@ -13,7 +13,6 @@ namespace sq {
 class Mesh;
 class Texture;
 class Pipeline;
-class Material;
 class Sound;
 
 class AudioContext;
@@ -29,13 +28,11 @@ using namespace sq::coretypes;
 using MeshCache = sq::ResourceCache<String, sq::Mesh>;
 using TextureCache = sq::ResourceCache<String, sq::Texture>;
 using PipelineCache = sq::ResourceCache<JsonValue, sq::Pipeline>;
-using MaterialCache = sq::ResourceCache<JsonValue, sq::Material>;
 using SoundCache = sq::ResourceCache<String, sq::Sound>;
 
 using MeshHandle = sq::Handle<String, sq::Mesh>;
 using TextureHandle = sq::Handle<String, sq::Texture>;
 using PipelineHandle = sq::Handle<JsonValue, sq::Pipeline>;
-using MaterialHandle = sq::Handle<JsonValue, sq::Material>;
 using SoundHandle = sq::Handle<String, sq::Sound>;
 
 struct EffectAsset;
@@ -55,15 +52,19 @@ public: //================================================//
     MeshCache meshes;
     TextureCache textures;
     PipelineCache pipelines;
-    MaterialCache materials;
     SoundCache sounds;
     EffectCache effects;
 
     sq::PassConfigMap passConfigMap;
 
+    vk::DescriptorSetLayout bindlessTextureSetLayout;
+    vk::DescriptorSet bindlessTextureSet;
+
     void refresh_options();
 
 private: //===============================================//
+
+    uint32_t mNumBindlessTextures = 0u;
 
     sq::AudioContext& mAudioContext;
 };
