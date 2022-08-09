@@ -359,7 +359,7 @@ void World::tick()
     {
         Article& article = **iter;
         if (article.check_marked_for_destroy() == false) ++iter;
-        else mArticles.erase(iter);
+        else iter = mArticles.erase(iter);
     }
 }
 

@@ -23,8 +23,18 @@ ResourceCaches::ResourceCaches(sq::AudioContext& audio)
 {
     const auto& ctx = sq::VulkanContext::get();
 
+    // The current texture limit of 60 is because some gpus, including the intel passthrough I use
+    // in my windows vm, has maxPerStageDescriptorSamplers = 64, leaving 4 slots for other textures.
+    //
+    // Right now, STS can get by with this small limit, but it will almost certainly become an
+    // issue in the future. One solution would be to seperate samplers from images, as the limit for
+    // sampledImages is 200 (and is generally higher for most hardware).
+    //
+    // Really, I probably jumped the gun switching everything to bindless, but I really don't have
+    // any interest at this point in maintaining a seperate texture slot system.
+
     bindlessTextureSetLayout = ctx.create_descriptor_set_layout (
-        vk::DescriptorSetLayoutBinding(0u, vk::DescriptorType::eCombinedImageSampler, 256u, vk::ShaderStageFlagBits::eFragment),
+        vk::DescriptorSetLayoutBinding(0u, vk::DescriptorType::eCombinedImageSampler, 60u, vk::ShaderStageFlagBits::eFragment),
         vk::Flags(vk::DescriptorBindingFlagBits::ePartiallyBound)// | vk::DescriptorBindingFlagBits::eVariableDescriptorCount
     );
 
@@ -85,7 +95,8 @@ void ResourceCaches::refresh_options()
     effects.free_unreachable();
     sounds.free_unreachable();
     pipelines.free_unreachable();
-    textures.free_unreachable();
+    // todo: remove from bindless set and reuse indices
+    //textures.free_unreachable();
     meshes.free_unreachable();
 
     pipelines.reload_resources();

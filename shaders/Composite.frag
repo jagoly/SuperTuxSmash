@@ -117,7 +117,8 @@ void main()
 {
     if (DEBUG_MODE == 0)
     {
-        const vec3 texel = texture(tx_Colour, io_TexCoord).rgb;
+        // texel might be negative if RevSubtract blend mode was used
+        const vec3 texel = max(vec3(0,0,0), texture(tx_Colour, io_TexCoord).rgb);
 
         vec3 xyY = convert_rgb_to_xyY(texel);
         xyY.z = xyY.z * PC.exposure;

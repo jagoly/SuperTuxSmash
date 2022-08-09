@@ -31,7 +31,7 @@ void AnimPlayer::integrate(Renderer& renderer, const Mat4F& modelMatrix, float b
 
     const CameraBlock& camera = renderer.get_camera().get_block();
 
-    Mat34F* modelMats = renderer.reserve_matrices(1u + armature.get_bone_count(), modelMatsIndex);
+    Mat34F* modelMats = renderer.reserve_matrices(1u + uint(armature.get_bone_count()), modelMatsIndex);
 
     modelMats[0] = Mat34F(maths::transpose(modelMatrix));
 
@@ -41,7 +41,7 @@ void AnimPlayer::integrate(Renderer& renderer, const Mat4F& modelMatrix, float b
     );
 
     // todo: if animation has uniform scale, just set normalMatsIndex to modelMatsIndex
-    Mat34F* normalMats = renderer.reserve_matrices(1u + armature.get_bone_count(), normalMatsIndex);
+    Mat34F* normalMats = renderer.reserve_matrices(1u + uint(armature.get_bone_count()), normalMatsIndex);
 
     for (size_t i = 0u; i <= armature.get_bone_count(); ++i)
         normalMats[i] = Mat34F(maths::inverse(maths::transpose(Mat3F(modelMats[i]))));

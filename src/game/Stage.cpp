@@ -332,7 +332,7 @@ MoveAttemptSphere Stage::attempt_move_sphere(float radius, float bounceFactor, V
 
     // todo: may need to be smaller for moving blocks/platforms
     const float numSteps = std::ceil(length / radius);
-    const float stepSize = 1.0 / numSteps;
+    const float stepSize = 1.f / numSteps;
 
     float responseStep = numSteps + 1.f;
     float responsePenetration = 0.f;

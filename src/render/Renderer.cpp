@@ -1273,7 +1273,7 @@ void Renderer::populate_command_buffer(vk::CommandBuffer cmdbuf)
 
             cmdbuf.pushConstants (
                 passConfig.pipelineLayout, vk::ShaderStageFlagBits::eAllGraphics,
-                0u, pushConstants.size(), pushConstants.data()
+                0u, uint(pushConstants.size()), pushConstants.data()
             );
 
             call.item->mesh->draw(cmdbuf, call.item->subMesh);
