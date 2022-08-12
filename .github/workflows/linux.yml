@@ -28,8 +28,8 @@ jobs:
     - name: Configure and Build GLFW
       working-directory: glfw
       run: |
-        cmake -DCMAKE_BUILD_TYPE=DEBUG -DBUILD_SHARED_LIBS=OFF -DGLFW_BUILD_DOCS=OFF -DGLFW_BUILD_EXAMPLES=OFF -DGLFW_BUILD_TESTS=OFF -DCMAKE_INSTALL_PREFIX=.
-        cmake --build . --target install --parallel
+        cmake -B build -DCMAKE_BUILD_TYPE=DEBUG -DBUILD_SHARED_LIBS=OFF -DGLFW_BUILD_DOCS=OFF -DGLFW_BUILD_EXAMPLES=OFF -DGLFW_BUILD_TESTS=OFF -DCMAKE_INSTALL_PREFIX=build
+        cmake --build build --target install --parallel
 
     - name: Checkout SQEE
       uses: actions/checkout@v3
@@ -41,15 +41,15 @@ jobs:
     - name: Configure and Build SQEE
       working-directory: sqee
       run: |
-        cmake -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_PREFIX_PATH=../glfw -DSQEE_STATIC_LIB=ON
-        cmake --build . --target sqee --parallel
+        cmake -B build -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_PREFIX_PATH=../glfw/build -DSQEE_STATIC_LIB=ON
+        cmake --build build --target sqee --parallel
 
     - name: Checkout SuperTuxSmash
       uses: actions/checkout@v3
 
     - name: Configure and Build SuperTuxSmash
       run: |
-        cmake -B build -DCMAKE_BUILD_TYPE=DEBUG -DSQEE_BUILD_ROOT=../sqee
+        cmake -B build -DCMAKE_BUILD_TYPE=DEBUG -DSQEE_BUILD_ROOT=../sqee/build
         cmake --build build --parallel
         7z a sts-linux-debug.zip ./build/out/*
 
