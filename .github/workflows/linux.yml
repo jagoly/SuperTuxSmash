@@ -41,8 +41,8 @@ jobs:
     - name: Configure and Build SQEE
       working-directory: sqee
       run: |
-        cmake -B build -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_PREFIX_PATH=../glfw -DSQEE_STATIC_LIB=ON
-        cmake --build build --target sqee --parallel
+        cmake -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_PREFIX_PATH=../glfw -DSQEE_STATIC_LIB=ON
+        cmake --build . --target sqee --parallel
 
     - name: Checkout SuperTuxSmash
       uses: actions/checkout@v3
