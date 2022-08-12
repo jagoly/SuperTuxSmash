@@ -19,7 +19,7 @@ jobs:
       working-directory: glfw
       run: |
         cmake -B d:/glfw -DUSE_MSVC_RUNTIME_LIBRARY_DLL=OFF -DBUILD_SHARED_LIBS=OFF -DGLFW_BUILD_DOCS=OFF -DGLFW_BUILD_EXAMPLES=OFF -DGLFW_BUILD_TESTS=OFF -DCMAKE_INSTALL_PREFIX=d:/glfw
-        cmake --build d:/glfw --config Debug --target install --parallel
+        cmake --build d:/glfw --config Debug --target install
 
     - name: Checkout SQEE
       uses: actions/checkout@v3
@@ -29,7 +29,7 @@ jobs:
       working-directory: sqee
       run: |
         cmake -B d:/sqee -DCMAKE_PREFIX_PATH=d:/glfw -DSQEE_STATIC_LIB=ON
-        cmake --build d:/sqee --config Debug --target sqee --parallel
+        cmake --build d:/sqee --config Debug --target sqee
 
     - name: Checkout SuperTuxSmash
       uses: actions/checkout@v3
@@ -39,15 +39,11 @@ jobs:
       working-directory: sts
       run: |
         cmake -B d:/sts -DSQEE_BUILD_ROOT=d:/sqee
-        cmake --build d:/sts --config Debug --parallel
+        cmake --build d:/sts --config Debug
         7z a sts-windows-debug.zip d:/sts/Debug/*
 
     - name: Upload Release
       uses: softprops/action-gh-release@v1
       with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
         draft: true
         files: sts/sts-windows-debug.zip
-        #env:
-        #  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
