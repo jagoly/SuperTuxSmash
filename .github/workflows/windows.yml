@@ -1,0 +1,59 @@
+name: Windows
+on: [ push, pull_request ]
+
+jobs:
+
+  build:
+    runs-on: windows-2022
+    steps:
+
+    - name: Install Vulkan SDK
+      uses: humbletim/install-vulkan-sdk@v1.1.1
+      with:
+        version: latest
+        cache: true
+
+    - name: Checkout GLFW
+      uses: actions/checkout@v3
+      with:
+        path: glfw
+        repository: glfw/glfw
+        ref: 3.3.8
+
+    - name: Configure and Build GLFW
+      working-directory: glfw
+      run: |
+        cmake -B d:/glfw -DUSE_MSVC_RUNTIME_LIBRARY_DLL=OFF -DBUILD_SHARED_LIBS=OFF -DGLFW_BUILD_DOCS=OFF -DGLFW_BUILD_EXAMPLES=OFF -DGLFW_BUILD_TESTS=OFF -DCMAKE_INSTALL_PREFIX=d:/glfw
+        cmake --build d:/glfw --config Debug --target install --parallel
+
+    - name: Checkout SQEE
+      uses: actions/checkout@v3
+      with:
+        path: sqee
+        repository: jagoly/sqee
+        submodules: recursive
+
+    - name: Configure and Build SQEE
+      working-directory: sqee
+      run: |
+        cmake -B d:/sqee -DCMAKE_PREFIX_PATH=d:/glfw -DSQEE_STATIC_LIB=ON
+        cmake --build d:/sqee --config Debug --target sqee --parallel
+
+    - name: Checkout SuperTuxSmash
+      uses: actions/checkout@v3
+
+    - name: Configure and Build SuperTuxSmash
+      run: |
+        cmake -B d:/sts -DSQEE_BUILD_ROOT=d:/sqee
+        cmake --build d:/sts --config Debug --parallel
+        7z a sts-windows-debug.zip d:/sts/Debug/*
+
+    - name: Upload Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        draft: true
+        files: SuperTuxSmash/sts-windows-debug.zip
+        #env:
+        #  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
