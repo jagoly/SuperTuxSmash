@@ -9,9 +9,7 @@ jobs:
 
     - name: Install Vulkan SDK
       uses: humbletim/install-vulkan-sdk@v1.1.1
-      with:
-        version: latest
-        cache: true
+      with: { version: latest, cache: true }
 
     - name: Install GLFW Dependencies
       run: |
@@ -20,10 +18,7 @@ jobs:
 
     - name: Checkout GLFW
       uses: actions/checkout@v3
-      with:
-        path: glfw
-        repository: glfw/glfw
-        ref: 3.3.8
+      with: { path: glfw, repository: glfw/glfw, ref: 3.3.8 }
 
     - name: Configure and Build GLFW
       working-directory: glfw
@@ -33,10 +28,7 @@ jobs:
 
     - name: Checkout SQEE
       uses: actions/checkout@v3
-      with:
-        path: sqee
-        repository: jagoly/sqee
-        submodules: recursive
+      with: { path: sqee, repository: jagoly/sqee, submodules: recursive }
 
     - name: Configure and Build SQEE
       working-directory: sqee
@@ -46,8 +38,10 @@ jobs:
 
     - name: Checkout SuperTuxSmash
       uses: actions/checkout@v3
+      with: { path: sts }
 
     - name: Configure and Build SuperTuxSmash
+      working-directory: sts
       run: |
         cmake -B build -DCMAKE_BUILD_TYPE=DEBUG -DSQEE_BUILD_ROOT=../sqee/build
         cmake --build build --parallel
@@ -59,6 +53,6 @@ jobs:
         tag_name: ${{ github.ref }}
         release_name: Release ${{ github.ref }}
         draft: true
-        files: SuperTuxSmash/sts-linux-debug.zip
+        files: sts/sts-linux-debug.zip
         #env:
         #  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
