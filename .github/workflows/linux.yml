@@ -50,8 +50,7 @@ jobs:
     - name: Upload Release
       uses: softprops/action-gh-release@v1
       with:
-        tag_name: autobuild
+        name: ${{ github.sha }}
+        tag_name: release
         draft: true
-        prerelease: true
-        target_commitish: ${{ github.sha }}
         files: sts/sts-linux-debug.zip
