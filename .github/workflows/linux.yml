@@ -47,10 +47,8 @@ jobs:
         cmake --build build
         7z a sts-linux-debug.zip ./build/out/*
 
-    - name: Upload Release
-      uses: softprops/action-gh-release@v1
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v3
       with:
-        name: ${{ github.sha }}
-        tag_name: release
-        draft: true
-        files: sts/sts-linux-debug.zip
+        name: sts-linux-debug.zip
+        path: sts/sts-linux-debug.zip

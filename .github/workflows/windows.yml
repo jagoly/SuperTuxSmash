@@ -42,10 +42,8 @@ jobs:
         cmake --build d:/sts --config Debug
         7z a sts-windows-debug.zip d:/sts/Debug/*
 
-    - name: Upload Release
-      uses: softprops/action-gh-release@v1
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v3
       with:
-        name: ${{ github.sha }}
-        tag_name: release
-        draft: true
-        files: sts/sts-windows-debug.zip
+        name: sts-windows-debug.zip
+        path: sts/sts-windows-debug.zip
