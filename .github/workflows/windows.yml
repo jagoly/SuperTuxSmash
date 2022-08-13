@@ -47,4 +47,6 @@ jobs:
       with:
         tag_name: autobuild
         draft: true
+        prerelease: true
+        target_commitish: ${{ github.sha }}
         files: sts/sts-windows-debug.zip
