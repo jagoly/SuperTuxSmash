@@ -1,0 +1,54 @@
+name: Linux
+on: [ push, pull_request ]
+
+jobs:
+
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+
+    - name: Install Vulkan SDK
+      uses: humbletim/install-vulkan-sdk@v1.1.1
+      with: { version: latest, cache: true }
+
+    - name: Install GLFW Dependencies
+      run: |
+        sudo apt update
+        sudo apt install libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libxext-dev
+
+    - name: Checkout GLFW
+      uses: actions/checkout@v3
+      with: { path: glfw, repository: glfw/glfw, ref: 3.3.8 }
+
+    - name: Configure and Build GLFW
+      working-directory: glfw
+      run: |
+        cmake -B build -DCMAKE_BUILD_TYPE=DEBUG -DBUILD_SHARED_LIBS=OFF -DGLFW_BUILD_DOCS=OFF -DGLFW_BUILD_EXAMPLES=OFF -DGLFW_BUILD_TESTS=OFF -DCMAKE_INSTALL_PREFIX=build
+        cmake --build build --target install
+
+    - name: Checkout SQEE
+      uses: actions/checkout@v3
+      with: { path: sqee, repository: jagoly/sqee, submodules: recursive }
+
+    - name: Configure and Build SQEE
+      working-directory: sqee
+      run: |
+        cmake -B build -DCMAKE_BUILD_TYPE=DEBUG -DCMAKE_PREFIX_PATH=../glfw/build -DSQEE_STATIC_LIB=ON
+        cmake --build build --target sqee
+
+    - name: Checkout SuperTuxSmash
+      uses: actions/checkout@v3
+      with: { path: sts }
+
+    - name: Configure and Build SuperTuxSmash
+      working-directory: sts
+      run: |
+        cmake -B build -DCMAKE_BUILD_TYPE=DEBUG -DSQEE_BUILD_ROOT=../sqee/build
+        cmake --build build
+        7z a sts-linux-debug.zip ./build/out/*
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: sts-linux-debug.zip
+        path: sts/sts-linux-debug.zip
