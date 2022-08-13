@@ -10,7 +10,7 @@ SuperTuxSmash requires [SQEE](https://github.com/jagoly/sqee).
 
 ### Downloads
 
-The game is very far from complete, but you can get automatic builds for Linux and Windows from the releases page. For an idea on how to build STS yourself, you can have a look at [linux.yml](https://github.com/jagoly/SuperTuxSmash/blob/master/.github/workflows/linux.yml) and [windows.yml](https://github.com/jagoly/SuperTuxSmash/blob/master/.github/workflows/windows.yml).
+The game is very far from complete, but you can get automatic builds for [Linux](https://nightly.link/jagoly/SuperTuxSmash/workflows/linux/master/sts-linux-debug.zip) and [Windows](https://nightly.link/jagoly/SuperTuxSmash/workflows/windows/master/sts-windows-debug.zip). These are automatically built for every commit to master. For an idea on how to build STS yourself, you can have a look at [linux.yml](https://github.com/jagoly/SuperTuxSmash/blob/master/.github/workflows/linux.yml) and [windows.yml](https://github.com/jagoly/SuperTuxSmash/blob/master/.github/workflows/windows.yml).
 
 ### Contributing
 

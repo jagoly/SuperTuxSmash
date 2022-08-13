@@ -45,10 +45,9 @@ jobs:
       run: |
         cmake -B build -DCMAKE_BUILD_TYPE=DEBUG -DSQEE_BUILD_ROOT=../sqee/build
         cmake --build build
-        7z a sts-linux-debug.zip ./build/out/*
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v3
       with:
-        name: sts-linux-debug.zip
-        path: sts/sts-linux-debug.zip
+        name: sts-linux-debug
+        path: sts/build/out
