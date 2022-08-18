@@ -48,8 +48,8 @@ int32_t EffectSystem::play_effect(const VisualEffectDef& def, const Entity* owne
 
 void EffectSystem::cancel_effect(int32_t id)
 {
-    const auto iter = algo::find_if(mEffects, [&](const auto& effect){ return effect->id == id; });
-    if (iter != mEffects.end()) mEffects.erase(iter);
+    for (auto iter = mEffects.begin(); iter != mEffects.end(); ++iter)
+        if ((**iter).id == id) { mEffects.erase(iter); break; }
 }
 
 //============================================================================//

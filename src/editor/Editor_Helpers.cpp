@@ -1,8 +1,10 @@
-#include "editor/Editor_Helpers.hpp"
+#include "editor/EditorScene.hpp"
 
 #include "main/DebugGui.hpp"
 
 #include "game/Fighter.hpp"
+
+#include <sqee/app/GuiWidgets.hpp>
 
 using namespace sts;
 

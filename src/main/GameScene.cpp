@@ -15,6 +15,7 @@
 
 #include "editor/EditorCamera.hpp"
 
+#include <sqee/app/Event.hpp>
 #include <sqee/app/GuiWidgets.hpp>
 #include <sqee/vk/VulkanContext.hpp>
 

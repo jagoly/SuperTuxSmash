@@ -2,7 +2,7 @@
 
 #include "setup.hpp"
 
-#include "render/UniformBlocks.hpp" // IWYU pragma: export
+#include "render/UniformBlocks.hpp"
 
 namespace sts {
 

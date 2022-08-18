@@ -4,7 +4,6 @@
 
 #include "main/GameSetup.hpp"
 
-#include <sqee/app/Event.hpp>
 #include <sqee/app/Scene.hpp>
 
 namespace sts {

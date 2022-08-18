@@ -5,7 +5,6 @@
 
 #include "render/AnimPlayer.hpp"
 
-#include <sqee/debug/Logging.hpp>
 #include <sqee/misc/Json.hpp>
 
 using namespace sts;
@@ -71,7 +70,7 @@ void EntityDef::initialise_animations(const String& jsonPath)
             }
 
             // animation doesn't have any motion
-            if (iter->second.anim.tracks[0].size == sizeof(Vec3F))
+            if (iter->second.anim.tracks[0].size() == sizeof(Vec3F))
                 iter->second.motion = false;
         }
         else sq::log_warning("animation '{}/{}': already loaded", directory, key);

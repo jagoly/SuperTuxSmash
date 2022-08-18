@@ -1,6 +1,5 @@
 #include "game/VisualEffect.hpp"
 
-#include <sqee/debug/Assert.hpp>
 #include <sqee/maths/Functions.hpp>
 #include <sqee/misc/Json.hpp>
 

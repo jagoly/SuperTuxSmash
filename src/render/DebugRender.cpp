@@ -4,7 +4,6 @@
 
 #include "game/Article.hpp"
 #include "game/Fighter.hpp"
-#include "game/FighterAction.hpp"
 #include "game/HitBlob.hpp"
 #include "game/HurtBlob.hpp"
 #include "game/World.hpp"

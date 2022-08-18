@@ -9,7 +9,6 @@
 #include <sqee/objects/Sound.hpp>
 #include <sqee/objects/Texture.hpp>
 
-#include <sqee/misc/Files.hpp>
 #include <sqee/misc/Json.hpp>
 
 #include <sqee/vk/VulkanContext.hpp>

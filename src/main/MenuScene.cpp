@@ -3,6 +3,7 @@
 #include "main/Options.hpp"
 #include "main/SmashApp.hpp"
 
+#include <sqee/app/Event.hpp>
 #include <sqee/app/GuiWidgets.hpp>
 #include <sqee/misc/Json.hpp>
 

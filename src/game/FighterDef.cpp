@@ -5,7 +5,6 @@
 #include "game/HurtBlob.hpp"
 #include "game/World.hpp"
 
-#include <sqee/debug/Logging.hpp>
 #include <sqee/misc/Json.hpp>
 
 using namespace sts;

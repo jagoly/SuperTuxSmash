@@ -1,6 +1,5 @@
 #include "game/HurtBlob.hpp"
 
-#include <sqee/debug/Assert.hpp>
 #include <sqee/misc/Json.hpp>
 
 using namespace sts;

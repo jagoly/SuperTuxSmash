@@ -4,10 +4,8 @@
 
 #include <sqee/app/Scene.hpp>
 #include <sqee/objects/Texture.hpp>
+#include <sqee/vk/Vulkan.hpp>
 #include <sqee/vk/Wrappers.hpp>
-
-// IWYU pragma: no_include "game/FightWorld.hpp"
-// IWYU pragma: no_include "render/Renderer.hpp"
 
 namespace sts {
 

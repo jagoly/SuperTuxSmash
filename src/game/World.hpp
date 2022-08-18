@@ -95,8 +95,6 @@ public: //====================================================//
 
     const Stage& get_stage() const { return *mStage; }
 
-    // todo: in c++20 can use ranges to not expose the (unique) pointers
-
     const StackVector<std::unique_ptr<Fighter>, MAX_FIGHTERS>& get_fighters() const { return mFighters; }
 
     const std::vector<std::unique_ptr<Article>>& get_articles() const { return mArticles; }

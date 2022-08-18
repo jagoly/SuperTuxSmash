@@ -8,9 +8,6 @@
 #include "render/ParticleRender.hpp"
 
 #include <sqee/app/Window.hpp>
-#include <sqee/debug/Assert.hpp>
-#include <sqee/misc/Files.hpp>
-#include <sqee/misc/Json.hpp>
 #include <sqee/objects/Mesh.hpp>
 #include <sqee/objects/Pipeline.hpp>
 #include <sqee/vk/Helpers.hpp>

@@ -1,6 +1,5 @@
 #include "game/SoundEffect.hpp"
 
-#include <sqee/debug/Assert.hpp>
 #include <sqee/misc/Json.hpp>
 #include <sqee/objects/Sound.hpp>
 

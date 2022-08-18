@@ -38,11 +38,9 @@ jobs:
     - name: Configure and Build SuperTuxSmash
       working-directory: sts
       run: |
-        cmake -B build -DSQEE_BUILD_ROOT=d:/sqee
-        cmake --build build --config Debug
+        cmake -B d:/sts -DSQEE_BUILD_ROOT=d:/sqee
+        cmake --build d:/sts --config Debug
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v3
-      with:
-        name: sts-windows-debug
-        path: sts/build/Debug
+      with: { name: sts-windows-debug, path: d:/sts/Debug }

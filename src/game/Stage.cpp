@@ -7,10 +7,8 @@
 #include "render/Renderer.hpp"
 #include "render/UniformBlocks.hpp"
 
-#include <sqee/maths/Culling.hpp>
 #include <sqee/maths/Functions.hpp>
 #include <sqee/misc/Json.hpp>
-#include <sqee/vk/Helpers.hpp>
 
 using namespace sts;
 

@@ -7,7 +7,6 @@
 #include "game/Stage.hpp"
 #include "game/World.hpp"
 
-#include "render/DebugRender.hpp"
 #include "render/Renderer.hpp"
 
 #include "editor/EditorCamera.hpp"
@@ -17,9 +16,7 @@
 
 #include <sqee/app/Event.hpp>
 #include <sqee/app/GuiWidgets.hpp>
-#include <sqee/debug/Assert.hpp>
 #include <sqee/misc/Json.hpp>
-#include <sqee/objects/Armature.hpp>
 #include <sqee/vk/Helpers.hpp>
 #include <sqee/vk/VulkanContext.hpp>
 
@@ -305,9 +302,9 @@ void EditorScene::impl_show_widget_toolbar()
                 mActiveContext->save_changes();
 
             const size_t numModified =
-                algo::count_if(mActionContexts, [](const auto& item) { return item.second.modified; }) +
-                algo::count_if(mFighterContexts, [](const auto& item) { return item.second.modified; }) +
-                algo::count_if(mStageContexts, [](const auto& item) { return item.second.modified; });
+                ranges::count_if(mActionContexts, [](const auto& item) { return item.second.modified; }) +
+                ranges::count_if(mFighterContexts, [](const auto& item) { return item.second.modified; }) +
+                ranges::count_if(mStageContexts, [](const auto& item) { return item.second.modified; });
 
             if (ImPlus::MenuItem("Save All ({})"_format(numModified), "Ctrl+Shift+S", false, numModified != 0u))
             {
@@ -451,7 +448,7 @@ void EditorScene::impl_show_widget_navigator()
         {
             for (const FighterInfo& info : mFighterInfos)
             {
-                const size_t numLoaded = algo::count_if (
+                const size_t numLoaded = ranges::count_if (
                     mActionContexts, [&info](const auto& item) { return item.first.fighter == info.name; }
                 );
                 const size_t numTotal = mFighterInfoCommon.actions.size() + info.actions.size();

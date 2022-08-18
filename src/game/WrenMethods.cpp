@@ -17,7 +17,6 @@
 #include "game/VisualEffect.hpp"
 
 #include <sqee/app/AudioContext.hpp>
-#include <sqee/debug/Logging.hpp>
 
 using namespace sts;
 
@@ -302,7 +301,7 @@ bool Fighter::wren_attempt_ledge_catch()
 
 void Fighter::wren_enable_hurtblob(TinyString key)
 {
-    const auto iter = algo::find_if(mHurtBlobs, [&](const HurtBlob& blob) { return blob.def.get_key() == key; });
+    const auto iter = ranges::find_if(mHurtBlobs, [&](const HurtBlob& blob) { return blob.def.get_key() == key; });
     if (iter == mHurtBlobs.end())
         throw wren::Exception("invalid hurt blob '{}'", key);
 
@@ -311,7 +310,7 @@ void Fighter::wren_enable_hurtblob(TinyString key)
 
 void Fighter::wren_disable_hurtblob(TinyString key)
 {
-    const auto iter = algo::find_if(mHurtBlobs, [&](const HurtBlob& blob) { return blob.def.get_key() == key; });
+    const auto iter = ranges::find_if(mHurtBlobs, [&](const HurtBlob& blob) { return blob.def.get_key() == key; });
     if (iter == mHurtBlobs.end())
         throw wren::Exception("invalid hurt blob '{}'", key);
 

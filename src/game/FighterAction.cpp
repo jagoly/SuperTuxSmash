@@ -6,7 +6,6 @@
 #include "game/VisualEffect.hpp"
 #include "game/World.hpp"
 
-#include <sqee/debug/Logging.hpp>
 #include <sqee/misc/Files.hpp>
 #include <sqee/misc/Json.hpp>
 

@@ -8,8 +8,6 @@
 
 #include "render/Renderer.hpp"
 
-#include <sqee/debug/Assert.hpp>
-#include <sqee/debug/Logging.hpp>
 #include <sqee/maths/Functions.hpp>
 
 // todo: merge this file back into Fighter.cpp

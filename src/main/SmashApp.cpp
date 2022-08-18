@@ -8,9 +8,6 @@
 #include "main/MenuScene.hpp"
 
 #include <sqee/app/Event.hpp>
-#include <sqee/debug/Assert.hpp>
-#include <sqee/debug/Logging.hpp>
-#include <sqee/misc/Json.hpp>
 #include <sqee/vk/VulkanContext.hpp>
 
 using namespace sts;

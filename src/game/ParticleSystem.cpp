@@ -1,11 +1,9 @@
 #include "game/ParticleSystem.hpp"
 
 #include "game/Emitter.hpp"
-#include "game/Fighter.hpp"
+#include "game/Entity.hpp"
 #include "game/World.hpp"
 
-#include <sqee/debug/Assert.hpp>
-#include <sqee/maths/Functions.hpp>
 #include <sqee/maths/Random.hpp>
 
 using namespace sts;
@@ -96,7 +94,7 @@ void ParticleSystem::update_and_clean()
     mGenerateCalls.clear();
 
     const auto predicate = [](const ParticleData& p) { return p.progress == p.lifetime; };
-    algo::erase_if(mParticles, predicate);
+    std::erase_if(mParticles, predicate);
 
     for (ParticleData& p : mParticles)
     {

@@ -1,7 +1,5 @@
 #include "game/World.hpp"
 
-#include "main/Options.hpp"
-
 #include "game/Article.hpp"
 #include "game/Controller.hpp"
 #include "game/EffectSystem.hpp"
@@ -14,9 +12,7 @@
 #include "game/Physics.hpp"
 #include "game/Stage.hpp"
 
-#include <sqee/debug/Assert.hpp>
 #include <sqee/maths/Culling.hpp>
-#include <sqee/misc/Files.hpp>
 
 using namespace sts;
 
@@ -571,7 +567,7 @@ void World::impl_update_collisions()
             const auto find_hit_blob_collisions = [&](Entity& hitEntity)
             {
                 // hitEntity has already hit hurtFighter since the last reset
-                if (auto& vec = hitEntity.get_ignore_collisions(); algo::find(vec, hurtFighter->eid) != vec.end()) return;
+                if (auto& vec = hitEntity.get_ignore_collisions(); ranges::find(vec, hurtFighter->eid) != vec.end()) return;
 
                 // defer inserting new map entry until there is a collision
                 HurtMapItem* mapItem = nullptr;

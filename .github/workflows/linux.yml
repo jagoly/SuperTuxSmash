@@ -48,6 +48,4 @@ jobs:
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v3
-      with:
-        name: sts-linux-debug
-        path: sts/build/out
+      with: { name: sts-linux-debug, path: sts/build/out }

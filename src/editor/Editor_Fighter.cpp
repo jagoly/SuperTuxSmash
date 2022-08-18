@@ -9,7 +9,6 @@
 
 #include <sqee/app/AudioContext.hpp>
 #include <sqee/app/GuiWidgets.hpp>
-#include <sqee/maths/Functions.hpp>
 #include <sqee/misc/Files.hpp>
 #include <sqee/misc/Json.hpp>
 #include <sqee/objects/Sound.hpp>

@@ -2,11 +2,14 @@
 
 #include <sqee/setup.hpp> // IWYU pragma: export
 
-#include <sqee/core/Algorithms.hpp> // IWYU pragma: export
 #include <sqee/core/EnumHelper.hpp> // IWYU pragma: export
 #include <sqee/core/Macros.hpp> // IWYU pragma: export
+#include <sqee/core/Strings.hpp> // IWYU pragma: export
 #include <sqee/core/Types.hpp> // IWYU pragma: export
 #include <sqee/core/Utilities.hpp> // IWYU pragma: export
+
+#include <sqee/debug/Assert.hpp> // IWYU pragma: export
+#include <sqee/debug/Logging.hpp> // IWYU pragma: export
 
 #include <sqee/misc/StackVector.hpp> // IWYU pragma: export
 
@@ -21,7 +24,7 @@ namespace sts {
 using namespace fmt::literals;
 using namespace sq::coretypes;
 
-namespace algo = sq::algo;
+namespace ranges = std::ranges;
 namespace maths = sq::maths;
 
 using sq::StackString;

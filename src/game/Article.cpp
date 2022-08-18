@@ -6,7 +6,6 @@
 
 #include "render/Renderer.hpp"
 
-#include <sqee/debug/Logging.hpp>
 #include <sqee/maths/Functions.hpp>
 
 using namespace sts;
