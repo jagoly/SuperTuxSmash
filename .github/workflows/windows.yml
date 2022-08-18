@@ -43,4 +43,4 @@ jobs:
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v3
-      with: { name: sts-windows-debug, path: d:/sts/Debug }
+      with: { name: sts-windows-debug, path: "d:/sts/Debug" }
