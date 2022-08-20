@@ -194,7 +194,7 @@ void Entity::impl_wren_emit_particles(const std::map<TinyString, Emitter>& emitt
 void Article::wren_log_with_prefix(StringView message)
 {
     if (world.options.log_script == true)
-        sq::log_debug("Fighter {} Article {:<18}| {}"_format(fighter->index, eid, message));
+        sq::log_debug("Fighter {} Article {:<18}| {}", fighter->index, eid, message);
 }
 
 void Article::wren_cxx_wait_until(uint frame)
@@ -322,7 +322,7 @@ void Fighter::wren_disable_hurtblob(TinyString key)
 void FighterAction::wren_log_with_prefix(StringView message)
 {
     if (world.options.log_script == true)
-        sq::log_debug("Fighter {} Action {:<19}| {}"_format(fighter.index, def.name, message));
+        sq::log_debug("Fighter {} Action {:<19}| {}", fighter.index, def.name, message);
 }
 
 void FighterAction::wren_cxx_before_start()
@@ -395,7 +395,7 @@ void FighterAction::wren_emit_particles(TinyString key)
 void FighterState::wren_log_with_prefix(StringView message)
 {
     if (world.options.log_script == true)
-        sq::log_debug("Fighter {} State  {:<19}| {}"_format(fighter.index, def.name, message));
+        sq::log_debug("Fighter {} State  {:<19}| {}", fighter.index, def.name, message);
 }
 
 void FighterState::wren_cxx_before_enter()

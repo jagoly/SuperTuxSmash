@@ -15,17 +15,16 @@
 
 #include <sqee/app/WrenForward.hpp> // IWYU pragma: export
 
-#include <fmt/format.h> // IWYU pragma: export
-
 namespace sts {
 
 //============================================================================//
 
-using namespace fmt::literals;
 using namespace sq::coretypes;
 
 namespace ranges = std::ranges;
 namespace maths = sq::maths;
+
+using fmt::format;
 
 using sq::StackString;
 using sq::StackVector;

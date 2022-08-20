@@ -96,15 +96,15 @@ void MenuScene::show_imgui_widgets()
     {
         const auto index = uint8_t(iter - mSetup.players.begin());
 
-        const bool erase = ImPlus::Button("X##{}"_format(index));
+        const bool erase = ImPlus::Button(format("X##{}", index));
 
         ImGui::SameLine();
         ImGui::AlignTextToFramePadding();
-        ImPlus::Text("Player {}"_format(index + 1));
+        ImPlus::Text(format("Player {}", index+1u));
 
         ImGui::SameLine();
         ImGui::SetNextItemWidth(160.f);
-        ImPlus::ComboString("Fighter##{}"_format(index), mFighterNames, iter->fighter);
+        ImPlus::ComboString(format("Fighter##{}", index), mFighterNames, iter->fighter);
 
         if (erase) iter = mSetup.players.erase(iter) - 1;
     }
@@ -113,6 +113,8 @@ void MenuScene::show_imgui_widgets()
         ImGui::Separator();
 
     //--------------------------------------------------------//
+
+    // todo: get rid of defaults, we don't need two different quickstart buttons
 
     ImGui::Indent(50.f);
     if (ImPlus::Button("Start Game"))

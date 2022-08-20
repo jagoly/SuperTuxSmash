@@ -69,7 +69,7 @@ inline void EditorScene::helper_edit_objects (
 
         ImPlus::if_Popup("popup_delete", 0, [&]()
         {
-            ImPlus::Text("Delete '{}'?"_format(key));
+            ImPlus::Text(format("Delete '{}'?", key));
             if (ImGui::Button("Confirm"))
             {
                 toDelete = iter;
@@ -79,7 +79,7 @@ inline void EditorScene::helper_edit_objects (
 
         ImPlus::if_Popup("popup_rename", 0, [&]()
         {
-            ImPlus::Text("Rename '{}':"_format(key));
+            ImPlus::Text(format("Rename '{}':", key));
             Key newKey = key;
             if (ImGui::InputText("", newKey.data(), newKey.buffer_size(), ImGuiInputTextFlags_EnterReturnsTrue))
             {
@@ -91,7 +91,7 @@ inline void EditorScene::helper_edit_objects (
 
         ImPlus::if_Popup("popup_copy", 0, [&]()
         {
-            ImPlus::Text("Copy '{}':"_format(key));
+            ImPlus::Text(format("Copy '{}':", key));
             Key newKey = key;
             if (ImGui::InputText("", newKey.data(), newKey.buffer_size(), ImGuiInputTextFlags_EnterReturnsTrue))
             {

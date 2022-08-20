@@ -153,7 +153,7 @@ void Entity::update_animation()
         mAnimPlayer.animTime = vars.animTime;
 
         def.armature.compute_sample(mAnimPlayer.animation->anim, mAnimPlayer.animTime, mAnimPlayer.currentSample);
-        debugCurrentPoseInfo = "{} ({:.3f})"_format(mAnimPlayer.animation->get_key(), mAnimPlayer.animTime);
+        debugCurrentPoseInfo = format("{} ({:.3f})", mAnimPlayer.animation->get_key(), mAnimPlayer.animTime);
 
         // todo: locomotion hack, need an option in the export script to just not export root transforms
         currentSampleBones[0].offset = Vec3F();
@@ -161,8 +161,8 @@ void Entity::update_animation()
     else
     {
         def.armature.compute_sample(mAnimPlayer.animation->anim, mAnimPlayer.animTime, mAnimPlayer.currentSample);
-        debugCurrentPoseInfo = "{} ({} / {})"_format(
-            mAnimPlayer.animation->get_key(), mAnimPlayer.animTime, mAnimPlayer.animation->anim.frameCount
+        debugCurrentPoseInfo = format (
+            "{} ({} / {})", mAnimPlayer.animation->get_key(), mAnimPlayer.animTime, mAnimPlayer.animation->anim.frameCount
         );
 
         if (mAnimPlayer.animation->motion == true)
@@ -229,7 +229,7 @@ void Entity::update_animation()
             current.rotation = maths::lerp_shortest(mFadeStartRotation, current.rotation, *fade);
 
         def.armature.blend_samples(mFadeStartSample, mAnimPlayer.currentSample, *fade, mAnimPlayer.currentSample);
-        debugAnimationFadeInfo = "{} / {}"_format(mFadeProgress, mFadeFrames + 1u);
+        debugAnimationFadeInfo = format("{} / {}", mFadeProgress, mFadeFrames + 1u);
     }
     else
     {

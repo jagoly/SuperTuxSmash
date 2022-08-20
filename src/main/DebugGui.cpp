@@ -28,7 +28,7 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
     ImGui::SameLine();
 
     const auto flags = fighter.index == 0 ? ImGuiTreeNodeFlags_DefaultOpen : 0;
-    if (!ImPlus::CollapsingHeader("Fighter {} - {}"_format(fighter.index, fighter.def.name), flags))
+    if (!ImPlus::CollapsingHeader(format("Fighter {} - {}", fighter.index, fighter.def.name), flags))
         return;
 
     //--------------------------------------------------------//
@@ -49,29 +49,29 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
         if (state != nullptr)
         {
             if (vars.freezeTime != 0u)
-                ImPlus::Text("State: {} (frozen for {})"_format(state->def.name, vars.freezeTime));
+                ImPlus::Text(format("State: {} (frozen for {})", state->def.name, vars.freezeTime));
 
             else if (state->def.name.ends_with("Stun"))
-                ImPlus::Text("State: {} (stunned for {})"_format(state->def.name, vars.stunTime));
+                ImPlus::Text(format("State: {} (stunned for {})", state->def.name, vars.stunTime));
 
-            else ImPlus::Text("State: {}"_format(state->def.name));
+            else ImPlus::Text(format("State: {}", state->def.name));
         }
         else ImPlus::Text("State: None");
 
         if (action != nullptr)
         {
-            ImPlus::Text("Action: {} ({})"_format(action->def.name, action->mCurrentFrame - 1u));
+            ImPlus::Text(format("Action: {} ({})", action->def.name, action->mCurrentFrame - 1u));
         }
         else ImPlus::Text("Action: None");
 
-        ImPlus::Text("Translate: {:+.3f}"_format(fighter.current.translation));
-        ImPlus::HoverTooltipFixed("Previous: {:+.3f}"_format(fighter.previous.translation));
+        ImPlus::Text(format("Translate: {:+.3f}", fighter.current.translation));
+        ImPlus::HoverTooltipFixed(format("Previous: {:+.3f}", fighter.previous.translation));
 
-        ImPlus::Text("Rotate: {:+.2f}"_format(fighter.current.rotation));
-        ImPlus::HoverTooltipFixed("Previous: {:+.2f}\nMode:     {:05b}"_format(fighter.previous.rotation, fighter.mRotateMode));
+        ImPlus::Text(format("Rotate: {:+.2f}", fighter.current.rotation));
+        ImPlus::HoverTooltipFixed(format("Previous: {:+.2f}\nMode:     {:05b}", fighter.previous.rotation, uint8_t(fighter.mRotateMode)));
 
-        ImPlus::Text("Pose: {}"_format(fighter.debugCurrentPoseInfo));
-        ImPlus::HoverTooltipFixed("Previous: {}\nFade:     {}"_format(fighter.debugPreviousPoseInfo, fighter.debugAnimationFadeInfo));
+        ImPlus::Text(format("Pose: {}", fighter.debugCurrentPoseInfo));
+        ImPlus::HoverTooltipFixed(format("Previous: {}\nFade:     {}", fighter.debugPreviousPoseInfo, fighter.debugAnimationFadeInfo));
     }
 
     //--------------------------------------------------------//
@@ -119,7 +119,7 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
 
         ImPlus::DragVector("attachPoint", vars.position, 0.01f, "%+.4f");
 
-        ImPlus::LabelText("ledge", "{}"_format(static_cast<void*>(vars.ledge)));
+        ImPlus::LabelText("ledge", format("{}", static_cast<void*>(vars.ledge)));
     }
 
     //--------------------------------------------------------//
@@ -177,7 +177,7 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
         {
             for (auto& other : fighter.world.get_fighters())
             {
-                if (ImPlus::MenuItem("Fighter {}"_format(other->index), nullptr, false, other.get() != &fighter))
+                if (ImPlus::MenuItem(format("Fighter {}", other->index), nullptr, false, other.get() != &fighter))
                     other->controller->mRecordedInput = controller.mRecordedInput;
             }
         });
@@ -198,7 +198,7 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
             controller.mPlaybackIndex = 0;
 
         ImGui::SameLine();
-        ImPlus::Text(" frames: {}"_format(controller.mRecordedInput.size()));
+        ImPlus::Text(format(" frames: {}", controller.mRecordedInput.size()));
 
         // todo: show current input state
     }
@@ -208,7 +208,7 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
 
 void DebugGui::show_widget_stage(Stage& stage)
 {
-    if (!ImPlus::CollapsingHeader("Stage - {}"_format(stage.name), 0))
+    if (!ImPlus::CollapsingHeader(format("Stage - {}", stage.name), 0))
         return;
 
     //--------------------------------------------------------//

@@ -29,7 +29,7 @@ void FighterActionDef::load_json_from_file()
     effects.clear();
     emitters.clear();
 
-    const String path = "assets/{}/actions/{}.json"_format(fighter.directory, name);
+    const String path = format("assets/{}/actions/{}.json", fighter.directory, name);
 
     const auto root = sq::try_parse_json_from_file(path);
     if (root.has_value() == false)
@@ -81,7 +81,7 @@ void FighterActionDef::load_json_from_file()
 
 void FighterActionDef::load_wren_from_file()
 {
-    const String path = "assets/{}/actions/{}.wren"_format(fighter.directory, name);
+    const String path = format("assets/{}/actions/{}.wren", fighter.directory, name);
 
     // set wrenSource to either the file contents or a fallback script
     auto source = sq::try_read_text_from_file(path);
@@ -90,7 +90,7 @@ void FighterActionDef::load_wren_from_file()
         sq::log_warning("'{}/actions/{}': missing script", fighter.directory, name);
 
         // use default version of this action if one exists
-        source = sq::try_read_text_from_file("wren/actions/{}.wren"_format(name));
+        source = sq::try_read_text_from_file(format("wren/actions/{}.wren", name));
         if (source.has_value() == false)
             source = sq::read_text_from_file("wren/fallback/FighterAction.wren");
     }
@@ -107,7 +107,7 @@ void FighterActionDef::interpret_module()
     auto& vm = fighter.world.vm;
     auto& editor = fighter.world.editor;
 
-    const String module = "{}/actions/{}"_format(fighter.directory, name);
+    const String module = format("{}/actions/{}", fighter.directory, name);
 
     // if the module is already loaded, unload it
     if (scriptClass != nullptr)
@@ -126,7 +126,7 @@ void FighterActionDef::interpret_module()
     // problem with the module, show error message and load fallback
     if (errors.empty() == false)
     {
-        String message = "'{}/actions/{}'\n{}C++ | load_wren_from_string()"_format(fighter.directory, name, errors);
+        String message = format("'{}/actions/{}'\n{}C++ | load_wren_from_string()", fighter.directory, name, errors);
 
         if (editor == nullptr)
             sq::log_error_multiline(message);
@@ -140,7 +140,7 @@ void FighterActionDef::interpret_module()
         wrenUnloadModule(vm, module.c_str());
 
         // use default version of this action if one exists
-        auto source = sq::try_read_text_from_file("wren/actions/{}.wren"_format(name));
+        auto source = sq::try_read_text_from_file(format("wren/actions/{}.wren", name));
         if (source.has_value() == false)
             source = sq::read_text_from_file("wren/fallback/FighterAction.wren");
 
@@ -265,7 +265,7 @@ void FighterAction::call_do_cancel()
 
 void FighterAction::set_error_message(StringView method, StringView errors)
 {
-    String message = "'{}/actions/{}'\n{}C++ | {}()\n"_format(def.fighter.directory, def.name, errors, method);
+    String message = format("'{}/actions/{}'\n{}C++ | {}()\n", def.fighter.directory, def.name, errors, method);
 
     if (world.editor == nullptr)
         sq::log_error_multiline(message);

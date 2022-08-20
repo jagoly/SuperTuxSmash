@@ -23,7 +23,7 @@ Fighter::Fighter(const FighterDef& def, uint8_t index)
 
     // create fighter library
     {
-        const String module = "{}/Library"_format(def.directory);
+        const String module = def.directory + "/Library";
         world.vm.load_module(module.c_str());
         mLibraryHandle = world.vm.call<WrenHandle*> (
             world.handles.new_1, wren::GetVar(module.c_str(), "Library"), this

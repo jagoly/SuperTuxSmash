@@ -180,7 +180,7 @@ void SmashApp::handle_event(sq::Event event)
                 mDebugOverlay->notify("msaa set to OFF");
                 mOptions->msaa_quality = 1;
             }
-            else mDebugOverlay->notify("msaa set to {}x"_format(mOptions->msaa_quality));
+            else mDebugOverlay->notify(format("msaa set to {}x", mOptions->msaa_quality));
             refresh_options();
         }
 
@@ -196,7 +196,7 @@ void SmashApp::handle_event(sq::Event event)
             else if (mOptions->debug_texture == "Shadow")    mOptions->debug_texture = data.keyboard.shift ? "Depth"     : "SSAO";
             else if (mOptions->debug_texture == "SSAO")      mOptions->debug_texture = data.keyboard.shift ? "Shadow"    : "";
 
-            mDebugOverlay->notify("debug texture set to '{}'"_format(mOptions->debug_texture));
+            mDebugOverlay->notify(format("debug texture set to '{}'", mOptions->debug_texture));
             refresh_options();
         }
 

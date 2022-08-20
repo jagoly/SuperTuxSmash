@@ -217,7 +217,7 @@ void StageContext::show_widget_cubemaps()
             for (uint face = 0u; face < 6u; ++face)
             {
                 ImGui::Image(&radiance[level].descriptorSets[faceOrder[face]], {size, size}, {0,1}, {1,0});
-                ImPlus::HoverTooltip("{} ({:.0f}%)"_format(faceNames[faceOrder[face]], float(level * 100u) / float(RADIANCE_LEVELS - 1u)));
+                ImPlus::HoverTooltip(format("{} ({:.0f}%)", faceNames[faceOrder[face]], float(level * 100u) / float(RADIANCE_LEVELS - 1u)));
                 if (face < 5u) ImGui::SameLine();
             }
         }

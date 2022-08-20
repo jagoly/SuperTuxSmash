@@ -12,12 +12,12 @@ using namespace sts;
 //============================================================================//
 
 FighterDef::FighterDef(World& world, TinyString name)
-    : EntityDef(world, "fighters/{}"_format(name))
+    : EntityDef(world, format("fighters/{}", name))
 {
-    initialise_sounds("assets/{}/Sounds.json"_format(directory));
+    initialise_sounds(format("assets/{}/Sounds.json", directory));
 
     initialise_animations("assets/fighters/Animations.json");
-    initialise_animations("assets/{}/Animations.json"_format(directory));
+    initialise_animations(format("assets/{}/Animations.json", directory));
 
     initialise_attributes();
     initialise_hurtblobs();
@@ -35,7 +35,7 @@ FighterDef::~FighterDef()
 
 void FighterDef::initialise_attributes()
 {
-    const JsonValue json = sq::parse_json_from_file("assets/{}/Attributes.json"_format(directory));
+    const JsonValue json = sq::parse_json_from_file(format("assets/{}/Attributes.json", directory));
 
     json.at("walkSpeed")   .get_to(attributes.walkSpeed);
     json.at("dashSpeed")   .get_to(attributes.dashSpeed);
@@ -67,7 +67,7 @@ void FighterDef::initialise_attributes()
 
 void FighterDef::initialise_hurtblobs()
 {
-    const JsonValue json = sq::parse_json_from_file("assets/{}/HurtBlobs.json"_format(directory));
+    const JsonValue json = sq::parse_json_from_file(format("assets/{}/HurtBlobs.json", directory));
 
     for (const auto& item : json.items())
     {
@@ -98,7 +98,7 @@ void FighterDef::initialise_actions()
     for (const auto& entry : sq::parse_json_from_file("assets/fighters/Actions.json"))
         load_action(entry.get_ref<const String&>());
 
-    for (const auto& entry : sq::parse_json_from_file("assets/{}/Actions.json"_format(directory)))
+    for (const auto& entry : sq::parse_json_from_file(format("assets/{}/Actions.json", directory)))
         load_action(entry.get_ref<const String&>());
 }
 
@@ -123,7 +123,7 @@ void FighterDef::initialise_states()
     for (const auto& entry : sq::parse_json_from_file("assets/fighters/States.json"))
         load_state(entry.get_ref<const String&>());
 
-    for (const auto& entry : sq::parse_json_from_file("assets/{}/States.json"_format(directory)))
+    for (const auto& entry : sq::parse_json_from_file(format("assets/{}/States.json", directory)))
         load_state(entry.get_ref<const String&>());
 }
 
@@ -137,7 +137,7 @@ void FighterDef::initialise_articles()
             sq::log_warning("'{}/articles/{}': already loaded", directory, key);
     };
 
-    const JsonValue json = sq::parse_json_from_file("assets/{}/Articles.json"_format(directory));
+    const JsonValue json = sq::parse_json_from_file(format("assets/{}/Articles.json", directory));
 
     for (const auto& item : json.items())
         load_article(item.key(), item.value().get_ref<const String&>());

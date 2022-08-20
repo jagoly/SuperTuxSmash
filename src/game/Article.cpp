@@ -46,7 +46,7 @@ void Article::call_do_destroy()
 
 void Article::set_error_message(StringView method, StringView errors)
 {
-    String message = "Article '{}'\n{}C++ | {}()\n"_format(def.directory, errors, method);
+    String message = format("Article '{}'\n{}C++ | {}()\n", def.directory, errors, method);
 
     if (world.editor == nullptr)
         sq::log_error_multiline(message);

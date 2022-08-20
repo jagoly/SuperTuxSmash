@@ -55,10 +55,12 @@ GameScene::GameScene(SmashApp& smashApp, GameSetup setup)
 
     window.set_key_repeat(false);
 
-    String title = "SuperTuxSmash - {}"_format(setup.stage);
+    SQASSERT(setup.players.size() != 0u, "need at least one player");
 
-    for (uint8_t index = 0u; index < setup.players.size(); ++index)
-        sq::format_append(title, index == 0u ? " - {}" : " vs. {}", setup.players[index].fighter);
+    String title = format("SuperTuxSmash - {} - {}", setup.stage, setup.players[0].fighter);
+
+    for (uint8_t index = 1u; index < setup.players.size(); ++index)
+        sq::format_append(title, " vs. {}", setup.players[index].fighter);
 
     window.set_title(std::move(title));
 
@@ -85,7 +87,7 @@ GameScene::GameScene(SmashApp& smashApp, GameSetup setup)
     {
         // todo: controllers should be created by MenuScene and trasferred to GameSetup
         auto& controller = mControllers.emplace_back (
-            std::make_unique<Controller>(inputDevices, "config/player{}.json"_format(index+1u))
+            std::make_unique<Controller>(inputDevices, format("config/player{}.json", index+1u))
         );
 
         Fighter& fighter = mWorld->create_fighter(setup.players[index].fighter);

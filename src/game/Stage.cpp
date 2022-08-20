@@ -16,10 +16,10 @@ using namespace sts;
 
 Stage::Stage(World& world, TinyString name)
     : world(world), name(name)
-    , mArmature("assets/stages/{}/Armature.json"_format(name))
+    , mArmature(format("assets/stages/{}/Armature.json", name))
     , mAnimPlayer(mArmature)
 {
-    const JsonValue json = sq::parse_json_from_file("assets/stages/{}/Stage.json"_format(name));
+    const JsonValue json = sq::parse_json_from_file(format("assets/stages/{}/Stage.json", name));
 
     const JsonValue& render = json.at("render");
     render.at("skybox").get_to(mSkyboxPath);
@@ -61,15 +61,15 @@ Stage::Stage(World& world, TinyString name)
 
     // load environment maps
     {
-        world.renderer.cubemaps.skybox.load_from_file_cube("assets/{}/Sky"_format(mSkyboxPath));
-        world.renderer.cubemaps.irradiance.load_from_file_cube("assets/{}/Irradiance"_format(mSkyboxPath));
-        world.renderer.cubemaps.radiance.load_from_file_cube("assets/{}/Radiance"_format(mSkyboxPath));
+        world.renderer.cubemaps.skybox.load_from_file_cube(format("assets/{}/Sky", mSkyboxPath));
+        world.renderer.cubemaps.irradiance.load_from_file_cube(format("assets/{}/Irradiance", mSkyboxPath));
+        world.renderer.cubemaps.radiance.load_from_file_cube(format("assets/{}/Radiance", mSkyboxPath));
 
         world.renderer.update_cubemap_descriptor_sets();
     }
 
     mDrawItems = sq::DrawItem::load_from_json (
-        "assets/stages/{}/Render.json"_format(name), mArmature,
+        format("assets/stages/{}/Render.json", name), mArmature,
         world.caches.meshes, world.caches.pipelines, world.caches.textures
     );
 }

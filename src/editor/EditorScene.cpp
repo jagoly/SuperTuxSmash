@@ -65,23 +65,23 @@ EditorScene::EditorScene(SmashApp& smashApp)
     {
         FighterInfo result;
 
-        const String path = name.empty() ? "assets/fighters/" : "assets/fighters/{}/"_format(name);
+        const String path = name.empty() ? "assets/fighters" : ("assets/fighters/" + name);
 
         result.name = TinyString(name);
         {
-            const auto json = sq::parse_json_from_file(path + "Animations.json");
+            const auto json = sq::parse_json_from_file(path + "/Animations.json");
             result.animations.reserve(json.size());
             for (const auto& entry : json)
                 result.animations.emplace_back(entry[0].get_ref<const String&>());
         }
         {
-            const auto json = sq::parse_json_from_file(path + "Actions.json");
+            const auto json = sq::parse_json_from_file(path + "/Actions.json");
             result.actions.reserve(json.size());
             for (const auto& entry : json)
                 result.actions.emplace_back(entry.get_ref<const String&>());
         }
         {
-            const auto json = sq::parse_json_from_file(path + "States.json");
+            const auto json = sq::parse_json_from_file(path + "/States.json");
             result.states.reserve(json.size());
             for (const auto& entry : json)
                 result.states.emplace_back(entry.get_ref<const String&>());
@@ -306,7 +306,7 @@ void EditorScene::impl_show_widget_toolbar()
                 ranges::count_if(mFighterContexts, [](const auto& item) { return item.second.modified; }) +
                 ranges::count_if(mStageContexts, [](const auto& item) { return item.second.modified; });
 
-            if (ImPlus::MenuItem("Save All ({})"_format(numModified), "Ctrl+Shift+S", false, numModified != 0u))
+            if (ImPlus::MenuItem(format("Save All ({})", numModified), "Ctrl+Shift+S", false, numModified != 0u))
             {
                 // todo: show a popup listing everything that has changed
                 for (auto& [key, ctx] : mActionContexts) if (ctx.modified) ctx.save_changes();
@@ -388,7 +388,7 @@ void EditorScene::impl_show_widget_navigator()
         }
 
         mSmashApp.get_window().set_title (
-            "SuperTuxSmash - Editor - {} ({})"_format(mActiveContext->ctxKeyString, mActiveContext->ctxTypeString)
+            format("SuperTuxSmash - Editor - {} ({})", mActiveContext->ctxKeyString, mActiveContext->ctxTypeString)
         );
     };
 
@@ -453,15 +453,15 @@ void EditorScene::impl_show_widget_navigator()
                 );
                 const size_t numTotal = mFighterInfoCommon.actions.size() + info.actions.size();
 
-                if (ImPlus::CollapsingHeader("{} ({}/{})###{}"_format(info.name, numLoaded, numTotal, info.name)))
+                if (ImPlus::CollapsingHeader(format("{} ({}/{})###{}", info.name, numLoaded, numTotal, info.name)))
                 {
                     for (const SmallString& name : mFighterInfoCommon.actions)
-                        context_list_entry(ActionKey{info.name, name}, mActionContexts, "{}/{}"_format(info.name, name));
+                        context_list_entry(ActionKey{info.name, name}, mActionContexts, format("{}/{}", info.name, name));
 
                     ImGui::Separator();
 
                     for (const SmallString& name : info.actions)
-                        context_list_entry(ActionKey{info.name, name}, mActionContexts, "{}/{}"_format(info.name, name));
+                        context_list_entry(ActionKey{info.name, name}, mActionContexts, format("{}/{}", info.name, name));
                 }
             }
         });
@@ -484,7 +484,7 @@ void EditorScene::impl_show_widget_navigator()
     if (mConfirmCloseContext != nullptr)
     {
         const auto result = ImPlus::DialogConfirmation (
-            "Discard Changes", "{} modified, really discard changes?"_format(mConfirmCloseContext->ctxTypeString)
+            "Discard Changes", format("{} modified, really discard changes?", mConfirmCloseContext->ctxTypeString)
         );
 
         if (result == ImPlus::DialogResult::Confirm)
@@ -497,7 +497,7 @@ void EditorScene::impl_show_widget_navigator()
     if (mConfirmQuitUnsaved.empty() == false)
     {
         const auto result = ImPlus::DialogConfirmation (
-            "Discard Changes", "Some items have not been saved:\n{}Really quit without saving?"_format(mConfirmQuitUnsaved)
+            "Discard Changes", format("Some items have not been saved:\n{}Really quit without saving?", mConfirmQuitUnsaved)
         );
 
         if (result == ImPlus::DialogResult::Confirm)

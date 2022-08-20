@@ -15,8 +15,8 @@ using namespace sts;
 ArticleDef::ArticleDef(World& world, String directory)
     : EntityDef(world, directory)
 {
-    initialise_sounds("assets/{}/Sounds.json"_format(directory));
-    initialise_animations("assets/{}/Animations.json"_format(directory));
+    initialise_sounds(format("assets/{}/Sounds.json", directory));
+    initialise_animations(format("assets/{}/Animations.json", directory));
 }
 
 ArticleDef::~ArticleDef()
@@ -32,7 +32,7 @@ void ArticleDef::load_json_from_file()
     effects.clear();
     emitters.clear();
 
-    const String jsonPath = "assets/{}/Article.json"_format(directory);
+    const String jsonPath = format("assets/{}/Article.json", directory);
 
     const auto root = sq::try_parse_json_from_file(jsonPath);
     if (root.has_value() == false)
@@ -84,7 +84,7 @@ void ArticleDef::load_json_from_file()
 
 void ArticleDef::load_wren_from_file()
 {
-    const String wrenPath = "assets/{}/Article.wren"_format(directory);
+    const String wrenPath = format("assets/{}/Article.wren", directory);
 
     // set mWrenSource to either the file contents or a fallback script
     auto source = sq::try_read_text_from_file(wrenPath);
@@ -127,7 +127,7 @@ void ArticleDef::interpret_module()
     // problem with the module, show error message and load fallback
     if (errors.empty() == false)
     {
-        String message = "'{}'\n{}C++ | load_wren_from_string()"_format(directory, errors);
+        String message = format("'{}'\n{}C++ | load_wren_from_string()", directory, errors);
 
         if (editor == nullptr)
             sq::log_error_multiline(message);
