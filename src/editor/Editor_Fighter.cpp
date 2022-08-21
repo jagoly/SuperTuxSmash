@@ -98,7 +98,7 @@ void FighterContext::save_changes()
             def.to_json(json[key.c_str()], fighterDef->armature);
 
         sq::write_text_to_file (
-            format("assets/{}/HurtBlobs.json", fighterDef->directory),
+            fmt::format("assets/{}/HurtBlobs.json", fighterDef->directory),
             json.dump(2), true
         );
     }
@@ -111,7 +111,7 @@ void FighterContext::save_changes()
             sound.to_json(json[key.c_str()]);
 
         sq::write_text_to_file (
-            format("assets/{}/Sounds.json", fighterDef->directory),
+            fmt::format("assets/{}/Sounds.json", fighterDef->directory),
             json.dump(2), true
         );
     }
@@ -187,7 +187,7 @@ void FighterContext::show_widget_sounds()
     const auto funcInit = [&](SoundEffect& sound)
     {
         sound.cache = &world->caches.sounds;
-        sound.path = format("{}/sounds/{}", fighterDef->directory, sound.get_key());
+        sound.path = fmt::format("{}/sounds/{}", fighterDef->directory, sound.get_key());
         sound.handle = sound.cache->try_acquire(sound.path.c_str(), true);
     };
 
@@ -199,7 +199,7 @@ void FighterContext::show_widget_sounds()
             sound.handle = sound.cache->try_acquire(sound.path.c_str(), true);
 
         if (sound.handle == nullptr) ImPlus::LabelText("Resolved", "COULD NOT LOAD RESOURCE");
-        else ImPlus::LabelText("Resolved", format("assets/{}.wav", sound.path));
+        else ImPlus::LabelText("Resolved", fmt::format("assets/{}.wav", sound.path));
 
         ImPlus::SliderValue("Volume", sound.volume, 0.2f, 1.f, "%.2f ×");
     };

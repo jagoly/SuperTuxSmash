@@ -31,7 +31,7 @@ ActionContext::ActionContext(EditorScene& _editor, ActionKey _key)
     : BaseContext(_editor, "TestZone"), ctxKey(_key)
 {
     ctxTypeString = "Action";
-    ctxKeyString = format("{}/{}", ctxKey.fighter, ctxKey.action);
+    ctxKeyString = fmt::format("{}/{}", ctxKey.fighter, ctxKey.action);
 
     world->editor->actionKey = { ctxKey.fighter, ctxKey.action };
 
@@ -117,11 +117,11 @@ void ActionContext::save_changes()
         emitter.to_json(emitters[key.c_str()], fighter->def.armature);
 
     sq::write_text_to_file (
-        format("assets/fighters/{}/actions/{}.json", ctxKey.fighter, ctxKey.action),
+        fmt::format("assets/fighters/{}/actions/{}.json", ctxKey.fighter, ctxKey.action),
         json.dump(2), true
     );
     sq::write_text_to_file (
-        format("assets/fighters/{}/actions/{}.wren", ctxKey.fighter, ctxKey.action),
+        fmt::format("assets/fighters/{}/actions/{}.wren", ctxKey.fighter, ctxKey.action),
         actionDef->wrenSource, true
     );
 
@@ -148,7 +148,7 @@ void ActionContext::show_menu_items()
     {
         // todo: make sure there are no dangling pointers around
         def.sounds.clear();
-        def.initialise_sounds(format("assets/{}/Sounds.json", def.directory));
+        def.initialise_sounds(fmt::format("assets/{}/Sounds.json", def.directory));
         scrub_to_frame(currentFrame);
     }
 
@@ -157,7 +157,7 @@ void ActionContext::show_menu_items()
         // todo: make sure there are no dangling pointers around
         def.animations.clear();
         def.initialise_animations("assets/fighters/Animations.json");
-        def.initialise_animations(format("assets/{}/Animations.json", def.directory));
+        def.initialise_animations(fmt::format("assets/{}/Animations.json", def.directory));
         reset_timeline_length();
         scrub_to_frame(currentFrame);
     }
@@ -252,7 +252,7 @@ void ActionContext::show_widget_effects()
 
     const auto funcInit = [&](VisualEffectDef& def)
     {
-        def.path = format("fighters/{}/effects/{}", ctxKey.fighter, def.get_key());
+        def.path = fmt::format("fighters/{}/effects/{}", ctxKey.fighter, def.get_key());
         def.handle = world->caches.effects.try_acquire(def.path.c_str(), true);
     };
 
@@ -264,7 +264,7 @@ void ActionContext::show_widget_effects()
             def.handle = world->caches.effects.try_acquire(def.path.c_str(), true);
 
         if (def.handle == nullptr) ImPlus::LabelText("Resolved", "COULD NOT LOAD RESOURCE");
-        else ImPlus::LabelText("Resolved", format("assets/{}/...", def.path));
+        else ImPlus::LabelText("Resolved", fmt::format("assets/{}/...", def.path));
 
         ImPlus::ComboIndex("Bone", fighter->def.armature.get_bone_names(), def.bone, "(None)");
 
@@ -404,7 +404,7 @@ void ActionContext::show_widget_timeline()
     {
         ImGui::SameLine();
 
-        const String label = format("{}", i);
+        const String label = fmt::to_string(i);
 
         const bool active = currentFrame == i;
         const bool open = ImPlus::IsPopupOpen(label);

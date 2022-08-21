@@ -96,15 +96,15 @@ void MenuScene::show_imgui_widgets()
     {
         const auto index = uint8_t(iter - mSetup.players.begin());
 
-        const bool erase = ImPlus::Button(format("X##{}", index));
+        const bool erase = ImPlus::Button(fmt::format("X##{}", index));
 
         ImGui::SameLine();
         ImGui::AlignTextToFramePadding();
-        ImPlus::Text(format("Player {}", index+1u));
+        ImPlus::Text(fmt::format("Player {}", index+1u));
 
         ImGui::SameLine();
         ImGui::SetNextItemWidth(160.f);
-        ImPlus::ComboString(format("Fighter##{}", index), mFighterNames, iter->fighter);
+        ImPlus::ComboString(fmt::format("Fighter##{}", index), mFighterNames, iter->fighter);
 
         if (erase) iter = mSetup.players.erase(iter) - 1;
     }

@@ -14,10 +14,10 @@ using namespace sts;
 EntityDef::EntityDef(World& world, String directory)
     : world(world), directory(directory)
     , name(StringView(directory).substr(directory.rfind('/') + 1))
-    , armature(format("assets/{}/Armature.json", directory))
+    , armature(fmt::format("assets/{}/Armature.json", directory))
 {
     drawItems = sq::DrawItem::load_from_json (
-        format("assets/{}/Render.json", directory), armature,
+        fmt::format("assets/{}/Render.json", directory), armature,
         world.caches.meshes, world.caches.pipelines, world.caches.textures
     );
 }
@@ -49,7 +49,7 @@ void EntityDef::initialise_animations(const String& jsonPath)
         if (auto [iter, ok] = animations.try_emplace(key); ok)
         {
             try {
-                const String path = format("assets/{}/anims/{}", directory, key);
+                const String path = fmt::format("assets/{}/anims/{}", directory, key);
                 iter->second.anim = armature.load_animation_from_file(path);
             }
             catch (const std::exception& ex) {

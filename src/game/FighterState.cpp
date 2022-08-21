@@ -31,19 +31,19 @@ void FighterStateDef::load_wren_from_file()
     auto& vm = fighter.world.vm;
 
     // first try to load a fighter specific script
-    auto source = sq::try_read_text_from_file(format("assets/{}/states/{}.wren", fighter.directory, name));
+    auto source = sq::try_read_text_from_file(fmt::format("assets/{}/states/{}.wren", fighter.directory, name));
 
     String module;
 
     // for states, per fighter scripts are not required
     if (source.has_value() == false)
     {
-        module = format("states/{}", name);
+        module = fmt::format("states/{}", name);
         vm.load_module(module.c_str());
     }
     else
     {
-        module = format("{}/states/{}", fighter.directory, name);
+        module = fmt::format("{}/states/{}", fighter.directory, name);
         vm.interpret(module.c_str(), source->c_str());
     }
 
@@ -102,7 +102,7 @@ void FighterState::call_do_exit()
 
 void FighterState::set_error_message(StringView method, StringView errors)
 {
-    String message = format("'{}/states/{}'\n{}C++ | {}()\n", def.fighter.directory, def.name, errors, method);
+    String message = fmt::format("'{}/states/{}'\n{}C++ | {}()\n", def.fighter.directory, def.name, errors, method);
 
     if (world.editor == nullptr)
         sq::log_error_multiline(message);

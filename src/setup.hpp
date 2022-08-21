@@ -24,8 +24,6 @@ using namespace sq::coretypes;
 namespace ranges = std::ranges;
 namespace maths = sq::maths;
 
-using fmt::format;
-
 using sq::StackString;
 using sq::StackVector;
 

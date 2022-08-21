@@ -28,7 +28,7 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
     ImGui::SameLine();
 
     const auto flags = fighter.index == 0 ? ImGuiTreeNodeFlags_DefaultOpen : 0;
-    if (!ImPlus::CollapsingHeader(format("Fighter {} - {}", fighter.index, fighter.def.name), flags))
+    if (!ImPlus::CollapsingHeader(fmt::format("Fighter {} - {}", fighter.index, fighter.def.name), flags))
         return;
 
     //--------------------------------------------------------//
@@ -49,29 +49,29 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
         if (state != nullptr)
         {
             if (vars.freezeTime != 0u)
-                ImPlus::Text(format("State: {} (frozen for {})", state->def.name, vars.freezeTime));
+                ImPlus::Text(fmt::format("State: {} (frozen for {})", state->def.name, vars.freezeTime));
 
             else if (state->def.name.ends_with("Stun"))
-                ImPlus::Text(format("State: {} (stunned for {})", state->def.name, vars.stunTime));
+                ImPlus::Text(fmt::format("State: {} (stunned for {})", state->def.name, vars.stunTime));
 
-            else ImPlus::Text(format("State: {}", state->def.name));
+            else ImPlus::Text(fmt::format("State: {}", state->def.name));
         }
         else ImPlus::Text("State: None");
 
         if (action != nullptr)
         {
-            ImPlus::Text(format("Action: {} ({})", action->def.name, action->mCurrentFrame - 1u));
+            ImPlus::Text(fmt::format("Action: {} ({})", action->def.name, action->mCurrentFrame - 1u));
         }
         else ImPlus::Text("Action: None");
 
-        ImPlus::Text(format("Translate: {:+.3f}", fighter.current.translation));
-        ImPlus::HoverTooltipFixed(format("Previous: {:+.3f}", fighter.previous.translation));
+        ImPlus::Text(fmt::format("Translate: {:+.3f}", fighter.current.translation));
+        ImPlus::HoverTooltipFixed(fmt::format("Previous: {:+.3f}", fighter.previous.translation));
 
-        ImPlus::Text(format("Rotate: {:+.2f}", fighter.current.rotation));
-        ImPlus::HoverTooltipFixed(format("Previous: {:+.2f}\nMode:     {:05b}", fighter.previous.rotation, uint8_t(fighter.mRotateMode)));
+        ImPlus::Text(fmt::format("Rotate: {:+.2f}", fighter.current.rotation));
+        ImPlus::HoverTooltipFixed(fmt::format("Previous: {:+.2f}\nMode:     {:05b}", fighter.previous.rotation, uint8_t(fighter.mRotateMode)));
 
-        ImPlus::Text(format("Pose: {}", fighter.debugCurrentPoseInfo));
-        ImPlus::HoverTooltipFixed(format("Previous: {}\nFade:     {}", fighter.debugPreviousPoseInfo, fighter.debugAnimationFadeInfo));
+        ImPlus::Text(fmt::format("Pose: {}", fighter.debugCurrentPoseInfo));
+        ImPlus::HoverTooltipFixed(fmt::format("Previous: {}\nFade:     {}", fighter.debugPreviousPoseInfo, fighter.debugAnimationFadeInfo));
     }
 
     //--------------------------------------------------------//
@@ -119,7 +119,7 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
 
         ImPlus::DragVector("attachPoint", vars.position, 0.01f, "%+.4f");
 
-        ImPlus::LabelText("ledge", format("{}", static_cast<void*>(vars.ledge)));
+        ImPlus::LabelText("ledge", fmt::to_string(static_cast<void*>(vars.ledge)));
     }
 
     //--------------------------------------------------------//
@@ -177,7 +177,7 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
         {
             for (auto& other : fighter.world.get_fighters())
             {
-                if (ImPlus::MenuItem(format("Fighter {}", other->index), nullptr, false, other.get() != &fighter))
+                if (ImPlus::MenuItem(fmt::format("Fighter {}", other->index), nullptr, false, other.get() != &fighter))
                     other->controller->mRecordedInput = controller.mRecordedInput;
             }
         });
@@ -198,7 +198,7 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
             controller.mPlaybackIndex = 0;
 
         ImGui::SameLine();
-        ImPlus::Text(format(" frames: {}", controller.mRecordedInput.size()));
+        ImPlus::Text(fmt::format(" frames: {}", controller.mRecordedInput.size()));
 
         // todo: show current input state
     }
@@ -208,7 +208,7 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
 
 void DebugGui::show_widget_stage(Stage& stage)
 {
-    if (!ImPlus::CollapsingHeader(format("Stage - {}", stage.name), 0))
+    if (!ImPlus::CollapsingHeader(fmt::format("Stage - {}", stage.name), 0))
         return;
 
     //--------------------------------------------------------//

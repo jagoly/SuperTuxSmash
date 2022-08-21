@@ -306,7 +306,7 @@ void EditorScene::impl_show_widget_toolbar()
                 ranges::count_if(mFighterContexts, [](const auto& item) { return item.second.modified; }) +
                 ranges::count_if(mStageContexts, [](const auto& item) { return item.second.modified; });
 
-            if (ImPlus::MenuItem(format("Save All ({})", numModified), "Ctrl+Shift+S", false, numModified != 0u))
+            if (ImPlus::MenuItem(fmt::format("Save All ({})", numModified), "Ctrl+Shift+S", false, numModified != 0u))
             {
                 // todo: show a popup listing everything that has changed
                 for (auto& [key, ctx] : mActionContexts) if (ctx.modified) ctx.save_changes();
@@ -388,7 +388,7 @@ void EditorScene::impl_show_widget_navigator()
         }
 
         mSmashApp.get_window().set_title (
-            format("SuperTuxSmash - Editor - {} ({})", mActiveContext->ctxKeyString, mActiveContext->ctxTypeString)
+            fmt::format("SuperTuxSmash - Editor - {} ({})", mActiveContext->ctxKeyString, mActiveContext->ctxTypeString)
         );
     };
 
@@ -453,15 +453,15 @@ void EditorScene::impl_show_widget_navigator()
                 );
                 const size_t numTotal = mFighterInfoCommon.actions.size() + info.actions.size();
 
-                if (ImPlus::CollapsingHeader(format("{} ({}/{})###{}", info.name, numLoaded, numTotal, info.name)))
+                if (ImPlus::CollapsingHeader(fmt::format("{} ({}/{})###{}", info.name, numLoaded, numTotal, info.name)))
                 {
                     for (const SmallString& name : mFighterInfoCommon.actions)
-                        context_list_entry(ActionKey{info.name, name}, mActionContexts, format("{}/{}", info.name, name));
+                        context_list_entry(ActionKey{info.name, name}, mActionContexts, fmt::format("{}/{}", info.name, name));
 
                     ImGui::Separator();
 
                     for (const SmallString& name : info.actions)
-                        context_list_entry(ActionKey{info.name, name}, mActionContexts, format("{}/{}", info.name, name));
+                        context_list_entry(ActionKey{info.name, name}, mActionContexts, fmt::format("{}/{}", info.name, name));
                 }
             }
         });
@@ -484,7 +484,7 @@ void EditorScene::impl_show_widget_navigator()
     if (mConfirmCloseContext != nullptr)
     {
         const auto result = ImPlus::DialogConfirmation (
-            "Discard Changes", format("{} modified, really discard changes?", mConfirmCloseContext->ctxTypeString)
+            "Discard Changes", fmt::format("{} modified, really discard changes?", mConfirmCloseContext->ctxTypeString)
         );
 
         if (result == ImPlus::DialogResult::Confirm)
@@ -497,7 +497,7 @@ void EditorScene::impl_show_widget_navigator()
     if (mConfirmQuitUnsaved.empty() == false)
     {
         const auto result = ImPlus::DialogConfirmation (
-            "Discard Changes", format("Some items have not been saved:\n{}Really quit without saving?", mConfirmQuitUnsaved)
+            "Discard Changes", fmt::format("Some items have not been saved:\n{}Really quit without saving?", mConfirmQuitUnsaved)
         );
 
         if (result == ImPlus::DialogResult::Confirm)

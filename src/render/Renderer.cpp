@@ -993,7 +993,7 @@ void Renderer::impl_create_ssao_stuff()
 
         const auto shaderModules = sq::ShaderModules (
             ctx, "shaders/FullScreenFC.vert.spv", {},
-            format("shaders/ssao/GTAO/Quality{}.frag.spv", options.ssao_quality),
+            fmt::format("shaders/ssao/GTAO/Quality{}.frag.spv", options.ssao_quality),
             &specialise.info
         );
 
