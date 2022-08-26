@@ -59,18 +59,13 @@ void SmashApp::update(double elapsed)
 
     //-- fetch and handle events -----------------------------//
 
-    if (mWindow->has_focus())
-    {
-        for (const auto& event : mWindow->fetch_events())
-            if (!mGuiSystem->handle_event(event))
-                handle_event(event);
-        mGuiSystem->finish_handle_events(true);
-    }
-    else
-    {
-        void(mWindow->fetch_events());
-        mGuiSystem->finish_handle_events(false);
-    }
+    const bool hasFocus = mWindow->has_focus();
+
+    for (const auto& event : mWindow->fetch_events())
+        if (mGuiSystem->handle_event(event) == false && hasFocus == true)
+            handle_event(event);
+
+    mGuiSystem->finish_handle_events();
 
     //-- update scene and imgui ------------------------------//
 

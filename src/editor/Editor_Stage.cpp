@@ -139,7 +139,7 @@ void StageContext::show_widget_cubemaps()
     const ImGuiStyle& style = ImGui::GetStyle();
 
     constexpr auto faceNames = std::array { "Right", "Left", "Down", "Up", "Forward", "Back" };
-    const float size = std::floor((ImGui::GetWindowContentRegionWidth() - 5.f * style.ItemSpacing.x) / 6.f);
+    const float size = std::floor((ImGui::GetContentRegionAvail().x - 5.f * style.ItemSpacing.x) / 6.f);
 
     // ordered to show a panorama for the first four faces
     constexpr auto faceOrder = std::array { 4u, 0u, 5u, 1u, 2u, 3u };
