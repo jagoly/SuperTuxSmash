@@ -3,7 +3,6 @@
 #include "setup.hpp"
 
 #include <sqee/app/Scene.hpp>
-#include <sqee/objects/Texture.hpp>
 #include <sqee/vk/Vulkan.hpp>
 #include <sqee/vk/Wrappers.hpp>
 
@@ -36,17 +35,10 @@ public: //====================================================//
     struct FighterInfo
     {
         TinyString name;
+        std::vector<SmallString> articles;
         std::vector<SmallString> animations;
         std::vector<SmallString> actions;
         std::vector<SmallString> states;
-    };
-
-    struct ActionKey
-    {
-        TinyString fighter; SmallString action;
-        bool operator==(const ActionKey& other) const { return std::memcmp(this, &other, sizeof(ActionKey)) == 0; }
-        bool operator<(const ActionKey& other) const { return std::memcmp(this, &other, sizeof(ActionKey)) < 0; }
-        StringView hash() const { return StringView(reinterpret_cast<const char*>(this), sizeof(ActionKey)); };
     };
 
     struct ShrunkCubeMap
@@ -62,31 +54,9 @@ public: //====================================================//
         std::array<vk::DescriptorSet, 6u> descriptorSets;
     };
 
-    struct BaseContext
-    {
-        BaseContext(EditorScene& editor, TinyString stage);
-
-        virtual ~BaseContext();
-
-        virtual void apply_working_changes() = 0;
-        virtual void do_undo_redo(bool redo) = 0;
-        virtual void save_changes() = 0;
-        virtual void show_menu_items() {};
-        virtual void show_widgets() = 0;
-
-        EditorScene& editor;
-
-        std::unique_ptr<Renderer> renderer;
-        std::unique_ptr<EditorCamera> camera;
-        std::unique_ptr<World> world;
-
-        bool modified = false;
-        size_t undoIndex = 0u;
-
-        String ctxTypeString, ctxKeyString;
-    };
-
+    struct BaseContext; friend BaseContext;
     struct ActionContext; friend ActionContext;
+    struct ArticleContext; friend ArticleContext;
     struct FighterContext; friend FighterContext;
     struct StageContext; friend StageContext;
 
@@ -100,24 +70,29 @@ private: //===================================================//
 
     //--------------------------------------------------------//
 
-    void impl_confirm_quit_unsaved(bool returnToMenu);
+    bool context_has_timeline() const;
 
-    void impl_show_widget_toolbar();
-    void impl_show_widget_navigator();
+    void confirm_quit_unsaved(bool returnToMenu);
+
+    void show_widget_toolbar();
+    void show_widget_navigator();
 
     //--------------------------------------------------------//
 
     SmashApp& mSmashApp;
 
+    std::unique_ptr<Renderer> mRenderer;
     std::unique_ptr<Controller> mController;
 
     FighterInfo mFighterInfoCommon;
     std::vector<FighterInfo> mFighterInfos;
+    std::vector<String> mArticlePaths;
     std::vector<TinyString> mStageNames;
 
-    std::map<ActionKey, ActionContext> mActionContexts;
-    std::map<TinyString, FighterContext> mFighterContexts;
-    std::map<TinyString, StageContext> mStageContexts;
+    std::map<String, ActionContext> mActionContexts;
+    std::map<String, ArticleContext> mArticleContexts;
+    std::map<String, FighterContext> mFighterContexts;
+    std::map<String, StageContext> mStageContexts;
 
     BaseContext* mActiveContext = nullptr;
 
@@ -132,6 +107,8 @@ private: //===================================================//
     BaseContext* mConfirmCloseContext = nullptr;
     String mConfirmQuitUnsaved = "";
     bool mConfirmQuitReturnToMenu = false;
+
+    int mActiveNavTab = 0;
 
     PreviewMode mPreviewMode = PreviewMode::Pause;
 
@@ -162,19 +139,6 @@ private: //===================================================//
     bool mDoResetDockStage = false;
     bool mDoResetDockCubemaps = false;
     bool mDoResetDockDebug = false;
-
-    //--------------------------------------------------------//
-
-    // make sure any source file that uses these includes Editor_Helpers.hpp
-
-    template <class Key, class Object, class FuncInit, class FuncEdit, class FuncBefore>
-    void helper_edit_objects (
-        std::map<Key, Object>& objects, FuncInit funcInit, FuncEdit funcEdit, FuncBefore funcBefore
-    );
-
-    void helper_edit_origin(const char* label, Fighter& fighter, int8_t bone, Vec3F& origin);
-
-    void helper_show_widget_debug(Stage* stage, Fighter* fighter);
 };
 
 //============================================================================//

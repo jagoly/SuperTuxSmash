@@ -34,14 +34,6 @@ struct FighterActionDef final
     void load_wren_from_file();
 
     void interpret_module();
-
-    //--------------------------------------------------------//
-
-    bool has_changes(const FighterActionDef& other) const;
-
-    void apply_changes(const FighterActionDef& other);
-
-    std::unique_ptr<FighterActionDef> clone() const;
 };
 
 //============================================================================//

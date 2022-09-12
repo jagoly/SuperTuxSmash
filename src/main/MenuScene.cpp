@@ -15,8 +15,6 @@ MenuScene::MenuScene(SmashApp& smashApp)
     : Scene(1.0 / 48.0), mSmashApp(smashApp)
 {
     mSmashApp.get_window().set_title("SuperTuxSmash - Main Menu");
-    mSmashApp.get_window().set_key_repeat(false);
-
     mSmashApp.get_debug_overlay().set_sub_timers({});
 
     // load stage names

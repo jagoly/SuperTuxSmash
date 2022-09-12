@@ -35,8 +35,7 @@ public: //====================================================//
     /// Data that is only relevant to the editor.
     struct EditorData
     {
-        std::optional<std::tuple<TinyString, SmallString>> actionKey;
-        std::optional<TinyString> fighterKey;
+        String ctxKey;
         String errorMessage;
     };
 
@@ -70,7 +69,7 @@ public: //====================================================//
     int32_t generate_entity_id() { return ++mEntityId; }
 
     /// Set the stage for the game.
-    void set_stage(std::unique_ptr<Stage> stage);
+    Stage& create_stage(TinyString name);
 
     /// Add a fighter to the game.
     Fighter& create_fighter(TinyString name);
@@ -149,6 +148,8 @@ private: //===================================================//
 
     // at the end of the structure, because it's huge
     std::mt19937 mRandNumGen;
+
+    friend EditorScene;
 };
 
 //============================================================================//

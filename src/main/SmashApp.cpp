@@ -35,7 +35,6 @@ void SmashApp::initialise(std::vector<String> /*args*/)
     mWindow->set_size_limits(Vec2U(640u, 360u), Vec2U(3840u, 2160u));
     mWindow->create_swapchain_and_friends();
     mWindow->set_vsync_enabled(true);
-    mWindow->set_key_repeat(false);
 
     mInputDevices = std::make_unique<sq::InputDevices>(*mWindow);
     mDebugOverlay = std::make_unique<sq::DebugOverlay>();
@@ -246,7 +245,6 @@ void SmashApp::refresh_options()
     mWindow->create_swapchain_and_friends();
     mActiveScene->refresh_options_create();
 
-    // todo: why doesn't this have seperate destroy/create?
     mResourceCaches->refresh_options();
 
     ctx.allocator.free_empty_blocks();

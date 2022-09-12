@@ -53,8 +53,6 @@ GameScene::GameScene(SmashApp& smashApp, GameSetup setup)
 
     //--------------------------------------------------------//
 
-    window.set_key_repeat(false);
-
     SQASSERT(setup.players.size() != 0u, "need at least one player");
 
     String title = fmt::format("SuperTuxSmash - {} - {}", setup.stage, setup.players[0].fighter);
@@ -77,11 +75,7 @@ GameScene::GameScene(SmashApp& smashApp, GameSetup setup)
 
     //--------------------------------------------------------//
 
-    auto stage = std::make_unique<Stage>(*mWorld, setup.stage);
-
-    mWorld->set_stage(std::move(stage));
-
-    //--------------------------------------------------------//
+    mWorld->create_stage(setup.stage);
 
     for (uint8_t index = 0u; index < setup.players.size(); ++index)
     {
@@ -211,7 +205,7 @@ void GameScene::impl_show_general_window()
 
     ImPlus::if_MenuBar([&]()
     {
-        ImPlus::if_Menu("render...", true, [&]()
+        ImPlus::if_Menu("Render", true, [&]()
         {
            ImPlus::Checkbox("hit blobs", &options.render_hit_blobs);
            ImPlus::Checkbox("hurt blobs", &options.render_hurt_blobs);
@@ -220,7 +214,7 @@ void GameScene::impl_show_general_window()
         });
         ImPlus::HoverTooltip("change debug rendering");
 
-        ImPlus::if_Menu("speed...", true, [&]()
+        ImPlus::if_Menu("Speed", true, [&]()
         {
             ImPlus::RadioButton("1fps", mTickTime, 1.0);
             ImPlus::RadioButton("0.125×", mTickTime, 1.0 / 6.0);
@@ -231,7 +225,7 @@ void GameScene::impl_show_general_window()
         });
         ImPlus::HoverTooltip("change game speed");
 
-        ImPlus::if_Menu("log...", true, [&]()
+        ImPlus::if_Menu("Log", true, [&]()
         {
             ImPlus::Checkbox("animation", &options.log_animation);
             ImPlus::Checkbox("script", &options.log_script);
@@ -295,6 +289,9 @@ void GameScene::impl_show_objects_window()
 
     for (auto& fighter : mWorld->get_fighters())
         DebugGui::show_widget_fighter(*fighter);
+
+    for (auto& article : mWorld->get_articles())
+        DebugGui::show_widget_article(*article);
 }
 
 //============================================================================//

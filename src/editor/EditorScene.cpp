@@ -9,10 +9,11 @@
 
 #include "render/Renderer.hpp"
 
+#include "editor/ActionContext.hpp"
+#include "editor/ArticleContext.hpp"
 #include "editor/EditorCamera.hpp"
-#include "editor/Editor_Action.hpp"
-#include "editor/Editor_Fighter.hpp"
-#include "editor/Editor_Stage.hpp"
+#include "editor/FighterContext.hpp"
+#include "editor/StageContext.hpp"
 
 #include <sqee/app/Event.hpp>
 #include <sqee/app/GuiWidgets.hpp>
@@ -24,7 +25,7 @@ using namespace sts;
 
 //============================================================================//
 
-constexpr const float HEIGHT_TIMELINE = 80.f;
+constexpr const float HEIGHT_TIMELINE = 74.f;
 constexpr const float WIDTH_NAVIGATOR = 240.f;
 constexpr const float WIDTH_EDITORS = 480.f;
 
@@ -33,17 +34,21 @@ constexpr const float WIDTH_EDITORS = 480.f;
 EditorScene::EditorScene(SmashApp& smashApp)
     : Scene(1.0 / 48.0), mSmashApp(smashApp)
 {
+    auto& window = mSmashApp.get_window();
     auto& options = mSmashApp.get_options();
+    auto& resourceCaches = mSmashApp.get_resource_caches();
+
+    window.set_title("SuperTuxSmash - Editor");
 
     options.render_hit_blobs = true;
     options.render_hurt_blobs = true;
     options.render_diamonds = true;
     options.render_skeletons = true;
 
-    auto& window = mSmashApp.get_window();
+    if (options.ssao_quality > 1u) options.ssao_quality = 1u;
+    if (options.shadow_quality > 1u) options.shadow_quality = 1u;
 
-    window.set_title("SuperTuxSmash - Editor");
-    window.set_key_repeat(true);
+    mRenderer = std::make_unique<Renderer>(window, options, resourceCaches);
 
     mController = std::make_unique<Controller>(mSmashApp.get_input_devices(), "config/player1.json");
 
@@ -99,6 +104,13 @@ EditorScene::EditorScene(SmashApp& smashApp)
     }
 
     {
+        const auto json = sq::parse_json_from_file("assets/Articles.json");
+        mArticlePaths.reserve(json.size());
+        for (const auto& entry : json)
+            mArticlePaths.emplace_back(entry.get_ref<const String&>());
+    }
+
+    {
         const auto json = sq::parse_json_from_file("assets/stages/Stages.json");
         mStageNames.reserve(json.size());
         for (const auto& entry : json)
@@ -125,17 +137,18 @@ void EditorScene::handle_event(sq::Event event)
 
     if (event.type == sq::Event::Type::Window_Close)
     {
-        impl_confirm_quit_unsaved(false);
+        confirm_quit_unsaved(false);
     }
 
     else if ((press || repeat) && kb.key == sq::Keyboard_Key::Space)
     {
-        if (mPreviewMode == PreviewMode::Pause)
+        if (mPreviewMode != PreviewMode::Pause)
         {
-            if (auto ctx = dynamic_cast<ActionContext*>(mActiveContext))
-                ctx->advance_frame(kb.shift);
+            mPreviewMode = PreviewMode::Pause;
+            mTickTime = 1.0 / 48.0;
         }
-        else mPreviewMode = PreviewMode::Pause;
+        else if (context_has_timeline())
+            mActiveContext->advance_frame(kb.shift);
     }
 
     else if ((press || repeat) && kb.ctrl && kb.key == sq::Keyboard_Key::Z)
@@ -146,7 +159,7 @@ void EditorScene::handle_event(sq::Event event)
 
     else if (press && kb.key == sq::Keyboard_Key::Escape)
     {
-        impl_confirm_quit_unsaved(true);
+        confirm_quit_unsaved(true);
     }
 
     else if (press && kb.ctrl && kb.key == sq::Keyboard_Key::S)
@@ -161,13 +174,13 @@ void EditorScene::handle_event(sq::Event event)
 void EditorScene::refresh_options_destroy()
 {
     if (mActiveContext != nullptr)
-        mActiveContext->renderer->refresh_options_destroy();
+        mRenderer->refresh_options_destroy();
 }
 
 void EditorScene::refresh_options_create()
 {
     if (mActiveContext != nullptr)
-        mActiveContext->renderer->refresh_options_create();
+        mRenderer->refresh_options_create();
 }
 
 //============================================================================//
@@ -179,8 +192,10 @@ void EditorScene::update()
         mActiveContext->apply_working_changes();
 
         if (mPreviewMode != PreviewMode::Pause)
-            if (auto ctx = dynamic_cast<ActionContext*>(mActiveContext))
-                ctx->advance_frame(false);
+        {
+            if (context_has_timeline())
+                mActiveContext->advance_frame(false);
+        }
     }
 }
 
@@ -196,15 +211,15 @@ void EditorScene::integrate(double /*elapsed*/, float blend)
 
     BaseContext& ctx = *mActiveContext;
 
-    ctx.renderer->swap_objects_buffers();
+    mRenderer->swap_objects_buffers();
 
-    ctx.renderer->get_camera().update_from_controller(*mController);
+    mRenderer->get_camera().update_from_controller(*mController);
 
-    ctx.renderer->integrate_camera(blend);
+    mRenderer->integrate_camera(blend);
     ctx.world->integrate(blend);
 
-    ctx.renderer->integrate_particles(blend, ctx.world->get_particle_system());
-    ctx.renderer->integrate_debug(blend, *ctx.world);
+    mRenderer->integrate_particles(blend, ctx.world->get_particle_system());
+    mRenderer->integrate_debug(blend, *ctx.world);
 
     //if (mPreviewMode != PreviewMode::Pause)
     //    mController->integrate();
@@ -212,16 +227,29 @@ void EditorScene::integrate(double /*elapsed*/, float blend)
 
 //============================================================================//
 
-void EditorScene::impl_confirm_quit_unsaved(bool returnToMenu)
+bool EditorScene::context_has_timeline() const
 {
+    if (dynamic_cast<ActionContext*>(mActiveContext)) return true;
+    if (dynamic_cast<ArticleContext*>(mActiveContext)) return true;
+    return false;
+}
+
+//============================================================================//
+
+void EditorScene::confirm_quit_unsaved(bool returnToMenu)
+{
+    if (!mConfirmQuitUnsaved.empty())
+        return; // confirm window already open
+
     const auto append_unsaved_items = [this](const auto& ctxMap)
     {
         for (const auto& [key, ctx] : ctxMap)
             if (ctx.modified == true)
-                sq::format_append(mConfirmQuitUnsaved, "  - {} ({})\n", ctx.ctxKeyString, ctx.ctxTypeString);
+                sq::format_append(mConfirmQuitUnsaved, "  - {}\n", ctx.ctxKey);
     };
 
     append_unsaved_items(mActionContexts);
+    append_unsaved_items(mArticleContexts);
     append_unsaved_items(mFighterContexts);
     append_unsaved_items(mStageContexts);
 
@@ -235,7 +263,7 @@ void EditorScene::impl_confirm_quit_unsaved(bool returnToMenu)
 
 //============================================================================//
 
-void EditorScene::impl_show_widget_toolbar()
+void EditorScene::show_widget_toolbar()
 {
     ImGui::SetNextWindowPos({0, 0});
     ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize);
@@ -250,6 +278,8 @@ void EditorScene::impl_show_widget_toolbar()
 
     mDockMainId = ImGui::GetID("MainDockSpace");
 
+    // todo: The way I setup docks results in incostinent tab ordering depending on the order that contexts are opened.
+    //       For example, if you open an action, and the an article, sounds ends up after debug.
     if (mWantResetDocks == true)
     {
         mDoResetDockNavigator = true;
@@ -303,6 +333,7 @@ void EditorScene::impl_show_widget_toolbar()
 
             const size_t numModified =
                 ranges::count_if(mActionContexts, [](const auto& item) { return item.second.modified; }) +
+                ranges::count_if(mArticleContexts, [](const auto& item) { return item.second.modified; }) +
                 ranges::count_if(mFighterContexts, [](const auto& item) { return item.second.modified; }) +
                 ranges::count_if(mStageContexts, [](const auto& item) { return item.second.modified; });
 
@@ -310,6 +341,7 @@ void EditorScene::impl_show_widget_toolbar()
             {
                 // todo: show a popup listing everything that has changed
                 for (auto& [key, ctx] : mActionContexts) if (ctx.modified) ctx.save_changes();
+                for (auto& [key, ctx] : mArticleContexts) if (ctx.modified) ctx.save_changes();
                 for (auto& [key, ctx] : mFighterContexts) if (ctx.modified) ctx.save_changes();
                 for (auto& [key, ctx] : mStageContexts) if (ctx.modified) ctx.save_changes();
             }
@@ -342,7 +374,7 @@ void EditorScene::impl_show_widget_toolbar()
         ImPlus::DragValue("##blend", mBlendValue, 0.01f, 0.f, 1.f, "%.2f");
         ImPlus::HoverTooltip("blend value to use when paused");
 
-        if (ImPlus::RadioButton("Pause", mPreviewMode, PreviewMode::Pause)) {}
+        if (ImPlus::RadioButton("Pause", mPreviewMode, PreviewMode::Pause)) mTickTime = 1.0 / 48.0;
         ImPlus::HoverTooltip("press space to manually tick");
         if (ImPlus::RadioButton("Normal", mPreviewMode, PreviewMode::Normal)) mTickTime = 1.0 / 48.0;
         ImPlus::HoverTooltip("play preview at normal speed");
@@ -355,8 +387,8 @@ void EditorScene::impl_show_widget_toolbar()
 
         ImGui::SetNextItemWidth(120.f);
         if (ImPlus::InputValue("##seed", mRandomSeed, 1))
-            if (auto ctx = dynamic_cast<ActionContext*>(mActiveContext))
-                ctx->scrub_to_frame(ctx->currentFrame);
+            if (context_has_timeline())
+                mActiveContext->scrub_to_frame(mActiveContext->currentFrame, true);
         ImPlus::HoverTooltip("seed to use for random number generator");
 
         ImGui::Checkbox("RNG", &mIncrementSeed);
@@ -366,7 +398,7 @@ void EditorScene::impl_show_widget_toolbar()
 
 //============================================================================//
 
-void EditorScene::impl_show_widget_navigator()
+void EditorScene::show_widget_navigator()
 {
     if (mDoResetDockNavigator) ImGui::SetNextWindowDockID(mDockLeftId);
     mDoResetDockNavigator = false;
@@ -376,20 +408,28 @@ void EditorScene::impl_show_widget_navigator()
 
     //--------------------------------------------------------//
 
-    const auto activate_context = [this](const auto& ctxKey, auto& ctxMap)
+    const auto activate_context = [this](const String& ctxKey, auto& ctxMap)
     {
+        sq::VulkanContext::get().device.waitIdle();
+
         auto [iter, created] = ctxMap.try_emplace(ctxKey, *this, ctxKey);
         mActiveContext = &iter->second;
 
+        mRenderer->set_camera(*mActiveContext->camera);
+        mRenderer->set_environment(mActiveContext->world->get_stage().mEnvironment);
+
         if (created == false)
         {
-            mActiveContext->renderer->refresh_options_destroy();
-            mActiveContext->renderer->refresh_options_create();
+            mRenderer->refresh_options_destroy();
+            mRenderer->refresh_options_create();
         }
 
         mSmashApp.get_window().set_title (
-            fmt::format("SuperTuxSmash - Editor - {} ({})", mActiveContext->ctxKeyString, mActiveContext->ctxTypeString)
+            fmt::format("SuperTuxSmash - Editor - {}", mActiveContext->ctxKey)
         );
+
+        // needed for populate_command_buffer
+        integrate(0.0, 0.f);
     };
 
     const auto close_context = [this](BaseContext* baseCtx)
@@ -403,6 +443,8 @@ void EditorScene::impl_show_widget_navigator()
 
         if (auto ctx = dynamic_cast<ActionContext*>(baseCtx))
             mActionContexts.erase(ctx->ctxKey);
+        else if (auto ctx = dynamic_cast<ArticleContext*>(baseCtx))
+            mArticleContexts.erase(ctx->ctxKey);
         else if (auto ctx = dynamic_cast<FighterContext*>(baseCtx))
             mFighterContexts.erase(ctx->ctxKey);
         else if (auto ctx = dynamic_cast<StageContext*>(baseCtx))
@@ -412,7 +454,7 @@ void EditorScene::impl_show_widget_navigator()
         mConfirmCloseContext = nullptr;
     };
 
-    const auto context_list_entry = [&](const auto& ctxKey, auto& ctxMap, String label)
+    const auto context_list_entry = [&](const String& ctxKey, auto& ctxMap, String label)
     {
         const auto iter = ctxMap.find(ctxKey);
 
@@ -428,6 +470,14 @@ void EditorScene::impl_show_widget_navigator()
         if (ImPlus::Selectable(label, highlight) && !active) activate_context(ctxKey, ctxMap);
         if (loaded) ImGui::PopFont();
 
+        if (ImGui::IsItemHovered())
+        {
+            const ImVec2 rectMin = ImGui::GetItemRectMin();
+            const ImVec2 rectMax = ImGui::GetItemRectMax();
+            ImGui::SetNextWindowPos({rectMax.x, std::floor((rectMin.y + rectMax.y) * 0.5f)}, 0, {0.f, 0.5f});
+            ImPlus::SetTooltip(ctxKey);
+        }
+
         ImPlus::if_PopupContextItem(nullptr, ImGuiPopupFlags_MouseButtonRight, [&]()
         {
             if (ImGui::MenuItem("Close", nullptr, false, loaded))
@@ -442,41 +492,114 @@ void EditorScene::impl_show_widget_navigator()
 
     //--------------------------------------------------------//
 
-    ImPlus::if_TabBar("tabbar", ImGuiTabBarFlags_FittingPolicyScroll, [&]()
+    // todo: multi row tab bar support for imgui
     {
-        ImPlus::if_TabItemChild("Actions", 0, [&]()
+        const ImPlus::Style_ItemSpacing itemSpacing = {0.f, 0.f};
+        const ImPlus::Style_SelectableTextAlign selectableAlign = {0.5f, 0.5f};
+
+        ImDrawList* drawList = ImGui::GetWindowDrawList();
+
+        const float navTabWidth = std::floor((ImGui::GetContentRegionAvail().x - 2.f) * 0.5f);
+        const float navTabHeight = ImGui::GetFrameHeight();
+
+        const ImU32 border = ImGui::GetColorU32(ImGuiCol_Border);
+
+        ImGui::BeginGroup();
+        if (ImGui::Selectable("Actions", mActiveNavTab == 0, 0, {navTabWidth, navTabHeight})) mActiveNavTab = 0;
+        ImGui::SameLine(0.f, 2.f);
+        drawList->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), border);
+        if (ImGui::Selectable("Articles", mActiveNavTab == 1, 0, {navTabWidth, navTabHeight})) mActiveNavTab = 1;
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 2.f);
+        drawList->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), border);
+        if (ImGui::Selectable("Fighters", mActiveNavTab == 2, 0, {navTabWidth, navTabHeight})) mActiveNavTab = 2;
+        ImGui::SameLine(0.f, 2.f);
+        drawList->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), border);
+        if (ImGui::Selectable("Stages", mActiveNavTab == 3, 0, {navTabWidth, navTabHeight})) mActiveNavTab = 3;
+        drawList->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), border);
+        ImGui::EndGroup();
+
+        const ImVec2 rectMin = ImGui::GetItemRectMin();
+        const ImVec2 rectMax = ImGui::GetItemRectMax();
+
+        const ImVec2 padding = ImGui::GetStyle().WindowPadding;
+
+        drawList->PushClipRectFullScreen();
+        drawList->AddLine({rectMin.x - padding.x, rectMax.y + 2.f}, {rectMax.x + padding.x, rectMax.y + 2.f}, border);
+        drawList->PopClipRect();
+
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 2.f);
+    }
+
+    ImGui::Spacing();
+
+    //--------------------------------------------------------//
+
+    ImPlus::if_Child("navchild", 0, [&]()
+    {
+        if (mActiveNavTab == 0) // Actions
         {
             for (const FighterInfo& info : mFighterInfos)
             {
                 const size_t numLoaded = ranges::count_if (
-                    mActionContexts, [&info](const auto& item) { return item.first.fighter == info.name; }
+                    mActionContexts,
+                    [&info](const auto& item) { return StringView(item.first).substr(9, item.first.find('/', 9)) == info.name; }
                 );
                 const size_t numTotal = mFighterInfoCommon.actions.size() + info.actions.size();
 
                 if (ImPlus::CollapsingHeader(fmt::format("{} ({}/{})###{}", info.name, numLoaded, numTotal, info.name)))
                 {
                     for (const SmallString& name : mFighterInfoCommon.actions)
-                        context_list_entry(ActionKey{info.name, name}, mActionContexts, fmt::format("{}/{}", info.name, name));
+                        context_list_entry(fmt::format("fighters/{}/actions/{}", info.name, name), mActionContexts, String(name));
 
                     ImGui::Separator();
 
                     for (const SmallString& name : info.actions)
-                        context_list_entry(ActionKey{info.name, name}, mActionContexts, fmt::format("{}/{}", info.name, name));
+                        context_list_entry(fmt::format("fighters/{}/actions/{}", info.name, name), mActionContexts, String(name));
                 }
             }
-        });
+        }
 
-        ImPlus::if_TabItemChild("Fighters", 0, [&]()
+        else if (mActiveNavTab == 1) // Articles
+        {
+            StringView previousPrefix = {};
+            bool headerExpanded = {};
+
+            for (auto iter = mArticlePaths.begin(); iter != mArticlePaths.end(); ++iter)
+            {
+                const StringView path = StringView(*iter);
+                const StringView prefix = path.substr(0, path.rfind('/') + 1); // includes slash
+
+                if (previousPrefix != prefix)
+                {
+                    const size_t numLoaded = ranges::count_if (
+                        mArticleContexts, [&prefix](const auto& item) { return item.first.starts_with(prefix); }
+                    );
+                    const size_t numTotal = size_t ( std::distance ( iter, std::find_if (
+                        std::next(iter), mArticlePaths.end(), [&prefix](const auto& item) { return !item.starts_with(prefix); }
+                    )));
+
+                    const StringView label = prefix.substr(0, prefix.size() - (prefix.ends_with("/articles/") ? 10 : 1));
+
+                    headerExpanded = ImPlus::CollapsingHeader(fmt::format("{} ({}/{})###{}", label, numLoaded, numTotal, label));
+                }
+
+                if (headerExpanded) context_list_entry(*iter, mArticleContexts, String(path.substr(prefix.size())));
+            }
+        }
+
+        else if (mActiveNavTab == 2) // Fighters
         {
             for (const FighterInfo& info : mFighterInfos)
-                context_list_entry(info.name, mFighterContexts, String(info.name));
-        });
+                context_list_entry(fmt::format("fighters/{}", info.name), mFighterContexts, String(info.name));
+        }
 
-        ImPlus::if_TabItemChild("Stages", 0, [&]()
+        else if (mActiveNavTab == 3) // Stages
         {
             for (const TinyString& name : mStageNames)
-                context_list_entry(name, mStageContexts, String(name));
-        });
+                context_list_entry(fmt::format("stages/{}", name), mStageContexts, String(name));
+        }
+
+        else SQEE_UNREACHABLE();
     });
 
     //--------------------------------------------------------//
@@ -484,7 +607,7 @@ void EditorScene::impl_show_widget_navigator()
     if (mConfirmCloseContext != nullptr)
     {
         const auto result = ImPlus::DialogConfirmation (
-            "Discard Changes", fmt::format("{} modified, really discard changes?", mConfirmCloseContext->ctxTypeString)
+            "Discard Changes", fmt::format("{} modified, really discard changes?", mConfirmCloseContext->ctxKey)
         );
 
         if (result == ImPlus::DialogResult::Confirm)
@@ -497,7 +620,7 @@ void EditorScene::impl_show_widget_navigator()
     if (mConfirmQuitUnsaved.empty() == false)
     {
         const auto result = ImPlus::DialogConfirmation (
-            "Discard Changes", fmt::format("Some items have not been saved:\n{}Really quit without saving?", mConfirmQuitUnsaved)
+            "Discard Changes", fmt::format("Items have not been saved:\n{}Really quit without saving?", mConfirmQuitUnsaved)
         );
 
         if (result == ImPlus::DialogResult::Confirm)
@@ -515,8 +638,8 @@ void EditorScene::impl_show_widget_navigator()
 
 void EditorScene::show_imgui_widgets()
 {
-    impl_show_widget_toolbar();
-    impl_show_widget_navigator();
+    show_widget_toolbar();
+    show_widget_navigator();
 
     if (mActiveContext != nullptr)
         mActiveContext->show_widgets();
@@ -529,7 +652,7 @@ void EditorScene::populate_command_buffer(vk::CommandBuffer cmdbuf, vk::Framebuf
     const Vec2U windowSize = mSmashApp.get_window().get_size();
 
     if (mActiveContext != nullptr)
-        mActiveContext->renderer->populate_command_buffer(cmdbuf);
+        mRenderer->populate_command_buffer(cmdbuf);
 
     cmdbuf.beginRenderPass (
         vk::RenderPassBeginInfo {
@@ -538,7 +661,7 @@ void EditorScene::populate_command_buffer(vk::CommandBuffer cmdbuf, vk::Framebuf
     );
 
     if (mActiveContext != nullptr)
-        mActiveContext->renderer->populate_final_pass(cmdbuf);
+        mRenderer->populate_final_pass(cmdbuf);
     else
         cmdbuf.clearAttachments (
             vk::ClearAttachment(vk::ImageAspectFlagBits::eColor, 0u, vk::ClearValue(vk::ClearColorValue().setFloat32({}))),
@@ -576,27 +699,3 @@ void EditorScene::CubeMapView::initialise(EditorScene& editor, uint level, vk::I
         );
     }
 }
-
-//============================================================================//
-
-EditorScene::BaseContext::BaseContext(EditorScene& editor, TinyString stage)
-    : editor(editor)
-{
-    sq::Window& window = editor.mSmashApp.get_window();
-    sq::AudioContext& audioContext = editor.mSmashApp.get_audio_context();
-
-    Options& options = editor.mSmashApp.get_options();
-    ResourceCaches& resourceCaches = editor.mSmashApp.get_resource_caches();
-
-    renderer = std::make_unique<Renderer>(window, options, resourceCaches);
-    camera = std::make_unique<EditorCamera>(*renderer);
-    renderer->set_camera(*camera);
-
-    world = std::make_unique<World>(options, audioContext, resourceCaches, *renderer);
-    world->editor = std::make_unique<World::EditorData>();
-
-    world->set_rng_seed(editor.mRandomSeed);
-    world->set_stage(std::make_unique<Stage>(*world, stage));
-}
-
-EditorScene::BaseContext::~BaseContext() = default;

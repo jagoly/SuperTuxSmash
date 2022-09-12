@@ -33,8 +33,7 @@ void EntityDef::initialise_sounds(const String& jsonPath)
     for (const auto& item : json.items())
     {
         SoundEffect& sound = sounds[item.key()];
-        sound.cache = &world.caches.sounds;
-        sound.from_json(item.value());
+        sound.from_json(item.value(), world.caches.sounds);
     }
 }
 

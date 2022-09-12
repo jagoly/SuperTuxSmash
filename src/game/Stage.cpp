@@ -25,9 +25,9 @@ Stage::Stage(World& world, TinyString name)
     render.at("skybox").get_to(mSkyboxPath);
     render.at("light.direction").get_to(mLightDirection);
     render.at("light.colour").get_to(mLightColour);
-    render.at("tonemap.exposure").get_to(world.renderer.tonemap.exposure);
-    render.at("tonemap.contrast").get_to(world.renderer.tonemap.contrast);
-    render.at("tonemap.black").get_to(world.renderer.tonemap.black);
+    render.at("tonemap.exposure").get_to(mEnvironment.tonemap.exposure);
+    render.at("tonemap.contrast").get_to(mEnvironment.tonemap.contrast);
+    render.at("tonemap.black").get_to(mEnvironment.tonemap.black);
 
     const JsonValue& general = json.at("general");
     general.at("inner_boundary_min").get_to(mInnerBoundary.min);
@@ -61,10 +61,11 @@ Stage::Stage(World& world, TinyString name)
 
     // load environment maps
     {
-        world.renderer.cubemaps.skybox.load_from_file_cube(fmt::format("assets/{}/Sky", mSkyboxPath));
-        world.renderer.cubemaps.irradiance.load_from_file_cube(fmt::format("assets/{}/Irradiance", mSkyboxPath));
-        world.renderer.cubemaps.radiance.load_from_file_cube(fmt::format("assets/{}/Radiance", mSkyboxPath));
+        mEnvironment.cubemaps.skybox = world.caches.cubeTextures.acquire(mSkyboxPath + "/Sky");
+        mEnvironment.cubemaps.irradiance = world.caches.cubeTextures.acquire(mSkyboxPath + "/Irradiance");
+        mEnvironment.cubemaps.radiance = world.caches.cubeTextures.acquire(mSkyboxPath + "/Radiance");
 
+        world.renderer.set_environment(mEnvironment);
         world.renderer.update_cubemap_descriptor_sets();
     }
 

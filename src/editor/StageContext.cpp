@@ -1,4 +1,4 @@
-#include "editor/Editor_Stage.hpp"
+#include "editor/StageContext.hpp"
 
 #include "game/Stage.hpp"
 #include "game/World.hpp"
@@ -7,6 +7,7 @@
 
 #include <sqee/app/GuiWidgets.hpp>
 #include <sqee/maths/Colours.hpp>
+#include <sqee/objects/Texture.hpp>
 #include <sqee/vk/Helpers.hpp>
 #include <sqee/vk/VulkanContext.hpp>
 
@@ -15,19 +16,20 @@ using StageContext = EditorScene::StageContext;
 
 //============================================================================//
 
-StageContext::StageContext(EditorScene& _editor, TinyString _key)
-    : BaseContext(_editor, _key), ctxKey(_key)
+StageContext::StageContext(EditorScene& _editor, String _ctxKey)
+    : BaseContext(_editor, std::move(_ctxKey))
 {
-    ctxTypeString = "Stage";
-    ctxKeyString = _key;
+    const auto stageKey = StringView(ctxKey).substr(7);
 
-    stage = &world->get_stage();
+    stage = &world->create_stage(stageKey);
 
-    skybox.initialise(editor, 0u, renderer->cubemaps.skybox.get_image(), renderer->samplers.linearClamp);
-    irradiance.initialise(editor, 0u, renderer->cubemaps.irradiance.get_image(), renderer->samplers.linearClamp);
+    auto& cubemaps = stage->get_environment().cubemaps;
+
+    skybox.initialise(editor, 0u, cubemaps.skybox->get_image(), renderer.samplers.linearClamp);
+    irradiance.initialise(editor, 0u, cubemaps.irradiance->get_image(), renderer.samplers.linearClamp);
 
     for (uint level = 0u; level < radiance.size(); ++level)
-        radiance[level].initialise(editor, level, renderer->cubemaps.radiance.get_image(), renderer->samplers.linearClamp);
+        radiance[level].initialise(editor, level, cubemaps.radiance->get_image(), renderer.samplers.linearClamp);
 }
 
 StageContext::~StageContext()
@@ -85,7 +87,7 @@ void StageContext::show_widgets()
 {
     show_widget_stage();
     show_widget_cubemaps();
-    editor.helper_show_widget_debug(stage, nullptr);
+    show_widget_debug();
 }
 
 //============================================================================//
@@ -106,7 +108,7 @@ void StageContext::show_widget_stage()
     {
         const ImPlus::ScopeItemWidth width = -100.f;
 
-        auto& tonemap = renderer->tonemap;
+        auto& tonemap = stage->mEnvironment.tonemap;
 
         ImPlus::SliderValue("Exposure", tonemap.exposure, 0.25f, 4.f);
         ImPlus::SliderValue("Contrast", tonemap.contrast, 0.5f, 2.f);
@@ -144,13 +146,15 @@ void StageContext::show_widget_cubemaps()
     // ordered to show a panorama for the first four faces
     constexpr auto faceOrder = std::array { 4u, 0u, 5u, 1u, 2u, 3u };
 
+    auto& cubemaps = stage->get_environment().cubemaps;
+
     //--------------------------------------------------------//
 
     if (ImGui::CollapsingHeader("Skybox"))
     {
         if (ImGui::Button("Save"))
         {
-            renderer->cubemaps.skybox.save_as_compressed (
+            cubemaps.skybox->save_as_compressed (
                 sq::build_string("assets/", stage->get_skybox_path(), "/Sky.lz4"),
                 vk::Format::eE5B9G9R9UfloatPack32, Vec3U(SKYBOX_SIZE, SKYBOX_SIZE, 6u), 1u
             );
@@ -177,7 +181,7 @@ void StageContext::show_widget_cubemaps()
         ImGui::SameLine();
         if (ImGui::Button("Save") && irradianceModified)
         {
-            renderer->cubemaps.irradiance.save_as_compressed (
+            cubemaps.irradiance->save_as_compressed (
                 sq::build_string("assets/", stage->get_skybox_path(), "/Irradiance.lz4"),
                 vk::Format::eE5B9G9R9UfloatPack32, Vec3U(IRRADIANCE_SIZE, IRRADIANCE_SIZE, 6u), 1u
             );
@@ -205,7 +209,7 @@ void StageContext::show_widget_cubemaps()
         ImGui::SameLine();
         if (ImGui::Button("Save") && radianceModified)
         {
-            renderer->cubemaps.radiance.save_as_compressed (
+            cubemaps.radiance->save_as_compressed (
                 sq::build_string("assets/", stage->get_skybox_path(), "/Radiance.lz4"),
                 vk::Format::eE5B9G9R9UfloatPack32, Vec3U(RADIANCE_SIZE, RADIANCE_SIZE, 6u), RADIANCE_LEVELS
             );
@@ -250,7 +254,7 @@ EditorScene::ShrunkCubeMap StageContext::shrink_cube_map_skybox(vk::ImageLayout 
         );
 
         const auto imageInfo = vk::DescriptorImageInfo {
-            renderer->samplers.nearestClamp, result.image.view, vk::ImageLayout::eShaderReadOnlyOptimal
+            renderer.samplers.nearestClamp, result.image.view, vk::ImageLayout::eShaderReadOnlyOptimal
         };
 
         result.descriptorSet = vctx.allocate_descriptor_set(vctx.descriptorPool, editor.mImageProcessSetLayout);
@@ -369,9 +373,10 @@ void StageContext::generate_cube_map_irradiance()
         std::array<vk::Pipeline, 6u> pipelines;
     } stuff;
 
-    const auto& vctx = sq::VulkanContext::get();
-
     ShrunkCubeMap shrunk = shrink_cube_map_skybox(vk::ImageLayout::eShaderReadOnlyOptimal, RADIANCE_SIZE);
+
+    const auto& texture = *stage->get_environment().cubemaps.irradiance;
+    const auto& vctx = sq::VulkanContext::get();
 
     // create render targets
     {
@@ -465,12 +470,12 @@ void StageContext::generate_cube_map_irradiance()
 
     //--------------------------------------------------------//
 
-    update_cube_map_texture(stuff.image, IRRADIANCE_SIZE, 1u, renderer->cubemaps.irradiance);
+    update_cube_map_texture(stuff.image, IRRADIANCE_SIZE, 1u, const_cast<sq::Texture&>(texture));
 
-    irradiance.initialise(editor, 0u, renderer->cubemaps.irradiance.get_image(), renderer->samplers.linearClamp);
+    irradiance.initialise(editor, 0u, texture.get_image(), renderer.samplers.linearClamp);
 
-    renderer->refresh_options_destroy();
-    renderer->refresh_options_create();
+    renderer.refresh_options_destroy();
+    renderer.refresh_options_create();
 
     irradianceModified = true;
 
@@ -506,6 +511,7 @@ void StageContext::generate_cube_map_radiance()
 
     ShrunkCubeMap shrunk = shrink_cube_map_skybox(vk::ImageLayout::eTransferSrcOptimal, RADIANCE_SIZE);
 
+    const auto& texture = *stage->get_environment().cubemaps.radiance;
     const auto& vctx = sq::VulkanContext::get();
 
     // create render targets
@@ -658,13 +664,13 @@ void StageContext::generate_cube_map_radiance()
 
     //--------------------------------------------------------//
 
-    update_cube_map_texture(stuff.image, RADIANCE_SIZE, RADIANCE_LEVELS, renderer->cubemaps.radiance);
+    update_cube_map_texture(stuff.image, RADIANCE_SIZE, RADIANCE_LEVELS, const_cast<sq::Texture&>(texture));
 
     for (uint level = 0u; level < RADIANCE_LEVELS; ++level)
-        radiance[level].initialise(editor, level, renderer->cubemaps.radiance.get_image(), renderer->samplers.linearClamp);
+        radiance[level].initialise(editor, level, texture.get_image(), renderer.samplers.linearClamp);
 
-    renderer->refresh_options_destroy();
-    renderer->refresh_options_create();
+    renderer.refresh_options_destroy();
+    renderer.refresh_options_create();
 
     radianceModified = true;
 
@@ -746,4 +752,6 @@ void StageContext::update_cube_map_texture(sq::ImageStuff source, uint size, uin
         texture.initialise_cube(config);
         texture.load_from_memory(compressed.get(), pixelCount * sizeof(uint32_t), config);
     }
+
+    renderer.update_cubemap_descriptor_sets();
 }

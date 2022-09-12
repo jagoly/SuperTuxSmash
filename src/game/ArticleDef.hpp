@@ -10,19 +10,9 @@ namespace sts {
 
 struct ArticleDef final : EntityDef
 {
-public: //====================================================//
-
     ArticleDef(World& world, String directory);
 
     ~ArticleDef();
-
-    //--------------------------------------------------------//
-
-    void load_json_from_file();
-
-    void load_wren_from_file();
-
-    void interpret_module();
 
     //--------------------------------------------------------//
 
@@ -37,11 +27,11 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    bool has_changes(const ArticleDef& other) const;
+    void load_json_from_file();
 
-    void apply_changes(const ArticleDef& other);
+    void load_wren_from_file();
 
-    std::unique_ptr<ArticleDef> clone() const;
+    void interpret_module();
 };
 
 //============================================================================//

@@ -2,14 +2,12 @@
 
 #include "game/VisualEffect.hpp"
 
-#include <sqee/app/AudioContext.hpp>
+#include <sqee/misc/Json.hpp>
 
 #include <sqee/objects/Mesh.hpp>
 #include <sqee/objects/Pipeline.hpp>
 #include <sqee/objects/Sound.hpp>
 #include <sqee/objects/Texture.hpp>
-
-#include <sqee/misc/Json.hpp>
 
 #include <sqee/vk/VulkanContext.hpp>
 
@@ -57,6 +55,13 @@ ResourceCaches::ResourceCaches(sq::AudioContext& audio)
         return result;
     });
 
+    cubeTextures.assign_factory([](const String& key)
+    {
+        auto result = sq::Texture();
+        result.load_from_file_cube("assets/" + key);
+        return result;
+    });
+
     pipelines.assign_factory([this](const JsonValue& key)
     {
         auto result = sq::Pipeline();
@@ -96,6 +101,7 @@ void ResourceCaches::refresh_options()
     pipelines.free_unreachable();
     // todo: remove from bindless set and reuse indices
     //textures.free_unreachable();
+    cubeTextures.free_unreachable();
     meshes.free_unreachable();
 
     pipelines.reload_resources();

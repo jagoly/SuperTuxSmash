@@ -376,9 +376,13 @@ void World::integrate(float blend)
 
 //============================================================================//
 
-void World::set_stage(std::unique_ptr<Stage> stage)
+Stage& World::create_stage(TinyString name)
 {
-    mStage = std::move(stage);
+    SQASSERT(mStage == nullptr, "stage already created");
+
+    // for now, stages don't have a def
+    mStage = std::make_unique<Stage>(*this, name);
+    return *mStage;
 }
 
 Fighter& World::create_fighter(TinyString name)

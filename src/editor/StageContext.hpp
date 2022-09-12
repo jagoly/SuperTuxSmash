@@ -2,15 +2,17 @@
 
 #include "setup.hpp"
 
-#include "editor/EditorScene.hpp"
+#include "editor/BaseContext.hpp"
+
+namespace sq { class Texture; }
 
 namespace sts {
 
 //============================================================================//
 
-struct EditorScene::StageContext : EditorScene::BaseContext
+struct EditorScene::StageContext : BaseContext
 {
-    StageContext(EditorScene& editor, TinyString key);
+    StageContext(EditorScene& editor, String ctxKey);
 
     ~StageContext() override;
 
@@ -40,10 +42,6 @@ struct EditorScene::StageContext : EditorScene::BaseContext
     void update_cube_map_texture(sq::ImageStuff source, uint size, uint levels, sq::Texture& texture);
 
     //--------------------------------------------------------//
-
-    const TinyString ctxKey;
-
-    Stage* stage;
 
     CubeMapView skybox;
     CubeMapView irradiance;

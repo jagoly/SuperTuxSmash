@@ -46,17 +46,19 @@ void Article::call_do_destroy()
 
 void Article::set_error_message(StringView method, StringView errors)
 {
-    String message = fmt::format("Article '{}'\n{}C++ | {}()\n", def.directory, errors, method);
+    String message = fmt::format (
+        "'{}'\n{}C++ | {}() | frame = {}\n", def.directory, errors, method, mCurrentFrame
+    );
 
     if (world.editor == nullptr)
         sq::log_error_multiline(message);
 
-    else //if (world.editor->actionKey != ActionKey{def.fighter.name, def.name})
+    else if (world.editor->ctxKey != def.directory)
         sq::log_warning_multiline(message);
 
     // only show the first error, which usually causes the other errors
-    //else if (world.editor->errorMessage.empty())
-    //    world.editor->errorMessage = std::move(message);
+    else if (world.editor->errorMessage.empty())
+        world.editor->errorMessage = std::move(message);
 }
 
 //============================================================================//

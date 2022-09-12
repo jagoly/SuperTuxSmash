@@ -2,15 +2,15 @@
 
 #include "setup.hpp"
 
-#include "editor/EditorScene.hpp"
+#include "editor/BaseContext.hpp"
 
 namespace sts {
 
 //============================================================================//
 
-struct EditorScene::FighterContext : EditorScene::BaseContext
+struct EditorScene::FighterContext : BaseContext
 {
-    FighterContext(EditorScene& editor, TinyString key);
+    FighterContext(EditorScene& editor, String ctxKey);
 
     ~FighterContext() override;
 
@@ -29,21 +29,20 @@ struct EditorScene::FighterContext : EditorScene::BaseContext
     //--------------------------------------------------------//
 
     void show_widget_hurtblobs();
-    void show_widget_sounds();
 
     //--------------------------------------------------------//
 
-    const TinyString ctxKey;
-
-    Fighter* fighter;
     FighterDef* fighterDef;
 
     struct UndoEntry
     {
-        std::map<TinyString, HurtBlobDef> hurtBlobs;
-        std::map<SmallString, SoundEffect> sounds;
+        explicit UndoEntry(const FighterDef& def);
 
-        bool has_changes(const FighterDef& fighterDef) const;
+        std::map<SmallString, SoundEffect> sounds;
+        std::map<TinyString, HurtBlobDef> hurtBlobs;
+
+        bool has_changes(const FighterDef& def) const;
+        void revert_changes(FighterDef& def) const;
     };
 
     std::unique_ptr<UndoEntry> savedData;

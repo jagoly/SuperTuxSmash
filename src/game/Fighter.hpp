@@ -124,7 +124,7 @@ public: //====================================================//
 
     void wren_cxx_assign_action(SmallString key);
 
-    void wren_cxx_assign_action_null() { clear_action(); };
+    void wren_cxx_assign_action_null() { clear_action(); }
 
     void wren_cxx_assign_state(TinyString key);
 

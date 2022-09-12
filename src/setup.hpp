@@ -35,6 +35,7 @@ struct ArticleDef;
 struct DebugGui;
 struct Emitter;
 struct EntityDef;
+struct Environment;
 struct FighterActionDef;
 struct FighterDef;
 struct FighterStateDef;

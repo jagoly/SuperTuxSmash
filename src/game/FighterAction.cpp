@@ -29,9 +29,7 @@ void FighterActionDef::load_json_from_file()
     effects.clear();
     emitters.clear();
 
-    const String path = fmt::format("assets/{}/actions/{}.json", fighter.directory, name);
-
-    const auto root = sq::try_parse_json_from_file(path);
+    const auto root = sq::try_parse_json_from_file(fmt::format("assets/{}/actions/{}.json", fighter.directory, name));
     if (root.has_value() == false)
     {
         sq::log_warning("'{}/actions/{}': missing json", fighter.directory, name);
@@ -40,38 +38,25 @@ void FighterActionDef::load_json_from_file()
 
     String errors;
 
-    TRY_FOR (const auto& item : root->at("blobs").items())
+    const auto items_from_json = [&root, &errors](StringView key, auto& map, auto&... fromJsonArgs)
     {
-        HitBlobDef& blob = blobs[item.key()];
+        try {
+            for (const auto& item : root->at(key).items())
+            {
+                auto& entry = map[item.key()];
+                try {
+                    entry.from_json(item.value(), fromJsonArgs...);
+                }
+                catch (const std::exception& ex) {
+                    sq::format_append(errors, "\n{}[\"{}\"]: {}", key, item.key(), ex.what());
+                }
+            }
+        } catch (const std::exception& ex) { errors += '\n'; errors += ex.what(); }
+    };
 
-        try { blob.from_json(item.value(), fighter.armature); }
-        catch (const std::exception& ex) {
-            sq::format_append(errors, "\nblob '{}': {}", item.key(), ex.what());
-        }
-    }
-    CATCH (const std::exception& ex) { errors += '\n'; errors += ex.what(); }
-
-    TRY_FOR (const auto& item : root->at("effects").items())
-    {
-        VisualEffectDef& effect = effects[item.key()];
-
-        try { effect.from_json(item.value(), fighter.armature, fighter.world.caches.effects); }
-        catch (const std::exception& ex) {
-            sq::format_append(errors, "\neffect '{}': {}", item.key(), ex.what());
-        }
-    }
-    CATCH (const std::exception& ex) { errors += '\n'; errors += ex.what(); }
-
-    TRY_FOR (const auto& item : root->at("emitters").items())
-    {
-        Emitter& emitter = emitters[item.key()];
-
-        try { emitter.from_json(item.value(), fighter.armature); }
-        catch (const std::exception& ex) {
-            sq::format_append(errors, "\nemitter '{}': {}", item.key(), ex.what());
-        }
-    }
-    CATCH (const std::exception& ex) { errors += '\n'; errors += ex.what(); }
+    items_from_json("blobs", blobs, fighter.armature);
+    items_from_json("effects", effects, fighter.armature, fighter.world.caches.effects);
+    items_from_json("emitters", emitters, fighter.armature);
 
     if (errors.empty() == false)
         sq::log_warning_multiline("'{}/actions/{}': errors in json{}", fighter.directory, name, errors);
@@ -81,10 +66,8 @@ void FighterActionDef::load_json_from_file()
 
 void FighterActionDef::load_wren_from_file()
 {
-    const String path = fmt::format("assets/{}/actions/{}.wren", fighter.directory, name);
-
     // set wrenSource to either the file contents or a fallback script
-    auto source = sq::try_read_text_from_file(path);
+    auto source = sq::try_read_text_from_file(fmt::format("assets/{}/actions/{}.wren", fighter.directory, name));
     if (source.has_value() == false)
     {
         sq::log_warning("'{}/actions/{}': missing script", fighter.directory, name);
@@ -131,7 +114,7 @@ void FighterActionDef::interpret_module()
         if (editor == nullptr)
             sq::log_error_multiline(message);
 
-        else if (editor->actionKey != std::tuple(fighter.name, name))
+        else if (editor->ctxKey != module)
             sq::log_warning_multiline(message);
 
         else editor->errorMessage = std::move(message);
@@ -149,7 +132,7 @@ void FighterActionDef::interpret_module()
     }
 
     // no errors, clear editor error message
-    else if (editor != nullptr && editor->actionKey == std::tuple{fighter.name, name})
+    else if (editor != nullptr && editor->ctxKey == module)
         editor->errorMessage.clear();
 
     // store the class for use by FighterAction
@@ -157,43 +140,6 @@ void FighterActionDef::interpret_module()
 
     // don't need the source anymore, so free some memory
     if (editor == nullptr) wrenSource = String();
-}
-
-//============================================================================//
-
-bool FighterActionDef::has_changes(const FighterActionDef& other) const
-{
-    if (blobs != other.blobs) return true;
-    if (effects != other.effects) return true;
-    if (emitters != other.emitters) return true;
-    if (wrenSource != other.wrenSource) return true;
-    return false;
-}
-
-void FighterActionDef::apply_changes(const FighterActionDef& other)
-{
-    blobs.clear();
-    for (const auto& [key, blob] : other.blobs)
-        blobs.try_emplace(key, blob);
-
-    effects.clear();
-    for (const auto& [key, blob] : other.effects)
-        effects.try_emplace(key, blob);
-
-    emitters.clear();
-    for (const auto& [key, emitter] : other.emitters)
-        emitters.try_emplace(key, emitter);
-
-    wrenSource = other.wrenSource;
-}
-
-std::unique_ptr<FighterActionDef> FighterActionDef::clone() const
-{
-    auto result = std::make_unique<FighterActionDef>(fighter, name);
-
-    result->apply_changes(*this);
-
-    return result;
 }
 
 //============================================================================//
@@ -265,12 +211,14 @@ void FighterAction::call_do_cancel()
 
 void FighterAction::set_error_message(StringView method, StringView errors)
 {
-    String message = fmt::format("'{}/actions/{}'\n{}C++ | {}()\n", def.fighter.directory, def.name, errors, method);
+    String message = fmt::format (
+        "'{}/actions/{}'\n{}C++ | {}() | frame = {}\n", def.fighter.directory, def.name, errors, method, mCurrentFrame
+    );
 
     if (world.editor == nullptr)
         sq::log_error_multiline(message);
 
-    else if (world.editor->actionKey != std::tuple(def.fighter.name, def.name))
+    else if (world.editor->ctxKey != fmt::format("{}/actions/{}", def.fighter.directory, def.name))
         sq::log_warning_multiline(message);
 
     // only show the first error, which usually causes the other errors

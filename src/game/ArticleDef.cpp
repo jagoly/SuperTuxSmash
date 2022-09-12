@@ -32,9 +32,7 @@ void ArticleDef::load_json_from_file()
     effects.clear();
     emitters.clear();
 
-    const String jsonPath = fmt::format("assets/{}/Article.json", directory);
-
-    const auto root = sq::try_parse_json_from_file(jsonPath);
+    const auto root = sq::try_parse_json_from_file(fmt::format("assets/{}/Article.json", directory));
     if (root.has_value() == false)
     {
         sq::log_warning("article '{}': missing json", directory);
@@ -43,38 +41,25 @@ void ArticleDef::load_json_from_file()
 
     String errors;
 
-    TRY_FOR (const auto& item : root->at("blobs").items())
+    const auto items_from_json = [&root, &errors](StringView key, auto& map, auto&... fromJsonArgs)
     {
-        HitBlobDef& blob = blobs[item.key()];
+        try {
+            for (const auto& item : root->at(key).items())
+            {
+                auto& entry = map[item.key()];
+                try {
+                    entry.from_json(item.value(), fromJsonArgs...);
+                }
+                catch (const std::exception& ex) {
+                    sq::format_append(errors, "\n{}[\"{}\"]: {}", key, item.key(), ex.what());
+                }
+            }
+        } catch (const std::exception& ex) { errors += '\n'; errors += ex.what(); }
+    };
 
-        try { blob.from_json(item.value(), armature); }
-        catch (const std::exception& ex) {
-            sq::format_append(errors, "\nblob '{}': {}", item.key(), ex.what());
-        }
-    }
-    CATCH (const std::exception& ex) { errors += '\n'; errors += ex.what(); }
-
-    TRY_FOR (const auto& item : root->at("effects").items())
-    {
-        VisualEffectDef& effect = effects[item.key()];
-
-        try { effect.from_json(item.value(), armature, world.caches.effects); }
-        catch (const std::exception& ex) {
-            sq::format_append(errors, "\neffect '{}': {}", item.key(), ex.what());
-        }
-    }
-    CATCH (const std::exception& ex) { errors += '\n'; errors += ex.what(); }
-
-    TRY_FOR (const auto& item : root->at("emitters").items())
-    {
-        Emitter& emitter = emitters[item.key()];
-
-        try { emitter.from_json(item.value(), armature); }
-        catch (const std::exception& ex) {
-            sq::format_append(errors, "\nemitter '{}': {}", item.key(), ex.what());
-        }
-    }
-    CATCH (const std::exception& ex) { errors += '\n'; errors += ex.what(); }
+    items_from_json("blobs", blobs, armature);
+    items_from_json("effects", effects, armature, world.caches.effects);
+    items_from_json("emitters", emitters, armature);
 
     if (errors.empty() == false)
         sq::log_warning_multiline("'{}': errors in json{}", directory, errors);
@@ -84,16 +69,14 @@ void ArticleDef::load_json_from_file()
 
 void ArticleDef::load_wren_from_file()
 {
-    const String wrenPath = fmt::format("assets/{}/Article.wren", directory);
-
     // set mWrenSource to either the file contents or a fallback script
-    auto source = sq::try_read_text_from_file(wrenPath);
+    auto source = sq::try_read_text_from_file(fmt::format("assets/{}/Article.wren", directory));
     if (source.has_value() == false)
     {
         sq::log_warning("'{}': missing script", directory);
 
         // articles all use the same fallback script
-        const String source = sq::read_text_from_file("wren/fallback/Article.wren");
+        source = sq::read_text_from_file("wren/fallback/Article.wren");
     }
     wrenSource = std::move(*source);
 
@@ -108,7 +91,7 @@ void ArticleDef::interpret_module()
     auto& vm = world.vm;
     auto& editor = world.editor;
 
-    const String module = directory;
+    const String module = fmt::format("{}/Article", directory);
 
     // if the module is already loaded, unload it
     if (scriptClass != nullptr)
@@ -132,8 +115,8 @@ void ArticleDef::interpret_module()
         if (editor == nullptr)
             sq::log_error_multiline(message);
 
-//        else if (editor->actionKey != ActionKey{fighter.name, name})
-//            sq::log_warning_multiline(message);
+        else if (editor->ctxKey != directory)
+            sq::log_warning_multiline(message);
 
         else editor->errorMessage = std::move(message);
 
@@ -148,49 +131,12 @@ void ArticleDef::interpret_module()
     }
 
     // no errors, clear editor error message
-//    else if (editor != nullptr && editor->actionKey == ActionKey{fighter.name, name})
-//        editor->errorMessage.clear();
+    else if (editor != nullptr && editor->ctxKey == directory)
+        editor->errorMessage.clear();
 
     // store the class for use by Article
     scriptClass = vm.get_variable(module.c_str(), "Script");
 
     // don't need the source anymore, so free some memory
     if (editor == nullptr) wrenSource = String();
-}
-
-//============================================================================//
-
-bool ArticleDef::has_changes(const ArticleDef& other) const
-{
-    if (blobs != other.blobs) return true;
-    if (effects != other.effects) return true;
-    if (emitters != other.emitters) return true;
-    if (wrenSource != other.wrenSource) return true;
-    return false;
-}
-
-void ArticleDef::apply_changes(const ArticleDef& other)
-{
-    blobs.clear();
-    for (const auto& [key, blob] : other.blobs)
-        blobs.try_emplace(key, blob);
-
-    effects.clear();
-    for (const auto& [key, blob] : other.effects)
-        effects.try_emplace(key, blob);
-
-    emitters.clear();
-    for (const auto& [key, emitter] : other.emitters)
-        emitters.try_emplace(key, emitter);
-
-    wrenSource = other.wrenSource;
-}
-
-std::unique_ptr<ArticleDef> ArticleDef::clone() const
-{
-    auto result = std::make_unique<ArticleDef>(world, directory);
-
-    result->apply_changes(*this);
-
-    return result;
 }

@@ -3,6 +3,7 @@
 #include "setup.hpp"
 
 #include "render/AnimPlayer.hpp"
+#include "render/Environment.hpp"
 
 #include <sqee/objects/Armature.hpp>
 #include <sqee/objects/DrawItem.hpp>
@@ -68,6 +69,8 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
+    const Environment& get_environment() const { return mEnvironment; }
+
     const String& get_skybox_path() const { return mSkyboxPath; }
 
     const MinMax<Vec2F>& get_inner_boundary() const { return mInnerBoundary; }
@@ -75,6 +78,8 @@ public: //====================================================//
     const MinMax<Vec3F>& get_shadow_casters() const { return mShadowCasters; }
 
 protected: //=================================================//
+
+    Environment mEnvironment;
 
     sq::Armature mArmature;
 

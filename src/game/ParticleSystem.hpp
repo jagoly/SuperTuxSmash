@@ -61,7 +61,7 @@ private: //===================================================//
 
     World& world;
 
-    StackVector<GenerateCall, 15u> mGenerateCalls;
+    std::vector<GenerateCall> mGenerateCalls;
 
     std::vector<ParticleData> mParticles;
 };

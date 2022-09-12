@@ -1,6 +1,6 @@
 #pragma once
 
-#include "editor/EditorScene.hpp"
+#include "editor/BaseContext.hpp"
 
 #include <sqee/app/GuiWidgets.hpp>
 
@@ -9,7 +9,7 @@ namespace sts {
 //============================================================================//
 
 template <class Key, class Object, class FuncInit, class FuncEdit, class FuncBefore>
-inline void EditorScene::helper_edit_objects (
+inline void EditorScene::BaseContext::helper_edit_objects (
     std::map<Key, Object>& objects, FuncInit funcInit, FuncEdit funcEdit, FuncBefore funcBefore
 )
 {
@@ -22,7 +22,7 @@ inline void EditorScene::helper_edit_objects (
     {
         ImPlus::Text("Create New Entry:");
         Key newKey;
-        if (ImGui::InputText("", newKey.data(), newKey.buffer_size(), ImGuiInputTextFlags_EnterReturnsTrue))
+        if (ImGui::InputText("##input", newKey.data(), newKey.buffer_size(), ImGuiInputTextFlags_EnterReturnsTrue))
         {
             if (auto [iter, ok] = objects.try_emplace(newKey); ok)
             {
@@ -81,7 +81,7 @@ inline void EditorScene::helper_edit_objects (
         {
             ImPlus::Text(fmt::format("Rename '{}':", key));
             Key newKey = key;
-            if (ImGui::InputText("", newKey.data(), newKey.buffer_size(), ImGuiInputTextFlags_EnterReturnsTrue))
+            if (ImGui::InputText("##input", newKey.data(), newKey.buffer_size(), ImGuiInputTextFlags_EnterReturnsTrue))
             {
                 toRename.emplace(iter, newKey);
                 ImGui::CloseCurrentPopup();
@@ -93,7 +93,7 @@ inline void EditorScene::helper_edit_objects (
         {
             ImPlus::Text(fmt::format("Copy '{}':", key));
             Key newKey = key;
-            if (ImGui::InputText("", newKey.data(), newKey.buffer_size(), ImGuiInputTextFlags_EnterReturnsTrue))
+            if (ImGui::InputText("##input", newKey.data(), newKey.buffer_size(), ImGuiInputTextFlags_EnterReturnsTrue))
             {
                 toCopy.emplace(iter, newKey);
                 ImGui::CloseCurrentPopup();

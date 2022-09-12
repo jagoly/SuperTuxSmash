@@ -1,5 +1,6 @@
 #include "main/DebugGui.hpp"
 
+#include "game/Article.hpp"
 #include "game/Controller.hpp"
 #include "game/Fighter.hpp"
 #include "game/FighterAction.hpp"
@@ -117,7 +118,7 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
 
         ImPlus::DragValue("animTime", vars.animTime, 0.0001f, 0.f, 0.f, "%.4f");
 
-        ImPlus::DragVector("attachPoint", vars.position, 0.01f, "%+.4f");
+        ImPlus::DragVector("attachPoint", vars.attachPoint, 0.01f, "%+.4f");
 
         ImPlus::LabelText("ledge", fmt::to_string(static_cast<void*>(vars.ledge)));
     }
@@ -206,6 +207,64 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
 
 //============================================================================//
 
+void DebugGui::show_widget_article(Article& article)
+{
+    const ImPlus::ScopeID scopeId = article.eid;
+
+    if (!ImPlus::CollapsingHeader(fmt::format("Article {} - {}", article.eid, article.def.name), 0))
+        return;
+
+    auto& vars = article.variables;
+
+    //--------------------------------------------------------//
+
+    if (ImGui::CollapsingHeader("General", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        const ImPlus::ScopeFont font = ImPlus::FONT_MONO;
+
+        ImPlus::Text(article.def.directory); // no label so it fits
+
+        if (article.fighter != nullptr)
+            ImPlus::Text(fmt::format("Fighter: {} ({})", article.fighter->index, article.fighter->def.name));
+
+        else ImPlus::Text("Fighter: None");
+
+        ImPlus::Text(fmt::format("Translate: {:+.3f}", article.current.translation));
+        ImPlus::HoverTooltipFixed(fmt::format("Previous: {:+.3f}", article.previous.translation));
+
+        ImPlus::Text(fmt::format("Rotate: {:+.2f}", article.current.rotation));
+        ImPlus::HoverTooltipFixed(fmt::format("Previous: {:+.2f}\nMode:     {:05b}", article.previous.rotation, uint8_t(article.mRotateMode)));
+
+        ImPlus::Text(fmt::format("Pose: {}", article.debugCurrentPoseInfo));
+        ImPlus::HoverTooltipFixed(fmt::format("Previous: {}\nFade:     {}", article.debugPreviousPoseInfo, article.debugAnimationFadeInfo));
+    }
+
+    //--------------------------------------------------------//
+
+    if (ImGui::CollapsingHeader("Edit Variables", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        const ImPlus::ScopeItemWidth width = -120.f;
+
+        ImPlus::DragVector("position", vars.position, 0.01f, "%+.4f");
+        ImPlus::DragVector("velocity", vars.velocity, 0.01f, "%+.4f");
+
+        int8_t facingTemp = vars.facing;
+        ImPlus::SliderValue("facing", facingTemp, -1, +1, "%+d");
+        if (facingTemp != 0) vars.facing = facingTemp;
+
+        ImPlus::DragValue("freezeTime", vars.freezeTime, 1, 0, 255);
+
+        ImPlus::Checkbox("bounced", &vars.bounced); ImGui::SameLine(150.f);
+        ImPlus::Checkbox("fragile", &vars.fragile);
+
+        ImPlus::DragValue("animTime", vars.animTime, 0.0001f, 0.f, 0.f, "%.4f");
+
+        ImPlus::DragVector("attachPoint", vars.attachPoint, 0.01f, "%+.4f");
+    }
+}
+
+//============================================================================//
+
 void DebugGui::show_widget_stage(Stage& stage)
 {
     if (!ImPlus::CollapsingHeader(fmt::format("Stage - {}", stage.name), 0))
@@ -217,7 +276,7 @@ void DebugGui::show_widget_stage(Stage& stage)
     {
         const ImPlus::ScopeItemWidth width = 160.f;
 
-        auto& tonemap = stage.world.renderer.tonemap;
+        auto& tonemap = stage.mEnvironment.tonemap;
 
         ImPlus::SliderValue("Exposure", tonemap.exposure, 0.25f, 4.f);
         ImPlus::SliderValue("Contrast", tonemap.contrast, 0.5f,  2.f);

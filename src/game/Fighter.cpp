@@ -433,11 +433,13 @@ void Fighter::reset_everything()
 
     // reset variables and interpolation data
     variables = Variables();
-
     previous.translation = current.translation = Vec3F();
     previous.rotation = current.rotation = QuatF();
     mAnimPlayer.previousSample = def.armature.get_rest_sample();
     mAnimPlayer.currentSample = def.armature.get_rest_sample();
+
+    // disable active hitblobs
+    mHitBlobs.clear();
 
     // reset internal data
     mRootMotionPreviousOffset = Vec3F();

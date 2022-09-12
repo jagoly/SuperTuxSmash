@@ -7,14 +7,12 @@ using namespace sts;
 
 //============================================================================//
 
-void SoundEffect::from_json(const JsonValue& json)
+void SoundEffect::from_json(const JsonValue& json, SoundCache& cache)
 {
-    SQASSERT(cache != nullptr, "");
-
     json.at("path").get_to(path);
     json.at("volume").get_to(volume);
 
-    handle = cache->acquire(path.c_str());
+    handle = cache.acquire(path);
 }
 
 //============================================================================//

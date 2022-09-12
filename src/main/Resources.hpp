@@ -51,6 +51,7 @@ public: //================================================//
 
     MeshCache meshes;
     TextureCache textures;
+    TextureCache cubeTextures;
     PipelineCache pipelines;
     SoundCache sounds;
     EffectCache effects;

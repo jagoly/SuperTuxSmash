@@ -2,16 +2,13 @@
 
 #include "setup.hpp"
 
-#include "main/Resources.hpp"
-
-#include <sqee/objects/DrawItem.hpp>
 #include <sqee/objects/Texture.hpp>
 #include <sqee/vk/SwapBuffer.hpp>
 #include <sqee/vk/Wrappers.hpp>
 
 //============================================================================//
 
-namespace sq { class Window; }
+namespace sq { class Window; struct DrawItem; struct PassConfig; }
 
 namespace sts {
 
@@ -42,11 +39,17 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    void set_camera(Camera& camera) { mCamera = &camera; };
+    void set_camera(Camera& camera) { mCamera = &camera; }
 
     Camera& get_camera() { return *mCamera; }
 
     const Camera& get_camera() const { return *mCamera; }
+
+    void set_environment(Environment& environment) { mEnvironment = &environment; }
+
+    Environment& get_environment() { return *mEnvironment; }
+
+    const Environment& get_environment() const { return *mEnvironment; }
 
     //--------------------------------------------------------//
 
@@ -76,22 +79,10 @@ public: //====================================================//
     //--------------------------------------------------------//
 
     struct {
-        float exposure;
-        float contrast;
-        float black;
-    } tonemap;
-
-    struct {
         sq::SwapBuffer camera;
         sq::SwapBuffer environment;
         sq::SwapBuffer matrices;
     } ubos;
-
-    struct {
-        sq::Texture skybox;
-        sq::Texture irradiance;
-        sq::Texture radiance;
-    } cubemaps;
 
     struct {
         vk::DescriptorSetLayout gbuffer;
@@ -240,6 +231,7 @@ private: //===================================================//
     std::vector<DepthMipGenStuff> mDepthMipGenStuff;
 
     Camera* mCamera = nullptr;
+    Environment* mEnvironment = nullptr;
 
     std::unique_ptr<DebugRenderer> mDebugRenderer;
     std::unique_ptr<ParticleRenderer> mParticleRenderer;

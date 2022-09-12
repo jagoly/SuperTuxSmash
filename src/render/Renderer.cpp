@@ -5,9 +5,11 @@
 #include "render/AnimPlayer.hpp"
 #include "render/Camera.hpp"
 #include "render/DebugRender.hpp"
+#include "render/Environment.hpp"
 #include "render/ParticleRender.hpp"
 
 #include <sqee/app/Window.hpp>
+#include <sqee/objects/DrawItem.hpp>
 #include <sqee/objects/Mesh.hpp>
 #include <sqee/objects/Pipeline.hpp>
 #include <sqee/vk/Helpers.hpp>
@@ -184,7 +186,7 @@ void Renderer::impl_initialise_layouts()
     });
 
     const auto drawItemPushConstants = vk::PushConstantRange(vk::ShaderStageFlagBits::eAllGraphics, 0u, 128u);
-    const auto compositePushConstants = vk::PushConstantRange(vk::ShaderStageFlagBits::eFragment, 0u, sizeof(tonemap));
+    const auto compositePushConstants = vk::PushConstantRange(vk::ShaderStageFlagBits::eFragment, 0u, sizeof(Environment::tonemap));
 
     pipelineLayouts.gbuffer      = ctx.create_pipeline_layout({setLayouts.gbuffer, caches.bindlessTextureSetLayout}, drawItemPushConstants);
     pipelineLayouts.shadow       = ctx.create_pipeline_layout({setLayouts.shadow, caches.bindlessTextureSetLayout}, drawItemPushConstants);
@@ -1115,8 +1117,8 @@ void Renderer::refresh_options_create()
     mDebugRenderer->refresh_options_create();
     mParticleRenderer->refresh_options_create();
 
-    // won't exist when renderer is first created
-    if (cubemaps.skybox.get_image())
+    // won't be set when renderer is first created
+    if (mEnvironment != nullptr)
         update_cubemap_descriptor_sets();
 }
 
@@ -1147,18 +1149,18 @@ void Renderer::update_cubemap_descriptor_sets()
 
     sq::vk_update_descriptor_set_swapper (
         ctx, sets.skybox,
-        sq::DescriptorImageSampler(1u, 0u, cubemaps.skybox.get_descriptor_info())
+        sq::DescriptorImageSampler(1u, 0u, mEnvironment->cubemaps.skybox->get_descriptor_info())
     );
 
     sq::vk_update_descriptor_set_swapper (
         ctx, sets.lighting,
-        sq::DescriptorImageSampler(3u, 0u, cubemaps.irradiance.get_descriptor_info()),
-        sq::DescriptorImageSampler(4u, 0u, cubemaps.radiance.get_descriptor_info())
+        sq::DescriptorImageSampler(3u, 0u, mEnvironment->cubemaps.irradiance->get_descriptor_info()),
+        sq::DescriptorImageSampler(4u, 0u, mEnvironment->cubemaps.radiance->get_descriptor_info())
     );
 
     sq::vk_update_descriptor_set_swapper (
         ctx, sets.particles,
-        sq::DescriptorImageSampler(3u, 0u, cubemaps.irradiance.get_descriptor_info())
+        sq::DescriptorImageSampler(3u, 0u, mEnvironment->cubemaps.irradiance->get_descriptor_info())
     );
 }
 
@@ -1453,7 +1455,9 @@ void Renderer::populate_final_pass(vk::CommandBuffer cmdbuf)
     cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayouts.composite, 0u, sets.composite, {});
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipelines.composite);
 
-    cmdbuf.pushConstants<decltype(tonemap)>(pipelineLayouts.composite, vk::ShaderStageFlagBits::eFragment, 0u, tonemap);
+    cmdbuf.pushConstants<decltype(Environment::tonemap)> (
+        pipelineLayouts.composite, vk::ShaderStageFlagBits::eFragment, 0u, mEnvironment->tonemap
+    );
 
     cmdbuf.draw(3u, 1u, 0u, 0u);
     write_time_stamp(cmdbuf, TimeStamp::Composite);
