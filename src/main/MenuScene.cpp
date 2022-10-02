@@ -90,7 +90,7 @@ void MenuScene::show_imgui_widgets()
 
     ImGui::Separator();
 
-    for (auto iter = mSetup.players.begin(); iter != mSetup.players.end(); ++iter)
+    for (auto iter = mSetup.players.begin(); iter != mSetup.players.end();)
     {
         const auto index = uint8_t(iter - mSetup.players.begin());
 
@@ -104,7 +104,8 @@ void MenuScene::show_imgui_widgets()
         ImGui::SetNextItemWidth(160.f);
         ImPlus::ComboString(fmt::format("Fighter##{}", index), mFighterNames, iter->fighter);
 
-        if (erase) iter = mSetup.players.erase(iter) - 1;
+        if (erase) iter = mSetup.players.erase(iter);
+        else ++iter;
     }
 
     if (mSetup.players.empty() == false)

@@ -8,11 +8,14 @@ namespace sts {
 
 //============================================================================//
 
-class Camera : sq::NonCopyable
+class Camera
 {
 public: //====================================================//
 
     Camera(const Renderer& renderer);
+
+    SQEE_COPY_DELETE(Camera)
+    SQEE_MOVE_DELETE(Camera)
 
     virtual ~Camera();
 

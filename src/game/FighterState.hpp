@@ -27,11 +27,14 @@ struct FighterStateDef final
 
 //============================================================================//
 
-class FighterState final : sq::NonCopyable
+class FighterState final
 {
 public: //====================================================//
 
     FighterState(const FighterStateDef& def, Fighter& fighter);
+
+    SQEE_COPY_DELETE(FighterState)
+    SQEE_MOVE_DELETE(FighterState)
 
     ~FighterState();
 

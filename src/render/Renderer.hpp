@@ -17,11 +17,14 @@ class ParticleRenderer;
 
 //============================================================================//
 
-class Renderer final : sq::NonCopyable
+class Renderer final
 {
 public: //====================================================//
 
     Renderer(const sq::Window& window, const Options& options, ResourceCaches& caches);
+
+    SQEE_COPY_DELETE(Renderer)
+    SQEE_MOVE_DELETE(Renderer)
 
     ~Renderer();
 

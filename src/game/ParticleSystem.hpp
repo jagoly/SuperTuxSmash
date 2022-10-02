@@ -24,11 +24,14 @@ struct ParticleData final
 
 //============================================================================//
 
-class ParticleSystem final : sq::NonCopyable
+class ParticleSystem final
 {
 public: //====================================================//
 
     ParticleSystem(World& world);
+
+    SQEE_COPY_DELETE(ParticleSystem)
+    SQEE_MOVE_DELETE(ParticleSystem)
 
     //--------------------------------------------------------//
 

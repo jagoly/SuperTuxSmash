@@ -38,11 +38,14 @@ struct FighterActionDef final
 
 //============================================================================//
 
-class FighterAction final : sq::NonCopyable
+class FighterAction final
 {
 public: //====================================================//
 
     FighterAction(const FighterActionDef& def, Fighter& fighter);
+
+    SQEE_COPY_DELETE(FighterAction)
+    SQEE_MOVE_DELETE(FighterAction)
 
     ~FighterAction();
 

@@ -10,7 +10,7 @@ namespace sts {
 
 //============================================================================//
 
-class Entity : sq::NonCopyable
+class Entity
 {
 public: //====================================================//
 
@@ -57,6 +57,9 @@ public: //====================================================//
     //--------------------------------------------------------//
 
     Entity(const EntityDef& def);
+
+    SQEE_COPY_DELETE(Entity)
+    SQEE_MOVE_DELETE(Entity)
 
     virtual ~Entity();
 

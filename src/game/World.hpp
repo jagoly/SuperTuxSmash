@@ -12,11 +12,14 @@ namespace sts {
 
 //============================================================================//
 
-class World final : sq::NonCopyable
+class World final
 {
 public: //====================================================//
 
     World(const Options& options, sq::AudioContext& audio, ResourceCaches& caches, Renderer& renderer);
+
+    SQEE_COPY_DELETE(World)
+    SQEE_MOVE_DELETE(World)
 
     ~World();
 

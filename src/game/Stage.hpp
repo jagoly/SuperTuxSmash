@@ -38,11 +38,14 @@ struct Ledge
 
 //============================================================================//
 
-class Stage final : sq::NonCopyable
+class Stage final
 {
 public: //====================================================//
 
     Stage(World& world, TinyString name);
+
+    SQEE_COPY_DELETE(Stage)
+    SQEE_MOVE_DELETE(Stage)
 
     ~Stage();
 

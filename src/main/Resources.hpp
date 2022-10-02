@@ -41,11 +41,14 @@ using EffectHandle = sq::Handle<String, EffectAsset>;
 
 //============================================================================//
 
-class ResourceCaches final : sq::NonCopyable
+class ResourceCaches final
 {
 public: //================================================//
 
     ResourceCaches(sq::AudioContext& audio);
+
+    SQEE_COPY_DELETE(ResourceCaches)
+    SQEE_MOVE_DELETE(ResourceCaches)
 
     ~ResourceCaches();
 

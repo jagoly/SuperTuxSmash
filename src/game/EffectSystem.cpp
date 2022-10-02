@@ -70,7 +70,7 @@ void EffectSystem::tick()
 
         if (uint(effect.animPlayer.animTime) == asset.animation.frameCount)
         {
-            mEffects.erase(iter);
+            iter = mEffects.erase(iter);
             continue;
         }
 

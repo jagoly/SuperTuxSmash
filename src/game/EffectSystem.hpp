@@ -6,11 +6,14 @@ namespace sts {
 
 //============================================================================//
 
-class EffectSystem final : sq::NonCopyable
+class EffectSystem final
 {
 public: //====================================================//
 
     EffectSystem(Renderer& renderer);
+
+    SQEE_COPY_DELETE(EffectSystem)
+    SQEE_MOVE_DELETE(EffectSystem)
 
     ~EffectSystem();
 

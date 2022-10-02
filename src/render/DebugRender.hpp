@@ -9,11 +9,14 @@ namespace sts {
 
 //============================================================================//
 
-class DebugRenderer final : sq::NonCopyable
+class DebugRenderer final
 {
 public: //====================================================//
 
     DebugRenderer(Renderer& renderer);
+
+    SQEE_COPY_DELETE(DebugRenderer)
+    SQEE_MOVE_DELETE(DebugRenderer)
 
     ~DebugRenderer();
 

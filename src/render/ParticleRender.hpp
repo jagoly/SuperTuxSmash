@@ -9,11 +9,14 @@ namespace sts {
 
 //============================================================================//
 
-class ParticleRenderer final : sq::NonCopyable
+class ParticleRenderer final
 {
 public: //====================================================//
 
     ParticleRenderer(Renderer& renderer);
+
+    SQEE_COPY_DELETE(ParticleRenderer)
+    SQEE_MOVE_DELETE(ParticleRenderer)
 
     ~ParticleRenderer();
 

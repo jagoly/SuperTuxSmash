@@ -77,7 +77,7 @@ struct InputHistory final
 
 //============================================================================//
 
-class Controller final : sq::NonCopyable
+class Controller final
 {
 public: //====================================================//
 
@@ -117,6 +117,9 @@ public: //====================================================//
     //--------------------------------------------------------//
 
     Controller(const sq::InputDevices& devices, const String& configPath);
+
+    SQEE_COPY_DELETE(Controller)
+    SQEE_MOVE_DELETE(Controller)
 
     const sq::InputDevices& devices;
 

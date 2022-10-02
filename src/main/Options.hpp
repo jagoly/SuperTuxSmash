@@ -6,10 +6,8 @@ namespace sts {
 
 //============================================================================//
 
-struct Options final : sq::NonCopyable
+struct Options final
 {
-    Options() = default;
-
     // todo: change to camelCase for consistency
 
     //--------------------------------------------------------//
