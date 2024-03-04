@@ -22,7 +22,7 @@ Entity::~Entity() = default;
 
 //============================================================================//
 
-Mat4F Entity::get_bone_matrix(int8_t index) const
+Mat4F Entity::get_model_matrix(int8_t index) const
 {
     SQASSERT(index >= -1 && index < int8_t(mAnimPlayer.armature.get_bone_count()), "invalid index");
 
@@ -35,7 +35,7 @@ Mat4F Entity::get_bone_matrix(int8_t index) const
     return mAnimPlayer.armature.compute_model_matrix(mAnimPlayer.currentSample, mModelMatrix, uint8_t(index));
 }
 
-Mat4F Entity::get_blended_bone_matrix(int8_t index) const
+Mat4F Entity::get_blended_model_matrix(int8_t index) const
 {
     SQASSERT(index >= -1 && index < int8_t(mAnimPlayer.armature.get_bone_count()), "invalid index");
 
@@ -66,7 +66,7 @@ void Entity::play_animation(const Animation& animation, uint fade, bool fromStar
 
     if (fade != 0u)
     {
-        if (animation.attach == true)
+        if (animation.attach == true || vars.bully != nullptr)
             mFadeStartPosition = vars.position;
 
         if (mRotateMode == RotateMode::Auto)
@@ -98,6 +98,11 @@ void Entity::set_next_animation(const Animation& animation, uint fade)
 
 void Entity::update_animation()
 {
+    // todo: this is 2 for mario, but should be 1 for STS chars
+    constexpr uint8_t rotationBone = 2;
+    // todo: this should probably be set from json
+    constexpr uint8_t victimBone = 4;
+
     const EntityDef& def = get_def();
     EntityVars& vars = get_vars();
 
@@ -137,8 +142,6 @@ void Entity::update_animation()
         mAnimPlayer.animation = mNextAnimation;
         mNextAnimation = nullptr;
     }
-
-    debugPreviousPoseInfo = std::move(debugCurrentPoseInfo);
 
     //--------------------------------------------------------//
 
@@ -182,18 +185,18 @@ void Entity::update_animation()
         if (mAnimPlayer.animation->turn == true)
         {
             constexpr QuatF restRotate = { 0.f, 0.70710677f, 0.70710677f, 0.f };
-            constexpr QuatF invRestRotate = { 0.70710677f, 0.f, 0.f, 0.70710677f };
+            constexpr QuatF reverseRotate = { 0.70710677f, 0.f, 0.f, 0.70710677f };
 
             // rotation fade is the same as for non-turn anims
-            current.rotation = restRotate * currentSampleBones[2].rotation * invRestRotate * current.rotation;
-            currentSampleBones[2].rotation = QuatF();
+            current.rotation = restRotate * currentSampleBones[rotationBone].rotation * reverseRotate * current.rotation;
+            currentSampleBones[rotationBone].rotation = QuatF();
         }
 
         if (mAnimPlayer.animation->attach == true)
         {
             // we can just set position right away, unlike motion anims
-            vars.position = vars.attachPoint +
-                Vec2F(currentSampleBones[0].offset.z * float(vars.facing), currentSampleBones[0].offset.y);
+            vars.position.x = vars.attachPoint.x + currentSampleBones[0].offset.z * float(vars.facing);
+            vars.position.y = vars.attachPoint.y + currentSampleBones[0].offset.y;
 
             currentSampleBones[0].offset = Vec3F();
 
@@ -202,6 +205,32 @@ void Entity::update_animation()
                 vars.position = maths::mix(mFadeStartPosition, vars.position, *fade);
 
             current.translation = Vec3F(vars.position, 0.f);
+        }
+
+        // not a flag because we already have vars.bully
+        if (vars.bully != nullptr)
+        {
+            const AnimPlayer& bullyPlayer = vars.bully->mAnimPlayer;
+
+            const Mat4F matrix = vars.bully->mModelMatrix * bullyPlayer.armature.compute_bone_matrix(bullyPlayer.currentSample, victimBone);
+
+            vars.position.x = matrix[3].x;
+            vars.position.y = vars.bully->current.translation.y;
+
+            if (fade.has_value() == true)
+                vars.position = maths::mix(mFadeStartPosition, vars.position, *fade);
+
+            current.translation = Vec3F(vars.position, 0.f);
+            current.rotation = QuatF(Mat3F(matrix)) * QuatF(0.f, -0.70710677f, -0.70710677f, 0.f);
+
+            const Mat4F modelMat = maths::transform(current.translation, current.rotation);
+            const Mat4F transBoneMat = Mat4F(QuatF(0.f, 0.70710677f, 0.70710677f, 0.f));
+
+            const Mat4F rotBoneMat = maths::inverse(modelMat * transBoneMat) * matrix;
+
+            // for mario this is not rotationBone, but for STS chars it is
+            currentSampleBones[1].offset = Vec3F(rotBoneMat[3]);
+            currentSampleBones[1].rotation = QuatF(rotBoneMat);
         }
 
         if (vars.freezeTime == 0u && ++mAnimPlayer.animTime == mAnimPlayer.animation->anim.frameCount)
@@ -226,18 +255,20 @@ void Entity::update_animation()
             current.rotation = maths::lerp_guided(mFadeStartRotation, current.rotation, *fade, guide);
         }
         else if (mRotateMode == RotateMode::Auto)
-            current.rotation = maths::lerp_shortest(mFadeStartRotation, current.rotation, *fade);
+            current.rotation = maths::lerp_shorter(mFadeStartRotation, current.rotation, *fade);
 
         def.armature.blend_samples(mFadeStartSample, mAnimPlayer.currentSample, *fade, mAnimPlayer.currentSample);
         debugAnimationFadeInfo = fmt::format("{} / {}", mFadeProgress, mFadeFrames + 1u);
     }
     else
     {
-        mFadeProgress = mFadeFrames = 0u;
-        debugAnimationFadeInfo = "No Fade";
-
         if (bool(mRotateMode & RotateMode::Playing))
             mRotateMode = mRotateMode | RotateMode::Done;
+
+        if (mFadeProgress == mFadeFrames) // no next anim fade
+            mFadeProgress = mFadeFrames = 0u;
+
+        debugAnimationFadeInfo = "No Fade";
     }
 }
 
@@ -258,7 +289,7 @@ void Entity::integrate_base(float blend)
             return maths::lerp_guided(previous.rotation, current.rotation, blend, guide);
         }
 
-        return maths::lerp_shortest(previous.rotation, current.rotation, blend);
+        return maths::lerp_shorter(previous.rotation, current.rotation, blend);
     }();
 
     const Mat4F modelMatrix = maths::transform(translation, rotation);

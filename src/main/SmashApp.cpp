@@ -58,9 +58,23 @@ void SmashApp::update(double elapsed)
 
     //-- fetch and handle events -----------------------------//
 
+    const auto& events = mWindow->fetch_events();
     const bool hasFocus = mWindow->has_focus();
 
-    for (const auto& event : mWindow->fetch_events())
+    if (events.empty() == false)
+    {
+        reset_inactivity();
+    }
+    else if (hasFocus == true) // todo: this is hacky, rework sqee to use cursor move events
+    {
+        if (Vec2I newMousePos = mInputDevices->get_cursor_location(false); mPrevMousePos != newMousePos)
+        {
+            reset_inactivity();
+            mPrevMousePos = newMousePos;
+        }
+    }
+
+    for (const auto& event : events)
         if (mGuiSystem->handle_event(event) == false && hasFocus == true)
             handle_event(event);
 
@@ -137,7 +151,7 @@ void SmashApp::handle_event(sq::Event event)
         {
             constexpr const auto STRINGS = std::array { "OFF", "ON" };
             const bool newValue = !mWindow->get_vsync_enabled();
-            mDebugOverlay->notify(sq::build_string("vsync set to ", STRINGS[newValue]));
+            mDebugOverlay->notify(sq::string_concat("vsync set to ", STRINGS[newValue]));
             mWindow->set_vsync_enabled(newValue);
             refresh_options();
         }
@@ -146,7 +160,7 @@ void SmashApp::handle_event(sq::Event event)
         {
             constexpr const auto STRINGS = std::array { "OFF", "ON" };
             mOptions->bloom_enable = !mOptions->bloom_enable;
-            mDebugOverlay->notify(sq::build_string("bloom set to ", STRINGS[mOptions->bloom_enable]));
+            mDebugOverlay->notify(sq::string_concat("bloom set to ", STRINGS[mOptions->bloom_enable]));
             refresh_options();
         }
 
@@ -154,7 +168,7 @@ void SmashApp::handle_event(sq::Event event)
         {
             constexpr const auto STRINGS = std::array { "OFF", "LOW", "MEDIUM", "HIGH" };
             if (++mOptions->shadow_quality == 4) mOptions->shadow_quality = 0;
-            mDebugOverlay->notify(sq::build_string("shadow quality set to ", STRINGS[mOptions->shadow_quality]));
+            mDebugOverlay->notify(sq::string_concat("shadow quality set to ", STRINGS[mOptions->shadow_quality]));
             refresh_options();
         }
 
@@ -162,7 +176,7 @@ void SmashApp::handle_event(sq::Event event)
         {
             constexpr const auto STRINGS = std::array { "OFF", "LOW", "MEDIUM", "HIGH" };
             if (++mOptions->ssao_quality == 4) mOptions->ssao_quality = 0;
-            mDebugOverlay->notify(sq::build_string("ssao set to ", STRINGS[mOptions->ssao_quality]));
+            mDebugOverlay->notify(sq::string_concat("ssao set to ", STRINGS[mOptions->ssao_quality]));
             refresh_options();
         }
 
@@ -198,7 +212,7 @@ void SmashApp::handle_event(sq::Event event)
         {
             constexpr const auto STRINGS = std::array { "OFF", "ON" };
             mOptions->imgui_demo = !mOptions->imgui_demo;
-            mDebugOverlay->notify(sq::build_string("imgui demo set to ", STRINGS[mOptions->imgui_demo]));
+            mDebugOverlay->notify(sq::string_concat("imgui demo set to ", STRINGS[mOptions->imgui_demo]));
         }
 
         if (data.keyboard.key == Key::R)
@@ -206,14 +220,14 @@ void SmashApp::handle_event(sq::Event event)
             constexpr const auto STRINGS = std::array { "OFF", "ON" };
             mOptions->render_hit_blobs = mOptions->render_hurt_blobs = !mOptions->render_skeletons;
             mOptions->render_diamonds = mOptions->render_skeletons = !mOptions->render_skeletons;
-            mDebugOverlay->notify(sq::build_string("debug render set to ", STRINGS[mOptions->render_skeletons]));
+            mDebugOverlay->notify(sq::string_concat("debug render set to ", STRINGS[mOptions->render_skeletons]));
         }
 
         if (data.keyboard.key == Key::Num_1)
         {
             constexpr const auto STRINGS = std::array { "false", "true" };
             mOptions->debug_toggle_1 = !mOptions->debug_toggle_1;
-            mDebugOverlay->notify(sq::build_string("debugToggle1 set to ", STRINGS[mOptions->debug_toggle_1]));
+            mDebugOverlay->notify(sq::string_concat("debugToggle1 set to ", STRINGS[mOptions->debug_toggle_1]));
             refresh_options();
         }
 
@@ -221,7 +235,7 @@ void SmashApp::handle_event(sq::Event event)
         {
             constexpr const auto STRINGS = std::array { "false", "true" };
             mOptions->debug_toggle_2 = !mOptions->debug_toggle_2;
-            mDebugOverlay->notify(sq::build_string("debugToggle2 set to ", STRINGS[mOptions->debug_toggle_2]));
+            mDebugOverlay->notify(sq::string_concat("debugToggle2 set to ", STRINGS[mOptions->debug_toggle_2]));
             refresh_options();
         }
     }
@@ -262,6 +276,8 @@ void SmashApp::start_game(GameSetup setup)
     {
         sq::VulkanContext::get().device.waitIdle();
         mActiveScene = std::make_unique<GameScene>(*this, setup);
+        mMaxInactivePeriod = 8.0;
+        mMinSleepUpdatePeriod = 1.0 / 6.0;
         refresh_options();
     };
 }
@@ -272,6 +288,8 @@ void SmashApp::start_editor()
     {
         sq::VulkanContext::get().device.waitIdle();
         mActiveScene = std::make_unique<EditorScene>(*this);
+        mMaxInactivePeriod = 8.0;
+        mMinSleepUpdatePeriod = 1.0 / 6.0;
         refresh_options();
     };
 }
@@ -282,6 +300,7 @@ void SmashApp::return_to_main_menu()
     {
         sq::VulkanContext::get().device.waitIdle();
         mActiveScene = std::make_unique<MenuScene>(*this);
+        mMaxInactivePeriod = INFINITY;
         refresh_options();
     };
 }

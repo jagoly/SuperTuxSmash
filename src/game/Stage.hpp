@@ -62,11 +62,11 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    MoveAttempt attempt_move(const LocalDiamond& diamond, Vec2F current, Vec2F target, bool edgeStop, bool ignorePlatforms);
+    MoveAttempt attempt_move(const Diamond& current, const Diamond& target, bool edgeStop, bool ignorePlatforms);
 
     MoveAttemptSphere attempt_move_sphere(float radius, float bounceFactor, Vec2F position, Vec2F velocity, bool ignorePlatforms);
 
-    Ledge* find_ledge(const LocalDiamond& diamond, Vec2F origin, int8_t facing, int8_t inputX);
+    Ledge* find_ledge(const Diamond& diamond, int8_t facing, int8_t inputX);
 
     bool check_point_out_of_bounds(Vec2F point);
 

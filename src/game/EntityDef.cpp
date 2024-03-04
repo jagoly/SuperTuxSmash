@@ -28,44 +28,42 @@ EntityDef::~EntityDef() = default;
 
 void EntityDef::initialise_sounds(const String& jsonPath)
 {
-    const JsonValue json = sq::parse_json_from_file(jsonPath);
+    const auto document = JsonDocument::parse_file(jsonPath);
 
-    for (const auto& item : json.items())
-    {
-        SoundEffect& sound = sounds[item.key()];
-        sound.from_json(item.value(), world.caches.sounds);
-    }
+    for (const auto [key, jSound] : document.root().as<JsonObject>() | views::json_as<JsonObject>)
+        sounds[key].from_json(jSound, world.caches.sounds);
 }
 
 //============================================================================//
 
 void EntityDef::initialise_animations(const String& jsonPath)
 {
-    for (const auto& entry : sq::parse_json_from_file(jsonPath))
-    {
-        const String& key = entry.front().get_ref<const String&>();
+    const auto document = JsonDocument::parse_file(jsonPath);
 
+    for (const auto [key, jFlags] : document.root().as<JsonObject>() | views::json_as<JsonArray>)
+    {
         if (auto [iter, ok] = animations.try_emplace(key); ok)
         {
-            try {
-                const String path = fmt::format("assets/{}/anims/{}", directory, key);
-                iter->second.anim = armature.load_animation_from_file(path);
+            try
+            {
+                const auto animPath = fmt::format("assets/{}/anims/{}", directory, key);
+                iter->second.anim = armature.load_animation_from_file(animPath);
             }
-            catch (const std::exception& ex) {
+            catch (const std::exception& ex)
+            {
                 sq::log_warning("animation '{}/{}': {}", directory, key, ex.what());
                 iter->second.anim = armature.make_null_animation(1u);
                 iter->second.fallback = true;
             }
 
-            for (auto flagIter = std::next(entry.begin()); flagIter != entry.end(); ++flagIter)
+            for (const auto [_, flag] : jFlags | views::json_as<StringView>)
             {
-                const String& str = flagIter->get_ref<const String&>();
-                if      (str == "Manual") iter->second.manual = true;
-                else if (str == "Loop")   iter->second.loop   = true;
-                else if (str == "Motion") iter->second.motion = true;
-                else if (str == "Turn")   iter->second.turn   = true;
-                else if (str == "Attach") iter->second.attach = true;
-                else sq::log_warning("animation '{}/{}': invalid flag '{}'", directory, key, str);
+                if      (flag == "Manual") iter->second.manual = true;
+                else if (flag == "Loop")   iter->second.loop   = true;
+                else if (flag == "Motion") iter->second.motion = true;
+                else if (flag == "Turn")   iter->second.turn   = true;
+                else if (flag == "Attach") iter->second.attach = true;
+                else sq::log_warning("animation '{}/{}': invalid flag '{}'", directory, key, flag);
             }
 
             // animation doesn't have any motion

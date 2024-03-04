@@ -68,6 +68,8 @@ private: //===================================================//
     std::unique_ptr<ResourceCaches> mResourceCaches;
 
     std::unique_ptr<sq::Scene> mActiveScene;
+
+    Vec2I mPrevMousePos; // just for detecting activity
 };
 
 //============================================================================//

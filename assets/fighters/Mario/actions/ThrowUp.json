@@ -1,0 +1,28 @@
+{
+  "blobs": {
+    "THROW": {
+      "angleMode": "Normal",
+      "bone": "ThrowN",
+      "canHitAir": true,
+      "canHitGround": true,
+      "clangMode": "Ignore",
+      "damage": 8.0,
+      "facingMode": "Forward",
+      "flavour": "Tangy",
+      "freezeDiMult": 0.0,
+      "freezeMult": 0.0,
+      "handler": "Normal",
+      "ignoreDamage": false,
+      "ignoreWeight": false,
+      "index": 0,
+      "knockAngle": 90.0,
+      "knockBase": 70.0,
+      "knockScale": 72.0,
+      "origin": [ 0.0, 0.0, 0.0 ],
+      "radius": 1.0,
+      "sound": "HitKick1"
+    }
+  },
+  "effects": {},
+  "emitters": {}
+}

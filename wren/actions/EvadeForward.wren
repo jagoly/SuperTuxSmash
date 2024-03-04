@@ -5,6 +5,7 @@ class Script is FighterActionScript {
 
   default_begin() {
     ctrl.clear_history()
+    // todo: facing change should be mid animation
     fighter.reverse_facing_auto()
     fighter.change_state("Action")
     fighter.play_animation("EvadeForward", 2, true)

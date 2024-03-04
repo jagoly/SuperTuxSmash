@@ -1,43 +1,57 @@
 {
   "assets": {
     "meshes": {
-      "Spheres": "stages/RenderDemo/meshes/Spheres"
+      "Spheres": "stages/RenderDemo/meshes/Spheres",
+      "Coin": "stages/RenderDemo/meshes/Coin"
     },
     "textures": {
       "Spheres_roughness": "stages/RenderDemo/textures/Spheres_roughness",
       "Spheres_metallic": "stages/RenderDemo/textures/Spheres_metallic",
-      "White": "textures/White"
+      "White": "textures/White",
+      "Coin_albedo": "stages/RenderDemo/textures/Coin_albedo",
+      "Coin_roughness": "stages/RenderDemo/textures/Coin_roughness",
+      "Coin_normal": "stages/RenderDemo/textures/Coin_normal"
     },
     "pipelines": {
       "Main": {
-        "attributes": [ "TexCoords", "Normals" ],
-        "pass": "Opaque",
-        "vertexShader": "gbuffer/General.vert/AnimTexture0_Bones0_Tangent0",
+        "vertexShader": "gbuffer/General.vert/Bones0_Tangent0",
         "fragmentShader": "gbuffer/General.frag/TexMask0_TexNormal0",
+        "pass": "Opaque",
+        "attributes": [ "TexCoords", "Normals" ],
         "cullFace": "Back",
         "alphaCoverage": "Disable",
         "depthTest": "Replace",
-        "colourBlend": [ "Disable", "Disable" ]
+        "blendModes": [ "Disable", "Disable" ]
+      },
+      "Coin": {
+        "vertexShader": "gbuffer/General.vert/Bones0_Tangent1",
+        "fragmentShader": "gbuffer/General.frag/TexMask0_TexNormal1",
+        "pass": "Opaque",
+        "attributes": [ "TexCoords", "Normals", "Tangents" ],
+        "cullFace": "Back",
+        "alphaCoverage": "Disable",
+        "depthTest": "Replace",
+        "blendModes": [ "Disable", "Disable" ]
       },
       "ShadowFront": {
-        "attributes": [ "#TexCoords", "#Normals" ],
-        "pass": "ShadowFront",
-        "vertexShader": "shadow/General.vert/AnimTexture0_Bones0_TexCoord0",
+        "vertexShader": "shadow/General.vert/Bones0_TexCoord0",
         "fragmentShader": "shadow/General.frag/TexMask0",
+        "pass": "ShadowFront",
+        "attributes": [ "#TexCoords", "#Normals" ],
         "cullFace": "Back",
         "alphaCoverage": "Disable",
         "depthTest": "Replace",
-        "colourBlend": []
+        "blendModes": []
       },
       "ShadowBack": {
-        "attributes": [ "#TexCoords", "#Normals" ],
-        "pass": "ShadowBack",
-        "vertexShader": "shadow/General.vert/AnimTexture0_Bones0_TexCoord0",
+        "vertexShader": "shadow/General.vert/Bones0_TexCoord0",
         "fragmentShader": "shadow/General.frag/TexMask0",
+        "pass": "ShadowBack",
+        "attributes": [ "#TexCoords", "#Normals" ],
         "cullFace": "Front",
         "alphaCoverage": "Disable",
         "depthTest": "Replace",
-        "colourBlend": []
+        "blendModes": []
       }
     }
   },
@@ -47,27 +61,32 @@
       "mesh": "Spheres",
       "subMesh": null,
       "pipeline": "Main",
+      "order": 0,
+      "visibility": null,
       "params": {
-        "modelMatIndex": {
-          "type": "ModelMatrixIndex",
-          "bone": null
-        },
-        "normalMatIndex": {
-          "type": "NormalMatrixIndex",
-          "bone": null
-        },
-        "albedoTexIndex": {
-          "type": "TextureIndex",
-          "texture": "White"
-        },
-        "roughnessTexIndex": {
-          "type": "TextureIndex",
-          "texture": "Spheres_roughness"
-        },
-        "metallicTexIndex": {
-          "type": "TextureIndex",
-          "texture": "Spheres_metallic"
-        }
+        "modelMatIndex": { "type": "ModelMatIndex", "bone": null },
+        "normalMatIndex": { "type": "NormalMatIndex", "bone": null },
+        "albedoTexIndex": { "type": "TextureIndex", "texture": "White" },
+        "roughnessTexIndex": { "type": "TextureIndex", "texture": "Spheres_roughness" },
+        "metallicTexIndex": { "type": "TextureIndex", "texture": "Spheres_metallic" },
+        "texTransform": { "type": "ConstTexTransform", "values": [ 0.0, 0.0, 0.0, 1.0, 1.0 ] }
+      }
+    },
+    {
+      "condition": null,
+      "mesh": "Coin",
+      "subMesh": null,
+      "pipeline": "Coin",
+      "order": 0,
+      "visibility": null,
+      "params": {
+        "modelMatIndex": { "type": "ModelMatIndex", "bone": null },
+        "normalMatIndex": { "type": "NormalMatIndex", "bone": null },
+        "albedoTexIndex": { "type": "TextureIndex", "texture": "Coin_albedo" },
+        "roughnessTexIndex": { "type": "TextureIndex", "texture": "Coin_roughness" },
+        "normalTexIndex": { "type": "TextureIndex", "texture": "Coin_normal" },
+        "metallicTexIndex": { "type": "TextureIndex", "texture": "White" },
+        "texTransform": { "type": "ConstTexTransform", "values": [ 0.0, 0.0, 0.0, 1.0, 1.0 ] }
       }
     },
     {
@@ -75,11 +94,10 @@
       "mesh": "Spheres",
       "subMesh": null,
       "pipeline": "ShadowFront",
+      "order": 0,
+      "visibility": null,
       "params": {
-        "modelMatIndex": {
-          "type": "ModelMatrixIndex",
-          "bone": null
-        }
+        "modelMatIndex": { "type": "ModelMatIndex", "bone": null }
       }
     },
     {
@@ -87,11 +105,10 @@
       "mesh": "Spheres",
       "subMesh": null,
       "pipeline": "ShadowBack",
+      "order": 0,
+      "visibility": null,
       "params": {
-        "modelMatIndex": {
-          "type": "ModelMatrixIndex",
-          "bone": null
-        }
+        "modelMatIndex": { "type": "ModelMatIndex", "bone": null }
       }
     }
   ]

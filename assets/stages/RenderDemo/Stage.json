@@ -17,19 +17,10 @@
   },
   "blocks": {
     "Main": {
-      "minimum": [ -8.0, -1.0 ],
-      "maximum": [ 8.0, 0.0 ]
+      "minimum": [ -15.0, -1.0 ],
+      "maximum": [ 15.0, 0.0 ]
     }
   },
-  "ledges": {
-    "Left": {
-      "position": [ -8.0, 0.0 ],
-      "direction": -1
-    },
-    "Right": {
-      "position": [ 8.0, 0.0 ],
-      "direction": 1
-    }
-  },
+  "ledges": {},
   "platforms": {}
 }

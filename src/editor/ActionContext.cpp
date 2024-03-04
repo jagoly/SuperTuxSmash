@@ -37,6 +37,15 @@ ActionContext::ActionContext(EditorScene& _editor, String _ctxKey)
 
     enumerate_source_files(fmt::format("assets/{}.wren", ctxKey), actionDef->wrenSource, savedData->wrenSource);
 
+    // todo: move this to json, allow toggling opponent for other actions
+    if (actionKey.starts_with("Grab") || actionKey.starts_with("Grabbed") || actionKey.starts_with("Throw"))
+    {
+        // todo: allow changing test opponent
+        opponent = &world->create_fighter(fighterKey);
+        // todo: give opponent its own controller
+        opponent->controller = editor.mController.get();
+    }
+
     reset_timeline_length();
     scrub_to_frame(-1, false);
 }
@@ -93,22 +102,23 @@ void ActionContext::save_changes()
 {
     if (savedData->blobs != actionDef->blobs || savedData->effects != actionDef->effects || savedData->emitters != actionDef->emitters)
     {
-        JsonValue json;
+        auto document = JsonMutDocument();
+        auto json = document.assign(JsonMutObject(document));
 
-        auto& blobs = json["blobs"] = JsonValue::object();
-        auto& effects = json["effects"] = JsonValue::object();
-        auto& emitters = json["emitters"] = JsonValue::object();
+        auto jBlobs = json.append("blobs", JsonMutObject(document));
+        auto jEffects = json.append("effects", JsonMutObject(document));
+        auto jEmitters = json.append("emitters", JsonMutObject(document));
 
         for (const auto& [key, blob] : actionDef->blobs)
-            blob.to_json(blobs[key.c_str()], fighter->def.armature);
+            blob.to_json(jBlobs.append(key, JsonMutObject(document)), fighter->def.armature);
 
         for (const auto& [key, effect] : actionDef->effects)
-            effect.to_json(effects[key.c_str()], fighter->def.armature);
+            effect.to_json(jEffects.append(key, JsonMutObject(document)), fighter->def.armature);
 
         for (const auto& [key, emitter] : actionDef->emitters)
-            emitter.to_json(emitters[key.c_str()], fighter->def.armature);
+            emitter.to_json(jEmitters.append(key, JsonMutObject(document)), fighter->def.armature);
 
-        sq::write_text_to_file(fmt::format("assets/{}.json", ctxKey), json.dump(2), true);
+        sq::write_text_to_file(fmt::format("assets/{}.json", ctxKey), json.dump(true), true);
         sq::write_text_to_file(fmt::format("assets/{}.wren", ctxKey), actionDef->wrenSource, true);
     }
 
@@ -128,7 +138,7 @@ void ActionContext::show_menu_items()
         fighterDef.initialise_hurtblobs();
         fighter->mHurtBlobs.clear();
         fighter->initialise_hurtblobs();
-        scrub_to_frame(currentFrame, true);
+        deferScrubToFrame = currentFrame;
     }
 
     if (ImGui::MenuItem("Reload Sounds"))
@@ -136,7 +146,7 @@ void ActionContext::show_menu_items()
         // todo: make sure there are no dangling pointers around
         fighterDef.sounds.clear();
         fighterDef.initialise_sounds(fmt::format("assets/{}/Sounds.json", fighterDef.directory));
-        scrub_to_frame(currentFrame, true);
+        deferScrubToFrame = currentFrame;
     }
 
     if (ImGui::MenuItem("Reload Animations"))
@@ -146,7 +156,7 @@ void ActionContext::show_menu_items()
         fighterDef.initialise_animations("assets/fighters/Animations.json");
         fighterDef.initialise_animations(fmt::format("assets/{}/Animations.json", fighterDef.directory));
         reset_timeline_length();
-        scrub_to_frame(std::min(currentFrame, timelineEnd), true);
+        deferScrubToFrame = std::min(currentFrame, timelineEnd);
     }
 }
 
@@ -182,9 +192,12 @@ void ActionContext::reset_timeline_length()
     // by default, assume anim name is the same as the action
     const SmallString& name = action->def.name;
 
-    if      (name == "HopBack")    timelineEnd = anim_length("JumpBack");
-    else if (name == "HopForward") timelineEnd = anim_length("JumpForward");
-    else                           timelineEnd = anim_length(name);
+    if      (name == "HopBack")      timelineEnd = anim_length("JumpBack");
+    else if (name == "HopForward")   timelineEnd = anim_length("JumpForward");
+    else if (name == "GrabStart")    timelineEnd = anim_length("GrabLoop");
+    else if (name == "GrabbedStart") timelineEnd = anim_length("GrabbedStartLow");
+    else if (name == "GrabbedFree")  timelineEnd = anim_length("GrabbedFreeLow");
+    else                             timelineEnd = anim_length(name);
 
     timelineEnd += 1; // extra time before looping
 }

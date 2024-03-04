@@ -21,10 +21,11 @@ using ArticleContext = EditorScene::ArticleContext;
 ArticleContext::ArticleContext(EditorScene& _editor, String _ctxKey)
     : BaseContext(_editor, std::move(_ctxKey))
 {
-    const auto json = sq::parse_json_from_file(fmt::format("assets/{}/Editor.json", ctxKey));
+    const auto document = JsonDocument::parse_file(fmt::format("assets/{}/Editor.json", ctxKey));
+    const auto json = document.root().as<JsonObject>();
 
-    const auto& fighterKey = json.at("defaultFighter").get_ref<const String&>();
-    const auto& actionKey = json.at("defaultAction").get_ref<const String&>();
+    const auto fighterKey = json["defaultFighter"].as<StringView>();
+    const auto actionKey = json["defaultAction"].as<StringView>();
 
     world->create_stage("TestZone");
 
@@ -38,8 +39,8 @@ ArticleContext::ArticleContext(EditorScene& _editor, String _ctxKey)
     savedData = std::make_unique<UndoEntry>(*articleDef);
     undoStack.push_back(std::make_unique<UndoEntry>(*articleDef));
 
-    json.at("timelineBegin").get_to(timelineBegin);
-    json.at("timelineEnd").get_to(timelineEnd);
+    timelineBegin = json["timelineBegin"].as_auto();
+    timelineEnd = json["timelineEnd"].as_auto();
 
     enumerate_source_files(fmt::format("assets/{}/Article.wren", ctxKey), articleDef->wrenSource, savedData->wrenSource);
 
@@ -96,32 +97,34 @@ void ArticleContext::save_changes()
 {
     if (savedData->sounds != articleDef->sounds)
     {
-        JsonValue json;
+        auto document = JsonMutDocument();
+        auto json = document.assign(JsonMutObject(document));
 
         for (const auto& [key, sound] : articleDef->sounds)
-            sound.to_json(json[key.c_str()]);
+            sound.to_json(json.append(key, JsonMutObject(document)));
 
-        sq::write_text_to_file(fmt::format("assets/{}/Sounds.json", ctxKey), json.dump(2), true);
+        sq::write_text_to_file(fmt::format("assets/{}/Sounds.json", ctxKey), json.dump(true), true);
     }
 
     if (savedData->blobs != articleDef->blobs || savedData->effects != articleDef->effects || savedData->emitters != articleDef->emitters)
     {
-        JsonValue json;
+        auto document = JsonMutDocument();
+        auto json = document.assign(JsonMutObject(document));
 
-        auto& blobs = json["blobs"] = JsonValue::object();
-        auto& effects = json["effects"] = JsonValue::object();
-        auto& emitters = json["emitters"] = JsonValue::object();
+        auto jBlobs = json.append("blobs", JsonMutObject(document));
+        auto jEffects = json.append("effects", JsonMutObject(document));
+        auto jEmitters = json.append("emitters", JsonMutObject(document));
 
         for (const auto& [key, blob] : articleDef->blobs)
-            blob.to_json(blobs[key.c_str()], articleDef->armature);
+            blob.to_json(jBlobs.append(key, JsonMutObject(document)), articleDef->armature);
 
         for (const auto& [key, effect] : articleDef->effects)
-            effect.to_json(effects[key.c_str()], articleDef->armature);
+            effect.to_json(jEffects.append(key, JsonMutObject(document)), articleDef->armature);
 
         for (const auto& [key, emitter] : articleDef->emitters)
-            emitter.to_json(emitters[key.c_str()], articleDef->armature);
+            emitter.to_json(jEmitters.append(key, JsonMutObject(document)), articleDef->armature);
 
-        sq::write_text_to_file(fmt::format("assets/{}/Article.json", ctxKey), json.dump(2), true);
+        sq::write_text_to_file(fmt::format("assets/{}/Article.json", ctxKey), json.dump(true), true);
         sq::write_text_to_file(fmt::format("assets/{}/Article.wren", ctxKey), articleDef->wrenSource, true);
     }
 
@@ -138,7 +141,7 @@ void ArticleContext::show_menu_items()
         // todo: make sure there are no dangling pointers around
         articleDef->animations.clear();
         articleDef->initialise_animations(fmt::format("assets/{}/Animations.json", ctxKey));
-        scrub_to_frame(currentFrame, true);
+        deferScrubToFrame = currentFrame;
     }
 }
 

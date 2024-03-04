@@ -36,6 +36,11 @@ foreign class Variables {
   foreign animTime=(value)
   foreign attachPoint
 
+  foreign bully
+  foreign bully=(value)
+  foreign victim
+  foreign victim=(value)
+
   foreign extraJumps
   foreign extraJumps=(value)
   foreign lightLandTime
@@ -92,8 +97,8 @@ foreign class Fighter {
   foreign index
 
   foreign attributes
-  foreign localDiamond
   foreign variables
+  foreign diamond
   foreign controller
   foreign library
 

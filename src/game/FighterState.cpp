@@ -102,7 +102,7 @@ void FighterState::call_do_exit()
 
 void FighterState::set_error_message(StringView method, StringView errors)
 {
-    String message = fmt::format("'{}/states/{}'\n{}C++ | {}()\n", def.fighter.directory, def.name, errors, method);
+    String message = fmt::format("'{}/states/{}'\n{}C++ | {}()", def.fighter.directory, def.name, errors, method);
 
     if (world.editor == nullptr)
         sq::log_error_multiline(message);

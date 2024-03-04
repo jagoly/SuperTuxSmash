@@ -91,6 +91,9 @@ public: //====================================================//
     /// Compute a bounding box around all fighters.
     MinMax<Vec2F> compute_fighter_bounds() const;
 
+    /// Get a list of all fighters sorted by update order.
+    StackVector<Fighter*, MAX_FIGHTERS> get_sorted_fighters() const;
+
     //--------------------------------------------------------//
 
     Stage& get_stage() { return *mStage; }
@@ -160,3 +163,5 @@ private: //===================================================//
 } // namespace sts
 
 WRENPLUS_TRAITS_HEADER(sts::World)
+
+WRENPLUS_BASE_CLASS_HEADER(sts::Entity)

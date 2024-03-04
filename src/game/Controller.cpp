@@ -9,12 +9,12 @@ using namespace sts;
 Controller::Controller(const sq::InputDevices& devices, const String& configPath)
     : devices(devices)
 {
-    const JsonValue root = sq::parse_json_from_file(configPath);
+    const auto document = JsonDocument::parse_file(configPath);
+    const auto json = document.root().as<JsonObject>();
 
-    const auto get_config_value = [&root](const String& key, auto& ref) -> bool
+    const auto get_config_value = [&](StringView key, auto& ref) -> bool
     {
-        const JsonValue& j = root.at(key);
-        if (j.is_null() == false) j.get_to(ref);
+        if (const auto j = json[key]; !j.is_null()) ref = j.as_auto();
         return int8_t(ref) != -1;
     };
 
@@ -25,6 +25,7 @@ Controller::Controller(const sq::InputDevices& devices, const String& configPath
     mGamepadEnabled &= get_config_value("button_special", config.button_special);
     mGamepadEnabled &= get_config_value("button_jump", config.button_jump);
     mGamepadEnabled &= get_config_value("button_shield", config.button_shield);
+    mGamepadEnabled &= get_config_value("button_grab", config.button_grab);
 
     if (config.gamepad_port >= 0 && mGamepadEnabled == false)
         sq::log_warning("invalid Gamepad configuration in '{}'", configPath);
@@ -38,6 +39,7 @@ Controller::Controller(const sq::InputDevices& devices, const String& configPath
     mKeyboardEnabled &= get_config_value("key_special", config.key_special);
     mKeyboardEnabled &= get_config_value("key_jump", config.key_jump);
     mKeyboardEnabled &= get_config_value("key_shield", config.key_shield);
+    mKeyboardEnabled &= get_config_value("key_grab", config.key_grab);
 
     mKeyboardMode = mKeyboardEnabled;
 
@@ -101,7 +103,7 @@ void Controller::refresh()
         update_button(config.key_special, 1u);
         update_button(config.key_jump, 2u);
         update_button(config.key_shield, 3u);
-
+        update_button(config.key_grab, 4u);
         update_axis(config.key_left, config.key_right, 0u);
         update_axis(config.key_down, config.key_up, 1u);
     }
@@ -177,6 +179,7 @@ void Controller::tick()
         update_button(mGamepad, config.button_special, previous.holdSpecial, current.pressSpecial, current.holdSpecial);
         update_button(mGamepad, config.button_jump, previous.holdJump, current.pressJump, current.holdJump);
         update_button(mGamepad, config.button_shield, previous.holdShield, current.pressShield, current.holdShield);
+        update_button(mGamepad, config.button_grab, previous.holdGrab, current.pressGrab, current.holdGrab);
 
         update_raw_axis(mGamepad, config.axis_move_x, rawAxis.x);
         update_raw_axis(mGamepad, config.axis_move_y, rawAxis.y);
@@ -188,6 +191,7 @@ void Controller::tick()
         update_button(mKeyboard, 1u, previous.holdSpecial, current.pressSpecial, current.holdSpecial);
         update_button(mKeyboard, 2u, previous.holdJump, current.pressJump, current.holdJump);
         update_button(mKeyboard, 3u, previous.holdShield, current.pressShield, current.holdShield);
+        update_button(mKeyboard, 4u, previous.holdGrab, current.pressGrab, current.holdGrab);
 
         update_raw_axis(mKeyboard, 0u, rawAxis.x);
         update_raw_axis(mKeyboard, 1u, rawAxis.y);

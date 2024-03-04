@@ -62,10 +62,10 @@ ResourceCaches::ResourceCaches(sq::AudioContext& audio)
         return result;
     });
 
-    pipelines.assign_factory([this](const JsonValue& key)
+    pipelines.assign_factory([this](const String& key)
     {
         auto result = sq::Pipeline();
-        result.load_from_json(key, passConfigMap);
+        result.load_from_minified_json(key, passConfigMap);
         return result;
     });
 

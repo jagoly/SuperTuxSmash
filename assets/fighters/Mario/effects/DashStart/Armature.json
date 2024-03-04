@@ -11,7 +11,7 @@
     {
       "name": "Line01",
       "parent": "TopN",
-      "offset": [ 0.0, 0.0, 0.0 ],
+      "offset": [ 0.0, 1.0, 0.0 ],
       "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
       "scale": [ 1.0, 1.0, 1.0 ],
       "flags": []
@@ -19,7 +19,7 @@
     {
       "name": "Line02",
       "parent": "TopN",
-      "offset": [ 0.0, 0.0, 0.0 ],
+      "offset": [ 0.0, 1.5, 0.0 ],
       "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
       "scale": [ 1.0, 1.0, 1.0 ],
       "flags": []
@@ -27,31 +27,31 @@
     {
       "name": "stormsmoke",
       "parent": "TopN",
-      "offset": [ 0.0, 0.0, 0.0 ],
-      "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+      "offset": [ 0.0, 1.1, 0.2 ],
+      "rotation": [ 0.70711, 0.0, 0.0, 0.70711 ],
       "scale": [ 1.0, 1.0, 1.0 ],
       "flags": []
     }
   ],
   "blocks": {
-    "dash1": {
-      "colour": {
-        "type": "Float4",
-        "default": [ 1.0, 1.0, 1.0, 1.0 ]
+    "Line01": {
+      "alpha": {
+        "type": "Float",
+        "default": [ 1.0 ]
       }
     },
-    "dash2": {
-      "colour": {
-        "type": "Float4",
-        "default": [ 1.0, 1.0, 1.0, 1.0 ]
+    "Line02": {
+      "alpha": {
+        "type": "Float",
+        "default": [ 1.0 ]
       }
     },
-    "storm": {
-      "colour": {
-        "type": "Float4",
-        "default": [ 1.0, 1.0, 1.0, 1.0 ]
+    "stormsmoke": {
+      "alpha": {
+        "type": "Float",
+        "default": [ 1.0 ]
       }
     }
   },
-  "animSampleSize": 208
+  "animSampleSize": 172
 }

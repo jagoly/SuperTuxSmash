@@ -24,6 +24,15 @@ FighterDef::FighterDef(World& world, TinyString name)
     initialise_actions();
     initialise_states();
     initialise_articles();
+
+    // todo: change to wren expressions
+    for (const sq::DrawItem& drawItem : drawItems)
+    {
+        if (drawItem.condition.empty()) continue;
+        if (drawItem.condition == "flinch") continue;
+        if (drawItem.condition == "!flinch") continue;
+        sq::log_warning("'assets/fighters/{}/Render.json': invalid condition '{}'", name, drawItem.condition);
+    }
 }
 
 FighterDef::~FighterDef()
@@ -35,52 +44,53 @@ FighterDef::~FighterDef()
 
 void FighterDef::initialise_attributes()
 {
-    const JsonValue json = sq::parse_json_from_file(fmt::format("assets/{}/Attributes.json", directory));
+    const auto document = JsonDocument::parse_file(fmt::format("assets/{}/Attributes.json", directory));
+    const auto json = document.root().as<JsonObject>();
 
-    json.at("walkSpeed")   .get_to(attributes.walkSpeed);
-    json.at("dashSpeed")   .get_to(attributes.dashSpeed);
-    json.at("airSpeed")    .get_to(attributes.airSpeed);
-    json.at("traction")    .get_to(attributes.traction);
-    json.at("airMobility") .get_to(attributes.airMobility);
-    json.at("airFriction") .get_to(attributes.airFriction);
+    attributes.walkSpeed   = json["walkSpeed"].as_auto();
+    attributes.dashSpeed   = json["dashSpeed"].as_auto();
+    attributes.airSpeed    = json["airSpeed"].as_auto();
+    attributes.traction    = json["traction"].as_auto();
+    attributes.airMobility = json["airMobility"].as_auto();
+    attributes.airFriction = json["airFriction"].as_auto();
 
-    json.at("hopHeight")     .get_to(attributes.hopHeight);
-    json.at("jumpHeight")    .get_to(attributes.jumpHeight);
-    json.at("airHopHeight")  .get_to(attributes.airHopHeight);
-    json.at("gravity")       .get_to(attributes.gravity);
-    json.at("fallSpeed")     .get_to(attributes.fallSpeed);
-    json.at("fastFallSpeed") .get_to(attributes.fastFallSpeed);
-    json.at("weight")        .get_to(attributes.weight);
+    attributes.hopHeight     = json["hopHeight"].as_auto();
+    attributes.jumpHeight    = json["jumpHeight"].as_auto();
+    attributes.airHopHeight  = json["airHopHeight"].as_auto();
+    attributes.gravity       = json["gravity"].as_auto();
+    attributes.fallSpeed     = json["fallSpeed"].as_auto();
+    attributes.fastFallSpeed = json["fastFallSpeed"].as_auto();
+    attributes.weight        = json["weight"].as_auto();
 
-    json.at("walkAnimSpeed") .get_to(attributes.walkAnimSpeed);
-    json.at("dashAnimSpeed") .get_to(attributes.dashAnimSpeed);
+    attributes.walkAnimSpeed = json["walkAnimSpeed"].as_auto();
+    attributes.dashAnimSpeed = json["dashAnimSpeed"].as_auto();
 
-    json.at("extraJumps")    .get_to(attributes.extraJumps);
-    json.at("lightLandTime") .get_to(attributes.lightLandTime);
+    attributes.extraJumps    = json["extraJumps"].as_auto();
+    attributes.lightLandTime = json["lightLandTime"].as_auto();
 
-    json.at("diamondHalfWidth")   .get_to(attributes.diamondHalfWidth);
-    json.at("diamondOffsetCross") .get_to(attributes.diamondOffsetCross);
-    json.at("diamondOffsetTop")   .get_to(attributes.diamondOffsetTop);
+    for (const auto [_, jBone] : json["diamondBones"].as<JsonArray>())
+        attributes.diamondBones.emplace_back(armature.json_as_bone_index(jBone));
+
+    attributes.diamondMinWidth  = json["diamondMinWidth"].as_auto();
+    attributes.diamondMinHeight = json["diamondMinHeight"].as_auto();
 }
 
 //============================================================================//
 
 void FighterDef::initialise_hurtblobs()
 {
-    const JsonValue json = sq::parse_json_from_file(fmt::format("assets/{}/HurtBlobs.json", directory));
+    const auto document = JsonDocument::parse_file(fmt::format("assets/{}/HurtBlobs.json", directory));
+    const auto json = document.root().as<JsonObject>();
 
-    for (const auto& item : json.items())
-    {
-        HurtBlobDef& def = hurtBlobs[item.key()];
-        def.from_json(item.value(), armature);
-    }
+    for (const auto [key, jBlob] : json)
+        hurtBlobs[key].from_json(jBlob.as<JsonObject>(), armature);
 }
 
 //============================================================================//
 
 void FighterDef::initialise_actions()
 {
-    const auto load_action = [this](const String& key)
+    const auto load_action = [this](StringView key)
     {
         if (auto [iter, ok] = actions.try_emplace(key, *this, key); ok)
         {
@@ -95,18 +105,25 @@ void FighterDef::initialise_actions()
         else sq::log_warning("'{}/actions/{}': already loaded", directory, key);
     };
 
-    for (const auto& entry : sq::parse_json_from_file("assets/fighters/Actions.json"))
-        load_action(entry.get_ref<const String&>());
-
-    for (const auto& entry : sq::parse_json_from_file(fmt::format("assets/{}/Actions.json", directory)))
-        load_action(entry.get_ref<const String&>());
+    // standard actions
+    {
+        const auto document = JsonDocument::parse_file("assets/fighters/Actions.json");
+        for (const auto [_, key] : document.root().as<JsonArray>())
+            load_action(key.as<StringView>());
+    }
+    // fighter specific actions
+    {
+        const auto document = JsonDocument::parse_file(fmt::format("assets/{}/Actions.json", directory));
+        for (const auto [_, key] : document.root().as<JsonArray>())
+            load_action(key.as<StringView>());
+    }
 }
 
 //============================================================================//
 
 void FighterDef::initialise_states()
 {
-    const auto load_state = [this](const String& key)
+    const auto load_state = [this](StringView key)
     {
         if (auto [iter, ok] = states.try_emplace(key, *this, key); ok)
         {
@@ -120,25 +137,33 @@ void FighterDef::initialise_states()
         else sq::log_warning("'{}/states/{}': already loaded", directory, key);
     };
 
-    for (const auto& entry : sq::parse_json_from_file("assets/fighters/States.json"))
-        load_state(entry.get_ref<const String&>());
-
-    for (const auto& entry : sq::parse_json_from_file(fmt::format("assets/{}/States.json", directory)))
-        load_state(entry.get_ref<const String&>());
+    // standard states
+    {
+        const auto document = JsonDocument::parse_file("assets/fighters/States.json");
+        for (const auto [_, key] : document.root().as<JsonArray>())
+            load_state(key.as<StringView>());
+    }
+    // fighter specific states
+    {
+        const auto document = JsonDocument::parse_file(fmt::format("assets/{}/States.json", directory));
+        for (const auto [_, key] : document.root().as<JsonArray>())
+            load_state(key.as<StringView>());
+    }
 }
 
 //============================================================================//
 
 void FighterDef::initialise_articles()
 {
-    const auto load_article = [this](const String& key, const String& path)
+    const auto load_article = [this](StringView key, StringView path)
     {
-        if (auto [iter, ok] = articles.try_emplace(key, world.load_article_def(path)); !ok)
+        if (auto [_, ok] = articles.try_emplace(key, world.load_article_def(String(path))); !ok)
             sq::log_warning("'{}/articles/{}': already loaded", directory, key);
     };
 
-    const JsonValue json = sq::parse_json_from_file(fmt::format("assets/{}/Articles.json", directory));
+    const auto document = JsonDocument::parse_file(fmt::format("assets/{}/Articles.json", directory));
+    const auto json = document.root().as<JsonObject>();
 
-    for (const auto& item : json.items())
-        load_article(item.key(), item.value().get_ref<const String&>());
+    for (const auto [key, path] : json)
+        load_article(key, path.as<StringView>());
 }

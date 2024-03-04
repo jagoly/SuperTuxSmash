@@ -7,6 +7,7 @@
 "button_special": "A",
 "button_jump":    "RightBump",
 "button_shield":  "LeftBump",
+"button_grab":    "X",
 "key_left":       null,
 "key_up":         null,
 "key_right":      null,
@@ -14,6 +15,7 @@
 "key_attack":     null,
 "key_special":    null,
 "key_jump":       null,
-"key_shield":     null
+"key_shield":     null,
+"key_grab":       null
 
 }

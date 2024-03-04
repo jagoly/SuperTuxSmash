@@ -36,6 +36,9 @@ public: //====================================================//
         float animTime = 0.f;
 
         Vec2F attachPoint = { 0.f, 0.f };
+
+        Entity* bully = nullptr;
+        Entity* victim = nullptr;
     };
 
     //--------------------------------------------------------//
@@ -85,11 +88,11 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    /// Compute a bone's matrix for the current tick. If index is -1, returns model matrix.
-    Mat4F get_bone_matrix(int8_t index) const;
+    /// Compute a transform for the current tick, -1 returns model matrix.
+    Mat4F get_model_matrix(int8_t index) const;
 
-    /// Compute a bone's matrix for the frame being rendered. If bone is -1, returns model matrix.
-    Mat4F get_blended_bone_matrix(int8_t index) const;
+    /// Compute a transform for the frame being rendered, -1 returns model matrix.
+    Mat4F get_blended_model_matrix(int8_t index) const;
 
     //--------------------------------------------------------//
 

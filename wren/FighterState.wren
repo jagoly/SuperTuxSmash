@@ -48,8 +48,8 @@ class FighterStateScript {
   world { _state.world }
 
   attrs { _state.fighter.attributes }
-  diamond { _state.fighter.localDiamond }
   vars { _state.fighter.variables }
+  dmnd { _state.fighter.diamond }
   ctrl { _state.fighter.controller }
   lib { _state.fighter.library }
 

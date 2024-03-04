@@ -356,7 +356,7 @@
       "name": "RHaveN",
       "parent": "RHandN",
       "offset": [ -0.14826, -0.00249, 0.01591 ],
-      "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+      "rotation": [ 0.5, -0.5, 0.5, 0.5 ],
       "scale": [ 1.0, 1.0, 1.0 ],
       "flags": []
     },
@@ -443,7 +443,7 @@
     {
       "name": "RThumbNb",
       "parent": "RThumbNa",
-      "offset": [ -0.05626, -0.00086, 0.00025 ],
+      "offset": [ -0.05627, -0.00086, 0.00025 ],
       "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
       "scale": [ 1.0, 1.0, 1.0 ],
       "flags": []
@@ -457,7 +457,7 @@
       },
       "texRotation": {
         "type": "Angle",
-        "default": [ 1.0 ]
+        "default": [ 0.0 ]
       },
       "texScale": {
         "type": "Float2",
@@ -471,7 +471,7 @@
       },
       "texRotation": {
         "type": "Angle",
-        "default": [ 1.0 ]
+        "default": [ 0.0 ]
       },
       "texScale": {
         "type": "Float2",
@@ -485,7 +485,7 @@
       },
       "texRotation": {
         "type": "Angle",
-        "default": [ 1.0 ]
+        "default": [ 0.0 ]
       },
       "texScale": {
         "type": "Float2",
@@ -499,7 +499,7 @@
       },
       "texRotation": {
         "type": "Angle",
-        "default": [ 1.0 ]
+        "default": [ 0.0 ]
       },
       "texScale": {
         "type": "Float2",
@@ -513,7 +513,7 @@
       },
       "texRotation": {
         "type": "Angle",
-        "default": [ 1.0 ]
+        "default": [ 0.0 ]
       },
       "texScale": {
         "type": "Float2",
@@ -527,7 +527,7 @@
       },
       "texRotation": {
         "type": "Angle",
-        "default": [ 1.0 ]
+        "default": [ 0.0 ]
       },
       "texScale": {
         "type": "Float2",

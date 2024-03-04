@@ -6,63 +6,63 @@ using namespace sts;
 
 //============================================================================//
 
-void Emitter::from_json(const JsonValue& json, const sq::Armature& armature)
+void Emitter::from_json(JsonObject json, const sq::Armature& armature)
 {
-    bone = armature.bone_from_json(json.at("bone"));
+    bone = armature.json_as_bone_index(json["bone"]);
 
-    json.at("count").get_to(count);
+    count = json["count"].as_auto();
 
-    json.at("origin").get_to(origin);
-    json.at("velocity").get_to(velocity);
+    origin = json["origin"].as_auto();
+    velocity = json["velocity"].as_auto();
 
-    json.at("baseOpacity").get_to(baseOpacity);
-    json.at("endOpacity").get_to(endOpacity);
-    json.at("endScale").get_to(endScale);
+    baseOpacity = json["baseOpacity"].as_auto();
+    endOpacity = json["endOpacity"].as_auto();
+    endScale = json["endScale"].as_auto();
 
-    json.at("lifetime").get_to(lifetime);
-    json.at("baseRadius").get_to(baseRadius);
+    lifetime = json["lifetime"].as_auto();
+    baseRadius = json["baseRadius"].as_auto();
 
-    json.at("ballOffset").get_to(ballOffset);
-    json.at("ballSpeed").get_to(ballSpeed);
+    ballOffset = json["ballOffset"].as_auto();
+    ballSpeed = json["ballSpeed"].as_auto();
 
-    json.at("discIncline").get_to(discIncline);
-    json.at("discOffset").get_to(discOffset);
-    json.at("discSpeed").get_to(discSpeed);
+    discIncline = json["discIncline"].as_auto();
+    discOffset = json["discOffset"].as_auto();
+    discSpeed = json["discSpeed"].as_auto();
 
-    json.at("colour").get_to(colour);
-    if (colour.empty()) SQEE_THROW("no colours defined");
+    if (const auto jColour = json["colour"]; (colour = jColour.as_auto()).empty())
+        jColour.throw_with_context("need at least one colour");
 
-    json.at("sprite").get_to(sprite);
+    sprite = json["sprite"].as_auto();
 }
 
 //============================================================================//
 
-void Emitter::to_json(JsonValue& json, const sq::Armature& armature) const
+void Emitter::to_json(JsonMutObject json, const sq::Armature& armature) const
 {
-    json["bone"] = armature.bone_to_json(bone);
+    json.append("bone", armature.json_from_bone_index(json.document(), bone));
 
-    json["count"] = count;
+    json.append("count", count);
 
-    json["origin"] = origin;
-    json["velocity"] = velocity;
+    json.append("origin", origin);
+    json.append("velocity", velocity);
 
-    json["baseOpacity"] = baseOpacity;
-    json["endOpacity"] = endOpacity;
-    json["endScale"] = endScale;
+    json.append("baseOpacity", baseOpacity);
+    json.append("endOpacity", endOpacity);
+    json.append("endScale", endScale);
 
-    json["lifetime"] = lifetime;
-    json["baseRadius"] = baseRadius;
+    json.append("lifetime", lifetime);
+    json.append("baseRadius", baseRadius);
 
-    json["ballOffset"] = ballOffset;
-    json["ballSpeed"] = ballSpeed;
+    json.append("ballOffset", ballOffset);
+    json.append("ballSpeed", ballSpeed);
 
-    json["discIncline"] = discIncline;
-    json["discOffset"] = discOffset;
-    json["discSpeed"] = discSpeed;
+    json.append("discIncline", discIncline);
+    json.append("discOffset", discOffset);
+    json.append("discSpeed", discSpeed);
 
-    json["colour"] = colour;
+    json.append("colour", colour);
 
-    json["sprite"] = sprite;
+    json.append("sprite", sprite);
 }
 
 //============================================================================//

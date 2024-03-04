@@ -32,18 +32,14 @@ DebugRenderer::DebugRenderer(Renderer& renderer) : renderer(renderer)
         }
     );
 
-    mLinesPipelineLayout = ctx.create_pipeline_layout (
-        {}, {
-            vk::PushConstantRange { vk::ShaderStageFlagBits::eFragment, 0u, 16u },
-        }
-    );
+    mPrimitivesPipelineLayout = ctx.create_pipeline_layout({}, {});
 
+    mTrianglesVertexBuffer.initialise(sizeof(Triangle) * MAX_TRIANGLES, vk::BufferUsageFlagBits::eVertexBuffer);
     mThickLinesVertexBuffer.initialise(sizeof(Line) * MAX_THICK_LINES, vk::BufferUsageFlagBits::eVertexBuffer);
     mThinLinesVertexBuffer.initialise(sizeof(Line) * MAX_THIN_LINES, vk::BufferUsageFlagBits::eVertexBuffer);
 
     mSphereMesh.load_from_file("assets/debug/Sphere.sqm");
     mCapsuleMesh.load_from_file("assets/debug/Capsule.sqm");
-    mDiamondMesh.load_from_file("assets/debug/Diamond.sqm");
 }
 
 //============================================================================//
@@ -53,7 +49,7 @@ DebugRenderer::~DebugRenderer()
     const auto& ctx = sq::VulkanContext::get();
 
     ctx.device.destroy(mBlobPipelineLayout);
-    ctx.device.destroy(mLinesPipelineLayout);
+    ctx.device.destroy(mPrimitivesPipelineLayout);
 }
 
 //============================================================================//
@@ -63,6 +59,7 @@ void DebugRenderer::refresh_options_destroy()
     const auto& ctx = sq::VulkanContext::get();
 
     ctx.device.destroy(mBlobPipeline);
+    ctx.device.destroy(mTrianglesPipeline);
     ctx.device.destroy(mLinesPipeline);
 }
 
@@ -106,10 +103,10 @@ void DebugRenderer::refresh_options_create()
         );
     }
 
-    // create lines pipeline
+    // create primitive pipelines
     {
         const auto shaderModules = sq::ShaderModules (
-            ctx, "shaders/debug/Lines.vert.spv", {}, "shaders/debug/Lines.frag.spv"
+            ctx, "shaders/debug/Primitives.vert.spv", {}, "shaders/debug/Primitives.frag.spv"
         );
 
         const auto vertexBindingDescriptions = std::array {
@@ -121,8 +118,35 @@ void DebugRenderer::refresh_options_create()
             vk::VertexInputAttributeDescription { 1u, 0u, vk::Format::eR32G32B32A32Sfloat, 16u },
         };
 
+        mTrianglesPipeline = sq::vk_create_graphics_pipeline (
+            ctx, mPrimitivesPipelineLayout, renderer.window.get_render_pass(), 0u, shaderModules.stages,
+            vk::PipelineVertexInputStateCreateInfo {
+                {}, vertexBindingDescriptions, vertexAttributeDescriptions
+            },
+            vk::PipelineInputAssemblyStateCreateInfo {
+                {}, vk::PrimitiveTopology::eTriangleList, false
+            },
+            vk::PipelineRasterizationStateCreateInfo {
+                {}, false, false, vk::PolygonMode::eFill, vk::CullModeFlagBits::eNone,
+                vk::FrontFace::eClockwise, false, 0.f, false, 0.f, 1.f
+            },
+            vk::PipelineMultisampleStateCreateInfo {
+                {}, vk::SampleCountFlagBits::e1, false, 0.f, nullptr, false, false
+            },
+            vk::PipelineDepthStencilStateCreateInfo {
+                {}, false, false, {}, false, false, {}, {}, 0.f, 0.f
+            },
+            vk::Viewport { 0.f, float(windowSize.y), float(windowSize.x), -float(windowSize.y), 0.f, 1.f },
+            vk::Rect2D { {0, 0}, {windowSize.x, windowSize.y} },
+            vk::PipelineColorBlendAttachmentState {
+                true, vk::BlendFactor::eSrcAlpha, vk::BlendFactor::eOneMinusSrcAlpha, vk::BlendOp::eAdd,
+                vk::BlendFactor::eOne, vk::BlendFactor::eZero, vk::BlendOp::eAdd, vk::ColorComponentFlags(0b1111)
+            },
+            nullptr
+        );
+
         mLinesPipeline = sq::vk_create_graphics_pipeline (
-            ctx, mLinesPipelineLayout, renderer.window.get_render_pass(), 0u, shaderModules.stages,
+            ctx, mPrimitivesPipelineLayout, renderer.window.get_render_pass(), 0u, shaderModules.stages,
             vk::PipelineVertexInputStateCreateInfo {
                 {}, vertexBindingDescriptions, vertexAttributeDescriptions
             },
@@ -131,7 +155,7 @@ void DebugRenderer::refresh_options_create()
             },
             vk::PipelineRasterizationStateCreateInfo {
                 {}, false, false, vk::PolygonMode::eLine, vk::CullModeFlagBits::eNone,
-                vk::FrontFace::eClockwise, false, 0.f, false, 0.f, 2.f
+                vk::FrontFace::eClockwise, false, 0.f, false, 0.f, 1.f
             },
             vk::PipelineMultisampleStateCreateInfo {
                 {}, vk::SampleCountFlagBits::e1, false, 0.f, nullptr, false, false
@@ -232,7 +256,26 @@ void DebugRenderer::impl_integrate_hit_blobs(const std::vector<HitBlob>& blobs)
                              blob.def.facingMode == BlobFacingMode::Reverse ? -float(blob.entity->get_vars().facing) :
                              blob.entity->get_vars().position.x < blob.capsule.originA.x ? +1.f : -1.f;
 
-        if (blob.def.angleMode == BlobAngleMode::Sakurai)
+        if (blob.def.type == BlobType::Grab)
+        {
+            const Vec4F pA = projViewMat * Vec4F(blob.capsule.originA + Vec3F(+0.4f, +0.5f, 0.f) * blob.capsule.radius, 1.f);
+            const Vec4F pB = projViewMat * Vec4F(blob.capsule.originA + Vec3F(-0.2f, +0.5f, 0.f) * blob.capsule.radius, 1.f);
+            const Vec4F pC = projViewMat * Vec4F(blob.capsule.originA + Vec3F(-0.4f, +0.2f, 0.f) * blob.capsule.radius, 1.f);
+            const Vec4F pD = projViewMat * Vec4F(blob.capsule.originA + Vec3F(-0.4f, -0.2f, 0.f) * blob.capsule.radius, 1.f);
+            const Vec4F pE = projViewMat * Vec4F(blob.capsule.originA + Vec3F(-0.2f, -0.5f, 0.f) * blob.capsule.radius, 1.f);
+            const Vec4F pF = projViewMat * Vec4F(blob.capsule.originA + Vec3F(+0.4f, -0.5f, 0.f) * blob.capsule.radius, 1.f);
+            const Vec4F pG = projViewMat * Vec4F(blob.capsule.originA + Vec3F(+0.4f,  0.0f, 0.f) * blob.capsule.radius, 1.f);
+            const Vec4F pH = projViewMat * Vec4F(blob.capsule.originA + Vec3F(+0.1f,  0.0f, 0.f) * blob.capsule.radius, 1.f);
+
+            thick[mThickLineCount++] = Line { pA, Vec4F(1,1,1,1), pB, Vec4F(1,1,1,1) };
+            thick[mThickLineCount++] = Line { pB, Vec4F(1,1,1,1), pC, Vec4F(1,1,1,1) };
+            thick[mThickLineCount++] = Line { pC, Vec4F(1,1,1,1), pD, Vec4F(1,1,1,1) };
+            thick[mThickLineCount++] = Line { pD, Vec4F(1,1,1,1), pE, Vec4F(1,1,1,1) };
+            thick[mThickLineCount++] = Line { pE, Vec4F(1,1,1,1), pF, Vec4F(1,1,1,1) };
+            thick[mThickLineCount++] = Line { pF, Vec4F(1,1,1,1), pG, Vec4F(1,1,1,1) };
+            thick[mThickLineCount++] = Line { pG, Vec4F(1,1,1,1), pH, Vec4F(1,1,1,1) };
+        }
+        else if (blob.def.angleMode == BlobAngleMode::Sakurai)
         {
             const float angle = maths::radians(40.f / 360.f);
             const Vec3F offsetGround = Vec3F(facing, 0.f, 0.f) * blob.capsule.radius;
@@ -318,34 +361,32 @@ void DebugRenderer::impl_integrate_diamond(const Fighter& fighter)
 {
     const Mat4F& projViewMat = renderer.get_camera().get_block().projViewMat;
 
-    const Vec3F translate = Vec3F(fighter.variables.position + Vec2F(0.f, fighter.localDiamond.offsetCross), 0.f);
-    const float scaleBtm = fighter.localDiamond.offsetCross;
-    const float scaleTop = fighter.localDiamond.offsetTop - fighter.localDiamond.offsetCross;
+    Triangle* const triangles = reinterpret_cast<Triangle*>(mTrianglesVertexBuffer.map_only());
 
-    DrawBlob& drawBtm = mDrawBlobs.emplace_back();
-    drawBtm.matrix = projViewMat * maths::transform(translate, Vec3F(fighter.localDiamond.halfWidth, scaleBtm, 0.1f));
-    drawBtm.colour = maths::srgb_to_linear(Vec4F(1.f, 1.f, 1.f, 0.25f));
-    drawBtm.mesh = &mDiamondMesh;
-    drawBtm.subMesh = 0;
-    drawBtm.sortValue = -4;
+    const Diamond& dm = fighter.diamond;
 
-    DrawBlob& drawTop = mDrawBlobs.emplace_back();
-    drawTop.matrix = projViewMat * maths::transform(translate, Vec3F(fighter.localDiamond.halfWidth, scaleTop, 0.1f));
-    drawTop.colour = maths::srgb_to_linear(Vec4F(1.f, 1.f, 1.f, 0.25f));
-    drawTop.mesh = &mDiamondMesh;
-    drawTop.subMesh = 1;
-    drawTop.sortValue = -4;
+    const Vec4F cross = projViewMat * Vec4F(dm.cross, 0.f, 1.f);
+    const Vec4F pA = projViewMat * Vec4F(dm.cross.x, dm.max.y, 0.f, 1.f);
+    const Vec4F pB = projViewMat * Vec4F(dm.max.x, dm.cross.y, 0.f, 1.f);
+    const Vec4F pC = projViewMat * Vec4F(dm.cross.x, dm.min.y, 0.f, 1.f);
+    const Vec4F pD = projViewMat * Vec4F(dm.min.x, dm.cross.y, 0.f, 1.f);
+
+    const Vec4F colour = Vec4F(1.f, 1.f, 1.f, 0.2f);
+
+    triangles[mTriangleCount++] = Triangle { cross, colour, pA, colour, pB, colour };
+    triangles[mTriangleCount++] = Triangle { cross, colour, pB, colour, pC, colour };
+    triangles[mTriangleCount++] = Triangle { cross, colour, pC, colour, pD, colour };
+    triangles[mTriangleCount++] = Triangle { cross, colour, pD, colour, pA, colour };
 }
 
 //============================================================================//
 
 void DebugRenderer::impl_integrate_skeleton(const Entity& entity)
 {
-    const Mat4F projViewModelMat = renderer.get_camera().get_block().projViewMat * entity.get_bone_matrix(-1);
+    const Mat4F projViewModelMat = renderer.get_camera().get_block().projViewMat * entity.get_model_matrix(-1);
 
-    const std::vector<Mat4F> mats = entity.get_armature().compute_skeleton_matrices(entity.get_anim_player().currentSample);
+    const std::vector<Mat4F> mats = entity.get_armature().compute_bone_matrices(entity.get_anim_player().currentSample);
 
-    Line* const thick = reinterpret_cast<Line*>(mThickLinesVertexBuffer.map_only());
     Line* const thin = reinterpret_cast<Line*>(mThinLinesVertexBuffer.map_only());
 
     for (size_t i = 0u; i < mats.size(); ++i)
@@ -358,7 +399,7 @@ void DebugRenderer::impl_integrate_skeleton(const Entity& entity)
         if (int8_t parent = entity.get_armature().get_bone_infos()[i].parent; parent != -1)
         {
             const Mat4F parentMatrix = projViewModelMat * mats[parent];
-            thick[mThickLineCount++] = Line { parentMatrix[3], Vec4F(1,1,1,1), matrix[3], Vec4F(1,1,1,1) };
+            thin[mThinLineCount++] = Line { parentMatrix[3], Vec4F(1,1,1,1), matrix[3], Vec4F(1,1,1,1) };
         }
     }
 }
@@ -367,7 +408,13 @@ void DebugRenderer::impl_integrate_skeleton(const Entity& entity)
 
 void DebugRenderer::populate_command_buffer(vk::CommandBuffer cmdbuf)
 {
-    // diamond < middle < lower < upper < sour < tangy < sweet
+    cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, mTrianglesPipeline);
+    cmdbuf.bindVertexBuffers(0u, mTrianglesVertexBuffer.front(), size_t(0u));
+    cmdbuf.draw(mTriangleCount * 3u, 1u, 0u, 0u);
+
+    //--------------------------------------------------------//
+
+    // middle < lower < upper < sour < tangy < sweet
     const auto compare = [](const DrawBlob& a, const DrawBlob& b) { return a.sortValue < b.sortValue; };
     std::sort(mDrawBlobs.begin(), mDrawBlobs.end(), compare);
 
@@ -405,9 +452,11 @@ void DebugRenderer::populate_command_buffer(vk::CommandBuffer cmdbuf)
 
     mDrawBlobs.clear();
 
+    mTrianglesVertexBuffer.swap_only();
     mThickLinesVertexBuffer.swap_only();
     mThinLinesVertexBuffer.swap_only();
 
+    mTriangleCount = 0u;
     mThickLineCount = 0u;
     mThinLineCount = 0u;
 }

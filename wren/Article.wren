@@ -93,8 +93,8 @@ class ArticleScript {
   vars { _article.variables }
 
   fattrs { _article.fighter.attributes }
-  fdiamond { _article.fighter.localDiamond }
   fvars { _article.fighter.variables }
+  fdmnd { _article.fighter.diamond }
   fctrl { _article.fighter.controller }
   flib { _article.fighter.library }
 

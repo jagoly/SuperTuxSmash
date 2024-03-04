@@ -89,6 +89,16 @@
       "sound": "HitKick2"
     }
   },
-  "effects": {},
+  "effects": {
+    "WhirlwindL": {
+      "attached": false,
+      "bone": null,
+      "origin": [ 0.0, 0.0, 0.0 ],
+      "path": "fighters/Mario/effects/WhirlwindL",
+      "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+      "scale": [ 1.2, 1.2, 1.2 ],
+      "transient": true
+    }
+  },
   "emitters": {}
 }

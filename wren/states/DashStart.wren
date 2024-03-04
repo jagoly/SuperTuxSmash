@@ -49,6 +49,9 @@ class Script is FighterStateScript {
       }
     }
 
+    // grab
+    if (ctrl.input.pressGrab) return "DashGrab"
+
     // shield
     if (_lateActions) {
       if (ctrl.input.holdShield) return "ShieldOn"

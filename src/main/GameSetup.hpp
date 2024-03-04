@@ -17,8 +17,6 @@ struct GameSetup
 
     TinyString stage;
 
-    static GameSetup get_defaults();
-
     static GameSetup get_quickstart();
 };
 

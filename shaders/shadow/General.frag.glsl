@@ -14,7 +14,10 @@
 layout(push_constant, std140)
 uniform PushConstants
 {
-    layout(offset= 4) uint maskTexIndex;
+  //layout(offset=  0) uint modelMatIndex;
+  //layout(offset=  4) ;
+  //layout(offset= 16) mat2x3 texTransform;
+    layout(offset= 48) uint maskTexIndex;
 }
 PC;
 #endif

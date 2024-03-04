@@ -10,6 +10,7 @@ class Script is Base {
     fighter.play_sound("VoiceSmashDown", false)
 
     wait_until(2)
+    action.play_effect("WhirlwindL") // todo particles
     fighter.play_sound("Swing3", false)
     fighter.play_sound("SwingExtra", false)
     action.enable_hitblobs("A")

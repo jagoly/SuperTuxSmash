@@ -59,9 +59,9 @@ struct VisualEffectDef final
         return *std::prev(reinterpret_cast<const TinyString*>(this));
     }
 
-    void from_json(const JsonValue& json, const sq::Armature& armature, EffectCache& cache);
+    void from_json(JsonObject json, const sq::Armature& armature, EffectCache& cache);
 
-    void to_json(JsonValue& json, const sq::Armature& armature) const;
+    void to_json(JsonMutObject json, const sq::Armature& armature) const;
 
     bool operator==(const VisualEffectDef& other) const;
 };

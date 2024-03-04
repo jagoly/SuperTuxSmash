@@ -1,0 +1,38 @@
+{
+  "blobs": {
+    "THROW": {
+      "angleMode": "Normal",
+      "bone": "ThrowN",
+      "canHitAir": true,
+      "canHitGround": true,
+      "clangMode": "Ignore",
+      "damage": 9.0,
+      "facingMode": "Forward",
+      "flavour": "Tangy",
+      "freezeDiMult": 0.0,
+      "freezeMult": 0.0,
+      "handler": "Normal",
+      "ignoreDamage": false,
+      "ignoreWeight": false,
+      "index": 0,
+      "knockAngle": 45.0,
+      "knockBase": 60.0,
+      "knockScale": 65.0,
+      "origin": [ 0.0, 0.0, 0.0 ],
+      "radius": 1.0,
+      "sound": "HitKick1"
+    }
+  },
+  "effects": {
+    "AttackSmoke": {
+      "attached": false,
+      "bone": null,
+      "origin": [ 0.0, 0.0, 0.0 ],
+      "path": "fighters/Mario/effects/AttackSmoke",
+      "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+      "scale": [ 1.0, 1.0, 1.0 ],
+      "transient": true
+    }
+  },
+  "emitters": {}
+}

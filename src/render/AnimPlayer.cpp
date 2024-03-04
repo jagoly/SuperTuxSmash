@@ -21,6 +21,8 @@ AnimPlayer::AnimPlayer(const sq::Armature& armature) : armature(armature)
     previousSample.resize(armature.get_rest_sample().size());
     currentSample.resize(armature.get_rest_sample().size());
     blendSample.resize(armature.get_rest_sample().size());
+
+    debugEnableBlend.resize(armature.get_bone_count(), char(true));
 }
 
 //============================================================================//
@@ -28,6 +30,16 @@ AnimPlayer::AnimPlayer(const sq::Armature& armature) : armature(armature)
 void AnimPlayer::integrate(Renderer& renderer, const Mat4F& modelMatrix, float bbScaleX, float blend)
 {
     armature.blend_samples(previousSample, currentSample, blend, blendSample);
+
+    for (size_t bone = 0u; bone < armature.get_bone_count(); ++bone)
+    {
+        if (bool(debugEnableBlend[bone]) == false)
+        {
+            sq::Armature::Bone* blendSampleBones = reinterpret_cast<sq::Armature::Bone*>(blendSample.data());
+            sq::Armature::Bone* currentSampleBones = reinterpret_cast<sq::Armature::Bone*>(currentSample.data());
+            blendSampleBones[bone] = currentSampleBones[bone];
+        }
+    }
 
     const CameraBlock& camera = renderer.get_camera().get_block();
 

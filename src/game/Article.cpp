@@ -101,9 +101,6 @@ void Article::tick()
 
     if (vars.freezeTime == 0u)
     {
-        // will be overwritten so don't need to copy
-        std::swap(mAnimPlayer.previousSample, mAnimPlayer.currentSample);
-
         // todo: should we expose attempt_move_sphere to wren and call it from the script?
         const MoveAttemptSphere moveAttempt = world.get_stage().attempt_move_sphere(0.3f, 0.75f, vars.position, vars.velocity, false);
 
@@ -125,6 +122,8 @@ void Article::tick()
 
             return;
         }
+
+        std::swap(mAnimPlayer.previousSample, mAnimPlayer.currentSample);
 
         update_animation();
     }
@@ -159,7 +158,7 @@ void Article::integrate(float blend)
     const auto check_condition = [&](const TinyString& condition)
     {
         if (condition.empty()) return true;
-        SQASSERT(false, "invalid condition");
+        return true; // invalid
     };
 
     for (const sq::DrawItem& item : def.drawItems)

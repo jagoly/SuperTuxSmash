@@ -17,6 +17,7 @@
 
 #include <sqee/app/Event.hpp>
 #include <sqee/app/GuiWidgets.hpp>
+#include <sqee/maths/Colours.hpp>
 #include <sqee/vk/VulkanContext.hpp>
 
 #include <ctime> // rng seed
@@ -55,12 +56,10 @@ GameScene::GameScene(SmashApp& smashApp, GameSetup setup)
 
     SQASSERT(setup.players.size() != 0u, "need at least one player");
 
-    String title = fmt::format("SuperTuxSmash - {} - {}", setup.stage, setup.players[0].fighter);
-
-    for (uint8_t index = 1u; index < setup.players.size(); ++index)
-        sq::format_append(title, " vs. {}", setup.players[index].fighter);
-
-    window.set_title(std::move(title));
+    window.set_title(fmt::format(
+        "SuperTuxSmash - {} - {}", setup.stage,
+        fmt::join(views::transform(setup.players, [](auto& player) { return player.fighter; }), " vs. ")
+    ));
 
     //--------------------------------------------------------//
 
@@ -179,8 +178,12 @@ void GameScene::integrate(double /*elapsed*/, float blend)
     mRenderer->integrate_debug(blend, *mWorld);
 
     if (mGamePaused == false)
+    {
         for (auto& controller : mControllers)
             controller->refresh();
+
+        mSmashApp.reset_inactivity(); // only go inactive if paused
+    }
 
     mSmashApp.get_debug_overlay().update_sub_timers(mRenderer->get_frame_timings().data());
 }
@@ -192,10 +195,9 @@ void GameScene::impl_show_general_window()
     ImGui::SetNextWindowSizeConstraints({300, -1}, {300, -1});
     ImGui::SetNextWindowPos({20, 20});
 
-    const auto window = ImPlus::ScopeWindow {
+    const ImPlus::Scope_Window window = {
         "General Debug",
-        ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize |
-        ImGuiWindowFlags_NoMove | ImGuiWindowFlags_MenuBar
+        ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar
     };
     if (window.show == false) return;
 
@@ -207,10 +209,10 @@ void GameScene::impl_show_general_window()
     {
         ImPlus::if_Menu("Render", true, [&]()
         {
-           ImPlus::Checkbox("hit blobs", &options.render_hit_blobs);
-           ImPlus::Checkbox("hurt blobs", &options.render_hurt_blobs);
-           ImPlus::Checkbox("diamonds", &options.render_diamonds);
-           ImPlus::Checkbox("skeletons", &options.render_skeletons);
+           ImGui::Checkbox("hit blobs", &options.render_hit_blobs);
+           ImGui::Checkbox("hurt blobs", &options.render_hurt_blobs);
+           ImGui::Checkbox("diamonds", &options.render_diamonds);
+           ImGui::Checkbox("skeletons", &options.render_skeletons);
         });
         ImPlus::HoverTooltip("change debug rendering");
 
@@ -227,8 +229,8 @@ void GameScene::impl_show_general_window()
 
         ImPlus::if_Menu("Log", true, [&]()
         {
-            ImPlus::Checkbox("animation", &options.log_animation);
-            ImPlus::Checkbox("script", &options.log_script);
+            ImGui::Checkbox("animation", &options.log_animation);
+            ImGui::Checkbox("script", &options.log_script);
         });
         ImPlus::HoverTooltip("change debug logging");
     });
@@ -277,9 +279,9 @@ void GameScene::impl_show_objects_window()
     ImGui::SetNextWindowSizeConstraints({360, 0}, {360, ImPlus::FromScreenBottom(20+20)});
     ImGui::SetNextWindowPos({ImPlus::FromScreenRight(360+20), 20});
 
-    const auto window = ImPlus::ScopeWindow {
+    const ImPlus::Scope_Window window = {
         "Objects Debug",
-        ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove
+        ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings
     };
     if (window.show == false) return;
 
@@ -296,10 +298,108 @@ void GameScene::impl_show_objects_window()
 
 //============================================================================//
 
+void GameScene::impl_show_portraits()
+{
+    const ImVec2 displaySize = ImGui::GetIO().DisplaySize;
+
+    ImDrawList* drawList = ImGui::GetForegroundDrawList();
+
+    // todo: use a high resolution font and scale more smoothly
+    const float fontScale = [&]() {
+        const float availableWidth = displaySize.x * 0.8f;
+        const float requiredWidth = 66.f * float(mWorld->get_fighters().size()) + 60.f;
+        if (requiredWidth * 4.f < availableWidth) return 4.f;
+        if (requiredWidth * 3.f < availableWidth) return 3.f;
+        if (requiredWidth * 2.f < availableWidth) return 2.f;
+        return 1.f;
+    }();
+    IMPLUS_WITH(Scope_FontScale) = { ImPlus::FONT_BOLD, fontScale };
+
+    const float portraitWidth = 66.f * fontScale;
+
+    const auto draw_text = [&](const String& text, Vec2F position, ImU32 colour)
+    {
+        drawList->AddText({position.x - fontScale, position.y + fontScale}, IM_COL32_BLACK, text);
+        drawList->AddText({position.x, position.y}, IM_COL32_BLACK, text);
+        drawList->AddText({position.x, position.y}, colour, text);
+    };
+
+    const auto draw_portrait = [&](const Fighter& fighter, float positionX)
+    {
+        // does nothing unless window width is not even
+        positionX = std::floor(positionX);
+
+        const ImVec2 rectMin = { positionX, displaySize.y - (18.f * fontScale) };
+        const ImVec2 rectMax = { positionX + portraitWidth, displaySize.y };
+
+        // slightly cyan to contrast with red damage
+        drawList->AddRectFilled(rectMin, rectMax, IM_COL32(40, 80, 80, 96), 4.f * fontScale, ImDrawFlags_RoundCornersTop);
+
+        const int damage = std::min(int(std::round(fighter.variables.damage)), 999);
+
+        const String playerStr = { 'P', char('1' + fighter.index) };
+        const String damageStr = fmt::format("{}%", damage);
+
+        const ImU32 playerColour = [&]() {
+            const auto colours = std::array {
+                Vec3F(255, 38, 38), Vec3F(71, 83, 255), Vec3F(255, 187, 15), Vec3F(36, 159, 63)
+            };
+            const Vec3U rounded = Vec3U(maths::srgb_to_linear(colours[fighter.index] / 255.f) * 255.f + 0.5f);
+            return IM_COL32(rounded.x, rounded.y, rounded.z, 255);
+        }();
+
+        const ImU32 damageColour = [&]() {
+            const Vec3F colourA = maths::srgb_to_linear(Vec3F(255, 255, 255) / 255.f);
+            const Vec3F colourB = maths::srgb_to_linear(Vec3F(255, 40, 40) / 255.f);
+            const Vec3F colourC = maths::srgb_to_linear(Vec3F(40, 0, 0) / 255.f);
+            const Vec3F mixed = damage <= 150 ?
+                maths::mix(colourA, colourB, float(damage) / 150.f) :
+                maths::mix(colourB, colourC, float(damage - 150) / 849.f);
+            const Vec3U rounded = Vec3U(mixed * 255.f + 0.5f);
+            return IM_COL32(rounded.x, rounded.y, rounded.z, 255);
+        }();
+
+        const float damageOffsetX = damage >= 100 ? 26.f : damage >= 10 ? 34.f : 42.f;
+
+        draw_text(playerStr, {rectMin.x + 3.f * fontScale, rectMin.y}, playerColour);
+        draw_text(damageStr, {rectMin.x + damageOffsetX * fontScale, rectMin.y}, damageColour);
+    };
+
+    if (mWorld->get_fighters().size() == 1u)
+    {
+        draw_portrait(*mWorld->get_fighters()[0], displaySize.x * 0.5f - portraitWidth * 0.5f);
+    }
+    else if (mWorld->get_fighters().size() == 2u)
+    {
+        const float spacing = 60.f * fontScale;
+        draw_portrait(*mWorld->get_fighters()[0], displaySize.x * 0.5f - portraitWidth - spacing * 0.5f);
+        draw_portrait(*mWorld->get_fighters()[1], displaySize.x * 0.5f + spacing * 0.5f);
+    }
+    else if (mWorld->get_fighters().size() == 3u)
+    {
+        const float spacing = 30.f * fontScale;
+        draw_portrait(*mWorld->get_fighters()[0], displaySize.x * 0.5f - portraitWidth * 1.5f - spacing);
+        draw_portrait(*mWorld->get_fighters()[1], displaySize.x * 0.5f - portraitWidth * 0.5f);
+        draw_portrait(*mWorld->get_fighters()[2], displaySize.x * 0.5f + portraitWidth * 0.5f + spacing);
+    }
+    else if (mWorld->get_fighters().size() == 4u)
+    {
+        const float spacing = 20.f * fontScale;
+        draw_portrait(*mWorld->get_fighters()[0], displaySize.x * 0.5f - portraitWidth * 2.f - spacing * 1.5f);
+        draw_portrait(*mWorld->get_fighters()[1], displaySize.x * 0.5f - portraitWidth - spacing * 0.5f);
+        draw_portrait(*mWorld->get_fighters()[2], displaySize.x * 0.5f + spacing * 0.5f);
+        draw_portrait(*mWorld->get_fighters()[3], displaySize.x * 0.5f + portraitWidth + spacing * 1.5f);
+    }
+    else SQEE_UNREACHABLE();
+}
+
+//============================================================================//
+
 void GameScene::show_imgui_widgets()
 {
     impl_show_general_window();
     impl_show_objects_window();
+    impl_show_portraits();
 }
 
 //============================================================================//

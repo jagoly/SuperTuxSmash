@@ -7,6 +7,7 @@
 "button_special": "A",
 "button_jump":    "RightBump",
 "button_shield":  "LeftBump",
+"button_grab":    "X",
 "key_left":       "Arrow_Left",
 "key_up":         "Arrow_Up",
 "key_right":      "Arrow_Right",
@@ -14,6 +15,7 @@
 "key_attack":     "C",
 "key_special":    "X",
 "key_jump":       "Z",
-"key_shield":     "V"
+"key_shield":     "V",
+"key_grab":       "D"
 
 }

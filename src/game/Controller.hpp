@@ -17,11 +17,13 @@ struct InputFrame final
     bool pressSpecial = false;
     bool pressJump = false;
     bool pressShield = false;
+    bool pressGrab = false;
 
     bool holdAttack = false;
     bool holdSpecial = false;
     bool holdJump = false;
     bool holdShield = false;
+    bool holdGrab = false;
 
     /// -4, -3, -2, -1, 0, +1, +2, +3, +4
     int8_t intX = 0, intY = 0;
@@ -93,6 +95,7 @@ public: //====================================================//
         sq::Gamepad_Button button_special {-1};
         sq::Gamepad_Button button_jump {-1};
         sq::Gamepad_Button button_shield {-1};
+        sq::Gamepad_Button button_grab {-1};
 
         sq::Keyboard_Key key_left {-1};
         sq::Keyboard_Key key_up {-1};
@@ -103,14 +106,15 @@ public: //====================================================//
         sq::Keyboard_Key key_special {-1};
         sq::Keyboard_Key key_jump {-1};
         sq::Keyboard_Key key_shield {-1};
+        sq::Keyboard_Key key_grab {-1};
     };
 
     /// Clone of sq::Gamepad, but for the keyboard.
     struct Keyboard
     {
-        std::array<bool, 4> buttons {};
-        std::array<bool, 4> pressed {};
-        std::array<bool, 4> released {};
+        std::array<bool, 5> buttons {};
+        std::array<bool, 5> pressed {};
+        std::array<bool, 5> released {};
         std::array<float, 2> axes {};
     };
 

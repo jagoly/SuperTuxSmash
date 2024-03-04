@@ -29,37 +29,30 @@ void FighterActionDef::load_json_from_file()
     effects.clear();
     emitters.clear();
 
-    const auto root = sq::try_parse_json_from_file(fmt::format("assets/{}/actions/{}.json", fighter.directory, name));
-    if (root.has_value() == false)
-    {
-        sq::log_warning("'{}/actions/{}': missing json", fighter.directory, name);
-        return;
-    }
+    const auto document = JsonDocument::parse_file(fmt::format("assets/{}/actions/{}.json", fighter.directory, name));
+    const auto json = document.root().as<JsonObject>();
 
-    String errors;
+    fmt::memory_buffer errors;
 
-    const auto items_from_json = [&root, &errors](StringView key, auto& map, auto&... fromJsonArgs)
+    const auto objects_from_json = [&json, &errors](StringView mapKey, auto& map, auto&... fromJsonArgs)
     {
-        try {
-            for (const auto& item : root->at(key).items())
-            {
-                auto& entry = map[item.key()];
-                try {
-                    entry.from_json(item.value(), fromJsonArgs...);
-                }
-                catch (const std::exception& ex) {
-                    sq::format_append(errors, "\n{}[\"{}\"]: {}", key, item.key(), ex.what());
-                }
+        for (const auto [key, jObject] : json[mapKey].as<JsonObject>())
+        {
+            try {
+                map[key].from_json(jObject.as<JsonObject>(), fromJsonArgs...);
             }
-        } catch (const std::exception& ex) { errors += '\n'; errors += ex.what(); }
+            catch (const std::exception& ex) {
+                fmt::format_to(fmt::appender(errors), "\n{}", ex.what());
+            }
+        }
     };
 
-    items_from_json("blobs", blobs, fighter.armature);
-    items_from_json("effects", effects, fighter.armature, fighter.world.caches.effects);
-    items_from_json("emitters", emitters, fighter.armature);
+    objects_from_json("blobs", blobs, fighter.armature);
+    objects_from_json("effects", effects, fighter.armature, fighter.world.caches.effects);
+    objects_from_json("emitters", emitters, fighter.armature);
 
-    if (errors.empty() == false)
-        sq::log_warning_multiline("'{}/actions/{}': errors in json{}", fighter.directory, name, errors);
+    if (errors.size() != 0u)
+        sq::log_warning_multiline("'{}/actions/{}': errors in json{}", fighter.directory, name, StringView(errors.data(), errors.size()));
 }
 
 //============================================================================//
@@ -212,7 +205,7 @@ void FighterAction::call_do_cancel()
 void FighterAction::set_error_message(StringView method, StringView errors)
 {
     String message = fmt::format (
-        "'{}/actions/{}'\n{}C++ | {}() | frame = {}\n", def.fighter.directory, def.name, errors, method, mCurrentFrame
+        "'{}/actions/{}'\n{}C++ | {}() | frame = {}", def.fighter.directory, def.name, errors, method, mCurrentFrame
     );
 
     if (world.editor == nullptr)

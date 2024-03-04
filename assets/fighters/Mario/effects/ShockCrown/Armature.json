@@ -1,0 +1,123 @@
+{
+  "bones": [
+    {
+      "name": "TopN",
+      "parent": null,
+      "offset": [ 0.0, 0.0, 0.0 ],
+      "rotation": [ 0.0, 0.70711, 0.70711, 0.0 ],
+      "scale": [ 1.0, 1.0, 1.0 ],
+      "flags": []
+    },
+    {
+      "name": "crownA",
+      "parent": "TopN",
+      "offset": [ 0.0, 0.0, 0.0 ],
+      "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+      "scale": [ 1.0, 1.0, 1.0 ],
+      "flags": []
+    },
+    {
+      "name": "crownB",
+      "parent": "TopN",
+      "offset": [ 0.0, 0.0, 0.0 ],
+      "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+      "scale": [ 1.0, 1.0, 1.0 ],
+      "flags": []
+    },
+    {
+      "name": "impactA",
+      "parent": "TopN",
+      "offset": [ 0.0, 0.0, 0.0 ],
+      "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+      "scale": [ 1.0, 1.0, 1.0 ],
+      "flags": []
+    },
+    {
+      "name": "impactB",
+      "parent": "TopN",
+      "offset": [ 0.0, 0.0, 0.0 ],
+      "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+      "scale": [ 1.0, 1.0, 1.0 ],
+      "flags": []
+    },
+    {
+      "name": "smokeC",
+      "parent": "TopN",
+      "offset": [ 0.0, 0.0, 0.0 ],
+      "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+      "scale": [ 1.0, 1.0, 1.0 ],
+      "flags": []
+    },
+    {
+      "name": "wave",
+      "parent": "TopN",
+      "offset": [ 0.0, 0.0, 0.0 ],
+      "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+      "scale": [ 1.0, 1.0, 1.0 ],
+      "flags": []
+    }
+  ],
+  "blocks": {
+    "crownA": {
+      "alpha": {
+        "type": "Float",
+        "default": [ 1.0 ]
+      }
+    },
+    "crownB": {
+      "alpha": {
+        "type": "Float",
+        "default": [ 1.0 ]
+      }
+    },
+    "impactA": {
+      "alpha": {
+        "type": "Float",
+        "default": [ 1.0 ]
+      },
+      "texOffset": {
+        "type": "Float2",
+        "default": [ 0.0, 0.0 ]
+      },
+      "texRotation": {
+        "type": "Angle",
+        "default": [ 0.0 ]
+      },
+      "texScale": {
+        "type": "Float2",
+        "default": [ 1.0, 1.0 ]
+      }
+    },
+    "impactB": {
+      "alpha": {
+        "type": "Float",
+        "default": [ 1.0 ]
+      },
+      "texOffset": {
+        "type": "Float2",
+        "default": [ 0.0, 0.0 ]
+      },
+      "texRotation": {
+        "type": "Angle",
+        "default": [ 0.0 ]
+      },
+      "texScale": {
+        "type": "Float2",
+        "default": [ 1.0, 1.0 ]
+      }
+    },
+    "smokeC": {
+      "alpha": {
+        "type": "Float",
+        "default": [ 1.0 ]
+      }
+    },
+    "wave": {
+      "alpha": {
+        "type": "Float",
+        "default": [ 1.0 ]
+      }
+    }
+  },
+  "animSampleSize": 344
+}

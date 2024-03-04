@@ -19,18 +19,20 @@ MenuScene::MenuScene(SmashApp& smashApp)
 
     // load stage names
     {
-        const auto json = sq::parse_json_from_file("assets/stages/Stages.json");
+        const auto document = JsonDocument::parse_file("assets/stages/Stages.json");
+        const auto json = document.root().as<JsonArray>();
         mStageNames.reserve(json.size());
-        for (const auto& entry : json)
-            mStageNames.emplace_back(entry.get_ref<const String&>());
+        for (const auto [_, name] : json)
+            mStageNames.emplace_back(name.as<String>());
     }
 
     // load fighter names
     {
-        const auto json = sq::parse_json_from_file("assets/fighters/Fighters.json");
+        const auto document = JsonDocument::parse_file("assets/fighters/Fighters.json");
+        const auto json = document.root().as<JsonArray>();
         mFighterNames.reserve(json.size());
-        for (const auto& entry : json)
-            mFighterNames.emplace_back(entry.get_ref<const String&>());
+        for (const auto [_, name] : json)
+            mFighterNames.emplace_back(name.as<String>());
     }
 }
 
@@ -73,10 +75,10 @@ void MenuScene::show_imgui_widgets()
 {
     ImGui::SetNextWindowPos({20, 20});
 
-    const auto window = ImPlus::ScopeWindow (
-        " Welcome to SuperTuxSmash",
-        ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse
-    );
+    const ImPlus::Scope_Window window = {
+        " Welcome to SuperTuxSmash!",
+        ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings
+    };
     if (window.show == false) return;
 
     //--------------------------------------------------------//
@@ -94,7 +96,7 @@ void MenuScene::show_imgui_widgets()
     {
         const auto index = uint8_t(iter - mSetup.players.begin());
 
-        const bool erase = ImPlus::Button(fmt::format("X##{}", index));
+        const bool erase = ImGui::Button(fmt::format("X##{}", index));
 
         ImGui::SameLine();
         ImGui::AlignTextToFramePadding();
@@ -116,28 +118,33 @@ void MenuScene::show_imgui_widgets()
     // todo: get rid of defaults, we don't need two different quickstart buttons
 
     ImGui::Indent(50.f);
-    if (ImPlus::Button("Start Game"))
+    if (ImGui::Button("Start Game"))
     {
-        if (mSetup.players.empty() == true && mSetup.stage.empty() == true)
-            mSmashApp.start_game(GameSetup::get_defaults());
-
-        bool valid = (mSetup.stage.empty() == false);
-        for (auto& player : mSetup.players)
-            valid &= (player.fighter.empty() == false);
-
-        if (valid == true)
-             mSmashApp.start_game(mSetup);
+        if (mSetup.stage.empty())
+            mSmashApp.get_debug_overlay().notify("Please choose a Stage");
+        else if (mSetup.players.empty())
+            mSmashApp.get_debug_overlay().notify("Please add some Players");
+        else
+        {
+            auto undecided = ranges::find_if(mSetup.players, [](auto& player) { return player.fighter.empty(); });
+            if (undecided != mSetup.players.end())
+            {
+                auto pNum = std::distance(mSetup.players.begin(), undecided) + 1;
+                mSmashApp.get_debug_overlay().notify(fmt::format("Please choose a Fighter for Player {}", pNum));
+            }
+            else mSmashApp.start_game(mSetup);
+        }
     }
     ImPlus::HoverTooltip("WARNING: Sara and Tux are usually broken, if you want a mostly working fighter use Mario (Quick Start)");
 
     ImGui::SameLine();
-    if (ImPlus::Button("Start Editor"))
+    if (ImGui::Button("Start Editor"))
     {
         mSmashApp.start_editor();
     }
 
     ImGui::SameLine();
-    if (ImPlus::Button("Quick Start"))
+    if (ImGui::Button("Quick Start"))
     {
         mSmashApp.start_game(GameSetup::get_quickstart());
     }

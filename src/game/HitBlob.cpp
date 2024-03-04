@@ -6,70 +6,74 @@ using namespace sts;
 
 //============================================================================//
 
-void HitBlobDef::from_json(const JsonValue& json, const sq::Armature& armature)
+void HitBlobDef::from_json(JsonObject json, const sq::Armature& armature)
 {
-    json.at("origin").get_to(origin);
-    json.at("radius").get_to(radius);
+    origin = json["origin"].as_auto();
+    radius = json["radius"].as_auto();
 
-    json.at("damage").get_to(damage);
-    json.at("freezeMult").get_to(freezeMult);
-    json.at("freezeDiMult").get_to(freezeDiMult);
+    bone = armature.json_as_bone_index(json["bone"]);
 
-    json.at("knockAngle").get_to(knockAngle);
-    json.at("knockBase").get_to(knockBase);
-    json.at("knockScale").get_to(knockScale);
+    index = json["index"].as_auto();
+    // type = json["type"].as_auto();
+    if (auto jType = json.get_safe("type")) type = jType->as_auto();
+    else type = BlobType::Damage;
 
-    bone = armature.bone_from_json(json.at("bone"));
+    damage = json["damage"].as_auto();
+    freezeMult = json["freezeMult"].as_auto();
+    freezeDiMult = json["freezeDiMult"].as_auto();
 
-    json.at("index").get_to(index);
+    knockAngle = json["knockAngle"].as_auto();
+    knockBase = json["knockBase"].as_auto();
+    knockScale = json["knockScale"].as_auto();
 
-    json.at("angleMode").get_to(angleMode);
-    json.at("facingMode").get_to(facingMode);
-    json.at("clangMode").get_to(clangMode);
-    json.at("flavour").get_to(flavour);
+    angleMode = json["angleMode"].as_auto();
+    facingMode = json["facingMode"].as_auto();
+    clangMode = json["clangMode"].as_auto();
+    flavour = json["flavour"].as_auto();
 
-    json.at("ignoreDamage").get_to(ignoreDamage);
-    json.at("ignoreWeight").get_to(ignoreWeight);
+    ignoreDamage = json["ignoreDamage"].as_auto();
+    ignoreWeight = json["ignoreWeight"].as_auto();
 
-    json.at("canHitGround").get_to(canHitGround);
-    json.at("canHitAir").get_to(canHitAir);
+    canHitGround = json["canHitGround"].as_auto();
+    canHitAir = json["canHitAir"].as_auto();
 
-    json.at("handler").get_to(handler);
-    json.at("sound").get_to(sound);
+    handler = json["handler"].as_auto();
+    sound = json["sound"].as_auto();
 }
 
 //============================================================================//
 
-void HitBlobDef::to_json(JsonValue& json, const sq::Armature& armature) const
+void HitBlobDef::to_json(JsonMutObject json, const sq::Armature& armature) const
 {
-    json["origin"] = origin;
-    json["radius"] = radius;
+    json.append("origin", origin);
+    json.append("radius", radius);
 
-    json["damage"] = damage;
-    json["freezeMult"] = freezeMult;
-    json["freezeDiMult"] = freezeDiMult;
+    json.append("bone", armature.json_from_bone_index(json.document(), bone));
 
-    json["knockAngle"] = knockAngle;
-    json["knockBase"] = knockBase;
-    json["knockScale"] = knockScale;
+    json.append("index", index);
+    json.append("type", type);
 
-    json["bone"] = armature.bone_to_json(bone);
+    json.append("damage", damage);
+    json.append("freezeMult", freezeMult);
+    json.append("freezeDiMult", freezeDiMult);
 
-    json["index"] = index;
+    json.append("knockAngle", knockAngle);
+    json.append("knockBase", knockBase);
+    json.append("knockScale", knockScale);
 
-    json["angleMode"] = angleMode;
-    json["facingMode"] = facingMode;
-    json["clangMode"] = clangMode;
-    json["flavour"] = flavour;
+    json.append("angleMode", angleMode);
+    json.append("facingMode", facingMode);
+    json.append("clangMode", clangMode);
+    json.append("flavour", flavour);
 
-    json["ignoreDamage"] = ignoreDamage;
-    json["ignoreWeight"] = ignoreWeight;
+    json.append("ignoreDamage", ignoreDamage);
+    json.append("ignoreWeight", ignoreWeight);
 
-    json["canHitGround"] = canHitGround;
-    json["canHitAir"] = canHitAir;
+    json.append("canHitGround", canHitGround);
+    json.append("canHitAir", canHitAir);
 
-    json["handler"] = handler;
-    json["sound"] = sound;
+    json.append("handler", handler);
+    json.append("sound", sound);
 }
 
 //============================================================================//
@@ -80,14 +84,15 @@ bool HitBlobDef::operator==(const HitBlobDef& other) const
 {
     return origin == other.origin &&
            radius == other.radius &&
+           bone == other.bone &&
+           index == other.index &&
+           type == other.type &&
            damage == other.damage &&
            freezeMult == other.freezeMult &&
            freezeDiMult == other.freezeDiMult &&
            knockAngle == other.knockAngle &&
            knockBase == other.knockBase &&
            knockScale == other.knockScale &&
-           bone == other.bone &&
-           index == other.index &&
            angleMode == other.angleMode &&
            facingMode == other.facingMode &&
            clangMode == other.clangMode &&
@@ -106,8 +111,13 @@ ENABLE_WARNING_FLOAT_EQUALITY()
 
 Vec3F HitBlob::get_debug_colour() const
 {
-    if (def.flavour == BlobFlavour::Sour)  return { 0.6f, 0.6f, 0.0f };
-    if (def.flavour == BlobFlavour::Tangy) return { 0.2f, 1.0f, 0.0f };
-    if (def.flavour == BlobFlavour::Sweet) return { 1.0f, 0.1f, 0.1f };
+    if (def.type == BlobType::Damage)
+    {
+        if (def.flavour == BlobFlavour::Sour)  return { 0.2f, 1.0f, 0.0f };
+        if (def.flavour == BlobFlavour::Tangy) return { 0.6f, 0.6f, 0.0f };
+        if (def.flavour == BlobFlavour::Sweet) return { 1.0f, 0.2f, 0.0f };
+    }
+    if (def.type == BlobType::Grab) return { 0.8f, 0.8f, 0.8f };
+
     SQEE_UNREACHABLE();
 }

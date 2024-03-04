@@ -21,11 +21,9 @@ namespace sts {
 
 using namespace sq::coretypes;
 
-namespace ranges = std::ranges;
 namespace maths = sq::maths;
-
-using sq::StackString;
-using sq::StackVector;
+namespace ranges = sq::ranges;
+namespace views = sq::views;
 
 //============================================================================//
 
@@ -33,6 +31,7 @@ struct AnimPlayer;
 struct Animation;
 struct ArticleDef;
 struct DebugGui;
+struct Diamond;
 struct Emitter;
 struct EntityDef;
 struct Environment;
@@ -45,7 +44,6 @@ struct HitBlobDef;
 struct HurtBlob;
 struct HurtBlobDef;
 struct Ledge;
-struct LocalDiamond;
 struct MoveAttempt;
 struct MoveAttemptSphere;
 struct Options;
@@ -128,10 +126,13 @@ constexpr const float SHIELD_PUSH_HIT_FACTOR = 0.004f;
 /// Maximum number of particles that can be on screen at once.
 constexpr const size_t MAX_PARTICLES = 8192u;
 
-/// Maximum number of thick lines that can be on screen at once.
-constexpr const size_t MAX_THICK_LINES = 1024u;
+/// Maximum number of debug triangles that can be on screen at once.
+constexpr const size_t MAX_TRIANGLES = 512u;
 
-/// Maximum number of thin lines that can be on screen at once.
+/// Maximum number of debug thick lines that can be on screen at once.
+constexpr const size_t MAX_THICK_LINES = 512u;
+
+/// Maximum number of debug thin lines that can be on screen at once.
 constexpr const size_t MAX_THIN_LINES = 2048u;
 
 //============================================================================//

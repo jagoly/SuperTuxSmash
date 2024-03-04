@@ -7,20 +7,20 @@ using namespace sts;
 
 //============================================================================//
 
-void SoundEffect::from_json(const JsonValue& json, SoundCache& cache)
+void SoundEffect::from_json(JsonObject json, SoundCache& cache)
 {
-    json.at("path").get_to(path);
-    json.at("volume").get_to(volume);
+    path = json["path"].as_auto();
+    volume = json["volume"].as_auto();
 
     handle = cache.acquire(path);
 }
 
 //============================================================================//
 
-void SoundEffect::to_json(JsonValue& json) const
+void SoundEffect::to_json(JsonMutObject json) const
 {
-    json["path"] = path;
-    json["volume"] = volume;
+    json.append("path", path);
+    json.append("volume", volume);
 }
 
 //============================================================================//

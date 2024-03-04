@@ -26,6 +26,13 @@ void Fighter::update_action()
         editorStartAction = nullptr;
     }
 
+    // editor wants to restart the GrabStart action
+    else if (editorApplyGrab != nullptr)
+    {
+        apply_grab(*editorApplyGrab);
+        editorApplyGrab = nullptr;
+    }
+
     // update normally
     else if (activeAction != nullptr /*&& activeAction != editorErrorCause*/)
         activeAction->call_do_updates();
@@ -44,7 +51,10 @@ void Fighter::update_movement()
 {
     // attach anim handles movement on its own
     if (mAnimPlayer.animation != nullptr && mAnimPlayer.animation->attach == true)
+    {
+        diamond = compute_diamond(); // needed for after we detach
         return;
+    }
 
     const Attributes& attrs = attributes;
     Variables& vars = variables;
@@ -122,11 +132,20 @@ void Fighter::update_movement()
     else if (vars.velocity.y > +0.f)
         vars.velocity.y = maths::max(vars.velocity.y - attrs.gravity, +0.f);
 
-    //-- ask the stage where we can move ---------------------//
+    //-- compute and translate collision diamond -------------//
 
     const Vec2F translation = vars.velocity + mRootMotionTranslate;
-    const Vec2F targetPosition = vars.position + translation;
     mRootMotionTranslate = Vec2F();
+
+    const Diamond previousDiamond = diamond;
+
+    diamond = compute_diamond();
+
+    diamond.cross += translation;
+    diamond.min += translation;
+    diamond.max += translation;
+
+    //-- ask the stage where we can move ---------------------//
 
     const TinyString& stateName = activeState->def.name;
 
@@ -138,7 +157,13 @@ void Fighter::update_movement()
     const bool ignorePlatforms = input.intY <= -3 &&
                                  (stateName == "Fall" || stateName == "FallStun" || stateName == "Helpless");
 
-    const MoveAttempt moveAttempt = stage.attempt_move(localDiamond, vars.position, targetPosition, edgeStop, ignorePlatforms);
+    const MoveAttempt moveAttempt = stage.attempt_move(previousDiamond, diamond, edgeStop, ignorePlatforms);
+
+    // move the diamond to where the stage wants it to be
+    const Vec2F undoTranslation = moveAttempt.result - (vars.position + translation);
+    diamond.cross += undoTranslation;
+    diamond.min += undoTranslation;
+    diamond.max += undoTranslation;
 
     vars.position = moveAttempt.result;
     vars.onPlatform = moveAttempt.onPlatform;
@@ -186,7 +211,8 @@ void Fighter::update_jitter()
 {
     Variables& vars = variables;
 
-    if (vars.flinch == true && activeState->def.name != "ShieldStun")
+    // todo: this should probably have it's own variable
+    if (vars.flinch == true && activeState->def.name != "ShieldStun" && activeState->def.name != "Grabbed")
     {
         constexpr auto jitterValues = std::array
         {
@@ -215,7 +241,7 @@ void Fighter::tick()
     controller->history.frames.front().set_relative_x(vars.facing);
 
     // check if we have crossed the stage boundary
-    if (world.get_stage().check_point_out_of_bounds(vars.position + localDiamond.cross()))
+    if (world.get_stage().check_point_out_of_bounds(diamond.cross))
         pass_boundary();
 
     // finish slow or animated rotation
@@ -230,22 +256,22 @@ void Fighter::tick()
     // do updates
     if (vars.freezeTime == 0u)
     {
-        // will be overwritten so don't need to copy
-        std::swap(mAnimPlayer.previousSample, mAnimPlayer.currentSample);
-
         update_movement();
         update_misc();
         update_action();
         update_state();
 
+        std::swap(mAnimPlayer.previousSample, mAnimPlayer.currentSample);
+        debugPreviousPoseInfo = std::move(debugCurrentPoseInfo);
+
         update_animation();
     }
     else
     {
+        update_jitter();
+
         mAnimPlayer.previousSample = mAnimPlayer.currentSample;
         debugPreviousPoseInfo = debugCurrentPoseInfo;
-
-        update_jitter();
 
         --vars.freezeTime;
     }
@@ -263,9 +289,9 @@ void Fighter::integrate(float blend)
     const auto check_condition = [&](const TinyString& condition)
     {
         if (condition.empty()) return true;
-        if (condition == "flinch")  return variables.flinch == true;
+        if (condition == "flinch") return variables.flinch == true;
         if (condition == "!flinch") return variables.flinch == false;
-        SQASSERT(false, "invalid condition");
+        return true; // invalid
     };
 
     for (const sq::DrawItem& item : def.drawItems)

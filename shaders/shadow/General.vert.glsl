@@ -2,13 +2,8 @@
 
 //============================================================================//
 
-#if !defined(OPTION_AnimTexture) ||\
-    !defined(OPTION_Bones) ||\
+#if !defined(OPTION_Bones) ||\
     !defined(OPTION_TexCoord)
-  #error
-#endif
-
-#if OPTION_AnimTexture && !OPTION_TexCoord
   #error
 #endif
 
@@ -17,10 +12,12 @@
 layout(push_constant, std140)
 uniform PushConstants
 {
-    layout(offset= 0) uint modelMatIndex;
-  #if OPTION_AnimTexture
-    layout(offset=16) mat2x3 texTransform;
+    layout(offset=  0) uint modelMatIndex;
+  //layout(offset=  4) ;
+  #if OPTION_TexCoord
+    layout(offset= 16) mat2x3 texTransform;
   #endif
+  //layout(offset= 48) uint maskTexIndex;
 }
 PC;
 
@@ -70,10 +67,8 @@ void main()
 
     #endif // OPTION_Bones
 
-    #if OPTION_TexCoord && OPTION_AnimTexture
+    #if OPTION_TexCoord
       io_TexCoord = vec3(v_TexCoord, 1.0) * PC.texTransform;
-    #elif OPTION_TexCoord
-      io_TexCoord = v_TexCoord;
     #endif
 
     gl_Position = ENV.projViewMatrix * vec4(position, 1.0);

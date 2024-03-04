@@ -2,7 +2,7 @@
   "format": "1x8_Unorm",
   "wrapX": "Clamp",
   "wrapY": "Clamp",
-  "swizzle": "111R",
+  "swizzle": "RRRR",
   "filter": "Anisotropic",
   "mipmaps": "Generate",
   "size": [ 64, 64 ]

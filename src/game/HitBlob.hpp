@@ -9,6 +9,9 @@ namespace sts {
 
 //============================================================================//
 
+/// Type of the HitBlob.
+enum class BlobType : int8_t { Damage, Grab };
+
 /// Special knockback angle calculation modes.
 enum class BlobAngleMode : int8_t { Normal, Sakurai, AutoLink };
 
@@ -28,6 +31,12 @@ struct HitBlobDef final
     Vec3F origin = {};  ///< Model space origin of the blob sphere.
     float radius = 0.f; ///< Model space radius of the blob sphere.
 
+    int8_t bone = -1; ///< Index of the bone to attach to.
+
+    uint8_t index = 0u; ///< Used to choose from blobs from the same group.
+
+    BlobType type = {}; ///< Subset of https://www.ssbwiki.com/Hitbox#Hitbox_types
+
     float damage       = 0.f; ///< How much damage to do on collision.
     float freezeMult   = 1.f; ///< https://www.ssbwiki.com/Hitlag
     float freezeDiMult = 1.f; ///< https://www.ssbwiki.com/Smash_directional_influence
@@ -35,10 +44,6 @@ struct HitBlobDef final
     float knockAngle = 0.f; ///< Knockback angle in degrees (0 = forward, 90 = up).
     float knockBase  = 0.f; ///< Base knockback to apply on collision.
     float knockScale = 0.f; ///< Scale the knockback based on current fighter damage.
-
-    int8_t bone = -1; ///< Index of the bone to attach to.
-
-    uint8_t index = 0u; ///< Used to choose from blobs from the same group.
 
     BlobAngleMode  angleMode  = {}; ///< https://www.ssbwiki.com/Angle#Special_angles
     BlobFacingMode facingMode = {}; ///< https://www.ssbwiki.com/Angle#Angle_flipper
@@ -61,9 +66,9 @@ struct HitBlobDef final
         return *std::prev(reinterpret_cast<const TinyString*>(this));
     }
 
-    void from_json(const JsonValue& json, const sq::Armature& armature);
+    void from_json(JsonObject json, const sq::Armature& armature);
 
-    void to_json(JsonValue& json, const sq::Armature& armature) const;
+    void to_json(JsonMutObject json, const sq::Armature& armature) const;
 
     bool operator==(const HitBlobDef& other) const;
 };
@@ -91,6 +96,7 @@ struct HitBlob final
 
 } // namespace sts
 
+SQEE_ENUM_HELPER(sts::BlobType, Damage, Grab)
 SQEE_ENUM_HELPER(sts::BlobAngleMode, Normal, Sakurai, AutoLink)
 SQEE_ENUM_HELPER(sts::BlobFacingMode, Relative, Forward, Reverse)
 SQEE_ENUM_HELPER(sts::BlobClangMode, Ignore, Ground, Air, Cancel)

@@ -1,99 +1,84 @@
 {
   "assets": {
     "meshes": {
-      "": "fighters/Mario/effects/DashStart/Mesh"
+      "Texture": "fighters/Mario/effects/DashStart/meshes/Texture"
     },
     "textures": {
-      "eff_cmn_smokeB": "fighters/Mario/textures/effects/eff_cmn_smokeB",
-      "eff_cmn_stormsomke": "fighters/Mario/textures/effects/eff_cmn_stormsomke"
+      "eff_cmn_stormsomke": "fighters/Mario/textures/effects/eff_cmn_stormsomke",
+      "eff_cmn_smokeB": "fighters/Mario/textures/effects/eff_cmn_smokeB"
     },
     "pipelines": {
-      "": {
-        "attributes": [ "TexCoords" ],
+      "TextureAlpha": {
+        "vertexShader": "transparent/Brawl.vert/Bones0_Colour0_TexCoord1",
+        "fragmentShader": "transparent/Brawl.frag/Texture1",
         "pass": "Transparent",
-        "vertexShader": "transparent/General.vert/AnimColour1_AnimTexture0_Bones0_Colour0_TexCoord1",
-        "fragmentShader": "transparent/General.frag/Colour1_Texture1",
+        "attributes": [ "TexCoords" ],
         "cullFace": "Disable",
         "alphaCoverage": "Disable",
         "depthTest": "Keep",
-        "colourBlend": [ "Alpha" ]
+        "blendModes": [ "Alpha" ]
       }
     }
   },
   "items": [
     {
       "condition": null,
-      "mesh": "",
-      "subMesh": "dash1",
-      "pipeline": "",
+      "mesh": "Texture",
+      "subMesh": "Line02",
+      "pipeline": "TextureAlpha",
+      "order": 0,
+      "visibility": "Line02/alpha",
       "params": {
-        "modelMatIndex": {
-          "type": "ModelMatrixIndex",
-          "bone": "Line02"
-        },
-        "colour": {
-          "type": "AnimFloat4",
-          "block": "dash1",
-          "track": "colour"
-        },
-        "colourTexIndex": {
-          "type": "TextureIndex",
-          "texture": "eff_cmn_smokeB"
-        },
-        "blendDepth": {
-          "type": "ConstFloat",
-          "value": 0.2
-        }
+        "modelMatIndex": { "type": "ModelMatIndex", "bone": "Line02" },
+        "selection": { "type": "ConstPackedBits", "value": "0x43200270" },
+        "colourTexIndex": { "type": "TextureIndex", "texture": "eff_cmn_smokeB" },
+        "texTransform": { "type": "ConstTexTransform", "values": [ 0.0, 0.0, 0.0, 1.0, 1.0 ] },
+        "diffuse": { "type": "ConstFloat3", "value": [ 1.0, 1.0, 1.0 ] },
+        "alpha": { "type": "AnimFloat", "track": "Line02/alpha" },
+        "emissive": { "type": "ConstFloat3", "value": [ 0.30499, 0.30499, 0.30499 ] },
+        "blendDepth": { "type": "ConstFloat", "value": 0.2 },
+        "colour0": { "type": "ConstFloat4", "value": [ 1.0, 1.0, 0.87137, 0.0 ] },
+        "colour1": { "type": "ConstFloat4", "value": [ 0.7454, 0.7454, 0.65837, 0.0 ] }
       }
     },
     {
       "condition": null,
-      "mesh": "",
-      "subMesh": "dash2",
-      "pipeline": "",
+      "mesh": "Texture",
+      "subMesh": "stormsmoke",
+      "pipeline": "TextureAlpha",
+      "order": 0,
+      "visibility": "stormsmoke/alpha",
       "params": {
-        "modelMatIndex": {
-          "type": "ModelMatrixIndex",
-          "bone": "Line01"
-        },
-        "colour": {
-          "type": "AnimFloat4",
-          "block": "dash2",
-          "track": "colour"
-        },
-        "colourTexIndex": {
-          "type": "TextureIndex",
-          "texture": "eff_cmn_smokeB"
-        },
-        "blendDepth": {
-          "type": "ConstFloat",
-          "value": 0.2
-        }
+        "modelMatIndex": { "type": "ModelMatIndex", "bone": "stormsmoke" },
+        "selection": { "type": "ConstPackedBits", "value": "0x43200270" },
+        "colourTexIndex": { "type": "TextureIndex", "texture": "eff_cmn_stormsomke" },
+        "texTransform": { "type": "ConstTexTransform", "values": [ 0.0, 0.0, 0.0, 1.0, 1.0 ] },
+        "diffuse": { "type": "ConstFloat3", "value": [ 1.0, 1.0, 1.0 ] },
+        "alpha": { "type": "AnimFloat", "track": "stormsmoke/alpha" },
+        "emissive": { "type": "ConstFloat3", "value": [ 0.0, 0.0, 0.0 ] },
+        "blendDepth": { "type": "ConstFloat", "value": 0.2 },
+        "colour0": { "type": "ConstFloat4", "value": [ 1.0, 1.0, 0.87137, 0.0 ] },
+        "colour1": { "type": "ConstFloat4", "value": [ 0.7454, 0.7454, 0.65837, 0.0 ] }
       }
     },
     {
       "condition": null,
-      "mesh": "",
-      "subMesh": "storm",
-      "pipeline": "",
+      "mesh": "Texture",
+      "subMesh": "Line01",
+      "pipeline": "TextureAlpha",
+      "order": 0,
+      "visibility": "Line01/alpha",
       "params": {
-        "modelMatIndex": {
-          "type": "ModelMatrixIndex",
-          "bone": "stormsmoke"
-        },
-        "colour": {
-          "type": "AnimFloat4",
-          "block": "storm",
-          "track": "colour"
-        },
-        "colourTexIndex": {
-          "type": "TextureIndex",
-          "texture": "eff_cmn_stormsomke"
-        },
-        "blendDepth": {
-          "type": "ConstFloat",
-          "value": 0.2
-        }
+        "modelMatIndex": { "type": "ModelMatIndex", "bone": "Line01" },
+        "selection": { "type": "ConstPackedBits", "value": "0x43200270" },
+        "colourTexIndex": { "type": "TextureIndex", "texture": "eff_cmn_smokeB" },
+        "texTransform": { "type": "ConstTexTransform", "values": [ 0.0, 0.0, 0.0, 1.0, 1.0 ] },
+        "diffuse": { "type": "ConstFloat3", "value": [ 1.0, 1.0, 1.0 ] },
+        "alpha": { "type": "AnimFloat", "track": "Line01/alpha" },
+        "emissive": { "type": "ConstFloat3", "value": [ 0.30499, 0.30499, 0.30499 ] },
+        "blendDepth": { "type": "ConstFloat", "value": 0.2 },
+        "colour0": { "type": "ConstFloat4", "value": [ 1.0, 1.0, 0.87137, 0.0 ] },
+        "colour1": { "type": "ConstFloat4", "value": [ 0.7454, 0.7454, 0.65837, 0.0 ] }
       }
     }
   ]

@@ -101,6 +101,8 @@ public: //====================================================//
 
     void wren_emit_particles(TinyString key);
 
+    void wren_throw_victim(TinyString key);
+
 private: //===================================================//
 
     // todo: only mScriptHandle is needed per action, move the rest to Fighter

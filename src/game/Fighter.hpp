@@ -38,10 +38,12 @@ public: //====================================================//
         EdgeStopMode edgeStop = {};
 
         bool intangible = false;
+        bool invincible = false;
         bool fastFall = false;
         bool applyGravity = true;
         bool applyFriction = true;
         bool flinch = false;
+        bool grabable = true;
 
         bool onGround = true;
         bool onPlatform = false;
@@ -76,9 +78,9 @@ public: //====================================================//
 
     Attributes attributes;
 
-    LocalDiamond localDiamond;
-
     Variables variables;
+
+    Diamond diamond;
 
     Controller* controller = nullptr;
 
@@ -94,17 +96,29 @@ public: //====================================================//
 
     //--------------------------------------------------------//
 
-    /// Called when a HitBlob hits one of our HurtBlobs.
-    void accumulate_hit(const HitBlob& hit, const HurtBlob& hurt);
+    /// Called for each hit, returns true if the attack was not ignored.
+    bool accumulate_hit(const HitBlob& hit, const HurtBlob& hurt);
+
+    /// Apply knockback, as if hit by a HitBlob.
+    void apply_knockback(const HitBlobDef& hitDef, const Entity& hitEntity);
 
     /// Called after all hits have been accumulated.
     void apply_hits();
+
+    /// Called when we sucessfully grab someone.
+    void apply_grab(Fighter& victim);
 
     /// Called when our attack clashes with someone else's.
     void apply_rebound(float damage);
 
     /// Called when passing the stage boundary.
     void pass_boundary();
+
+    /// Called at the end of a throw animation.
+    void set_position_after_throw();
+
+    /// Called at game start and when respawning.
+    void set_spawn_transform(Vec2F position, int8_t facing);
 
     //--------------------------------------------------------//
 
@@ -152,6 +166,8 @@ private: //===================================================//
 
     //-- methods used internally or by the editor ------------//
 
+    Diamond compute_diamond() const;
+
     void start_action(FighterAction& action);
 
     void cancel_action();
@@ -195,6 +211,7 @@ private: //===================================================//
     //void* editorErrorCause = nullptr;
 
     FighterAction* editorStartAction = nullptr;
+    Fighter* editorApplyGrab = nullptr;
 
     friend DebugGui;
     friend EditorScene;

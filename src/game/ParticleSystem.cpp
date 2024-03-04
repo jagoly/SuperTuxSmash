@@ -38,7 +38,7 @@ void ParticleSystem::impl_generate(const Emitter& emitter, const Entity* entity)
     const maths::RandomRange<uint16_t> randColour { 0u, uint16_t(emitter.colour.size() - 1u) };
     const maths::RandomRange<Vec3F> randNormal { Vec3F(-1.f), Vec3F(1.f) };
 
-    const Mat4F boneMatrix = entity ? entity->get_bone_matrix(emitter.bone) : Mat4F();
+    const Mat4F boneMatrix = entity ? entity->get_model_matrix(emitter.bone) : Mat4F();
 
     std::mt19937& rng = world.get_rng();
 

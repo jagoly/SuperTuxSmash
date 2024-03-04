@@ -32,10 +32,12 @@ WRENPLUS_TRAITS_DEFINITION(sts::Fighter::Variables, "Fighter", "Variables")
 WRENPLUS_TRAITS_DEFINITION(sts::Fighter, "Fighter", "Fighter")
 WRENPLUS_TRAITS_DEFINITION(sts::FighterAction, "FighterAction", "FighterAction")
 WRENPLUS_TRAITS_DEFINITION(sts::FighterState, "FighterState", "FighterState")
-WRENPLUS_TRAITS_DEFINITION(sts::LocalDiamond, "Physics", "LocalDiamond")
+WRENPLUS_TRAITS_DEFINITION(sts::Diamond, "Physics", "Diamond")
 WRENPLUS_TRAITS_DEFINITION(sts::Ledge, "Stage", "Ledge")
 WRENPLUS_TRAITS_DEFINITION(sts::Stage, "Stage", "Stage")
 WRENPLUS_TRAITS_DEFINITION(sts::World, "World", "World")
+
+WRENPLUS_BASE_CLASS_DEFINITION(sts::Entity, sts::Article, sts::Fighter)
 
 //============================================================================//
 
@@ -67,10 +69,12 @@ World::World(const Options& options, sq::AudioContext& audio, ResourceCaches& ca
     WRENPLUS_ADD_FIELD_R(vm, InputFrame, pressSpecial, "pressSpecial");
     WRENPLUS_ADD_FIELD_R(vm, InputFrame, pressJump, "pressJump");
     WRENPLUS_ADD_FIELD_R(vm, InputFrame, pressShield, "pressShield");
+    WRENPLUS_ADD_FIELD_R(vm, InputFrame, pressGrab, "pressGrab");
     WRENPLUS_ADD_FIELD_R(vm, InputFrame, holdAttack, "holdAttack");
     WRENPLUS_ADD_FIELD_R(vm, InputFrame, holdSpecial, "holdSpecial");
     WRENPLUS_ADD_FIELD_R(vm, InputFrame, holdJump, "holdJump");
     WRENPLUS_ADD_FIELD_R(vm, InputFrame, holdShield, "holdShield");
+    WRENPLUS_ADD_FIELD_R(vm, InputFrame, holdGrab, "holdGrab");
     WRENPLUS_ADD_FIELD_R(vm, InputFrame, intX, "intX");
     WRENPLUS_ADD_FIELD_R(vm, InputFrame, intY, "intY");
     WRENPLUS_ADD_FIELD_R(vm, InputFrame, mashX, "mashX");
@@ -112,6 +116,10 @@ World::World(const Options& options, sq::AudioContext& audio, ResourceCaches& ca
     WRENPLUS_ADD_FIELD_R(vm, Fighter::Variables, attachPoint, "attachPoint");
     WRENPLUS_ADD_FIELD_R(vm, Article::Variables, hitSomething, "hitSomething");
     WRENPLUS_ADD_FIELD_R(vm, Fighter::Variables, hitSomething, "hitSomething");
+    WRENPLUS_ADD_FIELD_RW(vm, Article::Variables, bully, "bully");
+    WRENPLUS_ADD_FIELD_RW(vm, Fighter::Variables, bully, "bully");
+    WRENPLUS_ADD_FIELD_RW(vm, Article::Variables, victim, "victim");
+    WRENPLUS_ADD_FIELD_RW(vm, Fighter::Variables, victim, "victim");
 
     // Entity
     WRENPLUS_ADD_METHOD(vm, Article, wren_get_name, "name");
@@ -208,8 +216,8 @@ World::World(const Options& options, sq::AudioContext& audio, ResourceCaches& ca
     // Fighter
     WRENPLUS_ADD_FIELD_R(vm, Fighter, index, "index");
     WRENPLUS_ADD_FIELD_R(vm, Fighter, attributes, "attributes");
-    WRENPLUS_ADD_FIELD_R(vm, Fighter, localDiamond, "localDiamond");
     WRENPLUS_ADD_FIELD_R(vm, Fighter, variables, "variables");
+    WRENPLUS_ADD_FIELD_R(vm, Fighter, diamond, "diamond");
     WRENPLUS_ADD_FIELD_R(vm, Fighter, controller, "controller");
     WRENPLUS_ADD_FIELD_R(vm, Fighter, activeAction, "action");
     WRENPLUS_ADD_FIELD_R(vm, Fighter, activeState, "state");
@@ -246,6 +254,7 @@ World::World(const Options& options, sq::AudioContext& audio, ResourceCaches& ca
     WRENPLUS_ADD_METHOD(vm, FighterAction, wren_disable_hitblobs, "disable_hitblobs(_)");
     WRENPLUS_ADD_METHOD(vm, FighterAction, wren_play_effect, "play_effect(_)");
     WRENPLUS_ADD_METHOD(vm, FighterAction, wren_emit_particles, "emit_particles(_)");
+    WRENPLUS_ADD_METHOD(vm, FighterAction, wren_throw_victim, "throw_victim(_)");
 
     vm.load_module("FighterAction");
     vm.cache_handles<FighterAction>();
@@ -266,17 +275,13 @@ World::World(const Options& options, sq::AudioContext& audio, ResourceCaches& ca
 
     //--------------------------------------------------------//
 
-    // LocalDiamond
-    WRENPLUS_ADD_FIELD_R(vm, LocalDiamond, halfWidth, "halfWidth");
-    WRENPLUS_ADD_FIELD_R(vm, LocalDiamond, offsetCross, "offsetCross");
-    WRENPLUS_ADD_FIELD_R(vm, LocalDiamond, offsetTop, "offsetTop");
-    WRENPLUS_ADD_FIELD_R(vm, LocalDiamond, normLeftDown, "normLeftDown");
-    WRENPLUS_ADD_FIELD_R(vm, LocalDiamond, normLeftUp, "normLeftUp");
-    WRENPLUS_ADD_FIELD_R(vm, LocalDiamond, normRightDown, "normRightDown");
-    WRENPLUS_ADD_FIELD_R(vm, LocalDiamond, normRightUp, "normRightUp");
+    // Diamond
+    WRENPLUS_ADD_FIELD_R(vm, Diamond, cross, "cross");
+    WRENPLUS_ADD_FIELD_R(vm, Diamond, min, "min");
+    WRENPLUS_ADD_FIELD_R(vm, Diamond, max, "max");
 
     vm.load_module("Physics");
-    vm.cache_handles<LocalDiamond>();
+    vm.cache_handles<Diamond>();
 
     //--------------------------------------------------------//
 
@@ -339,7 +344,7 @@ void World::tick()
 {
     mStage->tick();
 
-    for (auto& fighter : mFighters)
+    for (auto& fighter : get_sorted_fighters())
         fighter->tick();
 
     for (auto& article : mArticles)
@@ -423,28 +428,25 @@ void World::finish_setup()
 {
     if (mFighters.size() == 1u)
     {
-        // leave the single fighter where they are
+        mFighters[0]->set_spawn_transform({0.f, 0.f}, +1);
     }
     else if (mFighters.size() == 2u)
     {
-        mFighters[0]->variables.position.x = -2.f;
-        mFighters[1]->variables.position.x = +2.f;
-        mFighters[1]->variables.facing = -1;
+        mFighters[0]->set_spawn_transform({-2.f, 0.f}, +1);
+        mFighters[1]->set_spawn_transform({+2.f, 0.f}, -1);
     }
     else if (mFighters.size() == 3u)
     {
-        mFighters[0]->variables.position.x = -4.f;
-        mFighters[2]->variables.position.x = +4.f;
-        mFighters[2]->variables.facing = -1;
+        mFighters[0]->set_spawn_transform({-2.f, 0.f}, +1);
+        mFighters[1]->set_spawn_transform({ 0.f, 0.f}, +1);
+        mFighters[2]->set_spawn_transform({+2.f, 0.f}, -1);
     }
     else if (mFighters.size() == 4u)
     {
-        mFighters[0]->variables.position.x = -6.f;
-        mFighters[1]->variables.position.x = -2.f;
-        mFighters[2]->variables.position.x = +2.f;
-        mFighters[2]->variables.facing = -1;
-        mFighters[3]->variables.position.x = +6.f;
-        mFighters[3]->variables.facing = -1;
+        mFighters[0]->set_spawn_transform({-6.f, 0.f}, +1);
+        mFighters[1]->set_spawn_transform({-2.f, 0.f}, +1);
+        mFighters[2]->set_spawn_transform({+2.f, 0.f}, -1);
+        mFighters[3]->set_spawn_transform({+6.f, 0.f}, -1);
     }
 }
 
@@ -458,7 +460,7 @@ void World::impl_update_collisions()
     {
         for (HurtBlob& blob : fighter->get_hurt_blobs())
         {
-            const Mat4F matrix = fighter->get_bone_matrix(blob.def.bone);
+            const Mat4F matrix = fighter->get_model_matrix(blob.def.bone);
 
             blob.capsule.originA = Vec3F(matrix * Vec4F(blob.def.originA, 1.f));
             blob.capsule.originB = Vec3F(matrix * Vec4F(blob.def.originB, 1.f));
@@ -470,7 +472,7 @@ void World::impl_update_collisions()
     {
         for (HitBlob& blob : entity.get_hit_blobs())
         {
-            const Mat4F matrix = entity.get_bone_matrix(blob.def.bone);
+            const Mat4F matrix = entity.get_model_matrix(blob.def.bone);
 
             if (blob.justCreated == true)
             {
@@ -495,38 +497,32 @@ void World::impl_update_collisions()
 
     //-- find collisions between hit blobs -------------------//
 
-    struct HitCollision { HitBlob* first; HitBlob* second; };
-
-    using HitCollisionMap = std::map<int32_t, HitCollision>;
-    using HitCollisionMapMap = std::map<int32_t, HitCollisionMap>;
-
-    // best collision for each [entity][entity] combination
-    HitCollisionMapMap hitCollisionMapMap;
-
-    // max damage of hitboxes causing rebound
+    // max damage of hitblobs causing rebound
     std::array<float, MAX_FIGHTERS> reboundDamages {};
 
-    for (auto& firstFighter : mFighters)
+    for (size_t firstIndex = 0; firstIndex + 1 < mFighters.size(); ++firstIndex)
     {
+        auto& firstFighter = mFighters[firstIndex];
         for (HitBlob& firstBlob : firstFighter->get_hit_blobs())
         {
-            // first blob is transcendent
-            if (firstBlob.def.clangMode == BlobClangMode::Ignore) continue;
-
-            for (auto& secondFighter : mFighters)
+            for (size_t secondIndex = firstIndex + 1; secondIndex < mFighters.size(); ++secondIndex)
             {
-                if (firstFighter == secondFighter) continue;
-
+                auto& secondFighter = mFighters[secondIndex];
                 for (HitBlob& secondBlob : secondFighter->get_hit_blobs())
                 {
-                    // second blob is transcendent
-                    if (secondBlob.def.clangMode == BlobClangMode::Ignore) continue;
-
                     // blobs do not intersect
                     if (!maths::intersect_capsule_capsule(firstBlob.capsule, secondBlob.capsule)) continue;
-
-                    if (firstBlob.def.clangMode != BlobClangMode::Air && secondBlob.def.clangMode != BlobClangMode::Air)
+\
+                    if (firstBlob.def.type == BlobType::Damage)
                     {
+                        if (secondBlob.def.type != BlobType::Damage) continue;
+
+                        // first or second blob is transcendent
+                        if (firstBlob.def.clangMode == BlobClangMode::Ignore || secondBlob.def.clangMode == BlobClangMode::Ignore) continue;
+
+                        // todo: air attacks can clang with projectiles
+                        if (firstBlob.def.clangMode == BlobClangMode::Air || secondBlob.def.clangMode == BlobClangMode::Air) continue;
+
                         const float damageDiff = firstBlob.def.damage - secondBlob.def.damage;
 
                         if (damageDiff < +9.f) firstBlob.cancelled = true;
@@ -543,12 +539,30 @@ void World::impl_update_collisions()
                                     std::max(reboundDamages[secondFighter->index], secondBlob.def.damage);
                         }
                     }
+
+                    else if (firstBlob.def.type == BlobType::Grab)
+                    {
+                        if (secondBlob.def.type != BlobType::Grab) continue;
+
+                        // grabs can only rebound if both fighters are facing each other
+                        const auto &firstVars = firstFighter->variables, &secondVars = secondFighter->variables;
+                        if (firstVars.position.x < secondVars.position.x && (firstVars.facing == -1 || secondVars.facing == +1)) continue;
+                        if (firstVars.position.x > secondVars.position.x && (firstVars.facing == +1 || secondVars.facing == -1)) continue;
+
+                        // grabs always rebound with the same damage
+                        reboundDamages[firstFighter->index] = std::max(reboundDamages[firstFighter->index], 5.f);
+                        reboundDamages[secondFighter->index] = std::max(reboundDamages[secondFighter->index], 5.f);
+                        firstBlob.cancelled = true;
+                        secondBlob.cancelled = true;
+                    }
+
+                    else SQEE_UNREACHABLE();
                 }
             }
         }
     }
 
-    //-- find collisions with fighter hurt blobs -------------//
+    //-- find collisions between hurt and hit blobs ----------//
 
     struct HurtCollision { HurtBlob* hurt; HitBlob* hit; };
 
@@ -560,13 +574,13 @@ void World::impl_update_collisions()
 
     for (auto& hurtFighter : mFighters)
     {
-        Fighter::Variables& hurtVars = hurtFighter->variables;
+        const Fighter::Variables& hurtVars = hurtFighter->variables;
 
-        if (hurtVars.intangible == true) continue;
+        if (hurtVars.intangible) continue;
 
         for (HurtBlob& hurtBlob : hurtFighter->get_hurt_blobs())
         {
-            if (hurtBlob.intangible == true) continue;
+            if (hurtBlob.intangible) continue;
 
             const auto find_hit_blob_collisions = [&](Entity& hitEntity)
             {
@@ -578,10 +592,22 @@ void World::impl_update_collisions()
 
                 for (HitBlob& hitBlob : hitEntity.get_hit_blobs())
                 {
-                    // hitBlob got cancelled by another hitBlob
-                    if (hitBlob.cancelled == true) continue;
+                    if (hitBlob.def.type == BlobType::Grab)
+                    {
+                        const Fighter::Variables& hitVars = static_cast<Fighter&>(hitEntity).variables;
 
-                    // hitBlob can not hit hurtFighter
+                        // fighter is not grabable
+                        if (!hurtVars.grabable) continue;
+
+                        // can only grab fighters in front of you
+                        if (hitVars.facing == -1 && hitVars.position.x < hurtVars.position.x) continue;
+                        if (hitVars.facing == +1 && hitVars.position.x > hurtVars.position.x) continue;
+                    }
+
+                    // hitBlob got cancelled by another hitBlob
+                    if (hitBlob.cancelled) continue;
+
+                    // hitBlob can not hit grounded or airborne fighter
                     if (!hitBlob.def.canHitGround && hurtVars.onGround) continue;
                     if (!hitBlob.def.canHitAir && !hurtVars.onGround) continue;
 
@@ -592,6 +618,8 @@ void World::impl_update_collisions()
                     if (mapItem != nullptr)
                     {
                         HurtCollision& best = mapItem->second;
+
+                        // todo: should invincible hurtBlobs have special rules?
 
                         // same hitBlob, choose hurtBlob with highest priority
                         if (&hitBlob == best.hit)
@@ -621,26 +649,130 @@ void World::impl_update_collisions()
         }
     }
 
-    //--------------------------------------------------------//
+    //-- apply hits and build lists of possible grabs --------//
 
-    for (size_t fighterIndex = 0u; fighterIndex < mFighters.size(); ++fighterIndex)
+    // whether each fighter got hit by any attacks
+    std::array<bool, MAX_FIGHTERS> hitByAttack {};
+
+    // list of potential grab victims for each fighter
+    std::array<StackVector<Fighter*, MAX_FIGHTERS-1>, MAX_FIGHTERS> possibleGrabs;
+
+    for (auto& hurtFighter : mFighters)
     {
-        Fighter& fighter = *mFighters[fighterIndex];
-        const auto& collisionMap = hurtCollisionMaps[fighterIndex];
-
-        if (collisionMap.empty() == false)
+        if (hurtCollisionMaps[hurtFighter->index].empty() == false)
         {
-            for (const auto& [hitEntity, collision] : collisionMap)
+            for (const auto& [hitEntity, collision] : hurtCollisionMaps[hurtFighter->index])
             {
-                fighter.accumulate_hit(*collision.hit, *collision.hurt);
-                hitEntity->get_ignore_collisions().push_back(collision.hurt->fighter.eid);
+                if (collision.hit->def.type == BlobType::Damage)
+                {
+                    // note that the order that hits accumulate does not matter
+                    if (hurtFighter->accumulate_hit(*collision.hit, *collision.hurt))
+                        hitByAttack[hurtFighter->index] = true;
+
+                    hitEntity->get_ignore_collisions().push_back(hurtFighter->eid);
+                }
+                else if (collision.hit->def.type == BlobType::Grab)
+                {
+                    Fighter* hitFighter = dynamic_cast<Fighter*>(hitEntity);
+                    SQASSERT(hitFighter != nullptr, "non-fighter hitblob can't be a grab");
+
+                    // todo: check the stage for a wall between the fighters
+                    possibleGrabs[hitFighter->index].push_back(hurtFighter.get());
+                }
+                else SQEE_UNREACHABLE();
             }
-            fighter.apply_hits();
+
+            if (hitByAttack[hurtFighter->index] == true)
+            {
+                // change action and state after one or more hits are accumlated
+                hurtFighter->apply_hits();
+
+                // getting hit by an attack prevents grabbing and rebounding
+                possibleGrabs[hurtFighter->index].clear();
+                reboundDamages[hurtFighter->index] = 0.f;
+            }
+        }
+    }
+
+    //-- find the closest possible grab for each fighter -----//
+
+    std::array<Fighter*, MAX_FIGHTERS> closestGrabs {};
+
+    for (auto& fighter : mFighters)
+    {
+        // can only grab fighters that weren't hit by an attack
+        sq::erase_if(possibleGrabs[fighter->index], [&](Fighter* victim) { return hitByAttack[victim->index]; });
+
+        if (possibleGrabs[fighter->index].empty() == false)
+        {
+            // technically port priority if two fighters are somehow EXACTLY the same distance away
+            closestGrabs[fighter->index] = *ranges::min_element (
+                possibleGrabs[fighter->index], {},
+                [&](Fighter* victim) { return maths::distance_squared(fighter->variables.position, victim->variables.position); }
+            );
+        }
+    }
+
+    //-- confirm all non-circular grabs and apply them -------//
+
+    if (ranges::any_of(closestGrabs, std::identity())) // at least one non-nullptr
+    {
+        // will randomise winners of any contested grabs
+        StackVector<Fighter*, MAX_FIGHTERS> shuffled;
+        for (auto& fighter : mFighters) shuffled.push_back(fighter.get());
+        ranges::shuffle(shuffled, mRandNumGen);
+
+        std::array<bool, MAX_FIGHTERS> confirmedGrabs {};
+
+        while (true)
+        {
+            bool confirmedSome = false;
+
+            for (auto& fighter : shuffled)
+            {
+                if (auto& victim = closestGrabs[fighter->index])
+                {
+                    // nobody else is trying to grab us
+                    if (ranges::find(closestGrabs, fighter) == closestGrabs.end())
+                    {
+                        // prevent anyone else from grabbing our victim
+                        for (auto& otherVictim : closestGrabs)
+                            if (&otherVictim != &victim && otherVictim == victim)
+                                otherVictim = nullptr;
+
+                        // prevent our victim from grabbing anyone else
+                        closestGrabs[victim->index] = nullptr;
+
+                        confirmedSome = confirmedGrabs[fighter->index] = true;
+                    }
+                }
+            }
+
+            // all possible grabs have been confirmed
+            if (ranges::equal(closestGrabs, confirmedGrabs, [](Fighter* lhs, bool rhs) { return bool(lhs) == rhs; })) break;
+
+            // failed to confirm any grabs, the rest are circular
+            if (confirmedSome == false) break;
         }
 
-        else if (reboundDamages[fighterIndex] != 0.f)
-            fighter.apply_rebound(reboundDamages[fighterIndex]);
+        for (auto& fighter : mFighters)
+        {
+            if (auto& victim = closestGrabs[fighter->index])
+            {
+                if (confirmedGrabs[fighter->index] == true)
+                    fighter->apply_grab(*victim);
+
+                // our grab was prevented due to circular grabs
+                else reboundDamages[fighter->index] = 5.f;
+            }
+        }
     }
+
+    //-- apply rebounds --------------------------------------//
+
+    for (auto& fighter : mFighters)
+        if (reboundDamages[fighter->index] != 0.f)
+            fighter->apply_rebound(reboundDamages[fighter->index]);
 }
 
 //============================================================================//
@@ -651,12 +783,25 @@ MinMax<Vec2F> World::compute_fighter_bounds() const
 
     for (const auto& fighter : mFighters)
     {
-        // todo: better estimates for fighter model size
-        result.min.x = maths::min(result.min.x, fighter->variables.position.x + fighter->localDiamond.min().x - 1.f);
-        result.min.y = maths::min(result.min.y, fighter->variables.position.y + fighter->localDiamond.min().y - 0.5f);
-        result.max.x = maths::max(result.max.x, fighter->variables.position.x + fighter->localDiamond.max().x + 1.f);
-        result.max.y = maths::max(result.max.y, fighter->variables.position.y + fighter->localDiamond.max().y + 0.5f);
+        const auto& vars = fighter->variables;
+
+        // todo: better estimates for fighter model size (or some attributes)
+        result.min.x = maths::min(result.min.x, vars.position.x + float(vars.facing) * 0.5f - 1.5f);
+        result.min.y = maths::min(result.min.y, vars.position.y - 0.5f);
+        result.max.x = maths::max(result.max.x, vars.position.x + float(vars.facing) * 0.5f + 1.5f);
+        result.max.y = maths::max(result.max.y, vars.position.y + 2.5f);
     }
+
+    return result;
+}
+
+StackVector<Fighter*, MAX_FIGHTERS> World::get_sorted_fighters() const
+{
+    StackVector<Fighter*, MAX_FIGHTERS> result;
+
+    for (auto& fighter : mFighters)
+        // make sure bullies get updated before their victims
+        result.insert(ranges::find(result, fighter->variables.victim), fighter.get());
 
     return result;
 }

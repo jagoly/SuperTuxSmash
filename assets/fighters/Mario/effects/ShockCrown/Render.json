@@ -1,0 +1,146 @@
+{
+  "assets": {
+    "meshes": {
+      "Texture": "fighters/Mario/effects/ShockCrown/meshes/Texture"
+    },
+    "textures": {
+      "eff_cmn_crownB": "fighters/Mario/textures/effects/eff_cmn_crownB",
+      "eff_cmn_smokeA": "fighters/Mario/textures/effects/eff_cmn_smokeA",
+      "test_crown": "fighters/Mario/textures/effects/test_crown"
+    },
+    "pipelines": {
+      "TextureAccumulate": {
+        "vertexShader": "transparent/Brawl.vert/Bones0_Colour0_TexCoord1",
+        "fragmentShader": "transparent/Brawl.frag/Texture1",
+        "pass": "Transparent",
+        "attributes": [ "TexCoords" ],
+        "cullFace": "Disable",
+        "alphaCoverage": "Disable",
+        "depthTest": "Keep",
+        "blendModes": [ "Accumulate" ]
+      }
+    }
+  },
+  "items": [
+    {
+      "condition": null,
+      "mesh": "Texture",
+      "subMesh": "crownA",
+      "pipeline": "TextureAccumulate",
+      "order": 0,
+      "visibility": "crownA/alpha",
+      "params": {
+        "modelMatIndex": { "type": "ModelMatIndex", "bone": "crownA" },
+        "selection": { "type": "ConstPackedBits", "value": "0x43200270" },
+        "colourTexIndex": { "type": "TextureIndex", "texture": "test_crown" },
+        "texTransform": { "type": "ConstTexTransform", "values": [ 0.0, 0.0, 0.0, 1.0, 1.0 ] },
+        "diffuse": { "type": "ConstFloat3", "value": [ 1.0, 1.0, 1.0 ] },
+        "alpha": { "type": "AnimFloat", "track": "crownA/alpha" },
+        "emissive": { "type": "ConstFloat3", "value": [ 0.0, 0.0, 0.0 ] },
+        "blendDepth": { "type": "ConstFloat", "value": 0.2 },
+        "colour0": { "type": "ConstFloat4", "value": [ 0.05127, 0.27889, 0.21586, 0.0 ] },
+        "colour1": { "type": "ConstFloat4", "value": [ 0.00518, 0.01444, 0.11697, 0.0 ] }
+      }
+    },
+    {
+      "condition": null,
+      "mesh": "Texture",
+      "subMesh": "wave",
+      "pipeline": "TextureAccumulate",
+      "order": 0,
+      "visibility": "wave/alpha",
+      "params": {
+        "modelMatIndex": { "type": "ModelMatIndex", "bone": "wave" },
+        "selection": { "type": "ConstPackedBits", "value": "0x43200270" },
+        "colourTexIndex": { "type": "TextureIndex", "texture": "test_crown" },
+        "texTransform": { "type": "ConstTexTransform", "values": [ 0.0, 0.0, 0.0, 1.0, 1.0 ] },
+        "diffuse": { "type": "ConstFloat3", "value": [ 1.0, 1.0, 1.0 ] },
+        "alpha": { "type": "AnimFloat", "track": "wave/alpha" },
+        "emissive": { "type": "ConstFloat3", "value": [ 0.0, 0.0, 0.0 ] },
+        "blendDepth": { "type": "ConstFloat", "value": 0.2 },
+        "colour0": { "type": "ConstFloat4", "value": [ 0.05127, 0.27889, 0.21586, 0.0 ] },
+        "colour1": { "type": "ConstFloat4", "value": [ 0.01444, 0.0, 0.21586, 0.0 ] }
+      }
+    },
+    {
+      "condition": null,
+      "mesh": "Texture",
+      "subMesh": "impactB",
+      "pipeline": "TextureAccumulate",
+      "order": 0,
+      "visibility": "impactB/alpha",
+      "params": {
+        "modelMatIndex": { "type": "ModelMatIndex", "bone": "impactB" },
+        "selection": { "type": "ConstPackedBits", "value": "0x02700270" },
+        "colourTexIndex": { "type": "TextureIndex", "texture": "eff_cmn_crownB" },
+        "texTransform": { "type": "AnimTexTransform", "tracks": "impactB/texOffset/texRotation/texScale" },
+        "diffuse": { "type": "ConstFloat3", "value": [ 1.0, 1.0, 1.0 ] },
+        "alpha": { "type": "AnimFloat", "track": "impactB/alpha" },
+        "emissive": { "type": "ConstFloat3", "value": [ 0.0, 0.0, 0.0 ] },
+        "blendDepth": { "type": "ConstFloat", "value": 0.2 },
+        "colour0": { "type": "ConstFloat4", "value": [ 0.0, 0.0, 0.0, 0.0 ] },
+        "colour1": { "type": "ConstFloat4", "value": [ 0.0, 0.0, 0.0, 0.0 ] }
+      }
+    },
+    {
+      "condition": null,
+      "mesh": "Texture",
+      "subMesh": "impactA",
+      "pipeline": "TextureAccumulate",
+      "order": 0,
+      "visibility": "impactA/alpha",
+      "params": {
+        "modelMatIndex": { "type": "ModelMatIndex", "bone": "impactA" },
+        "selection": { "type": "ConstPackedBits", "value": "0x02700270" },
+        "colourTexIndex": { "type": "TextureIndex", "texture": "eff_cmn_crownB" },
+        "texTransform": { "type": "AnimTexTransform", "tracks": "impactA/texOffset/texRotation/texScale" },
+        "diffuse": { "type": "ConstFloat3", "value": [ 1.0, 1.0, 1.0 ] },
+        "alpha": { "type": "AnimFloat", "track": "impactA/alpha" },
+        "emissive": { "type": "ConstFloat3", "value": [ 0.0, 0.0, 0.0 ] },
+        "blendDepth": { "type": "ConstFloat", "value": 0.2 },
+        "colour0": { "type": "ConstFloat4", "value": [ 0.0, 0.0, 0.0, 0.0 ] },
+        "colour1": { "type": "ConstFloat4", "value": [ 0.0, 0.0, 0.0, 0.0 ] }
+      }
+    },
+    {
+      "condition": null,
+      "mesh": "Texture",
+      "subMesh": "smokeC",
+      "pipeline": "TextureAccumulate",
+      "order": 0,
+      "visibility": "smokeC/alpha",
+      "params": {
+        "modelMatIndex": { "type": "ModelMatIndex", "bone": "smokeC" },
+        "selection": { "type": "ConstPackedBits", "value": "0x02700270" },
+        "colourTexIndex": { "type": "TextureIndex", "texture": "eff_cmn_smokeA" },
+        "texTransform": { "type": "ConstTexTransform", "values": [ 0.0, 0.0, 0.0, 1.0, 1.0 ] },
+        "diffuse": { "type": "ConstFloat3", "value": [ 0.45641, 0.65837, 1.0 ] },
+        "alpha": { "type": "AnimFloat", "track": "smokeC/alpha" },
+        "emissive": { "type": "ConstFloat3", "value": [ 0.0, 0.0, 0.0 ] },
+        "blendDepth": { "type": "ConstFloat", "value": 0.0 },
+        "colour0": { "type": "ConstFloat4", "value": [ 0.0, 0.0, 0.0, 0.0 ] },
+        "colour1": { "type": "ConstFloat4", "value": [ 0.0, 0.0, 0.0, 0.0 ] }
+      }
+    },
+    {
+      "condition": null,
+      "mesh": "Texture",
+      "subMesh": "crownB",
+      "pipeline": "TextureAccumulate",
+      "order": 0,
+      "visibility": "crownB/alpha",
+      "params": {
+        "modelMatIndex": { "type": "ModelMatIndex", "bone": "crownB" },
+        "selection": { "type": "ConstPackedBits", "value": "0x43200270" },
+        "colourTexIndex": { "type": "TextureIndex", "texture": "test_crown" },
+        "texTransform": { "type": "ConstTexTransform", "values": [ 0.0, 0.0, 0.0, 1.0, 1.0 ] },
+        "diffuse": { "type": "ConstFloat3", "value": [ 1.0, 1.0, 1.0 ] },
+        "alpha": { "type": "AnimFloat", "track": "crownB/alpha" },
+        "emissive": { "type": "ConstFloat3", "value": [ 0.0, 0.0, 0.0 ] },
+        "blendDepth": { "type": "ConstFloat", "value": 0.2 },
+        "colour0": { "type": "ConstFloat4", "value": [ 0.27889, 1.0, 0.27889, 0.0 ] },
+        "colour1": { "type": "ConstFloat4", "value": [ 0.0, 0.52712, 0.52712, 0.0 ] }
+      }
+    }
+  ]
+}

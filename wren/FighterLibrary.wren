@@ -15,8 +15,8 @@ class FighterLibrary {
   world { _fighter.world }
 
   attrs { _fighter.attributes }
-  diamond { _fighter.localDiamond }
   vars { _fighter.variables }
+  dmnd { _fighter.diamond }
   ctrl { _fighter.controller }
 
   state { _fighter.state.script }
@@ -97,6 +97,20 @@ class FighterLibrary {
     // not implemented yet
     actions["ShieldBreak"] = Fn.new {
       fighter.start_action("LandTumble")
+    }
+
+    // from Grab, change to Fall
+    actions["GrabFall"] = Fn.new {
+      fighter.change_state("Fall")
+      fighter.play_animation("GrabFree", 2, true)
+      fighter.set_next_animation("FallLoop", 4)
+    }
+
+    // from Grabbed, change to Fall
+    actions["GrabbedFall"] = Fn.new {
+      fighter.change_state("Fall")
+      fighter.play_animation("GrabbedFreeLow", 2, true)
+      fighter.set_next_animation("FallLoop", 4)
     }
   }
 

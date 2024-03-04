@@ -54,6 +54,7 @@ private: //===================================================//
 
     void impl_show_general_window();
     void impl_show_objects_window();
+    void impl_show_portraits();
 
     //--------------------------------------------------------//
 

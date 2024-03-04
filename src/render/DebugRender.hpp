@@ -53,31 +53,38 @@ private: //===================================================//
         int sortValue;
     };
 
+    struct Triangle
+    {
+        Vec4F pointA, colourA;
+        Vec4F pointB, colourB;
+        Vec4F pointC, colourC;
+    };
+
     struct Line
     {
-        Vec4F pointA;
-        Vec4F colourA;
-        Vec4F pointB;
-        Vec4F colourB;
+        Vec4F pointA, colourA;
+        Vec4F pointB, colourB;
     };
 
     //--------------------------------------------------------//
 
     vk::PipelineLayout mBlobPipelineLayout;
-    vk::PipelineLayout mLinesPipelineLayout;
+    vk::PipelineLayout mPrimitivesPipelineLayout;
 
     vk::Pipeline mBlobPipeline;
+    vk::Pipeline mTrianglesPipeline;
     vk::Pipeline mLinesPipeline;
 
+    sq::SwapBuffer mTrianglesVertexBuffer;
     sq::SwapBuffer mThickLinesVertexBuffer;
     sq::SwapBuffer mThinLinesVertexBuffer;
 
     sq::Mesh mSphereMesh;
     sq::Mesh mCapsuleMesh;
-    sq::Mesh mDiamondMesh;
 
     std::vector<DrawBlob> mDrawBlobs;
 
+    uint mTriangleCount = 0u;
     uint mThickLineCount = 0u;
     uint mThinLineCount = 0u;
 };

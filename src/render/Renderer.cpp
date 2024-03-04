@@ -90,10 +90,17 @@ Renderer::Renderer(const sq::Window& window, const Options& options, ResourceCac
 
     mLutTexture.load_from_file_2D("assets/BrdfLut512");
 
-    mTimestampQueryPool.front = ctx.device.createQueryPool({ {}, vk::QueryType::eTimestamp, NUM_TIME_STAMPS + 1u, {} });
-    mTimestampQueryPool.back = ctx.device.createQueryPool({ {}, vk::QueryType::eTimestamp, NUM_TIME_STAMPS + 1u, {} });
-
     refresh_options_create();
+
+    // create and reset timestamp query pools
+    {
+        mTimestampQueryPool.front = ctx.device.createQueryPool({ {}, vk::QueryType::eTimestamp, NUM_TIME_STAMPS + 1u, {} });
+        mTimestampQueryPool.back = ctx.device.createQueryPool({ {}, vk::QueryType::eTimestamp, NUM_TIME_STAMPS + 1u, {} });
+
+        auto cmdbuf = sq::OneTimeCommands(ctx);
+        cmdbuf->resetQueryPool(mTimestampQueryPool.front, 0u, NUM_TIME_STAMPS + 1u);
+        cmdbuf->resetQueryPool(mTimestampQueryPool.back, 0u, NUM_TIME_STAMPS + 1u);
+    }
 }
 
 //============================================================================//
@@ -685,13 +692,13 @@ void Renderer::impl_create_shadow_stuff()
             vk::SubpassDependency {
                 0u, 2u,
                 vk::PipelineStageFlagBits::eLateFragmentTests, vk::PipelineStageFlagBits::eFragmentShader,
-                vk::AccessFlagBits::eDepthStencilAttachmentWrite, vk::AccessFlagBits::eShaderRead,
+                vk::AccessFlagBits::eDepthStencilAttachmentWrite, vk::AccessFlagBits::eInputAttachmentRead,
                 vk::DependencyFlagBits::eByRegion
             },
             vk::SubpassDependency {
                 1u, 2u,
                 vk::PipelineStageFlagBits::eLateFragmentTests, vk::PipelineStageFlagBits::eFragmentShader,
-                vk::AccessFlagBits::eDepthStencilAttachmentWrite, vk::AccessFlagBits::eShaderRead,
+                vk::AccessFlagBits::eDepthStencilAttachmentWrite, vk::AccessFlagBits::eInputAttachmentRead,
                 vk::DependencyFlagBits::eByRegion
             },
             vk::SubpassDependency {
@@ -1243,8 +1250,19 @@ void Renderer::populate_command_buffer(vk::CommandBuffer cmdbuf)
 
     //--------------------------------------------------------//
 
-    const auto submit_draw_calls = [cmdbuf](const sq::PassConfig& passConfig, const std::vector<DrawCall>& drawCalls)
+    const auto submit_draw_calls = [cmdbuf](const sq::PassConfig& passConfig, std::vector<DrawCall>& drawCalls)
     {
+        const auto predicate = [](DrawCall& a, DrawCall& b)
+        {
+            if (a.item->order != b.item->order) return a.item->order < b.item->order;
+            // todo: add a key hash to sq::Handle
+            if (&a.item->pipeline.value() != &b.item->pipeline.value()) return a.item->pipeline.key() < b.item->pipeline.key();
+            if (&a.item->mesh.value() != &b.item->mesh.value()) return a.item->mesh.key() < b.item->mesh.key();
+            if (a.item->subMesh != b.item->subMesh) return a.item->subMesh < b.item->subMesh;
+            return &a < &b;
+        };
+        ranges::sort(drawCalls, predicate);
+
         const sq::Pipeline* prevPipeline = nullptr;
         const sq::Mesh* prevMesh = nullptr;
 
@@ -1252,16 +1270,19 @@ void Renderer::populate_command_buffer(vk::CommandBuffer cmdbuf)
 
         for (const DrawCall& call : drawCalls)
         {
-            if (prevPipeline != &call.item->pipeline.get())
+            if (!call.item->check_visibility(call.player->blendSample))
+                continue; // skip item
+
+            if (prevPipeline != &call.item->pipeline.value())
             {
                 call.item->pipeline->bind(cmdbuf);
-                prevPipeline = &call.item->pipeline.get();
+                prevPipeline = &call.item->pipeline.value();
             }
 
-            if (prevMesh != &call.item->mesh.get())
+            if (prevMesh != &call.item->mesh.value())
             {
                 call.item->mesh->bind_buffers(cmdbuf);
-                prevMesh = &call.item->mesh.get();
+                prevMesh = &call.item->mesh.value();
             }
 
             call.item->compute_push_constants (

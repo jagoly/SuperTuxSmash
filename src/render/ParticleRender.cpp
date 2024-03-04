@@ -141,9 +141,9 @@ void ParticleRenderer::integrate(float blend, const ParticleSystem& system)
 
         vertex.position = maths::mix(p.previousPos, p.currentPos, blend);
         vertex.radius = p.baseRadius * maths::mix(1.f, p.endScale, factor);
-        vertex.colour[0] = UNorm16(p.colour.r);
-        vertex.colour[1] = UNorm16(p.colour.g);
-        vertex.colour[2] = UNorm16(p.colour.b);
+        vertex.colour[0] = UNorm16(p.colour.x);
+        vertex.colour[1] = UNorm16(p.colour.y);
+        vertex.colour[2] = UNorm16(p.colour.z);
         //vertex.opacity = UNorm16(std::pow(p.baseOpacity * maths::mix(1.f, p.endOpacity, factor), 0.5f));
         vertex.opacity = UNorm16(p.baseOpacity * maths::mix(1.f, p.endOpacity, factor));
         vertex.layer = float(p.sprite);

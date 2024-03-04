@@ -58,6 +58,17 @@ void Entity::wren_reverse_facing_slow(bool clockwise, uint8_t time)
 
 void Entity::wren_reverse_facing_animated(bool clockwise)
 {
+    // todo: find a better name for this method
+    //
+    // What it does is ensure that for the duration of the following animation,
+    // rotation will always interpolate in the specified direction. The main use
+    // case is ensuring that interrupting turn animations with other turn
+    // animations results in spinning rather than wobbling.
+    //
+    // You don't need to (and shouldn't) use this for every turn animation. If
+    // a certain animation looks better interpolating the shortest way, or if it
+    // doesn't matter, just use reverse_facing_auto.
+
     wren_reverse_facing_auto();
 
     if (clockwise == false) mRotateMode = RotateMode::Animation;
@@ -112,10 +123,10 @@ int32_t Entity::wren_play_sound(SmallString key, bool stopWithAction)
 
     const SoundEffect& sound = iter->second;
 
-    if (sound.handle == nullptr)
+    if (sound.handle.good() == false)
         throw wren::Exception("could not load sound '{}'", sound.get_key());
 
-    int32_t id = world.audio.play_sound(sound.handle.get(), sq::SoundGroup::Sfx, sound.volume, false);
+    int32_t id = world.audio.play_sound(sound.handle.value(), sq::SoundGroup::Sfx, sound.volume, false);
 
     if (stopWithAction == true)
     {
@@ -158,7 +169,7 @@ int32_t Entity::impl_wren_play_effect(const std::map<TinyString, VisualEffectDef
 
     const VisualEffectDef& effect = iter->second;
 
-    if (effect.handle == nullptr)
+    if (effect.handle.good() == false)
         throw wren::Exception("could not load effect '{}'", effect.get_key());
 
     int32_t id = world.get_effect_system().play_effect(effect, this);
@@ -293,7 +304,7 @@ bool Fighter::wren_attempt_ledge_catch()
         return false;
 
     vars.ledge = world.get_stage().find_ledge (
-        localDiamond, vars.position, vars.facing, controller->history.frames.front().intX
+        diamond, vars.facing, controller->history.frames.front().intX
     );
 
     return vars.ledge != nullptr;
@@ -351,7 +362,7 @@ void FighterAction::wren_cxx_wait_for(uint frames)
     if (frames == 0u)
         throw wren::Exception("can't wait for zero frames");
 
-    mWaitUntil = mCurrentFrame + frames;
+    mWaitUntil = mCurrentFrame + frames - 1u;
 }
 
 bool FighterAction::wren_cxx_next_frame()
@@ -388,6 +399,25 @@ int32_t FighterAction::wren_play_effect(TinyString key)
 void FighterAction::wren_emit_particles(TinyString key)
 {
     return fighter.impl_wren_emit_particles(def.emitters, key);
+}
+
+void FighterAction::wren_throw_victim(TinyString key)
+{
+    auto victim = dynamic_cast<Fighter*>(fighter.variables.victim);
+
+    if (victim == nullptr)
+        throw wren::Exception("no victim to apply throw to");
+
+    const auto iter = def.blobs.find(key);
+    if (iter == def.blobs.end())
+        throw wren::Exception("invalid hitblob '{}'", key);
+
+    const HitBlobDef& hitDef = iter->second;
+
+    victim->variables.damage += hitDef.damage;
+    victim->apply_knockback(hitDef, fighter);
+
+    victim->set_position_after_throw();
 }
 
 //============================================================================//

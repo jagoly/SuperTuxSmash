@@ -23,6 +23,7 @@ foreign class FighterAction {
   foreign disable_hitblobs(resetCollisions)
   foreign play_effect(key)
   foreign emit_particles(key)
+  foreign throw_victim(key)
 
   do_start() {
     cxx_before_start()
@@ -70,8 +71,8 @@ class FighterActionScript {
   world { _action.world }
 
   attrs { _action.fighter.attributes }
-  diamond { _action.fighter.localDiamond }
   vars { _action.fighter.variables }
+  dmnd { _action.fighter.diamond }
   ctrl { _action.fighter.controller }
   lib { _action.fighter.library }
 

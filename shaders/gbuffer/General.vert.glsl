@@ -2,8 +2,7 @@
 
 //============================================================================//
 
-#if !defined(OPTION_AnimTexture) ||\
-    !defined(OPTION_Bones) ||\
+#if !defined(OPTION_Bones) ||\
     !defined(OPTION_Tangent)
   #error
 #endif
@@ -13,11 +12,15 @@
 layout(push_constant, std140)
 uniform PushConstants
 {
-    layout(offset= 0) uint modelMatIndex;
-    layout(offset= 4) uint normalMatIndex;
-  #if OPTION_AnimTexture
-    layout(offset=32) mat2x3 texTransform;
-  #endif
+    layout(offset=  0) uint modelMatIndex;
+    layout(offset=  4) uint normalMatIndex;
+  //layout(offset=  8) ;
+    layout(offset= 16) mat2x3 texTransform;
+  //layout(offset= 48) uint albedoTexIndex;
+  //layout(offset= 52) uint roughnessTexIndex;
+  //layout(offset= 56) uint normalTexIndex;
+  //layout(offset= 60) uint metallicTexIndex;
+  //layout(offset= 64) uint maskTexIndex;
 }
 PC;
 
@@ -90,11 +93,7 @@ void main()
 
     #endif // OPTION_Bones
 
-    #if OPTION_AnimTexture
-      io_TexCoord = vec3(v_TexCoord, 1.0) * PC.texTransform;
-    #else
-      io_TexCoord = v_TexCoord;
-    #endif
+    io_TexCoord = vec3(v_TexCoord, 1.0) * PC.texTransform;
 
     io_Normal = normalize(normal);
 

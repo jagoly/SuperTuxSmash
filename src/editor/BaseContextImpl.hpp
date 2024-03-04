@@ -46,13 +46,13 @@ inline void EditorScene::BaseContext::helper_edit_objects (
         const Key& key = iter->first;
         Object& object = iter->second;
 
-        const ImPlus::ScopeID keyIdScope = key.c_str();
+        IMPLUS_WITH(Scope_ID) = ImStrv(key);
 
         if constexpr (std::is_same_v<FuncBefore, std::nullptr_t> == false)
             funcBefore(object);
 
         if (collapseAll) ImGui::SetNextItemOpen(false);
-        const bool sectionOpen = ImGui::CollapsingHeader(key.c_str());
+        const bool sectionOpen = ImGui::CollapsingHeader(key);
 
         enum class Choice { None, Delete, Rename, Copy } choice {};
 

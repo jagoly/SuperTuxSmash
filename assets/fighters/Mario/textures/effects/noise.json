@@ -1,8 +1,8 @@
 {
-  "format": "1x8_Unorm",
+  "format": "4x8_Srgb",
   "wrapX": "Repeat",
   "wrapY": "Repeat",
-  "swizzle": "111R",
+  "swizzle": "RGBA",
   "filter": "Anisotropic",
   "mipmaps": "Generate",
   "size": [ 32, 32 ]

@@ -19,6 +19,11 @@ class Script is FighterStateScript {
       if (r = lib.check_GroundDodges(frame)) return r
     }
 
+    // grab
+    for (frame in ctrl.history) {
+      if (frame.pressGrab) return "NeutralGrab"
+    }
+
     // shield
     if (ctrl.input.holdShield) return "ShieldOn"
 

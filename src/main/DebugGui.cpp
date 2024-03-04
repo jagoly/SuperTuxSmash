@@ -18,7 +18,7 @@ using namespace sts;
 
 void DebugGui::show_widget_fighter(Fighter& fighter)
 {
-    const ImPlus::ScopeID scopeId = fighter.index;
+    IMPLUS_WITH(Scope_ID) = fighter.index;
 
     const ImGuiStyle& style = ImGui::GetStyle();
     {
@@ -29,23 +29,24 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
     ImGui::SameLine();
 
     const auto flags = fighter.index == 0 ? ImGuiTreeNodeFlags_DefaultOpen : 0;
-    if (!ImPlus::CollapsingHeader(fmt::format("Fighter {} - {}", fighter.index, fighter.def.name), flags))
+    if (!ImGui::CollapsingHeader(fmt::format("Fighter {} - {}", fighter.index, fighter.def.name), flags))
         return;
 
     //--------------------------------------------------------//
 
     auto& attrs = fighter.attributes;
-    auto& diamond = fighter.localDiamond;
     auto& vars = fighter.variables;
 
     const auto action = fighter.activeAction;
     const auto state = fighter.activeState;
 
+    const auto& armature = fighter.def.armature;
+
     //--------------------------------------------------------//
 
     if (ImGui::CollapsingHeader("General", ImGuiTreeNodeFlags_DefaultOpen))
     {
-        const ImPlus::ScopeFont font = ImPlus::FONT_MONO;
+        IMPLUS_WITH(Scope_Font) = ImPlus::FONT_MONO;
 
         if (state != nullptr)
         {
@@ -66,20 +67,71 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
         else ImPlus::Text("Action: None");
 
         ImPlus::Text(fmt::format("Translate: {:+.3f}", fighter.current.translation));
-        ImPlus::HoverTooltipFixed(fmt::format("Previous: {:+.3f}", fighter.previous.translation));
+        ImPlus::HoverTooltip(true, ImGuiDir_Left, "Previous: {:+.3f}", fighter.previous.translation);
 
         ImPlus::Text(fmt::format("Rotate: {:+.2f}", fighter.current.rotation));
-        ImPlus::HoverTooltipFixed(fmt::format("Previous: {:+.2f}\nMode:     {:05b}", fighter.previous.rotation, uint8_t(fighter.mRotateMode)));
+        ImPlus::HoverTooltip(true, ImGuiDir_Left, "Previous: {:+.2f}\nMode:     {:05b}", fighter.previous.rotation, uint8_t(fighter.mRotateMode));
 
         ImPlus::Text(fmt::format("Pose: {}", fighter.debugCurrentPoseInfo));
-        ImPlus::HoverTooltipFixed(fmt::format("Previous: {}\nFade:     {}", fighter.debugPreviousPoseInfo, fighter.debugAnimationFadeInfo));
+        // todo: this tooltip (and only this tooltip) flickers and I have no idea why
+        ImPlus::HoverTooltip(true, ImGuiDir_Left, "Previous: {}\nFade:     {}", fighter.debugPreviousPoseInfo, fighter.debugAnimationFadeInfo);
+
+        // todo: make this work for articles, and add a seperate widget for non-bone animation blocks
+        const auto display_bone = [&](auto& display_bone, size_t bone) -> void
+        {
+            ImGui::TableNextRow();
+
+            ImGui::TableNextColumn();
+            const bool hasChildren = ranges::any_of(armature.get_bone_infos(), [&](const auto& info) { return info.parent == int8_t(bone); });
+            const bool open = ImGui::TreeNodeEx (
+                fmt::format("{:>2}  {}", bone, armature.get_bone_names()[bone]),
+                ImGuiTreeNodeFlags_FramePadding | ImGuiTreeNodeFlags_SpanFullWidth | (hasChildren ? 0 : ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_Bullet)
+            );
+
+            const auto& c = reinterpret_cast<sq::Armature::Bone*>(fighter.mAnimPlayer.currentSample.data())[bone];
+            const auto& p = reinterpret_cast<sq::Armature::Bone*>(fighter.mAnimPlayer.previousSample.data())[bone];
+            const auto& m = reinterpret_cast<Mat34F*>(fighter.world.renderer.ubos.matrices.map_only())[fighter.mAnimPlayer.modelMatsIndex + 1u + bone];
+
+            ImPlus::HoverTooltip (
+                true, ImGuiDir_Left,
+                "Offset\n  C {:+.3f}\n  P {:+.3f}\nRotation\n  C {:+.2f}\n  P {:+.2f}\nScale\n  C {:+.3f}\n  P {:+.3f}\nMatrix\n"
+                "  ({:+.4f}, {:+.4f}, {:+.4f}, {:+.4f})\n  ({:+.4f}, {:+.4f}, {:+.4f}, {:+.4f})\n  ({:+.4f}, {:+.4f}, {:+.4f}, {:+.4f})",
+                c.offset, p.offset, c.rotation, p.rotation, c.scale, p.scale,
+                m[0][0], m[0][1], m[0][2], m[0][3], m[1][0], m[1][1], m[1][2], m[1][3], m[2][0], m[2][1], m[2][2], m[2][3]
+            );
+
+            ImGui::TableNextColumn();
+            ImGui::Checkbox(fmt::format("##{}", bone), reinterpret_cast<bool*>(&fighter.mAnimPlayer.debugEnableBlend[bone]));
+            ImPlus::HoverTooltip("blend with previous transform");
+            if (open)
+            {
+                if (hasChildren)
+                    for (size_t child = 0u; child < armature.get_bone_count(); ++child)
+                        if (armature.get_bone_infos()[child].parent == int8_t(bone))
+                            display_bone(display_bone, child);
+                ImGui::TreePop();
+            }
+        };
+
+        ImPlus::if_Table("", 2, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_SizingFixedFit, ImVec2(), 0.f, [&]()
+        {
+            IMPLUS_WITH(Style_IndentSpacing) = 10.f;
+            IMPLUS_WITH(Style_SelectableTextAlign) = { 0.f, 0.5f };
+
+            ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthStretch, 0.f);
+            ImGui::TableSetupColumn("", 0, 0.f);
+
+            for (size_t bone = 0u; bone < armature.get_bone_count(); ++bone)
+                if (armature.get_bone_infos()[bone].parent == -1)
+                    display_bone(display_bone, bone);
+        });
     }
 
     //--------------------------------------------------------//
 
     if (ImGui::CollapsingHeader("Edit Variables"))
     {
-        const ImPlus::ScopeItemWidth width = -120.f;
+        IMPLUS_WITH(Scope_ItemWidth) = -130.f;
 
         ImPlus::DragVector("position", vars.position, 0.01f, "%+.4f");
         ImPlus::DragVector("velocity", vars.velocity, 0.01f, "%+.4f");
@@ -92,18 +144,21 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
         ImPlus::SliderValue("lightLandTime", vars.lightLandTime, 0, attrs.lightLandTime);
         ImPlus::SliderValue("noCatchTime",   vars.noCatchTime,   0, 48);
 
-        ImPlus::DragValue("stunTime",   vars.stunTime,   1, 0, 255);
-        ImPlus::DragValue("freezeTime", vars.freezeTime, 1, 0, 255);
+        ImPlus::DragValue("freezeTime",  vars.freezeTime,  1, 0, 255);
+        ImPlus::DragValue("stunTime",    vars.stunTime,    1, 0, 255);
+        ImPlus::DragValue("reboundTime", vars.reboundTime, 1, 0, 255);
 
         ImPlus::ComboEnum("edgeStop", vars.edgeStop);
 
-        ImPlus::Checkbox("intangible",    &vars.intangible);    ImGui::SameLine(150.f);
-        ImPlus::Checkbox("fastFall",      &vars.fastFall);
-        ImPlus::Checkbox("applyGravity",  &vars.applyGravity);  ImGui::SameLine(150.f);
-        ImPlus::Checkbox("applyFriction", &vars.applyFriction);
-        ImPlus::Checkbox("flinch",        &vars.flinch);        ImGui::SameLine(150.f);
-        ImPlus::Checkbox("onGround",      &vars.onGround);
-        ImPlus::Checkbox("onPlatform",    &vars.onPlatform);
+        ImGui::Checkbox("intangible",    &vars.intangible);    ImPlus::AutoArrange(150.f);
+        ImGui::Checkbox("invincible",    &vars.invincible);    ImPlus::AutoArrange(150.f);
+        ImGui::Checkbox("fastFall",      &vars.fastFall);      ImPlus::AutoArrange(150.f);
+        ImGui::Checkbox("applyGravity",  &vars.applyGravity);  ImPlus::AutoArrange(150.f);
+        ImGui::Checkbox("applyFriction", &vars.applyFriction); ImPlus::AutoArrange(150.f);
+        ImGui::Checkbox("flinch",        &vars.flinch);        ImPlus::AutoArrange(150.f);
+        ImGui::Checkbox("grabable",      &vars.grabable);      ImPlus::AutoArrange(150.f);
+        ImGui::Checkbox("onGround",      &vars.onGround);      ImPlus::AutoArrange(150.f);
+        ImGui::Checkbox("onPlatform",    &vars.onPlatform);
 
         int8_t edgeTemp = vars.edge;
         ImPlus::SliderValue("edge", edgeTemp, -1, +1, "%+d");
@@ -116,18 +171,22 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
         ImPlus::SliderValue("shield",      vars.shield,      0.f, SHIELD_MAX_HP, "%.2f");
         ImPlus::SliderValue("launchSpeed", vars.launchSpeed, 0.f, 100.f,         "%.4f");
 
+        ImPlus::LabelText("launchEntity", fmt::to_string(vars.launchEntity));
+
         ImPlus::DragValue("animTime", vars.animTime, 0.0001f, 0.f, 0.f, "%.4f");
 
         ImPlus::DragVector("attachPoint", vars.attachPoint, 0.01f, "%+.4f");
 
-        ImPlus::LabelText("ledge", fmt::to_string(static_cast<void*>(vars.ledge)));
+        ImPlus::LabelText("bully",  fmt::to_string(static_cast<void*>(vars.bully)));
+        ImPlus::LabelText("victim", fmt::to_string(static_cast<void*>(vars.victim)));
+        ImPlus::LabelText("ledge",  fmt::to_string(static_cast<void*>(vars.ledge)));
     }
 
     //--------------------------------------------------------//
 
     if (ImGui::CollapsingHeader("Edit Attributes"))
     {
-        const ImPlus::ScopeItemWidth width = -150.f;
+        IMPLUS_WITH(Scope_ItemWidth) = -130.f;
 
         ImPlus::InputValue("walkSpeed",      attrs.walkSpeed,      0.1f, "%.4f");
         ImPlus::InputValue("dashSpeed",      attrs.dashSpeed,      0.1f, "%.4f");
@@ -151,11 +210,14 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
         ImPlus::InputValue("lightLandTime",  attrs.lightLandTime,  1,    "%d");
         ImGui::Separator();
 
-        bool diamondChange = false;
-        diamondChange |= ImPlus::InputValue("diamondHalfWidth",   diamond.halfWidth,   0.1f, "%.4f");
-        diamondChange |= ImPlus::InputValue("diamondOffsetCross", diamond.offsetCross, 0.1f, "%.4f");
-        diamondChange |= ImPlus::InputValue("diamondOffsetTop",   diamond.offsetTop,   0.1f, "%.4f");
-        if (diamondChange) diamond.compute_normals();
+        ImPlus::LabelText("diamondBones", fmt::to_string(fmt::join(attrs.diamondBones, ", ")));
+        ImPlus::HoverTooltip (
+            true, ImGuiDir_Left, "{}",
+            fmt::join(views::transform(attrs.diamondBones, [&](uint8_t bone){ return armature.get_bone_names()[bone]; }), ", ")
+        );
+
+        ImPlus::InputValue("diamondMinWidth",  attrs.diamondMinWidth,  0.1f, "%.4f");
+        ImPlus::InputValue("diamondMinHeight", attrs.diamondMinHeight, 0.1f, "%.4f");
     }
 
     //--------------------------------------------------------//
@@ -178,7 +240,7 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
         {
             for (auto& other : fighter.world.get_fighters())
             {
-                if (ImPlus::MenuItem(fmt::format("Fighter {}", other->index), nullptr, false, other.get() != &fighter))
+                if (ImGui::MenuItem(fmt::format("Fighter {}", other->index), ImStrv(), false, other.get() != &fighter))
                     other->controller->mRecordedInput = controller.mRecordedInput;
             }
         });
@@ -209,9 +271,9 @@ void DebugGui::show_widget_fighter(Fighter& fighter)
 
 void DebugGui::show_widget_article(Article& article)
 {
-    const ImPlus::ScopeID scopeId = article.eid;
+    IMPLUS_WITH(Scope_ID) = article.eid;
 
-    if (!ImPlus::CollapsingHeader(fmt::format("Article {} - {}", article.eid, article.def.name), 0))
+    if (!ImGui::CollapsingHeader(fmt::format("Article {} - {}", article.eid, article.def.name), 0))
         return;
 
     auto& vars = article.variables;
@@ -220,7 +282,7 @@ void DebugGui::show_widget_article(Article& article)
 
     if (ImGui::CollapsingHeader("General", ImGuiTreeNodeFlags_DefaultOpen))
     {
-        const ImPlus::ScopeFont font = ImPlus::FONT_MONO;
+        IMPLUS_WITH(Scope_Font) = ImPlus::FONT_MONO;
 
         ImPlus::Text(article.def.directory); // no label so it fits
 
@@ -230,20 +292,20 @@ void DebugGui::show_widget_article(Article& article)
         else ImPlus::Text("Fighter: None");
 
         ImPlus::Text(fmt::format("Translate: {:+.3f}", article.current.translation));
-        ImPlus::HoverTooltipFixed(fmt::format("Previous: {:+.3f}", article.previous.translation));
+        ImPlus::HoverTooltip(true, ImGuiDir_Left, "Previous: {:+.3f}", article.previous.translation);
 
         ImPlus::Text(fmt::format("Rotate: {:+.2f}", article.current.rotation));
-        ImPlus::HoverTooltipFixed(fmt::format("Previous: {:+.2f}\nMode:     {:05b}", article.previous.rotation, uint8_t(article.mRotateMode)));
+        ImPlus::HoverTooltip(true, ImGuiDir_Left, "Previous: {:+.2f}\nMode:     {:05b}", article.previous.rotation, uint8_t(article.mRotateMode));
 
         ImPlus::Text(fmt::format("Pose: {}", article.debugCurrentPoseInfo));
-        ImPlus::HoverTooltipFixed(fmt::format("Previous: {}\nFade:     {}", article.debugPreviousPoseInfo, article.debugAnimationFadeInfo));
+        ImPlus::HoverTooltip(true, ImGuiDir_Left, "Previous: {}\nFade:     {}", article.debugPreviousPoseInfo, article.debugAnimationFadeInfo);
     }
 
     //--------------------------------------------------------//
 
     if (ImGui::CollapsingHeader("Edit Variables", ImGuiTreeNodeFlags_DefaultOpen))
     {
-        const ImPlus::ScopeItemWidth width = -120.f;
+        IMPLUS_WITH(Scope_ItemWidth) = -130.f;
 
         ImPlus::DragVector("position", vars.position, 0.01f, "%+.4f");
         ImPlus::DragVector("velocity", vars.velocity, 0.01f, "%+.4f");
@@ -254,12 +316,15 @@ void DebugGui::show_widget_article(Article& article)
 
         ImPlus::DragValue("freezeTime", vars.freezeTime, 1, 0, 255);
 
-        ImPlus::Checkbox("bounced", &vars.bounced); ImGui::SameLine(150.f);
-        ImPlus::Checkbox("fragile", &vars.fragile);
+        ImGui::Checkbox("bounced", &vars.bounced); ImPlus::AutoArrange(150.f);
+        ImGui::Checkbox("fragile", &vars.fragile);
 
         ImPlus::DragValue("animTime", vars.animTime, 0.0001f, 0.f, 0.f, "%.4f");
 
         ImPlus::DragVector("attachPoint", vars.attachPoint, 0.01f, "%+.4f");
+
+        ImPlus::LabelText("bully",  fmt::to_string(static_cast<void*>(vars.bully)));
+        ImPlus::LabelText("victim", fmt::to_string(static_cast<void*>(vars.victim)));
     }
 }
 
@@ -267,14 +332,14 @@ void DebugGui::show_widget_article(Article& article)
 
 void DebugGui::show_widget_stage(Stage& stage)
 {
-    if (!ImPlus::CollapsingHeader(fmt::format("Stage - {}", stage.name), 0))
+    if (!ImGui::CollapsingHeader(fmt::format("Stage - {}", stage.name), 0))
         return;
 
     //--------------------------------------------------------//
 
     if (ImGui::CollapsingHeader("Tone Mapping", ImGuiTreeNodeFlags_DefaultOpen))
     {
-        const ImPlus::ScopeItemWidth width = 160.f;
+        IMPLUS_WITH(Scope_ItemWidth) = -100.f;
 
         auto& tonemap = stage.mEnvironment.tonemap;
 

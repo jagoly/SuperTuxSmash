@@ -8,6 +8,8 @@
   "DashStart",
   "Fall",
   "FallStun",
+  "Grab",
+  "Grabbed",
   "Helpless",
   "JumpSquat",
   "LedgeHang",

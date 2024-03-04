@@ -23,16 +23,16 @@ class AudioContext;
 
 namespace sts {
 
-using namespace sq::coretypes;
-
 using MeshCache = sq::ResourceCache<String, sq::Mesh>;
 using TextureCache = sq::ResourceCache<String, sq::Texture>;
-using PipelineCache = sq::ResourceCache<JsonValue, sq::Pipeline>;
+// using PipelineCache = sq::ResourceCache<JsonValue, sq::Pipeline>;
+using PipelineCache = sq::ResourceCache<String, sq::Pipeline>;
 using SoundCache = sq::ResourceCache<String, sq::Sound>;
 
 using MeshHandle = sq::Handle<String, sq::Mesh>;
 using TextureHandle = sq::Handle<String, sq::Texture>;
-using PipelineHandle = sq::Handle<JsonValue, sq::Pipeline>;
+// using PipelineHandle = sq::Handle<JsonValue, sq::Pipeline>;
+using PipelineHandle = sq::Handle<String, sq::Pipeline>;
 using SoundHandle = sq::Handle<String, sq::Sound>;
 
 struct EffectAsset;

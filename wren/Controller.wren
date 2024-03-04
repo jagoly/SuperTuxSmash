@@ -7,11 +7,13 @@ foreign class InputFrame {
   foreign pressSpecial
   foreign pressJump
   foreign pressShield
+  foreign pressGrab
 
   foreign holdAttack
   foreign holdSpecial
   foreign holdJump
   foreign holdShield
+  foreign holdGrab
 
   foreign intX
   foreign intY

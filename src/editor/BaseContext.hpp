@@ -61,7 +61,7 @@ struct EditorScene::BaseContext
         std::map<Key, Object>& objects, FuncInit funcInit, FuncEdit funcEdit, FuncBefore funcBefore
     );
 
-    void helper_edit_origin(const char* label, const sq::Armature& armature, int8_t bone, Vec3F& origin);
+    void helper_edit_origin(StringView label, const sq::Armature& armature, int8_t bone, Vec3F& origin);
 
     //--------------------------------------------------------//
 
@@ -92,9 +92,13 @@ struct EditorScene::BaseContext
     int timelineEnd = 0;
     int currentFrame = -1;
 
+    std::optional<int> deferScrubToFrame;
+
     Stage* stage = nullptr;
     Fighter* fighter = nullptr;
     FighterAction* action = nullptr;
+
+    Fighter* opponent = nullptr;
 
     std::vector<SourceFile> sourceFiles;
     int sourceFileIndex = -1;

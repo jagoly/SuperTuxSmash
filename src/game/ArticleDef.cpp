@@ -17,6 +17,13 @@ ArticleDef::ArticleDef(World& world, String directory)
 {
     initialise_sounds(fmt::format("assets/{}/Sounds.json", directory));
     initialise_animations(fmt::format("assets/{}/Animations.json", directory));
+
+    // todo: change to wren expressions
+    for (const sq::DrawItem& drawItem : drawItems)
+    {
+        if (drawItem.condition.empty()) continue;
+        sq::log_warning("'assets/{}/Render.json': invalid condition '{}'", directory, drawItem.condition);
+    }
 }
 
 ArticleDef::~ArticleDef()
@@ -32,37 +39,28 @@ void ArticleDef::load_json_from_file()
     effects.clear();
     emitters.clear();
 
-    const auto root = sq::try_parse_json_from_file(fmt::format("assets/{}/Article.json", directory));
-    if (root.has_value() == false)
-    {
-        sq::log_warning("article '{}': missing json", directory);
-        return;
-    }
+    const auto document = JsonDocument::parse_file(fmt::format("assets/{}/Article.json", directory));
+    const auto json = document.root().as<JsonObject>();
 
-    String errors;
+    fmt::memory_buffer errors;
 
-    const auto items_from_json = [&root, &errors](StringView key, auto& map, auto&... fromJsonArgs)
+    const auto objects_from_json = [&json, &errors](StringView mapKey, auto& map, auto&... fromJsonArgs)
     {
-        try {
-            for (const auto& item : root->at(key).items())
-            {
-                auto& entry = map[item.key()];
-                try {
-                    entry.from_json(item.value(), fromJsonArgs...);
-                }
-                catch (const std::exception& ex) {
-                    sq::format_append(errors, "\n{}[\"{}\"]: {}", key, item.key(), ex.what());
-                }
-            }
-        } catch (const std::exception& ex) { errors += '\n'; errors += ex.what(); }
+        for (const auto [key, jObject] : json[mapKey].as<JsonObject>())
+        {
+            try {
+                map[key].from_json(jObject.as<JsonObject>(), fromJsonArgs...); }
+            catch (const std::exception& ex) {
+                fmt::format_to(fmt::appender(errors), "\n{}", ex.what()); }
+        }
     };
 
-    items_from_json("blobs", blobs, armature);
-    items_from_json("effects", effects, armature, world.caches.effects);
-    items_from_json("emitters", emitters, armature);
+    objects_from_json("blobs", blobs, armature);
+    objects_from_json("effects", effects, armature, world.caches.effects);
+    objects_from_json("emitters", emitters, armature);
 
-    if (errors.empty() == false)
-        sq::log_warning_multiline("'{}': errors in json{}", directory, errors);
+    if (errors.size() != 0u)
+        sq::log_warning_multiline("'{}': errors in json{}", directory, StringView(errors.data(), errors.size()));
 }
 
 //============================================================================//

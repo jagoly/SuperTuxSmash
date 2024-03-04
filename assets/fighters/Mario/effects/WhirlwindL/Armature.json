@@ -1,0 +1,81 @@
+{
+  "bones": [
+    {
+      "name": "TopN",
+      "parent": null,
+      "offset": [ 0.0, 0.0, 0.0 ],
+      "rotation": [ 0.0, 0.70711, 0.70711, 0.0 ],
+      "scale": [ 1.0, 1.0, 1.0 ],
+      "flags": []
+    },
+    {
+      "name": "kaiten",
+      "parent": "TopN",
+      "offset": [ 0.0, 0.0, 0.0 ],
+      "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+      "scale": [ 1.0, 1.0, 1.0 ],
+      "flags": []
+    },
+    {
+      "name": "smokeA",
+      "parent": "TopN",
+      "offset": [ 0.0, 0.0, 0.0 ],
+      "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+      "scale": [ 1.0, 1.0, 1.0 ],
+      "flags": []
+    },
+    {
+      "name": "smokeB",
+      "parent": "TopN",
+      "offset": [ 0.0, 0.0, 0.0 ],
+      "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+      "scale": [ 1.0, 1.0, 1.0 ],
+      "flags": []
+    },
+    {
+      "name": "yuka_smoke",
+      "parent": "TopN",
+      "offset": [ 0.0, 0.0, 0.0 ],
+      "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+      "scale": [ 1.0, 1.0, 1.0 ],
+      "flags": []
+    },
+    {
+      "name": "kemuriA",
+      "parent": "kaiten",
+      "offset": [ 0.8, 0.0, 0.0 ],
+      "rotation": [ 0.0, 0.0, 1.0, 0.0 ],
+      "scale": [ 1.0, 1.0, 1.0 ],
+      "flags": []
+    },
+    {
+      "name": "kemuriB",
+      "parent": "kaiten",
+      "offset": [ -0.8, 0.0, 0.0 ],
+      "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+      "scale": [ 1.0, 1.0, 1.0 ],
+      "flags": []
+    }
+  ],
+  "blocks": {
+    "smokeA": {
+      "alpha": {
+        "type": "Float",
+        "default": [ 1.0 ]
+      }
+    },
+    "smokeB": {
+      "alpha": {
+        "type": "Float",
+        "default": [ 1.0 ]
+      }
+    },
+    "yuka_smoke": {
+      "alpha": {
+        "type": "Float",
+        "default": [ 1.0 ]
+      }
+    }
+  },
+  "animSampleSize": 292
+}

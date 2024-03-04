@@ -17,39 +17,43 @@
   },
   "blocks": {
     "Main": {
-      "minimum": [ -8.0, -1.0 ],
-      "maximum": [ 8.0, 0.0 ]
+      "minimum": [ -7.8, -1.0 ],
+      "maximum": [ 7.8, 0.0 ]
     },
     "Top": {
       "minimum": [ -0.5, 6.5 ],
       "maximum": [ 0.5, 7.5 ]
+    },
+    "Under": {
+      "minimum": [ -6.8, -2.0 ],
+      "maximum": [ 6.8, -1.0 ]
     }
   },
   "ledges": {
     "Left": {
-      "position": [ -8.0, 0.0 ],
+      "position": [ -7.8, 0.0 ],
       "direction": -1
     },
     "Right": {
-      "position": [ 8.0, 0.0 ],
+      "position": [ 7.8, 0.0 ],
       "direction": 1
     }
   },
   "platforms": {
     "Left": {
-      "originY": 2.5,
-      "minX": -5.3,
-      "maxX": -1.7
+      "originY": 2.44,
+      "minX": -5.92,
+      "maxX": -2.48
     },
     "Right": {
-      "originY": 2.5,
-      "minX": 1.7,
-      "maxX": 5.3
+      "originY": 2.44,
+      "minX": 2.48,
+      "maxX": 5.92
     },
     "Middle": {
-      "originY": 5.0,
-      "minX": -1.8,
-      "maxX": 1.8
+      "originY": 4.74,
+      "minX": -1.72,
+      "maxX": 1.72
     }
   }
 }

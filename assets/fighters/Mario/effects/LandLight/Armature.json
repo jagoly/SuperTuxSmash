@@ -26,18 +26,18 @@
     }
   ],
   "blocks": {
-    "down_shock": {
-      "colour": {
-        "type": "Float4",
-        "default": [ 1.0, 1.0, 1.0, 1.0 ]
+    "smokeA": {
+      "alpha": {
+        "type": "Float",
+        "default": [ 1.0 ]
       }
     },
-    "smokeB": {
-      "colour": {
-        "type": "Float4",
-        "default": [ 1.0, 1.0, 1.0, 1.0 ]
+    "smokeC": {
+      "alpha": {
+        "type": "Float",
+        "default": [ 1.0 ]
       }
     }
   },
-  "animSampleSize": 152
+  "animSampleSize": 128
 }

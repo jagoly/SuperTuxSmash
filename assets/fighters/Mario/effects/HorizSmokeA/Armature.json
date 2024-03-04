@@ -11,7 +11,7 @@
     {
       "name": "shock_smokeA",
       "parent": "TopN",
-      "offset": [ 0.0, 0.0, 0.0 ],
+      "offset": [ 0.0, 0.7, 0.0 ],
       "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
       "scale": [ 1.0, 1.0, 1.0 ],
       "flags": []
@@ -19,7 +19,7 @@
     {
       "name": "shock_smokeB",
       "parent": "TopN",
-      "offset": [ 0.0, 0.0, 0.0 ],
+      "offset": [ 0.0, 0.6, -0.1 ],
       "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
       "scale": [ 1.0, 1.0, 1.0 ],
       "flags": []
@@ -27,7 +27,7 @@
     {
       "name": "shock_smokeC",
       "parent": "TopN",
-      "offset": [ 0.0, 0.0, 0.0 ],
+      "offset": [ 0.0, 0.6, 0.0 ],
       "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
       "scale": [ 1.0, 1.0, 1.0 ],
       "flags": []
@@ -35,7 +35,7 @@
     {
       "name": "shock_smokeD",
       "parent": "TopN",
-      "offset": [ 0.0, 0.0, 0.0 ],
+      "offset": [ 0.0, 0.8, 0.0 ],
       "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
       "scale": [ 1.0, 1.0, 1.0 ],
       "flags": []
@@ -43,43 +43,43 @@
     {
       "name": "stormsmoke",
       "parent": "TopN",
-      "offset": [ 0.0, 0.0, 0.0 ],
-      "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+      "offset": [ 0.0, 0.45, 0.3 ],
+      "rotation": [ 0.70711, 0.0, 0.0, 0.70711 ],
       "scale": [ 1.0, 1.0, 1.0 ],
       "flags": []
     }
   ],
   "blocks": {
-    "shock1": {
-      "colour": {
-        "type": "Float4",
-        "default": [ 1.0, 1.0, 1.0, 1.0 ]
+    "shock_smokeA": {
+      "alpha": {
+        "type": "Float",
+        "default": [ 1.0 ]
       }
     },
-    "shock2": {
-      "colour": {
-        "type": "Float4",
-        "default": [ 1.0, 1.0, 1.0, 1.0 ]
+    "shock_smokeB": {
+      "alpha": {
+        "type": "Float",
+        "default": [ 1.0 ]
       }
     },
-    "shock3": {
-      "colour": {
-        "type": "Float4",
-        "default": [ 1.0, 1.0, 1.0, 1.0 ]
+    "shock_smokeC": {
+      "alpha": {
+        "type": "Float",
+        "default": [ 1.0 ]
       }
     },
-    "shock4": {
-      "colour": {
-        "type": "Float4",
-        "default": [ 1.0, 1.0, 1.0, 1.0 ]
+    "shock_smokeD": {
+      "alpha": {
+        "type": "Float",
+        "default": [ 1.0 ]
       }
     },
-    "storm": {
-      "colour": {
-        "type": "Float4",
-        "default": [ 1.0, 1.0, 1.0, 1.0 ]
+    "stormsmoke": {
+      "alpha": {
+        "type": "Float",
+        "default": [ 1.0 ]
       }
     }
   },
-  "animSampleSize": 320
+  "animSampleSize": 260
 }

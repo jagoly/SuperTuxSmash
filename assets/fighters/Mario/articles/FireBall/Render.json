@@ -1,152 +1,141 @@
 {
   "assets": {
     "meshes": {
-      "ColourOnly": "fighters/Mario/articles/FireBall/meshes/ColourOnly",
-      "Textured": "fighters/Mario/articles/FireBall/meshes/Textured"
+      "Colour": "fighters/Mario/articles/FireBall/meshes/Colour",
+      "ColourTexture": "fighters/Mario/articles/FireBall/meshes/ColourTexture"
     },
     "textures": {
       "fire": "fighters/Mario/textures/effects/fire",
       "noise": "fighters/Mario/textures/effects/noise"
     },
     "pipelines": {
+      "ColourAlpha": {
+        "vertexShader": "transparent/Fancy.vert/Bones0_Colour1_TexCoord0",
+        "fragmentShader": "transparent/Fancy.frag/Texture0",
+        "pass": "Transparent",
+        "attributes": [ "Colours" ],
+        "cullFace": "Disable",
+        "alphaCoverage": "Disable",
+        "depthTest": "Keep",
+        "blendModes": [ "Alpha" ]
+      },
       "ColourAccumulate": {
-        "attributes": [ "Colours" ],
+        "vertexShader": "transparent/Fancy.vert/Bones0_Colour1_TexCoord0",
+        "fragmentShader": "transparent/Fancy.frag/Texture0",
         "pass": "Transparent",
-        "vertexShader": "transparent/General.vert/AnimColour0_AnimTexture0_Bones0_Colour1_TexCoord0",
-        "fragmentShader": "transparent/General.frag/Colour1_Texture0",
+        "attributes": [ "Colours" ],
         "cullFace": "Disable",
         "alphaCoverage": "Disable",
         "depthTest": "Keep",
-        "colourBlend": [ "Accumulate" ]
+        "blendModes": [ "Accumulate" ]
       },
-      "ColourNegative": {
-        "attributes": [ "Colours" ],
+      "ColourTextureAccumulate": {
+        "vertexShader": "transparent/Fancy.vert/Bones0_Colour1_TexCoord1",
+        "fragmentShader": "transparent/Fancy.frag/Texture1",
         "pass": "Transparent",
-        "vertexShader": "transparent/General.vert/AnimColour0_AnimTexture0_Bones0_Colour1_TexCoord0",
-        "fragmentShader": "transparent/General.frag/Colour1_Texture0",
-        "cullFace": "Disable",
-        "alphaCoverage": "Disable",
-        "depthTest": "Keep",
-        "colourBlend": [ "RevSubtract" ]
-      },
-      "Textured": {
         "attributes": [ "TexCoords", "Colours" ],
-        "pass": "Transparent",
-        "vertexShader": "transparent/General.vert/AnimColour0_AnimTexture1_Bones0_Colour1_TexCoord1",
-        "fragmentShader": "transparent/General.frag/Colour1_Texture1",
         "cullFace": "Disable",
         "alphaCoverage": "Disable",
         "depthTest": "Keep",
-        "colourBlend": [ "Accumulate" ]
+        "blendModes": [ "Accumulate" ]
       }
     }
   },
   "items": [
     {
       "condition": null,
-      "mesh": "ColourOnly",
+      "mesh": "Colour",
       "subMesh": "genzan",
-      "pipeline": "ColourNegative",
+      "pipeline": "ColourAlpha",
+      "order": 100,
+      "visibility": null,
       "params": {
-        "modelMatIndex": {
-          "type": "ModelMatrixIndex",
-          "bone": "genzan"
-        },
-        "blendDepth": {
-          "type": "ConstFloat",
-          "value": 0.3
-        }
+        "modelMatIndex": { "type": "ModelMatIndex", "bone": "genzan" },
+        "selection": { "type": "ConstPackedBits", "value": "0x70007000" },
+        "diffuse": { "type": "ConstFloat3", "value": [ 0.0, 0.0, 0.0 ] },
+        "alpha": { "type": "ConstFloat", "value": 1.0 },
+        "emissive": { "type": "ConstFloat3", "value": [ 1.0, 1.0, 1.0 ] },
+        "blendDepth": { "type": "ConstFloat", "value": 0.3 },
+        "colour0": { "type": "ConstFloat4", "value": [ 0.0, 0.0, 0.0, 0.0 ] },
+        "colour1": { "type": "ConstFloat4", "value": [ 0.0, 0.0, 0.0, 0.0 ] }
       }
     },
     {
       "condition": null,
-      "mesh": "Textured",
-      "subMesh": "fireA",
-      "pipeline": "Textured",
-      "params": {
-        "modelMatIndex": {
-          "type": "ModelMatrixIndex",
-          "bone": "fireA"
-        },
-        "texTransform": {
-          "type": "AnimTextureTransform",
-          "block": "K_fire",
-          "tracks": [ "texOffset", "texRotation", "texScale" ]
-        },
-        "colourTexIndex": {
-          "type": "TextureIndex",
-          "texture": "fire"
-        },
-        "blendDepth": {
-          "type": "ConstFloat",
-          "value": 0.2
-        }
-      }
-    },
-    {
-      "condition": null,
-      "mesh": "Textured",
-      "subMesh": "freaA",
-      "pipeline": "Textured",
-      "params": {
-        "modelMatIndex": {
-          "type": "ModelMatrixIndex",
-          "bone": "freaA"
-        },
-        "texTransform": {
-          "type": "AnimTextureTransform",
-          "block": "K_frea",
-          "tracks": [ "texOffset", "texRotation", "texScale" ]
-        },
-        "colourTexIndex": {
-          "type": "TextureIndex",
-          "texture": "noise"
-        },
-        "blendDepth": {
-          "type": "ConstFloat",
-          "value": 0.5
-        }
-      }
-    },
-    {
-      "condition": null,
-      "mesh": "ColourOnly",
+      "mesh": "Colour",
       "subMesh": "freaB",
       "pipeline": "ColourAccumulate",
+      "order": 200,
+      "visibility": null,
       "params": {
-        "modelMatIndex": {
-          "type": "ModelMatrixIndex",
-          "bone": "freaB"
-        },
-        "blendDepth": {
-          "type": "ConstFloat",
-          "value": 0.3
-        }
+        "modelMatIndex": { "type": "ModelMatIndex", "bone": "freaB" },
+        "selection": { "type": "ConstPackedBits", "value": "0x70007000" },
+        "diffuse": { "type": "ConstFloat3", "value": [ 0.0, 0.0, 0.0 ] },
+        "alpha": { "type": "ConstFloat", "value": 1.0 },
+        "emissive": { "type": "ConstFloat3", "value": [ 0.98225, 0.98225, 0.98225 ] },
+        "blendDepth": { "type": "ConstFloat", "value": 0.3 },
+        "colour0": { "type": "ConstFloat4", "value": [ 0.0, 0.0, 0.0, 0.0 ] },
+        "colour1": { "type": "ConstFloat4", "value": [ 0.0, 0.0, 0.0, 0.0 ] }
       }
     },
     {
       "condition": null,
-      "mesh": "Textured",
-      "subMesh": "shippo",
-      "pipeline": "Textured",
+      "mesh": "ColourTexture",
+      "subMesh": "fireA",
+      "pipeline": "ColourTextureAccumulate",
+      "order": 200,
+      "visibility": null,
       "params": {
-        "modelMatIndex": {
-          "type": "ModelMatrixIndex",
-          "bone": "shippo"
-        },
-        "texTransform": {
-          "type": "AnimTextureTransform",
-          "block": "K_fire",
-          "tracks": [ "texOffset", "texRotation", "texScale" ]
-        },
-        "colourTexIndex": {
-          "type": "TextureIndex",
-          "texture": "fire"
-        },
-        "blendDepth": {
-          "type": "ConstFloat",
-          "value": 0.2
-        }
+        "modelMatIndex": { "type": "ModelMatIndex", "bone": "fireA" },
+        "selection": { "type": "ConstPackedBits", "value": "0x02700270" },
+        "colourTexIndex": { "type": "TextureIndex", "texture": "fire" },
+        "texTransform": { "type": "AnimTexTransform", "tracks": "fireA/texOffset/texRotation/texScale" },
+        "diffuse": { "type": "ConstFloat3", "value": [ 1.0, 1.0, 1.0 ] },
+        "alpha": { "type": "ConstFloat", "value": 1.0 },
+        "emissive": { "type": "ConstFloat3", "value": [ 0.21586, 0.21586, 0.21586 ] },
+        "blendDepth": { "type": "ConstFloat", "value": 0.2 },
+        "colour0": { "type": "ConstFloat4", "value": [ 0.0, 0.0, 0.0, 0.0 ] },
+        "colour1": { "type": "ConstFloat4", "value": [ 0.0, 0.0, 0.0, 0.0 ] }
+      }
+    },
+    {
+      "condition": null,
+      "mesh": "ColourTexture",
+      "subMesh": "freaA",
+      "pipeline": "ColourTextureAccumulate",
+      "order": 200,
+      "visibility": null,
+      "params": {
+        "modelMatIndex": { "type": "ModelMatIndex", "bone": "freaA" },
+        "selection": { "type": "ConstPackedBits", "value": "0x02700270" },
+        "colourTexIndex": { "type": "TextureIndex", "texture": "noise" },
+        "texTransform": { "type": "AnimTexTransform", "tracks": "freaA/texOffset/texRotation/texScale" },
+        "diffuse": { "type": "ConstFloat3", "value": [ 0.0, 0.0, 0.0 ] },
+        "alpha": { "type": "ConstFloat", "value": 1.0 },
+        "emissive": { "type": "ConstFloat3", "value": [ 0.21586, 0.21586, 0.21586 ] },
+        "blendDepth": { "type": "ConstFloat", "value": 0.5 },
+        "colour0": { "type": "ConstFloat4", "value": [ 0.0, 0.0, 0.0, 0.0 ] },
+        "colour1": { "type": "ConstFloat4", "value": [ 0.0, 0.0, 0.0, 0.0 ] }
+      }
+    },
+    {
+      "condition": null,
+      "mesh": "ColourTexture",
+      "subMesh": "shippo",
+      "pipeline": "ColourTextureAccumulate",
+      "order": 200,
+      "visibility": null,
+      "params": {
+        "modelMatIndex": { "type": "ModelMatIndex", "bone": "shippo" },
+        "selection": { "type": "ConstPackedBits", "value": "0x02700270" },
+        "colourTexIndex": { "type": "TextureIndex", "texture": "fire" },
+        "texTransform": { "type": "AnimTexTransform", "tracks": "shippo/texOffset/texRotation/texScale" },
+        "diffuse": { "type": "ConstFloat3", "value": [ 0.0, 0.0, 0.0 ] },
+        "alpha": { "type": "ConstFloat", "value": 1.0 },
+        "emissive": { "type": "ConstFloat3", "value": [ 0.21586, 0.21586, 0.21586 ] },
+        "blendDepth": { "type": "ConstFloat", "value": 0.2 },
+        "colour0": { "type": "ConstFloat4", "value": [ 0.0, 0.0, 0.0, 0.0 ] },
+        "colour1": { "type": "ConstFloat4", "value": [ 0.0, 0.0, 0.0, 0.0 ] }
       }
     }
   ]

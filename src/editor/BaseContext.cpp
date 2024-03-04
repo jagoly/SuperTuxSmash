@@ -60,10 +60,10 @@ void BaseContext::show_widget_hitblobs(const sq::Armature& armature, std::map<Ti
     if (editor.mDoResetDockHitblobs) ImGui::SetNextWindowDockID(editor.mDockRightId);
     editor.mDoResetDockHitblobs = false;
 
-    const ImPlus::ScopeWindow window = { "HitBlobs", 0 };
+    const ImPlus::Scope_Window window = { "HitBlobs", 0 };
     if (window.show == false) return;
 
-    const ImPlus::ScopeID ctxKeyScope = ctxKey.c_str();
+    IMPLUS_WITH(Scope_ID) = ImStrv(ctxKey);
 
     //--------------------------------------------------------//
 
@@ -77,7 +77,7 @@ void BaseContext::show_widget_hitblobs(const sq::Armature& armature, std::map<Ti
 
     const auto funcEdit = [&](HitBlobDef& blob)
     {
-        const ImPlus::ScopeItemWidth width = -120.f;
+        IMPLUS_WITH(Scope_ItemWidth) = -120.f;
 
         ImPlus::InputValue("Index", blob.index, 1, "%u");
 
@@ -86,6 +86,10 @@ void BaseContext::show_widget_hitblobs(const sq::Armature& armature, std::map<Ti
         helper_edit_origin("Origin", armature, blob.bone, blob.origin);
 
         ImPlus::SliderValue("Radius", blob.radius, 0.05f, 2.f, "%.2f metres");
+
+        ImPlus::ComboEnum("Type", blob.type);
+
+        if (blob.type != BlobType::Damage) ImGui::BeginDisabled();
 
         ImPlus::InputValue("Damage", blob.damage, 1.f, "%.2f %%");
         ImPlus::InputValue("FreezeMult", blob.freezeMult, 0.1f, "%.2f ×");
@@ -100,11 +104,13 @@ void BaseContext::show_widget_hitblobs(const sq::Armature& armature, std::map<Ti
         ImPlus::ComboEnum("ClangMode", blob.clangMode);
         ImPlus::ComboEnum("Flavour", blob.flavour);
 
-        ImPlus::Checkbox("IgnoreDamage", &blob.ignoreDamage); ImGui::SameLine(160.f);
-        ImPlus::Checkbox("IgnoreWeight", &blob.ignoreWeight);
+        ImGui::Checkbox("IgnoreDamage", &blob.ignoreDamage); ImPlus::AutoArrange(150.f);
+        ImGui::Checkbox("IgnoreWeight", &blob.ignoreWeight); ImPlus::AutoArrange(150.f);
 
-        ImPlus::Checkbox("CanHitGround", &blob.canHitGround); ImGui::SameLine(160.f);
-        ImPlus::Checkbox("CanHitAir", &blob.canHitAir);
+        if (blob.type != BlobType::Damage) ImGui::EndDisabled();
+
+        ImGui::Checkbox("CanHitGround", &blob.canHitGround); ImPlus::AutoArrange(150.f);
+        ImGui::Checkbox("CanHitAir", &blob.canHitAir);
 
         // todo: make these combo boxes, or at least show a warning if the key doesn't exist
         ImGui::InputText("Handler", blob.handler.data(), blob.handler.buffer_size());
@@ -121,10 +127,10 @@ void BaseContext::show_widget_effects(const sq::Armature& armature, std::map<Tin
     if (editor.mDoResetDockEffects) ImGui::SetNextWindowDockID(editor.mDockRightId);
     editor.mDoResetDockEffects = false;
 
-    const ImPlus::ScopeWindow window = { "Effects", 0 };
+    const ImPlus::Scope_Window window = { "Effects", 0 };
     if (window.show == false) return;
 
-    const ImPlus::ScopeID ctxKeyScope = ctxKey.c_str();
+    IMPLUS_WITH(Scope_ID) = ImStrv(ctxKey);
 
     //--------------------------------------------------------//
 
@@ -134,18 +140,18 @@ void BaseContext::show_widget_effects(const sq::Armature& armature, std::map<Tin
         {
             // todo: try some other paths once we have common effects
             def.path = fmt::format("fighters/{}/effects/{}", fighter->def.name, def.get_key());
-            def.handle = world->caches.effects.try_acquire(def.path, true);
+            def.handle = world->caches.effects.acquire_safe(def.path);
         }
     };
 
     const auto funcEdit = [&](VisualEffectDef& def)
     {
-        const ImPlus::ScopeItemWidth widthScope = -100.f;
+        IMPLUS_WITH(Scope_ItemWidth) = -120.f;
 
         if (ImPlus::InputString("Path", def.path))
-            def.handle = world->caches.effects.try_acquire(def.path, true);
+            def.handle = world->caches.effects.acquire_safe(def.path);
 
-        if (def.handle == nullptr) ImPlus::LabelText("Resolved", "COULD NOT LOAD RESOURCE");
+        if (!def.handle.good()) ImPlus::LabelText("Error", def.handle.error());
         else ImPlus::LabelText("Resolved", fmt::format("assets/{}/...", def.path));
 
         ImPlus::ComboIndex("Bone", armature.get_bone_names(), def.bone, "(None)");
@@ -158,8 +164,8 @@ void BaseContext::show_widget_effects(const sq::Armature& armature, std::map<Tin
         if (changed == true)
             def.localMatrix = maths::transform(def.origin, def.rotation, def.scale);
 
-        ImPlus::Checkbox("Attached", &def.attached); ImGui::SameLine(120.f);
-        ImPlus::Checkbox("Transient", &def.transient);
+        ImGui::Checkbox("Attached", &def.attached); ImPlus::AutoArrange(150.f);
+        ImGui::Checkbox("Transient", &def.transient);
     };
 
     helper_edit_objects(effects, funcInit, funcEdit, nullptr);
@@ -172,10 +178,10 @@ void BaseContext::show_widget_emitters(const sq::Armature& armature, std::map<Ti
     if (editor.mDoResetDockEmitters) ImGui::SetNextWindowDockID(editor.mDockRightId);
     editor.mDoResetDockEmitters = false;
 
-    const ImPlus::ScopeWindow window = { "Emitters", 0 };
+    const ImPlus::Scope_Window window = { "Emitters", 0 };
     if (window.show == false) return;
 
-    const ImPlus::ScopeID ctxKeyScope = ctxKey.c_str();
+    IMPLUS_WITH(Scope_ID) = ImStrv(ctxKey);
 
     //--------------------------------------------------------//
 
@@ -186,7 +192,7 @@ void BaseContext::show_widget_emitters(const sq::Armature& armature, std::map<Ti
 
     const auto funcEdit = [&](Emitter& emitter)
     {
-        const ImPlus::ScopeItemWidth widthScope = -100.f;
+        IMPLUS_WITH(Scope_ItemWidth) = -120.f;
 
         ImPlus::ComboIndex("Bone", armature.get_bone_names(), emitter.bone, "(None)");
 
@@ -214,7 +220,7 @@ void BaseContext::show_widget_emitters(const sq::Armature& armature, std::map<Ti
 
         for (Vec3F* iter = emitter.colour.begin(); iter != emitter.colour.end(); ++iter)
         {
-            const ImPlus::ScopeID idScope = iter;
+            IMPLUS_WITH(Scope_ID) = iter;
             if (ImGui::Button("X")) entryToDelete = iter;
             ImGui::SameLine();
             ImPlus::InputColour("RGB (Linear)", *iter, ImGuiColorEditFlags_Float);
@@ -243,10 +249,10 @@ void BaseContext::show_widget_sounds(std::map<SmallString, SoundEffect>& sounds)
     if (editor.mDoResetDockSounds) ImGui::SetNextWindowDockID(editor.mDockRightId);
     editor.mDoResetDockSounds = false;
 
-    const ImPlus::ScopeWindow window = { "Sounds", 0 };
+    const ImPlus::Scope_Window window = { "Sounds", 0 };
     if (window.show == false) return;
 
-    const ImPlus::ScopeID ctxKeyScope = ctxKey.c_str();
+    IMPLUS_WITH(Scope_ID) = ImStrv(ctxKey);
 
     //--------------------------------------------------------//
 
@@ -256,18 +262,18 @@ void BaseContext::show_widget_sounds(std::map<SmallString, SoundEffect>& sounds)
         {
             // todo: try some other paths once we have common sounds
             sound.path = fmt::format("fighters/{}/sounds/{}", fighter->def.name, sound.get_key());
-            sound.handle = world->caches.sounds.try_acquire(sound.path, true);
+            sound.handle = world->caches.sounds.acquire_safe(sound.path);
         }
     };
 
     const auto funcEdit = [&](SoundEffect& sound)
     {
-        const ImPlus::ScopeItemWidth widthScope = -100.f;
+        IMPLUS_WITH(Scope_ItemWidth) = -120.f;
 
         if (ImPlus::InputString("Path", sound.path))
-            sound.handle = world->caches.sounds.try_acquire(sound.path, true);
+            sound.handle = world->caches.sounds.acquire_safe(sound.path);
 
-        if (sound.handle == nullptr) ImPlus::LabelText("Resolved", "COULD NOT LOAD RESOURCE");
+        if (!sound.handle.good()) ImPlus::LabelText("Error", sound.handle.error());
         else ImPlus::LabelText("Resolved", fmt::format("assets/{}.wav", sound.path));
 
         ImPlus::SliderValue("Volume", sound.volume, 0.2f, 1.f, "%.2f ×");
@@ -276,10 +282,10 @@ void BaseContext::show_widget_sounds(std::map<SmallString, SoundEffect>& sounds)
     const auto funcBefore = [&](SoundEffect& sound)
     {
         ImGui::SetCursorPosX(ImGui::GetStyle().WindowPadding.x * 0.5f + 1.f);
-        if (sound.handle == nullptr) ImGui::BeginDisabled();
+        if (!sound.handle.good()) ImGui::BeginDisabled();
         if (ImGui::Button("Play"))
-            world->audio.play_sound(sound.handle.get(), sq::SoundGroup::Sfx, sound.volume, false);
-        if (sound.handle == nullptr) ImGui::EndDisabled();
+            world->audio.play_sound(sound.handle.value(), sq::SoundGroup::Sfx, sound.volume, false);
+        if (!sound.handle.good()) ImGui::EndDisabled();
         ImGui::SameLine();
     };
 
@@ -293,10 +299,10 @@ void BaseContext::show_widget_scripts()
     if (editor.mDoResetDockScript) ImGui::SetNextWindowDockID(editor.mDockRightId);
     editor.mDoResetDockScript = false;
 
-    const ImPlus::ScopeWindow window = { "Script", 0 };
+    const ImPlus::Scope_Window window = { "Script", 0 };
     if (window.show == false) return;
 
-    const ImPlus::ScopeID ctxKeyScope = ctxKey.c_str();
+    IMPLUS_WITH(Scope_ID) = ImStrv(ctxKey);
 
     //--------------------------------------------------------//
 
@@ -386,7 +392,7 @@ void BaseContext::show_widget_scripts()
 
     //--------------------------------------------------------//
 
-    const ImPlus::ScopeFont font = ImPlus::FONT_MONO;
+    IMPLUS_WITH(Scope_Font) = ImPlus::FONT_MONO;
 
     const ImVec2 contentRegion = ImGui::GetContentRegionAvail();
     const ImVec2 inputSize = { contentRegion.x, contentRegion.y - 160.f };
@@ -412,17 +418,17 @@ void BaseContext::show_widget_timeline()
     if (editor.mDoResetDockTimeline) ImGui::SetNextWindowDockID(editor.mDockDownId);
     editor.mDoResetDockTimeline = false;
 
-    const ImPlus::ScopeWindow window = { "Timeline", ImGuiWindowFlags_HorizontalScrollbar };
+    const ImPlus::Scope_Window window = { "Timeline", ImGuiWindowFlags_HorizontalScrollbar };
     if (window.show == false) return;
 
-    const ImPlus::ScopeID ctxKeyScope = ctxKey.c_str();
+    IMPLUS_WITH(Scope_ID) = ImStrv(ctxKey);
 
     //--------------------------------------------------------//
 
-    const ImPlus::ScopeFont font = ImPlus::FONT_MONO;
+    IMPLUS_WITH(Scope_Font) = ImPlus::FONT_MONO;
 
-    const ImPlus::Style_ItemSpacing itemSpacing = {0.f, 0.f};
-    const ImPlus::Style_SelectableTextAlign selectableAlign = {0.5f, 0.5f};
+    IMPLUS_WITH(Style_ItemSpacing) = { 0.f, 0.f };
+    IMPLUS_WITH(Style_SelectableTextAlign) = { 0.5f, 0.5f };
 
     ImDrawList* drawList = ImGui::GetWindowDrawList();
 
@@ -456,18 +462,18 @@ void BaseContext::show_widget_timeline()
         }
 
         const bool active = frame == constCurrentFrame;
-        const bool open = ImPlus::IsPopupOpen(label);
+        const bool open = ImGui::IsPopupOpen(label);
 
-        if (ImPlus::Selectable(label, active || open, 0, {width, 32.f}))
-            ImPlus::OpenPopup(label);
+        if (ImGui::Selectable(label, active || open, 0, {width, 32.f}))
+            ImGui::OpenPopup(label);
+
+        ImPlus::HoverTooltip(false, ImGuiDir_Up, "{} ({})", i-1, frame);
 
         if (frame != constCurrentFrame)
             if (ImGui::IsItemHovered() && ImGui::IsMouseDown(ImPlus::MOUSE_RIGHT))
-                scrub_to_frame(frame, true);
+                deferScrubToFrame = frame;
 
-        ImPlus::HoverTooltip(fmt::format("{} ({})", i-1, frame));
-
-        if (frame == constCurrentFrame)
+        if (frame == constCurrentFrame) // blend marker
         {
             const ImVec2 rectMin = ImGui::GetItemRectMin();
             const ImVec2 rectMax = ImGui::GetItemRectMax();
@@ -484,7 +490,7 @@ void BaseContext::show_widget_timeline()
 
         ImPlus::if_PopupContextItem(label, 0, [&]()
         {
-            ImPlus::MenuItem("todo (right click to change frame)", nullptr, false, false);
+            ImGui::MenuItem("todo (right click to change frame)", ImStrv(), false, false);
         });
     }
 
@@ -505,7 +511,7 @@ void BaseContext::show_widget_debug()
     if (editor.mDoResetDockDebug) ImGui::SetNextWindowDockID(editor.mDockRightId);
     editor.mDoResetDockDebug = false;
 
-    const ImPlus::ScopeWindow window = { "Debug", 0 };
+    const ImPlus::Scope_Window window = { "Debug", 0 };
     if (window.show == false) return;
 
     DebugGui::show_widget_stage(world->get_stage());
@@ -519,9 +525,10 @@ void BaseContext::show_widget_debug()
 
 //============================================================================//
 
-void BaseContext::helper_edit_origin(const char* label, const sq::Armature& armature, int8_t bone, Vec3F& origin)
+void BaseContext::helper_edit_origin(StringView label, const sq::Armature& armature, int8_t bone, Vec3F& origin)
 {
-    const ImPlus::ScopeID idScope = label;
+    IMPLUS_WITH(Scope_ID) = ImStrv(label);
+
     static Vec3F localOrigin = nullptr;
 
     if (bone < 0) ImGui::BeginDisabled();
@@ -602,7 +609,7 @@ void BaseContext::enumerate_source_files(String path, String& ref, String& saved
 
 void BaseContext::reset_objects()
 {
-    for (auto& fighter : world->mFighters)
+    for (auto& fighter : world->get_sorted_fighters())
         fighter->reset_everything();
 
     for (auto& article : world->mArticles)
@@ -624,6 +631,7 @@ void BaseContext::setup_state_for_action()
 
     if (name == "Brake" || name == "BrakeTurn")
     {
+        fighter->set_spawn_transform({0.f, 0.f}, +1);
         //fighter.change_state(fighter.mStates.at("Dash"));
         fighter->change_state(fighter->mStates.at("Neutral"));
         fighter->play_animation(fighter->def.animations.at("DashLoop"), 0u, true);
@@ -632,6 +640,7 @@ void BaseContext::setup_state_for_action()
 
     else if (name == "HopBack" || name == "HopForward")
     {
+        fighter->set_spawn_transform({0.f, 0.f}, +1);
         fighter->change_state(fighter->mStates.at("JumpSquat"));
         fighter->play_animation(fighter->def.animations.at("JumpSquat"), 0u, true);
         fighter->mAnimPlayer.animTime = float(fighter->mAnimPlayer.animation->anim.frameCount) - 1.f;
@@ -640,22 +649,59 @@ void BaseContext::setup_state_for_action()
 
     else if (name == "JumpBack" || name == "JumpForward")
     {
+        fighter->set_spawn_transform({0.f, 0.f}, +1);
         fighter->change_state(fighter->mStates.at("JumpSquat"));
         fighter->play_animation(fighter->def.animations.at("JumpSquat"), 0u, true);
         fighter->mAnimPlayer.animTime = float(fighter->mAnimPlayer.animation->anim.frameCount) - 1.f;
         vars.velocity.y = std::sqrt(2.f * attrs.jumpHeight * attrs.gravity) + attrs.gravity * 0.5f;
     }
 
+    else if (name == "GrabStart" || name == "GrabbedStart")
+    {
+        fighter->set_spawn_transform({0.f, 0.f}, +1);
+        opponent->set_spawn_transform({+1.f, 0.f}, -1);
+        fighter->change_state(fighter->mStates.at("Neutral"));
+        fighter->play_animation(fighter->def.animations.at("NeutralLoop"), 0u, true);
+        opponent->change_state(opponent->mStates.at("Neutral"));
+        opponent->play_animation(opponent->def.animations.at("NeutralLoop"), 0u, true);
+    }
+
+    else if (name == "GrabAttack" || name == "GrabFree" || name.starts_with("Throw"))
+    {
+        fighter->set_spawn_transform({0.f, 0.f}, +1);
+        opponent->set_spawn_transform({+1.f, 0.f}, -1);
+        fighter->variables.victim = opponent;
+        opponent->variables.bully = fighter;
+        fighter->change_state(fighter->mStates.at("Grab"));
+        fighter->play_animation(fighter->def.animations.at("GrabLoop"), 0u, true);
+        opponent->change_state(opponent->mStates.at("Grabbed"));
+        opponent->play_animation(opponent->def.animations.at("GrabbedLoopLow"), 0u, true);
+    }
+
+    else if (name == "GrabbedAttack" || name == "GrabbedFree")
+    {
+        opponent->set_spawn_transform({+1.f, 0.f}, -1);
+        fighter->set_spawn_transform({0.f, 0.f}, +1);
+        opponent->variables.victim = fighter;
+        fighter->variables.bully = opponent;
+        opponent->change_state(opponent->mStates.at("Grab"));
+        opponent->play_animation(opponent->def.animations.at("GrabLoop"), 0u, true);
+        fighter->change_state(fighter->mStates.at("Grabbed"));
+        fighter->play_animation(fighter->def.animations.at("GrabbedLoopLow"), 0u, true);
+    }
+
     else if (name.starts_with("Air") || name.starts_with("SpecialAir"))
     {
+        fighter->set_spawn_transform({0.f, 1.f}, +1);
         fighter->change_state(fighter->mStates.at("Fall"));
         fighter->play_animation(fighter->def.animations.at("FallLoop"), 0u, true);
         attrs.gravity = 0.f;
-        vars.position = Vec2F(0.f, 1.f);
+        if (name.starts_with("AirHop")) vars.extraJumps = 1;
     }
 
     else
     {
+        fighter->set_spawn_transform({0.f, 0.f}, +1);
         fighter->change_state(fighter->mStates.at("Neutral"));
         fighter->play_animation(fighter->def.animations.at("NeutralLoop"), 0u, true);
     }
@@ -687,16 +733,20 @@ void BaseContext::scrub_to_frame(int frame, bool resetObjects)
     // don't t-pose when blending the start frame
     if (frame == -1)
     {
-        for (auto& fighter : world->mFighters)
+        for (auto& fighter : world->get_fighters())
         {
             fighter->mAnimPlayer.previousSample = fighter->mAnimPlayer.currentSample;
             fighter->previous = fighter->current;
             fighter->debugPreviousPoseInfo = fighter->debugCurrentPoseInfo;
+            fighter->diamond = fighter->compute_diamond();
         }
     }
 
     // will activate the action when currentFrame >= 0
-    fighter->editorStartAction = action;
+    if      (action->def.name == "GrabStart")    fighter->editorApplyGrab = opponent;
+    else if (action->def.name == "GrabbedStart") opponent->editorApplyGrab = fighter;
+    else if (action->def.name == "GrabbedFree")  opponent->editorStartAction = &opponent->mActions.at("GrabFree");
+    else                                         fighter->editorStartAction = action;
 
     // finally, scrub to the desired frame
     editor.mSmashApp.get_audio_context().set_groups_ignored(sq::SoundGroup::Sfx, true);

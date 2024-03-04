@@ -1,0 +1,52 @@
+{
+  "blobs": {
+    "0_Far": {
+      "angleMode": "Normal",
+      "bone": null,
+      "canHitAir": true,
+      "canHitGround": true,
+      "clangMode": "Ignore",
+      "damage": 0.0,
+      "facingMode": "Relative",
+      "flavour": "Sour",
+      "freezeDiMult": 1.0,
+      "freezeMult": 1.0,
+      "handler": "Normal",
+      "ignoreDamage": false,
+      "ignoreWeight": false,
+      "index": 0,
+      "knockAngle": 0.0,
+      "knockBase": 0.0,
+      "knockScale": 0.0,
+      "origin": [ 0.0, 0.66, 0.84 ],
+      "radius": 0.34,
+      "sound": "",
+      "type": "Grab"
+    },
+    "1_Near": {
+      "angleMode": "Normal",
+      "bone": null,
+      "canHitAir": true,
+      "canHitGround": true,
+      "clangMode": "Ignore",
+      "damage": 0.0,
+      "facingMode": "Relative",
+      "flavour": "Sour",
+      "freezeDiMult": 1.0,
+      "freezeMult": 1.0,
+      "handler": "Normal",
+      "ignoreDamage": false,
+      "ignoreWeight": false,
+      "index": 0,
+      "knockAngle": 0.0,
+      "knockBase": 0.0,
+      "knockScale": 0.0,
+      "origin": [ 0.0, 0.66, 0.24 ],
+      "radius": 0.34,
+      "sound": "",
+      "type": "Grab"
+    }
+  },
+  "effects": {},
+  "emitters": {}
+}

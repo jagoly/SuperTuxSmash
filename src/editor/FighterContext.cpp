@@ -85,22 +85,24 @@ void FighterContext::save_changes()
 {
     if (savedData->hurtBlobs != fighterDef->hurtBlobs)
     {
-        JsonValue json;
+        auto document = JsonMutDocument();
+        auto json = document.assign(JsonMutObject(document));
 
         for (const auto& [key, def] : fighterDef->hurtBlobs)
-            def.to_json(json[key.c_str()], fighterDef->armature);
+            def.to_json(json.append(key, JsonMutObject(document)), fighterDef->armature);
 
-        sq::write_text_to_file(fmt::format("assets/{}/HurtBlobs.json", ctxKey), json.dump(2), true);
+        sq::write_text_to_file(fmt::format("assets/{}/HurtBlobs.json", ctxKey), json.dump(true), true);
     }
 
     if (savedData->sounds != fighterDef->sounds)
     {
-        JsonValue json;
+        JsonMutDocument document;
+        auto json = document.assign(JsonMutObject(document));
 
-        for (const auto& [key, sound] : fighterDef->sounds)
-            sound.to_json(json[key.c_str()]);
+        for (const auto& [key, def] : fighterDef->sounds)
+            def.to_json(json.append(key, JsonMutObject(document)));
 
-        sq::write_text_to_file(fmt::format("assets/{}/Sounds.json", ctxKey), json.dump(2), true);
+        sq::write_text_to_file(fmt::format("assets/{}/Sounds.json", ctxKey), json.dump(true), true);
     }
 
     savedData = std::make_unique<UndoEntry>(*fighterDef);
@@ -130,10 +132,10 @@ void FighterContext::show_widget_hurtblobs()
     if (editor.mDoResetDockHurtblobs) ImGui::SetNextWindowDockID(editor.mDockRightId);
     editor.mDoResetDockHurtblobs = false;
 
-    const ImPlus::ScopeWindow window = { "HurtBlobs", 0 };
+    const ImPlus::Scope_Window window = { "HurtBlobs", 0 };
     if (window.show == false) return;
 
-    const ImPlus::ScopeID ctxKeyIdScope = ctxKey.c_str();
+    IMPLUS_WITH(Scope_ID) = ImStrv(ctxKey);
 
     //--------------------------------------------------------//
 
@@ -144,7 +146,7 @@ void FighterContext::show_widget_hurtblobs()
 
     const auto funcEdit = [&](HurtBlobDef& def)
     {
-        const ImPlus::ScopeItemWidth widthScope = -100.f;
+        IMPLUS_WITH(Scope_ItemWidth) = -120.f;
 
         ImPlus::ComboIndex("Bone", fighterDef->armature.get_bone_names(), def.bone, "(None)");
 

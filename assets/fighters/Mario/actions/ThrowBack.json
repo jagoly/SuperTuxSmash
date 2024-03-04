@@ -1,0 +1,56 @@
+{
+  "blobs": {
+    "THROW": {
+      "angleMode": "Normal",
+      "bone": "ThrowN",
+      "canHitAir": true,
+      "canHitGround": true,
+      "clangMode": "Ignore",
+      "damage": 12.0,
+      "facingMode": "Forward",
+      "flavour": "Tangy",
+      "freezeDiMult": 0.0,
+      "freezeMult": 0.0,
+      "handler": "Normal",
+      "ignoreDamage": false,
+      "ignoreWeight": false,
+      "index": 0,
+      "knockAngle": 45.0,
+      "knockBase": 70.0,
+      "knockScale": 63.0,
+      "origin": [ 0.0, 0.0, 0.0 ],
+      "radius": 1.0,
+      "sound": "HitKick1"
+    }
+  },
+  "effects": {
+    "LandHeavy": {
+      "attached": false,
+      "bone": null,
+      "origin": [ 0.0, 0.0, 0.0 ],
+      "path": "fighters/Mario/effects/LandHeavy",
+      "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+      "scale": [ 1.0, 1.0, 1.0 ],
+      "transient": true
+    },
+    "ShockCrown": {
+      "attached": false,
+      "bone": null,
+      "origin": [ 0.0, 0.0, 0.0 ],
+      "path": "fighters/Mario/effects/ShockCrown",
+      "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+      "scale": [ 1.0, 1.0, 1.0 ],
+      "transient": true
+    },
+    "WhirlwindL": {
+      "attached": false,
+      "bone": null,
+      "origin": [ 0.0, 0.0, 0.0 ],
+      "path": "fighters/Mario/effects/WhirlwindL",
+      "rotation": [ 0.0, 0.0, 0.0, 1.0 ],
+      "scale": [ 1.0, 1.0, 1.0 ],
+      "transient": true
+    }
+  },
+  "emitters": {}
+}

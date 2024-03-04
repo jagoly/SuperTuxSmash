@@ -97,16 +97,16 @@ void StageContext::show_widget_stage()
     if (editor.mDoResetDockStage) ImGui::SetNextWindowDockID(editor.mDockRightId);
     editor.mDoResetDockStage = false;
 
-    const ImPlus::ScopeWindow window = { "Stage", 0 };
+    const ImPlus::Scope_Window window = { "Stage", 0 };
     if (window.show == false) return;
 
-    const ImPlus::ScopeID ctxKeyIdScope = ctxKey.c_str();
+    IMPLUS_WITH(Scope_ID) = ImStrv(ctxKey);
 
     //--------------------------------------------------------//
 
     if (ImGui::CollapsingHeader("Tone Mapping", ImGuiTreeNodeFlags_DefaultOpen))
     {
-        const ImPlus::ScopeItemWidth width = -100.f;
+        IMPLUS_WITH(Scope_ItemWidth) = -120.f;
 
         auto& tonemap = stage->mEnvironment.tonemap;
 
@@ -117,7 +117,7 @@ void StageContext::show_widget_stage()
 
     if (ImGui::CollapsingHeader("Directional Light", ImGuiTreeNodeFlags_DefaultOpen))
     {
-        const ImPlus::ScopeItemWidth width = -100.f;
+        IMPLUS_WITH(Scope_ItemWidth) = -120.f;
 
         ImPlus::InputVector("Colour", stage->mLightColour, 0, "%.2f");
         ImPlus::InputVector("Direction", stage->mLightDirection, 0, "%.2f");
@@ -131,10 +131,10 @@ void StageContext::show_widget_cubemaps()
     if (editor.mDoResetDockCubemaps) ImGui::SetNextWindowDockID(editor.mDockRightId);
     editor.mDoResetDockCubemaps = false;
 
-    const ImPlus::ScopeWindow window = { "CubeMaps", 0 };
+    const ImPlus::Scope_Window window = { "CubeMaps", 0 };
     if (window.show == false) return;
 
-    const ImPlus::ScopeID ctxKeyIdScope = ctxKey.c_str();
+    IMPLUS_WITH(Scope_ID) = ImStrv(ctxKey);
 
     //--------------------------------------------------------//
 
@@ -155,7 +155,7 @@ void StageContext::show_widget_cubemaps()
         if (ImGui::Button("Save"))
         {
             cubemaps.skybox->save_as_compressed (
-                sq::build_string("assets/", stage->get_skybox_path(), "/Sky.lz4"),
+                fmt::format("assets/{}/Sky.lz4", stage->get_skybox_path()),
                 vk::Format::eE5B9G9R9UfloatPack32, Vec3U(SKYBOX_SIZE, SKYBOX_SIZE, 6u), 1u
             );
         }
@@ -172,7 +172,7 @@ void StageContext::show_widget_cubemaps()
 
     if (ImGui::CollapsingHeader(irradianceModified ? "Irradiance*###Irradiance" : "Irradiance###Irradiance"))
     {
-        const ImPlus::ScopeID idScope = "irradiance";
+        IMPLUS_WITH(Scope_ID) = "irradiance";
 
         if (ImGui::Button("Generate"))
         {
@@ -182,7 +182,7 @@ void StageContext::show_widget_cubemaps()
         if (ImGui::Button("Save") && irradianceModified)
         {
             cubemaps.irradiance->save_as_compressed (
-                sq::build_string("assets/", stage->get_skybox_path(), "/Irradiance.lz4"),
+                fmt::format("assets/{}/Irradiance.lz4", stage->get_skybox_path()),
                 vk::Format::eE5B9G9R9UfloatPack32, Vec3U(IRRADIANCE_SIZE, IRRADIANCE_SIZE, 6u), 1u
             );
             irradianceModified = false;
@@ -200,7 +200,7 @@ void StageContext::show_widget_cubemaps()
 
     if (ImGui::CollapsingHeader(radianceModified ? "Radiance*###Radiance" : "Radiance###Radiance"))
     {
-        const ImPlus::ScopeID idScope = "radiance";
+        IMPLUS_WITH(Scope_ID) = "radiance";
 
         if (ImGui::Button("Generate"))
         {
@@ -210,7 +210,7 @@ void StageContext::show_widget_cubemaps()
         if (ImGui::Button("Save") && radianceModified)
         {
             cubemaps.radiance->save_as_compressed (
-                sq::build_string("assets/", stage->get_skybox_path(), "/Radiance.lz4"),
+                fmt::format("assets/{}/Radiance.lz4", stage->get_skybox_path()),
                 vk::Format::eE5B9G9R9UfloatPack32, Vec3U(RADIANCE_SIZE, RADIANCE_SIZE, 6u), RADIANCE_LEVELS
             );
             radianceModified = false;
@@ -221,9 +221,7 @@ void StageContext::show_widget_cubemaps()
             for (uint face = 0u; face < 6u; ++face)
             {
                 ImGui::Image(&radiance[level].descriptorSets[faceOrder[face]], {size, size}, {0,1}, {1,0});
-                ImPlus::HoverTooltip (
-                    fmt::format("{} ({:.0f}%)", faceNames[faceOrder[face]], float(level * 100u) / float(RADIANCE_LEVELS - 1u))
-                );
+                ImPlus::HoverTooltip("{} ({:.0f}%)", faceNames[faceOrder[face]], float(level * 100u) / float(RADIANCE_LEVELS - 1u));
                 if (face < 5u) ImGui::SameLine();
             }
         }

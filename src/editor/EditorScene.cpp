@@ -66,30 +66,33 @@ EditorScene::EditorScene(SmashApp& smashApp)
 
     //--------------------------------------------------------//
 
-    const auto load_fighter_info = [](const String& name)
+    const auto load_fighter_info = [](StringView name)
     {
         FighterInfo result;
 
-        const String path = name.empty() ? "assets/fighters" : ("assets/fighters/" + name);
+        const String path = name.empty() ? "assets/fighters" : sq::string_concat("assets/fighters/", name);
 
         result.name = TinyString(name);
         {
-            const auto json = sq::parse_json_from_file(path + "/Animations.json");
+            const auto document = JsonDocument::parse_file(path + "/Animations.json");
+            const auto json = document.root().as<JsonObject>();
             result.animations.reserve(json.size());
-            for (const auto& entry : json)
-                result.animations.emplace_back(entry[0].get_ref<const String&>());
+            for (const auto [animation, _] : json)
+                result.animations.emplace_back(animation);
         }
         {
-            const auto json = sq::parse_json_from_file(path + "/Actions.json");
+            const auto document = JsonDocument::parse_file(path + "/Actions.json");
+            const auto json = document.root().as<JsonArray>();
             result.actions.reserve(json.size());
-            for (const auto& entry : json)
-                result.actions.emplace_back(entry.get_ref<const String&>());
+            for (const auto [_, action] : json | views::json_as<StringView>)
+                result.actions.emplace_back(action);
         }
         {
-            const auto json = sq::parse_json_from_file(path + "/States.json");
+            const auto document = JsonDocument::parse_file(path + "/States.json");
+            const auto json = document.root().as<JsonArray>();
             result.states.reserve(json.size());
-            for (const auto& entry : json)
-                result.states.emplace_back(entry.get_ref<const String&>());
+            for (const auto [_, state] : json | views::json_as<StringView>)
+                result.states.emplace_back(state);
         }
 
         return result;
@@ -97,24 +100,25 @@ EditorScene::EditorScene(SmashApp& smashApp)
 
     mFighterInfoCommon = load_fighter_info(String());
     {
-        const auto json = sq::parse_json_from_file("assets/fighters/Fighters.json");
+        const auto document = JsonDocument::parse_file("assets/fighters/Fighters.json");
+        const auto json = document.root().as<JsonArray>();
         mFighterInfos.reserve(json.size());
-        for (const auto& entry : json)
-            mFighterInfos.emplace_back(load_fighter_info(entry.get_ref<const String&>()));
+        for (const auto [_, fighter] : json | views::json_as<StringView>)
+            mFighterInfos.emplace_back(load_fighter_info(fighter));
     }
-
     {
-        const auto json = sq::parse_json_from_file("assets/Articles.json");
+        const auto document = JsonDocument::parse_file("assets/Articles.json");
+        const auto json = document.root().as<JsonArray>();
         mArticlePaths.reserve(json.size());
-        for (const auto& entry : json)
-            mArticlePaths.emplace_back(entry.get_ref<const String&>());
+        for (const auto [_, article] : json | views::json_as<StringView>)
+            mArticlePaths.emplace_back(article);
     }
-
     {
-        const auto json = sq::parse_json_from_file("assets/stages/Stages.json");
+        const auto document = JsonDocument::parse_file("assets/stages/Stages.json");
+        const auto json = document.root().as<JsonArray>();
         mStageNames.reserve(json.size());
-        for (const auto& entry : json)
-            mStageNames.emplace_back(entry.get_ref<const String&>());
+        for (const auto [_, stage] : json | views::json_as<StringView>)
+            mStageNames.emplace_back(stage);
     }
 }
 
@@ -208,8 +212,16 @@ void EditorScene::integrate(double /*elapsed*/, float blend)
 
     if (mPreviewMode == PreviewMode::Pause)
         blend = mBlendValue;
+    else
+        mSmashApp.reset_inactivity(); // only go inactive if paused
 
     BaseContext& ctx = *mActiveContext;
+
+    if (ctx.deferScrubToFrame)
+    {
+        ctx.scrub_to_frame(*ctx.deferScrubToFrame, true);
+        ctx.deferScrubToFrame.reset();
+    }
 
     mRenderer->swap_objects_buffers();
 
@@ -245,7 +257,7 @@ void EditorScene::confirm_quit_unsaved(bool returnToMenu)
     {
         for (const auto& [key, ctx] : ctxMap)
             if (ctx.modified == true)
-                sq::format_append(mConfirmQuitUnsaved, "  - {}\n", ctx.ctxKey);
+                fmt::format_to(std::back_insert_iterator(mConfirmQuitUnsaved), "  - {}\n", ctx.ctxKey);
     };
 
     append_unsaved_items(mActionContexts);
@@ -268,12 +280,13 @@ void EditorScene::show_widget_toolbar()
     ImGui::SetNextWindowPos({0, 0});
     ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize);
 
-    const auto windowFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_MenuBar |
-                             ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoBringToFrontOnFocus;
-
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0, 0 });
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
-    const ImPlus::ScopeWindow window = { "main", windowFlags };
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0.f, 0.f});
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.f);
+    const ImPlus::Scope_Window window = {
+        "main",
+        ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_MenuBar |
+        ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoDocking
+    };
     ImGui::PopStyleVar(2);
 
     mDockMainId = ImGui::GetID("MainDockSpace");
@@ -313,8 +326,8 @@ void EditorScene::show_widget_toolbar()
     mWantResetDocks = false;
 
     ImGui::DockSpace (
-        mDockMainId, ImVec2(0.0f, 0.0f),
-        ImGuiDockNodeFlags_PassthruCentralNode | ImGuiDockNodeFlags_NoDockingInCentralNode
+        mDockMainId, {0.f, 0.f},
+        ImGuiDockNodeFlags_NoDockingOverCentralNode | ImGuiDockNodeFlags_PassthruCentralNode
     );
 
     if (window.show == false) return;
@@ -325,10 +338,10 @@ void EditorScene::show_widget_toolbar()
     {
         ImPlus::if_Menu("Menu", true, [&]()
         {
-            if (ImPlus::MenuItem("Reset Layout"))
+            if (ImGui::MenuItem("Reset Layout"))
                 mWantResetDocks = true;
 
-            if (ImPlus::MenuItem("Save", "Ctrl+S", false, mActiveContext && mActiveContext->modified))
+            if (ImGui::MenuItem("Save", "Ctrl+S", false, mActiveContext && mActiveContext->modified))
                 mActiveContext->save_changes();
 
             const size_t numModified =
@@ -337,7 +350,7 @@ void EditorScene::show_widget_toolbar()
                 ranges::count_if(mFighterContexts, [](const auto& item) { return item.second.modified; }) +
                 ranges::count_if(mStageContexts, [](const auto& item) { return item.second.modified; });
 
-            if (ImPlus::MenuItem(fmt::format("Save All ({})", numModified), "Ctrl+Shift+S", false, numModified != 0u))
+            if (ImGui::MenuItem(fmt::format("Save All ({})", numModified), "Ctrl+Shift+S", false, numModified != 0u))
             {
                 // todo: show a popup listing everything that has changed
                 for (auto& [key, ctx] : mActionContexts) if (ctx.modified) ctx.save_changes();
@@ -358,10 +371,10 @@ void EditorScene::show_widget_toolbar()
         ImPlus::if_Menu("Render", true, [&]()
         {
             auto& options = mSmashApp.get_options();
-            ImPlus::Checkbox("hit blobs", &options.render_hit_blobs);
-            ImPlus::Checkbox("hurt blobs", &options.render_hurt_blobs);
-            ImPlus::Checkbox("diamonds", &options.render_diamonds);
-            ImPlus::Checkbox("skeletons", &options.render_skeletons);
+            ImGui::Checkbox("hit blobs", &options.render_hit_blobs);
+            ImGui::Checkbox("hurt blobs", &options.render_hurt_blobs);
+            ImGui::Checkbox("diamonds", &options.render_diamonds);
+            ImGui::Checkbox("skeletons", &options.render_skeletons);
         });
 
         //--------------------------------------------------------//
@@ -388,7 +401,7 @@ void EditorScene::show_widget_toolbar()
         ImGui::SetNextItemWidth(120.f);
         if (ImPlus::InputValue("##seed", mRandomSeed, 1))
             if (context_has_timeline())
-                mActiveContext->scrub_to_frame(mActiveContext->currentFrame, true);
+                mActiveContext->deferScrubToFrame = mActiveContext->currentFrame;
         ImPlus::HoverTooltip("seed to use for random number generator");
 
         ImGui::Checkbox("RNG", &mIncrementSeed);
@@ -403,7 +416,7 @@ void EditorScene::show_widget_navigator()
     if (mDoResetDockNavigator) ImGui::SetNextWindowDockID(mDockLeftId);
     mDoResetDockNavigator = false;
 
-    const ImPlus::ScopeWindow window = { "Navigator", 0 };
+    const ImPlus::Scope_Window window = { "Navigator", 0 };
     if (window.show == false) return;
 
     //--------------------------------------------------------//
@@ -464,28 +477,21 @@ void EditorScene::show_widget_navigator()
 
         if (modified) label.push_back('*');
 
-        const bool highlight = active || ImPlus::IsPopupOpen(label);
+        const bool highlight = active || ImGui::IsPopupOpen(label);
 
         if (loaded) ImPlus::PushFont(ImPlus::FONT_BOLD);
-        if (ImPlus::Selectable(label, highlight) && !active) activate_context(ctxKey, ctxMap);
+        if (ImGui::Selectable(label, highlight) && !active) activate_context(ctxKey, ctxMap);
         if (loaded) ImGui::PopFont();
-
-        if (ImGui::IsItemHovered())
-        {
-            const ImVec2 rectMin = ImGui::GetItemRectMin();
-            const ImVec2 rectMax = ImGui::GetItemRectMax();
-            ImGui::SetNextWindowPos({rectMax.x, std::floor((rectMin.y + rectMax.y) * 0.5f)}, 0, {0.f, 0.5f});
-            ImPlus::SetTooltip(ctxKey);
-        }
+        ImPlus::HoverTooltip(true, ImGuiDir_Right, ctxKey);
 
         ImPlus::if_PopupContextItem(nullptr, ImGuiPopupFlags_MouseButtonRight, [&]()
         {
-            if (ImGui::MenuItem("Close", nullptr, false, loaded))
+            if (ImGui::MenuItem("Close", ImStrv(), false, loaded))
             {
                 if (modified) mConfirmCloseContext = &iter->second;
                 else close_context(&iter->second);
             }
-            if (ImGui::MenuItem("Save", nullptr, false, modified))
+            if (ImGui::MenuItem("Save", ImStrv(), false, modified))
                 iter->second.save_changes();
         });
     };
@@ -494,8 +500,8 @@ void EditorScene::show_widget_navigator()
 
     // todo: multi row tab bar support for imgui
     {
-        const ImPlus::Style_ItemSpacing itemSpacing = {0.f, 0.f};
-        const ImPlus::Style_SelectableTextAlign selectableAlign = {0.5f, 0.5f};
+        IMPLUS_WITH(Style_ItemSpacing) = { 0.f, 0.f };
+        IMPLUS_WITH(Style_SelectableTextAlign) = { 0.5f, 0.5f };
 
         ImDrawList* drawList = ImGui::GetWindowDrawList();
 
@@ -546,7 +552,7 @@ void EditorScene::show_widget_navigator()
                 );
                 const size_t numTotal = mFighterInfoCommon.actions.size() + info.actions.size();
 
-                if (ImPlus::CollapsingHeader(fmt::format("{} ({}/{})###{}", info.name, numLoaded, numTotal, info.name)))
+                if (ImGui::CollapsingHeader(fmt::format("{} ({}/{})###{}", info.name, numLoaded, numTotal, info.name)))
                 {
                     for (const SmallString& name : mFighterInfoCommon.actions)
                         context_list_entry(fmt::format("fighters/{}/actions/{}", info.name, name), mActionContexts, String(name));
@@ -579,8 +585,7 @@ void EditorScene::show_widget_navigator()
                     )));
 
                     const StringView label = prefix.substr(0, prefix.size() - (prefix.ends_with("/articles/") ? 10 : 1));
-
-                    headerExpanded = ImPlus::CollapsingHeader(fmt::format("{} ({}/{})###{}", label, numLoaded, numTotal, label));
+                    headerExpanded = ImGui::CollapsingHeader(fmt::format("{} ({}/{})###{}", label, numLoaded, numTotal, label));
                 }
 
                 if (headerExpanded) context_list_entry(*iter, mArticleContexts, String(path.substr(prefix.size())));

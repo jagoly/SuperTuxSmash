@@ -1,18 +1,18 @@
-[
-  [ "NeutralComboB" ],
-  [ "NeutralComboC" ],
-  [ "SpecialAirDownHeavy" ],
-  [ "SpecialAirDownLight" ],
-  [ "SpecialAirDownLoop", "Loop" ],
-  [ "SpecialAirDownStart" ],
-  [ "SpecialAirForward" ],
-  [ "SpecialAirNeutral" ],
-  [ "SpecialAirUp", "Motion" ],
-  [ "SpecialDownHeavy" ],
-  [ "SpecialDownLight" ],
-  [ "SpecialDownLoop", "Loop" ],
-  [ "SpecialDownStart" ],
-  [ "SpecialForward" ],
-  [ "SpecialNeutral" ],
-  [ "SpecialUp", "Motion" ]
-]
+{
+  "NeutralComboB": [],
+  "NeutralComboC": [],
+  "SpecialAirDownHeavy": [],
+  "SpecialAirDownLight": [],
+  "SpecialAirDownLoop": [ "Loop" ],
+  "SpecialAirDownStart": [],
+  "SpecialAirForward": [],
+  "SpecialAirNeutral": [],
+  "SpecialAirUp": [ "Motion" ],
+  "SpecialDownHeavy": [],
+  "SpecialDownLight": [],
+  "SpecialDownLoop": [ "Loop" ],
+  "SpecialDownStart": [],
+  "SpecialForward": [],
+  "SpecialNeutral": [],
+  "SpecialUp": [ "Motion" ]
+}

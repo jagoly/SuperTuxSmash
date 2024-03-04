@@ -23,8 +23,11 @@
 "extraJumps":    10,
 "lightLandTime": 4,
 
-"diamondHalfWidth":   0.4,
-"diamondOffsetTop":   1.4,
-"diamondOffsetCross": 0.8
+"diamondBones": [
+  "HipN", "LKneeJ", "RKneeJ", "HeadN", "LShoulderJ", "RShoulderJ", "HatN"
+],
+
+"diamondMinWidth":  0.4,
+"diamondMinHeight": 0.4
 
 }

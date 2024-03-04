@@ -1,14 +1,9 @@
 
 //========================================================//
 
-foreign class LocalDiamond {
+foreign class Diamond {
 
-  foreign halfWidth
-  foreign offsetCross
-  foreign offsetTop
-
-  foreign normLeftDown
-  foreign normLeftUp
-  foreign normRightDown
-  foreign normRightUp
+  foreign cross
+  foreign min
+  foreign max
 }

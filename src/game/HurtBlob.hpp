@@ -31,9 +31,9 @@ struct HurtBlobDef final
         return *std::prev(reinterpret_cast<const TinyString*>(this));
     }
 
-    void from_json(const JsonValue& json, const sq::Armature& armature);
+    void from_json(JsonObject json, const sq::Armature& armature);
 
-    void to_json(JsonValue& json, const sq::Armature& armature) const;
+    void to_json(JsonMutObject json, const sq::Armature& armature) const;
 
     bool operator==(const HurtBlobDef& other) const;
 };
@@ -50,7 +50,8 @@ struct HurtBlob final
 
     maths::Capsule capsule = {}; ///< Blob capsule after transform.
 
-    bool intangible = false; ///< Is the blob disabled.
+    bool intangible = false; ///< Disable collisions with this blob entirely.
+    bool invincible = false; ///< Prevents damage and knockback.
 
     Vec3F get_debug_colour() const;
 };

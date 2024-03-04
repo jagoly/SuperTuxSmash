@@ -6,28 +6,28 @@ using namespace sts;
 
 //============================================================================//
 
-void HurtBlobDef::from_json(const JsonValue& json, const sq::Armature& armature)
+void HurtBlobDef::from_json(JsonObject json, const sq::Armature& armature)
 {
-    json.at("originA").get_to(originA);
-    json.at("originB").get_to(originB);
-    json.at("radius").get_to(radius);
+    originA = json["originA"].as_auto();
+    originB = json["originB"].as_auto();
+    radius = json["radius"].as_auto();
 
-    bone = armature.bone_from_json(json.at("bone"));
+    bone = armature.json_as_bone_index(json["bone"]);
 
-    json.at("region").get_to(region);
+    region = json["region"].as_auto();
 }
 
 //============================================================================//
 
-void HurtBlobDef::to_json(JsonValue& json, const sq::Armature& armature) const
+void HurtBlobDef::to_json(JsonMutObject json, const sq::Armature& armature) const
 {
-    json["originA"] = originA;
-    json["originB"] = originB;
-    json["radius"] = radius;
+    json.append("originA", originA);
+    json.append("originB", originB);
+    json.append("radius", radius);
 
-    json["bone"] = armature.bone_to_json(bone);
+    json.append("bone", armature.json_from_bone_index(json.document(), bone));
 
-    json["region"] = region;
+    json.append("region", region);
 }
 
 //============================================================================//

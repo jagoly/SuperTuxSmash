@@ -34,9 +34,10 @@ struct FighterDef final : EntityDef
         uint extraJumps    = 2u;
         uint lightLandTime = 4u;
 
-        float diamondHalfWidth   = 0.4f;
-        float diamondOffsetCross = 1.4f;
-        float diamondOffsetTop   = 0.8f;
+        StackVector<uint8_t, 11u> diamondBones;
+
+        float diamondMinWidth  = 0.4f;
+        float diamondMinHeight = 0.4f;
     };
 
     //--------------------------------------------------------//

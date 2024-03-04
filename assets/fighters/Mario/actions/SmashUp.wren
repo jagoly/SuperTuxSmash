@@ -10,6 +10,7 @@ class Script is Base {
     fighter.play_sound("VoiceSmashUp", false)
 
     wait_until(2)
+    // PtcCommonDownSmoke
     fighter.disable_hurtblob("HeadN")
     fighter.play_sound("Swing3", false)
     fighter.play_sound("SwingExtra", false)

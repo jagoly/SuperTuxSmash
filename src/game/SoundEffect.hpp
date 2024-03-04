@@ -28,9 +28,9 @@ struct SoundEffect final
         return *std::prev(reinterpret_cast<const SmallString*>(this));
     }
 
-    void from_json(const JsonValue& json, SoundCache& cache);
+    void from_json(JsonObject json, SoundCache& cache);
 
-    void to_json(JsonValue& json) const;
+    void to_json(JsonMutObject json) const;
 
     bool operator==(const SoundEffect& other) const;
 };

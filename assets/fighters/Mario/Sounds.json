@@ -37,7 +37,7 @@
   },
   "HitCoin": {
     "path": "fighters/Mario/sounds/HitCoin",
-    "volume": 0.4
+    "volume": 0.46
   },
   "HitKick1": {
     "path": "fighters/Mario/sounds/HitKick1",
@@ -133,7 +133,7 @@
   },
   "SwingExtra": {
     "path": "fighters/Mario/sounds/SwingExtra",
-    "volume": 0.3
+    "volume": 0.35
   },
   "SwingSmashForward": {
     "path": "fighters/Mario/sounds/SwingSmashForward",
@@ -183,16 +183,32 @@
     "path": "fighters/Mario/sounds/VoiceSmashUp",
     "volume": 0.46
   },
+  "VoiceThrowBack": {
+    "path": "fighters/Mario/sounds/VoiceThrowBack",
+    "volume": 0.46
+  },
   "VoiceVertigo": {
     "path": "fighters/Mario/sounds/VoiceVertigo",
     "volume": 0.3
   },
   "Whoosh2": {
     "path": "fighters/Mario/sounds/Whoosh2",
-    "volume": 0.4
+    "volume": 0.46
   },
   "Whoosh3": {
     "path": "fighters/Mario/sounds/Whoosh3",
-    "volume": 0.4
+    "volume": 0.46
+  },
+  "Whoosh4": {
+    "path": "fighters/Mario/sounds/Whoosh4",
+    "volume": 0.46
+  },
+  "Whoosh5": {
+    "path": "fighters/Mario/sounds/Whoosh5",
+    "volume": 0.46
+  },
+  "Whoosh7": {
+    "path": "fighters/Mario/sounds/Whoosh7",
+    "volume": 0.46
   }
 }

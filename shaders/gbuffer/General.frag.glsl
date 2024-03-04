@@ -14,14 +14,18 @@
 layout(push_constant, std140)
 uniform PushConstants
 {
-    layout(offset= 8) uint albedoTexIndex;
-    layout(offset=12) uint roughnessTexIndex;
-    layout(offset=16) uint metallicTexIndex;
-  #if OPTION_TexMask
-    layout(offset=20) uint maskTexIndex;
-  #endif
+  //layout(offset=  0) uint modelMatIndex;
+  //layout(offset=  4) uint normalMatIndex;
+  //layout(offset=  8) ;
+  //layout(offset= 16) mat2x3 texTransform;
+    layout(offset= 48) uint albedoTexIndex;
+    layout(offset= 52) uint roughnessTexIndex;
   #if OPTION_TexNormal
-    layout(offset=24) uint normalTexIndex;
+    layout(offset= 56) uint normalTexIndex;
+  #endif
+    layout(offset= 60) uint metallicTexIndex;
+  #if OPTION_TexMask
+    layout(offset= 64) uint maskTexIndex;
   #endif
 }
 PC;

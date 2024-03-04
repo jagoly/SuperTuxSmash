@@ -1,6 +1,5 @@
 {
   "options": {
-    "AnimTexture": [ "0", "1" ],
     "Bones": [ "0", "1" ],
     "Tangent": [ "0", "1" ]
   },

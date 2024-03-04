@@ -16,22 +16,30 @@ void EffectAsset::load_from_directory(const String& path, ResourceCaches& caches
         path + "/Render.json", armature,
         caches.meshes, caches.pipelines, caches.textures
     );
+
+    // todo: change to wren expressions
+    // todo: effects should probably evaluate in the context of the entity that spawned them
+    for (const sq::DrawItem& drawItem : drawItems)
+    {
+        if (drawItem.condition.empty()) continue;
+        sq::log_warning("'{}/Render.json': invalid condition '{}'", path, drawItem.condition);
+    }
 }
 
 //============================================================================//
 
-void VisualEffectDef::from_json(const JsonValue& json, const sq::Armature& armature, EffectCache& cache)
+void VisualEffectDef::from_json(JsonObject json, const sq::Armature& armature, EffectCache& cache)
 {
-    json.at("path").get_to(path);
+    path = json["path"].as_auto();
 
-    json.at("origin").get_to(origin);
-    json.at("rotation").get_to(rotation);
-    json.at("scale").get_to(scale);
+    origin = json["origin"].as_auto();
+    rotation = json["rotation"].as_auto();
+    scale = json["scale"].as_auto();
 
-    bone = armature.bone_from_json(json.at("bone"));
+    bone = armature.json_as_bone_index(json["bone"]);
 
-    json.at("attached").get_to(attached);
-    json.at("transient").get_to(transient);
+    attached = json["attached"].as_auto();
+    transient = json["transient"].as_auto();
 
     handle = cache.acquire(path);
 
@@ -40,18 +48,18 @@ void VisualEffectDef::from_json(const JsonValue& json, const sq::Armature& armat
 
 //============================================================================//
 
-void VisualEffectDef::to_json(JsonValue& json, const sq::Armature& armature) const
+void VisualEffectDef::to_json(JsonMutObject json, const sq::Armature& armature) const
 {
-    json["path"] = path;
+    json.append("path", path);
 
-    json["origin"] = origin;
-    json["rotation"] = rotation;
-    json["scale"] = scale;
+    json.append("origin", origin);
+    json.append("rotation", rotation);
+    json.append("scale", scale);
 
-    json["bone"] = armature.bone_to_json(bone);
+    json.append("bone", armature.json_from_bone_index(json.document(), bone));
 
-    json["attached"] = attached;
-    json["transient"] = transient;
+    json.append("attached", attached);
+    json.append("transient", transient);
 }
 
 //============================================================================//

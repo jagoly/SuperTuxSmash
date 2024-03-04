@@ -1,0 +1,28 @@
+{
+  "blobs": {
+    "0": {
+      "angleMode": "Sakurai",
+      "bone": null,
+      "canHitAir": true,
+      "canHitGround": true,
+      "clangMode": "Ignore",
+      "damage": 3.0,
+      "facingMode": "Forward",
+      "flavour": "Tangy",
+      "freezeDiMult": 1.0,
+      "freezeMult": 1.0,
+      "handler": "Normal",
+      "ignoreDamage": true,
+      "ignoreWeight": true,
+      "index": 0,
+      "knockAngle": 0.0,
+      "knockBase": 30.0,
+      "knockScale": 100.0,
+      "origin": [ 0.0, 1.0, 1.0 ],
+      "radius": 0.5,
+      "sound": "HitKick1"
+    }
+  },
+  "effects": {},
+  "emitters": {}
+}

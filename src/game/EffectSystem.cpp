@@ -17,7 +17,7 @@ EffectSystem::~EffectSystem() = default;
 
 int32_t EffectSystem::play_effect(const VisualEffectDef& def, const Entity* owner)
 {
-    const EffectAsset& asset = def.handle.get();
+    const EffectAsset& asset = def.handle.value();
     VisualEffect& effect = *mEffects.emplace_back(std::make_unique<VisualEffect>(def, owner));
 
     if (def.attached == false)
@@ -29,7 +29,7 @@ int32_t EffectSystem::play_effect(const VisualEffectDef& def, const Entity* owne
         }
         else
         {
-            effect.modelMatrix = owner->get_bone_matrix(def.bone) * def.localMatrix;
+            effect.modelMatrix = owner->get_model_matrix(def.bone) * def.localMatrix;
             effect.bbScaleX = float(owner->get_vars().facing);
         }
     }
@@ -66,7 +66,7 @@ void EffectSystem::tick()
     for (auto iter = mEffects.begin(); iter != mEffects.end();)
     {
         VisualEffect& effect = **iter;
-        const EffectAsset& asset = effect.def.handle.get();
+        const EffectAsset& asset = effect.def.handle.value();
 
         if (uint(effect.animPlayer.animTime) == asset.animation.frameCount)
         {
@@ -90,11 +90,11 @@ void EffectSystem::integrate(float blend)
     for (auto iter = mEffects.begin(); iter != mEffects.end(); ++iter)
     {
         VisualEffect& effect = **iter;
-        const EffectAsset& asset = effect.def.handle.get();
+        const EffectAsset& asset = effect.def.handle.value();
 
         if (effect.def.attached == true)
         {
-            effect.modelMatrix = effect.entity->get_blended_bone_matrix(effect.def.bone) * effect.def.localMatrix;
+            effect.modelMatrix = effect.entity->get_blended_model_matrix(effect.def.bone) * effect.def.localMatrix;
             effect.bbScaleX = float(effect.entity->get_vars().facing);
         }
 
@@ -102,10 +102,8 @@ void EffectSystem::integrate(float blend)
 
         const auto check_condition = [&](const TinyString& condition)
         {
-            // todo: do effects need conditions?
-            //       should probably use the conditions of the entity that spawned them
             if (condition.empty()) return true;
-            SQASSERT(false, "invalid condition");
+            return true; // invalid
         };
 
         for (const sq::DrawItem& item : asset.drawItems)

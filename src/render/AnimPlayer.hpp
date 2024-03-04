@@ -46,6 +46,8 @@ struct AnimPlayer final
     uint modelMatsIndex = 0u;
     uint normalMatsIndex = 0u;
 
+    std::vector<char> debugEnableBlend; // chars because std::vector<bool> is cursed
+
     void integrate(Renderer& renderer, const Mat4F& modelMatrix, float bbScaleX, float blend);
 };
 

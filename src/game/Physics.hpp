@@ -7,22 +7,18 @@ namespace sts {
 //============================================================================//
 
 /// Diamond shape used for collision calculations.
-struct LocalDiamond final
+struct Diamond final
 {
-    float halfWidth, offsetCross, offsetTop;
-    Vec2F normLeftDown, normLeftUp, normRightDown, normRightUp;
+    Vec2F cross, min, max;
 
-    void compute_normals()
-    {
-        normLeftDown = maths::normalize(Vec2F(-offsetCross, -halfWidth));
-        normLeftUp = maths::normalize(Vec2F(-offsetCross, +halfWidth));
-        normRightDown = maths::normalize(Vec2F(+offsetCross, -halfWidth));
-        normRightUp = maths::normalize(Vec2F(+offsetCross, +halfWidth));
-    }
+    Vec2F left() const { return { min.x, cross.y }; }
+    Vec2F right() const { return { max.x, cross.y }; }
+    Vec2F bottom() const { return { cross.x, min.y }; }
+    Vec2F top() const { return { cross.x, max.y }; }
 
-    Vec2F min() const { return { -halfWidth, 0.f }; }
-    Vec2F max() const { return { +halfWidth, offsetTop }; }
-    Vec2F cross() const { return { 0.f, offsetCross }; }
+    float widthLeft() const { return cross.x - min.x; }
+    float widthRight() const { return max.x - cross.x; }
+    float height() const { return max.y - min.y; }
 };
 
 //============================================================================//
@@ -55,4 +51,4 @@ struct MoveAttemptSphere final
 
 } // namespace sts
 
-WRENPLUS_TRAITS_HEADER(sts::LocalDiamond)
+WRENPLUS_TRAITS_HEADER(sts::Diamond)
