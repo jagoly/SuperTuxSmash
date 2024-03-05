@@ -5,6 +5,11 @@ jobs:
 
   build:
     runs-on: ubuntu-22.04
+
+    env:
+      CC: gcc-13
+      CXX: g++-13
+
     steps:
 
     - name: Install Vulkan SDK
