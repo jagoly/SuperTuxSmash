@@ -1,0 +1,10 @@
+{
+  "options": {
+    "Bones": [ "0", "1" ],
+    "Colour": [ "0", "1" ],
+    "TexCoord": [ "0", "1" ]
+  },
+  "requirements": [
+    "p['Colour'] == '1' or p['TexCoord'] == '1'"
+  ]
+}
