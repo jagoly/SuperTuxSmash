@@ -217,13 +217,13 @@ void Renderer::impl_create_render_targets()
     // create images and samplers
     {
         images.depthStencil.initialise_2D (
-            ctx, vk::Format::eD24UnormS8Uint, renderSize, 1u, vk::SampleCountFlagBits::e1,
+            ctx, ctx.limits.depthStencilFormat, renderSize, 1u, vk::SampleCountFlagBits::e1,
             vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled, false,
             {}, vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil
         );
 
         images.depthView = ctx.create_image_view (
-            images.depthStencil.image, vk::ImageViewType::e2D, vk::Format::eD24UnormS8Uint,
+            images.depthStencil.image, vk::ImageViewType::e2D, ctx.limits.depthStencilFormat,
             {}, vk::ImageAspectFlagBits::eDepth, 0u, 1u, 0u, 1u
         );
 
@@ -272,7 +272,7 @@ void Renderer::impl_create_render_targets()
                 vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal
             },
             vk::AttachmentDescription { // depth, stencil
-                {}, vk::Format::eD24UnormS8Uint, vk::SampleCountFlagBits::e1,
+                {}, ctx.limits.depthStencilFormat, vk::SampleCountFlagBits::e1,
                 vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore,
                 vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore,
                 vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthStencilReadOnlyOptimal
@@ -317,7 +317,7 @@ void Renderer::impl_create_render_targets()
                 vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal
             },
             vk::AttachmentDescription {
-                {}, vk::Format::eD24UnormS8Uint, vk::SampleCountFlagBits::e1,
+                {}, ctx.limits.depthStencilFormat, vk::SampleCountFlagBits::e1,
                 vk::AttachmentLoadOp::eLoad, vk::AttachmentStoreOp::eStore,
                 vk::AttachmentLoadOp::eLoad, vk::AttachmentStoreOp::eStore,
                 vk::ImageLayout::eDepthStencilReadOnlyOptimal, vk::ImageLayout::eDepthStencilReadOnlyOptimal
