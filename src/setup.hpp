@@ -5,12 +5,18 @@
 #include <sqee/core/EnumHelper.hpp> // IWYU pragma: export
 #include <sqee/core/Macros.hpp> // IWYU pragma: export
 #include <sqee/core/Strings.hpp> // IWYU pragma: export
-#include <sqee/core/Types.hpp> // IWYU pragma: export
+#include <sqee/core/TypeAliases.hpp> // IWYU pragma: export
 #include <sqee/core/Utilities.hpp> // IWYU pragma: export
 
 #include <sqee/debug/Assert.hpp> // IWYU pragma: export
 #include <sqee/debug/Logging.hpp> // IWYU pragma: export
 
+#include <sqee/maths/Scalar.hpp> // IWYU pragma: export
+#include <sqee/maths/Vectors.hpp> // IWYU pragma: export
+#include <sqee/maths/Matrices.hpp> // IWYU pragma: export
+#include <sqee/maths/Quaternion.hpp> // IWYU pragma: export
+
+#include <sqee/misc/StackString.hpp> // IWYU pragma: export
 #include <sqee/misc/StackVector.hpp> // IWYU pragma: export
 
 #include <sqee/app/WrenForward.hpp> // IWYU pragma: export
