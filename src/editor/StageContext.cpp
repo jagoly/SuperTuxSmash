@@ -275,7 +275,7 @@ EditorScene::ShrunkCubeMap StageContext::shrink_cube_map_skybox(vk::ImageLayout 
         };
 
         stuff.renderPass = vctx.create_render_pass(attachment, subpass, nullptr);
-        vctx.set_debug_object_name(stuff.renderPass, "Editor.RenderPass.Shrink");
+        vctx.set_debug_object_name(stuff.renderPass, "editor.shrink");
 
         for (uint face = 0u; face < 6u; ++face)
         {
@@ -319,7 +319,7 @@ EditorScene::ShrunkCubeMap StageContext::shrink_cube_map_skybox(vk::ImageLayout 
             vk::PipelineColorBlendAttachmentState { false, {}, {}, {}, {}, {}, {}, vk::ColorComponentFlags(0b1111) },
             nullptr
         );
-        vctx.set_debug_object_name(stuff.pipelines[face], "Editor.Pipeline.Shrink");
+        vctx.set_debug_object_name(stuff.pipelines[face], "editor.shrink[{}]", face);
     }
 
     //--------------------------------------------------------//
@@ -398,7 +398,7 @@ void StageContext::generate_cube_map_irradiance()
         };
 
         stuff.renderPass = vctx.create_render_pass(attachment, subpass, nullptr);
-        vctx.set_debug_object_name(stuff.renderPass, "Editor.RenderPass.Irradiance");
+        vctx.set_debug_object_name(stuff.renderPass, "editor.irradiance");
 
         for (uint face = 0u; face < 6u; ++face)
         {
@@ -442,7 +442,7 @@ void StageContext::generate_cube_map_irradiance()
             vk::PipelineColorBlendAttachmentState { false, {}, {}, {}, {}, {}, {}, vk::ColorComponentFlags(0b1111) },
             nullptr
         );
-        vctx.set_debug_object_name(stuff.pipelines[face], "Editor.Pipeline.Irradiance");
+        vctx.set_debug_object_name(stuff.pipelines[face], "editor.irradiance[{}]", face);
     }
 
     //--------------------------------------------------------//
@@ -534,7 +534,7 @@ void StageContext::generate_cube_map_radiance()
         };
 
         stuff.renderPass = vctx.create_render_pass(attachment, subpass, nullptr);
-        vctx.set_debug_object_name(stuff.renderPass, "Editor.RenderPass.Radiance");
+        vctx.set_debug_object_name(stuff.renderPass, "editor.radiance");
 
         for (uint level = 1u; level < RADIANCE_LEVELS; ++level)
         {
@@ -591,7 +591,7 @@ void StageContext::generate_cube_map_radiance()
                 vk::PipelineColorBlendAttachmentState { false, {}, {}, {}, {}, {}, {}, vk::ColorComponentFlags(0b1111) },
                 nullptr
             );
-            vctx.set_debug_object_name(stuff.pipelines[index][face], "Editor.Pipeline.Radiance");
+            vctx.set_debug_object_name(stuff.pipelines[index][face], "editor.radiance[{}][{}]", index, face);
         }
     }
 

@@ -245,15 +245,15 @@ void Renderer::impl_create_render_targets()
             {}, vk::ImageAspectFlagBits::eColor
         );
 
-        ctx.set_debug_object_name(images.depthStencil.image, "Renderer.images.depthStencil");
-        ctx.set_debug_object_name(images.depthStencil.view, "Renderer.images.depthStencilView");
-        ctx.set_debug_object_name(images.depthView, "Renderer.images.depthView");
-        ctx.set_debug_object_name(images.albedoRoughness.image, "Renderer.images.albedoRoughness");
-        ctx.set_debug_object_name(images.albedoRoughness.view, "Renderer.images.albedoRoughnessView");
-        ctx.set_debug_object_name(images.normalMetallic.image, "Renderer.images.normalMetallic");
-        ctx.set_debug_object_name(images.normalMetallic.view, "Renderer.images.normalMetallicView");
-        ctx.set_debug_object_name(images.colour.image, "Renderer.images.colour");
-        ctx.set_debug_object_name(images.colour.view, "Renderer.images.colourView");
+        ctx.set_debug_object_name(images.depthStencil.image, "renderer.depthStencil");
+        ctx.set_debug_object_name(images.depthStencil.view, "renderer.depthStencil");
+        ctx.set_debug_object_name(images.depthView, "renderer.depth");
+        ctx.set_debug_object_name(images.albedoRoughness.image, "renderer.albedoRoughness");
+        ctx.set_debug_object_name(images.albedoRoughness.view, "renderer.albedoRoughness");
+        ctx.set_debug_object_name(images.normalMetallic.image, "renderer.normalMetallic");
+        ctx.set_debug_object_name(images.normalMetallic.view, "renderer.normalMetallic");
+        ctx.set_debug_object_name(images.colour.image, "renderer.colour");
+        ctx.set_debug_object_name(images.colour.view, "renderer.colour");
     }
 
     // create gbuffer render pass and framebuffer
@@ -289,22 +289,32 @@ void Renderer::impl_create_render_targets()
             {}, vk::PipelineBindPoint::eGraphics, nullptr, colourReferences, nullptr, &depthStencilReference, nullptr
         };
 
-        const auto dependency = vk::SubpassDependency {
-            0u, VK_SUBPASS_EXTERNAL,
-            vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eLateFragmentTests,
-            vk::PipelineStageFlagBits::eFragmentShader | vk::PipelineStageFlagBits::eEarlyFragmentTests,
-            vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentWrite,
-            vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eDepthStencilAttachmentRead,
-            vk::DependencyFlagBits::eByRegion
+        const auto dependencies = std::array {
+            vk::SubpassDependency {
+                VK_SUBPASS_EXTERNAL, 0u,
+                vk::PipelineStageFlagBits::eFragmentShader,
+                vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eEarlyFragmentTests,
+                vk::AccessFlagBits::eShaderRead,
+                vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentWrite,
+                vk::DependencyFlagBits::eByRegion
+            },
+            vk::SubpassDependency {
+                0u, VK_SUBPASS_EXTERNAL,
+                vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eLateFragmentTests,
+                vk::PipelineStageFlagBits::eFragmentShader,
+                vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentWrite,
+                vk::AccessFlagBits::eShaderRead,
+                vk::DependencyFlagBits::eByRegion
+            }
         };
 
         passes.gbuffer.initialise (
-            ctx, attachments, subpass, dependency, renderSize, 1u,
+            ctx, attachments, subpass, dependencies, renderSize, 1u,
             { images.albedoRoughness.view, images.normalMetallic.view, images.depthStencil.view }
         );
 
-        ctx.set_debug_object_name(passes.gbuffer.pass, "Renderer.RenderPass.Gbuffer");
-        ctx.set_debug_object_name(passes.gbuffer.framebuf, "Renderer.Framebuffer.Gbuffer");
+        ctx.set_debug_object_name(passes.gbuffer.pass, "renderer.gbuffer");
+        ctx.set_debug_object_name(passes.gbuffer.framebuf, "renderer.gbuffer");
     }
 
     // create hdr renderpass and framebuffer
@@ -333,6 +343,14 @@ void Renderer::impl_create_render_targets()
 
         const auto dependencies = std::array {
             vk::SubpassDependency {
+                VK_SUBPASS_EXTERNAL, 0u,
+                vk::PipelineStageFlagBits::eFragmentShader | vk::PipelineStageFlagBits::eLateFragmentTests,
+                vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eEarlyFragmentTests,
+                vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eDepthStencilAttachmentWrite,
+                vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentRead,
+                vk::DependencyFlagBits::eByRegion
+            },
+            vk::SubpassDependency {
                 0u, 0u,
                 vk::PipelineStageFlagBits::eLateFragmentTests, vk::PipelineStageFlagBits::eLateFragmentTests,
                 vk::AccessFlagBits::eDepthStencilAttachmentRead, vk::AccessFlagBits::eDepthStencilAttachmentWrite,
@@ -353,8 +371,8 @@ void Renderer::impl_create_render_targets()
             { images.colour.view, images.depthStencil.view }
         );
 
-        ctx.set_debug_object_name(passes.hdr.pass, "Renderer.RenderPass.HDR");
-        ctx.set_debug_object_name(passes.hdr.framebuf, "Renderer.Framebuffer.HDR");
+        ctx.set_debug_object_name(passes.hdr.pass, "renderer.hdr");
+        ctx.set_debug_object_name(passes.hdr.framebuf, "renderer.hdr");
     }
 
     sq::vk_update_descriptor_set_swapper (
@@ -429,7 +447,7 @@ void Renderer::impl_create_pipelines()
             nullptr
         );
 
-        ctx.set_debug_object_name(pipelines.skybox, "Renderer.pipelines.skybox");
+        ctx.set_debug_object_name(pipelines.skybox, "renderer.skybox");
     }
 
     // default light pipeline
@@ -520,7 +538,7 @@ void Renderer::impl_create_pipelines()
                 sq::DescriptorImageSampler(10u, 0u, samplers.nearestClamp, images.depthMips.view, vk::ImageLayout::eDepthStencilReadOnlyOptimal)
             );
 
-        ctx.set_debug_object_name(pipelines.lighting, "Renderer.Pipeline.Lighting");
+        ctx.set_debug_object_name(pipelines.lighting, "renderer.lighting");
     }
 
     // composite pipeline
@@ -575,7 +593,7 @@ void Renderer::impl_create_pipelines()
 
         sq::vk_update_descriptor_set(ctx, sets.composite, descriptor);
 
-        ctx.set_debug_object_name(pipelines.composite, "Renderer.Pipeline.Composite");
+        ctx.set_debug_object_name(pipelines.composite, "renderer.composite");
     }
 }
 
@@ -631,12 +649,12 @@ void Renderer::impl_create_shadow_stuff()
             0.f, 0u, 0u, false, true, vk::BorderColor::eFloatOpaqueWhite
         );
 
-        ctx.set_debug_object_name(images.shadowFront.image, "Renderer.Image.ShadowFront");
-        ctx.set_debug_object_name(images.shadowFront.view, "Renderer.ImageView.ShadowFront");
-        ctx.set_debug_object_name(images.shadowBack.image, "Renderer.Image.ShadowBack");
-        ctx.set_debug_object_name(images.shadowBack.view, "Renderer.ImageView.ShadowBack");
-        ctx.set_debug_object_name(images.shadowMiddle.image, "Renderer.Image.ShadowMiddle");
-        ctx.set_debug_object_name(images.shadowMiddle.view, "Renderer.ImageView.ShadowMiddle");
+        ctx.set_debug_object_name(images.shadowFront.image, "renderer.shadowFront");
+        ctx.set_debug_object_name(images.shadowFront.view, "renderer.shadowFront");
+        ctx.set_debug_object_name(images.shadowBack.image, "renderer.shadowBack");
+        ctx.set_debug_object_name(images.shadowBack.view, "renderer.shadowBack");
+        ctx.set_debug_object_name(images.shadowMiddle.image, "renderer.shadowMiddle");
+        ctx.set_debug_object_name(images.shadowMiddle.view, "renderer.shadowMiddle");
 
         sq::vk_update_descriptor_set (
             ctx, sets.shadowMiddle,
@@ -690,6 +708,24 @@ void Renderer::impl_create_shadow_stuff()
 
         const auto dependencies = std::array {
             vk::SubpassDependency {
+                VK_SUBPASS_EXTERNAL, 0u,
+                vk::PipelineStageFlagBits::eFragmentShader, vk::PipelineStageFlagBits::eEarlyFragmentTests,
+                vk::AccessFlagBits::eInputAttachmentRead, vk::AccessFlagBits::eDepthStencilAttachmentWrite,
+                vk::DependencyFlagBits::eByRegion
+            },
+            vk::SubpassDependency {
+                VK_SUBPASS_EXTERNAL, 1u,
+                vk::PipelineStageFlagBits::eFragmentShader, vk::PipelineStageFlagBits::eEarlyFragmentTests,
+                vk::AccessFlagBits::eInputAttachmentRead, vk::AccessFlagBits::eDepthStencilAttachmentWrite,
+                vk::DependencyFlagBits::eByRegion
+            },
+            vk::SubpassDependency {
+                VK_SUBPASS_EXTERNAL, 2u,
+                vk::PipelineStageFlagBits::eFragmentShader, vk::PipelineStageFlagBits::eEarlyFragmentTests,
+                vk::AccessFlagBits::eShaderRead, vk::AccessFlagBits::eDepthStencilAttachmentWrite,
+                vk::DependencyFlagBits::eByRegion
+            },
+            vk::SubpassDependency {
                 0u, 2u,
                 vk::PipelineStageFlagBits::eLateFragmentTests, vk::PipelineStageFlagBits::eFragmentShader,
                 vk::AccessFlagBits::eDepthStencilAttachmentWrite, vk::AccessFlagBits::eInputAttachmentRead,
@@ -714,8 +750,8 @@ void Renderer::impl_create_shadow_stuff()
             { images.shadowFront.view, images.shadowBack.view, images.shadowMiddle.view }
         );
 
-        ctx.set_debug_object_name(passes.shadow.pass, "Renderer.RenderPass.Shadow");
-        ctx.set_debug_object_name(passes.shadow.framebuf, "Renderer.Framebuffer.Shadow");
+        ctx.set_debug_object_name(passes.shadow.pass, "renderer.shadow");
+        ctx.set_debug_object_name(passes.shadow.framebuf, "renderer.shadow");
     }
 
     // create shadow middle pipeline
@@ -744,7 +780,7 @@ void Renderer::impl_create_shadow_stuff()
             nullptr, nullptr
         );
 
-        ctx.set_debug_object_name(pipelines.shadowMiddle, "Renderer.Pipeline.ShadowMiddle");
+        ctx.set_debug_object_name(pipelines.shadowMiddle, "renderer.shadowMiddle");
     }
 
     *mPassConfigShadowFront = sq::PassConfig {
@@ -798,8 +834,8 @@ void Renderer::impl_create_depth_mipmap_stuff()
         {}, vk::ImageAspectFlagBits::eDepth
     );
 
-    ctx.set_debug_object_name(images.depthMips.image, "Renderer.Image.DepthMips");
-    ctx.set_debug_object_name(images.depthMips.view, "Renderer.ImageView.DepthMips");
+    ctx.set_debug_object_name(images.depthMips.image, "renderer.depthMips");
+    ctx.set_debug_object_name(images.depthMips.view, "renderer.depthMips");
 
     samplers.depthMips = ctx.create_sampler (
         vk::Filter::eNearest, vk::Filter::eNearest, vk::SamplerMipmapMode::eNearest,
@@ -836,14 +872,25 @@ void Renderer::impl_create_depth_mipmap_stuff()
                 {}, vk::PipelineBindPoint::eGraphics, nullptr, nullptr, nullptr, &reference, nullptr
             };
 
-            const auto dependency = vk::SubpassDependency {
-                0u, VK_SUBPASS_EXTERNAL,
-                vk::PipelineStageFlagBits::eLateFragmentTests, vk::PipelineStageFlagBits::eFragmentShader,
-                vk::AccessFlagBits::eDepthStencilAttachmentWrite, vk::AccessFlagBits::eShaderRead,
-                vk::DependencyFlagBits::eByRegion
+            const auto dependencies = std::array {
+                vk::SubpassDependency {
+                    VK_SUBPASS_EXTERNAL, 0u,
+                    vk::PipelineStageFlagBits::eFragmentShader, vk::PipelineStageFlagBits::eEarlyFragmentTests,
+                    vk::AccessFlagBits::eShaderRead, vk::AccessFlagBits::eDepthStencilAttachmentWrite,
+                    vk::DependencyFlagBits::eByRegion
+                },
+                vk::SubpassDependency {
+                    0u, VK_SUBPASS_EXTERNAL,
+                    vk::PipelineStageFlagBits::eLateFragmentTests, vk::PipelineStageFlagBits::eFragmentShader,
+                    vk::AccessFlagBits::eDepthStencilAttachmentWrite, vk::AccessFlagBits::eShaderRead,
+                    vk::DependencyFlagBits::eByRegion
+                }
             };
 
-            stuff.pass.initialise(ctx, attachment, subpass, dependency, stuff.dimensions, 1u, stuff.destView);
+            stuff.pass.initialise(ctx, attachment, subpass, dependencies, stuff.dimensions, 1u, stuff.destView);
+
+            ctx.set_debug_object_name(stuff.pass.pass, "renderer.depthMipGen[{}]", i);
+            ctx.set_debug_object_name(stuff.pass.framebuf, "renderer.depthMipGen[{}]", i);
         }
 
         // create depth mip pipeline
@@ -932,10 +979,10 @@ void Renderer::impl_create_ssao_stuff()
             {}, vk::ImageAspectFlagBits::eColor
         );
 
-        ctx.set_debug_object_name(images.ssao.image, "Renderer.images.ssao");
-        ctx.set_debug_object_name(images.ssao.view, "Renderer.images.ssaoView");
-        ctx.set_debug_object_name(images.ssaoBlur.image, "Renderer.images.ssaoBlur");
-        ctx.set_debug_object_name(images.ssaoBlur.view, "Renderer.images.ssaoBlurView");
+        ctx.set_debug_object_name(images.ssao.image, "renderer.ssao");
+        ctx.set_debug_object_name(images.ssao.view, "renderer.ssao");
+        ctx.set_debug_object_name(images.ssaoBlur.image, "renderer.ssaoBlur");
+        ctx.set_debug_object_name(images.ssaoBlur.view, "renderer.ssaoBlur");
     }
 
     // create ssao renderpass and framebuffer
@@ -953,17 +1000,25 @@ void Renderer::impl_create_ssao_stuff()
             {}, vk::PipelineBindPoint::eGraphics, nullptr, reference, nullptr, nullptr, nullptr
         };
 
-        const auto dependency = vk::SubpassDependency {
-            0u, VK_SUBPASS_EXTERNAL,
-            vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eFragmentShader,
-            vk::AccessFlagBits::eColorAttachmentWrite, vk::AccessFlagBits::eShaderRead,
-            vk::DependencyFlagBits::eByRegion
+        const auto dependencies = std::array {
+            vk::SubpassDependency {
+                VK_SUBPASS_EXTERNAL, 0u,
+                vk::PipelineStageFlagBits::eFragmentShader, vk::PipelineStageFlagBits::eColorAttachmentOutput,
+                vk::AccessFlagBits::eShaderRead, vk::AccessFlagBits::eColorAttachmentWrite,
+                vk::DependencyFlagBits::eByRegion
+            },
+            vk::SubpassDependency {
+                0u, VK_SUBPASS_EXTERNAL,
+                vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eFragmentShader,
+                vk::AccessFlagBits::eColorAttachmentWrite, vk::AccessFlagBits::eShaderRead,
+                vk::DependencyFlagBits::eByRegion
+            }
         };
 
-        passes.ssao.initialise(ctx, attachment, subpass, dependency, halfSize, 1u, images.ssao.view);
+        passes.ssao.initialise(ctx, attachment, subpass, dependencies, halfSize, 1u, images.ssao.view);
 
-        ctx.set_debug_object_name(passes.ssao.pass, "Renderer.targets.ssaoRenderPass");
-        ctx.set_debug_object_name(passes.ssao.framebuf, "Renderer.targets.ssaoFramebuffer");
+        ctx.set_debug_object_name(passes.ssao.pass, "renderer.ssao");
+        ctx.set_debug_object_name(passes.ssao.framebuf, "renderer.ssao");
     }
 
     // create ssao blur renderpass and framebuffer
@@ -981,17 +1036,25 @@ void Renderer::impl_create_ssao_stuff()
             {}, vk::PipelineBindPoint::eGraphics, nullptr, reference, nullptr, nullptr, nullptr
         };
 
-        const auto dependency = vk::SubpassDependency {
-            0u, VK_SUBPASS_EXTERNAL,
-            vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eFragmentShader,
-            vk::AccessFlagBits::eColorAttachmentWrite, vk::AccessFlagBits::eShaderRead,
-            vk::DependencyFlagBits::eByRegion
+        const auto dependencies = std::array {
+            vk::SubpassDependency {
+                VK_SUBPASS_EXTERNAL, 0u,
+                vk::PipelineStageFlagBits::eFragmentShader, vk::PipelineStageFlagBits::eColorAttachmentOutput,
+                vk::AccessFlagBits::eShaderRead, vk::AccessFlagBits::eColorAttachmentWrite,
+                vk::DependencyFlagBits::eByRegion
+            },
+            vk::SubpassDependency {
+                0u, VK_SUBPASS_EXTERNAL,
+                vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eFragmentShader,
+                vk::AccessFlagBits::eColorAttachmentWrite, vk::AccessFlagBits::eShaderRead,
+                vk::DependencyFlagBits::eByRegion
+            }
         };
 
-        passes.ssaoBlur.initialise(ctx, attachment, subpass, dependency, halfSize, 1u, images.ssaoBlur.view);
+        passes.ssaoBlur.initialise(ctx, attachment, subpass, dependencies, halfSize, 1u, images.ssaoBlur.view);
 
-        ctx.set_debug_object_name(passes.ssaoBlur.pass, "Renderer.targets.ssaoBlurRenderPass");
-        ctx.set_debug_object_name(passes.ssaoBlur.framebuf, "Renderer.targets.ssaoBlurFramebuffer");
+        ctx.set_debug_object_name(passes.ssaoBlur.pass, "renderer.ssaoBlur");
+        ctx.set_debug_object_name(passes.ssaoBlur.framebuf, "renderer.ssaoBlur");
     }
 
     // create ssao pipeline
@@ -1035,7 +1098,7 @@ void Renderer::impl_create_ssao_stuff()
             sq::DescriptorImageSampler(3u, 0u, samplers.depthMips, images.depthMips.view, vk::ImageLayout::eDepthStencilReadOnlyOptimal)
         );
 
-        ctx.set_debug_object_name(pipelines.ssao, "Renderer.pipelines.ssao");
+        ctx.set_debug_object_name(pipelines.ssao, "renderer.ssao");
     }
 
     // create ssao blur pipeline
@@ -1076,7 +1139,7 @@ void Renderer::impl_create_ssao_stuff()
             sq::DescriptorImageSampler(2u, 0u, samplers.nearestClamp, images.depthMips.view, vk::ImageLayout::eDepthStencilReadOnlyOptimal)
         );
 
-        ctx.set_debug_object_name(pipelines.ssaoBlur, "Renderer.pipelines.ssaoBlur");
+        ctx.set_debug_object_name(pipelines.ssaoBlur, "renderer.ssaoBlur");
     }
 }
 
