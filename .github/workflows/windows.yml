@@ -13,7 +13,7 @@ jobs:
 
     - name: Checkout GLFW
       uses: actions/checkout@v3
-      with: { path: glfw, repository: glfw/glfw, ref: 3.3.8 }
+      with: { path: glfw, repository: glfw/glfw, ref: 3.4 }
 
     - name: Configure and Build GLFW
       working-directory: glfw
